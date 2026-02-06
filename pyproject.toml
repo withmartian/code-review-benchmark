@@ -1,0 +1,12 @@
+[project]
+name = "pr-review-dataset"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "google-auth>=2.48.0",
+    "google-cloud-bigquery>=3.40.0",
+    "httpx>=0.28.1",
+    "tqdm>=4.67.3",
+]

@@ -45,6 +45,49 @@ end_date = col2.date_input("End Date", value=None)
 # F-beta parameter
 beta = st.sidebar.number_input("F-beta (\u03B2)", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
 
+# -- Label filters --
+# Pre-fetch analyses to extract label options
+_all_analyses = get_analyses(DATABASE_URL, chatbot_id=chatbot_id)
+
+
+def _parse_labels(row):
+    raw = row.get("pr_labels_json")
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        return json.loads(raw)
+    return raw
+
+
+_all_label_dicts = [_parse_labels(a) for a in _all_analyses]
+_label_domains = sorted({lb["domain"] for lb in _all_label_dicts if lb})
+_label_languages = sorted({lb["language"] for lb in _all_label_dicts if lb})
+_label_pr_types = sorted({lb["pr_type"] for lb in _all_label_dicts if lb})
+_label_severities = sorted({lb["severity"] for lb in _all_label_dicts if lb})
+
+st.sidebar.header("Label Filters")
+sel_domains = st.sidebar.multiselect("Domain", options=_label_domains)
+sel_languages = st.sidebar.multiselect("Language", options=_label_languages)
+sel_pr_types = st.sidebar.multiselect("PR Type", options=_label_pr_types)
+sel_severities = st.sidebar.multiselect("Severity", options=_label_severities)
+
+
+def _label_matches(row) -> bool:
+    """Return True if the row passes all active label filters."""
+    lb = _parse_labels(row)
+    if lb is None:
+        # No labels: include only if no label filters are active
+        return not (sel_domains or sel_languages or sel_pr_types or sel_severities)
+    if sel_domains and lb.get("domain") not in sel_domains:
+        return False
+    if sel_languages and lb.get("language") not in sel_languages:
+        return False
+    if sel_pr_types and lb.get("pr_type") not in sel_pr_types:
+        return False
+    if sel_severities and lb.get("severity") not in sel_severities:
+        return False
+    return True
+
 # Status summary
 st.header("Pipeline Status")
 status_data = get_status_summary(DATABASE_URL)
@@ -74,7 +117,7 @@ else:
 # Precision / Recall explorer
 st.header("Precision / Recall Explorer")
 st.caption("Includes only PRs with both % acted on and # of comments acted on defined (requires at least one bot suggestion and one code fix). PR count may be lower than the F\u03B2 chart.")
-analyses = get_analyses(DATABASE_URL, chatbot_id=chatbot_id)
+analyses = [a for a in _all_analyses if _label_matches(a)]
 if analyses:
     fig = precision_recall_scatter(analyses, start_date=start_str, end_date=end_str, beta=beta)
     if fig:
@@ -89,11 +132,21 @@ if not analyses:
 if analyses:
     import pandas as pd
 
+    # Inject parsed label fields into each row for table display
+    for a in analyses:
+        lb = _parse_labels(a)
+        a["label_language"] = lb.get("language", "") if lb else ""
+        a["label_domain"] = lb.get("domain", "") if lb else ""
+        a["label_pr_type"] = lb.get("pr_type", "") if lb else ""
+        a["label_severity"] = lb.get("severity", "") if lb else ""
+
     df = pd.DataFrame(analyses)
     display_cols = [
         "github_username", "repo_name", "pr_number", "pr_url",
         "total_bot_comments", "matched_bot_comments",
-        "precision", "recall", "f_beta", "model_name", "analyzed_at",
+        "precision", "recall", "f_beta",
+        "label_language", "label_domain", "label_pr_type", "label_severity",
+        "model_name", "analyzed_at",
     ]
     available = [c for c in display_cols if c in df.columns]
     st.dataframe(
@@ -106,6 +159,10 @@ if analyses:
             "precision": st.column_config.NumberColumn("% Acted On", format="%.2f"),
             "recall": st.column_config.NumberColumn("# Acted On (ratio)", format="%.2f"),
             "f_beta": st.column_config.NumberColumn("F\u03B2", format="%.2f"),
+            "label_language": st.column_config.TextColumn("Language"),
+            "label_domain": st.column_config.TextColumn("Domain"),
+            "label_pr_type": st.column_config.TextColumn("PR Type"),
+            "label_severity": st.column_config.TextColumn("Severity"),
         },
     )
     # Per-PR detail view
@@ -126,6 +183,24 @@ if analyses:
         suggestions = _parse_json(row.get("bot_suggestions"))
         actions = _parse_json(row.get("human_actions"))
         matches = _parse_json(row.get("matching_results"))
+        pr_lbl = _parse_labels(row)
+
+        if pr_lbl:
+            with st.expander("Labels", expanded=True):
+                lbl_cols = st.columns(4)
+                lbl_cols[0].metric("Language", pr_lbl.get("language", ""))
+                lbl_cols[1].metric("Domain", pr_lbl.get("domain", ""))
+                lbl_cols[2].metric("PR Type", pr_lbl.get("pr_type", ""))
+                lbl_cols[3].metric("Severity", pr_lbl.get("severity", ""))
+                extra = []
+                if pr_lbl.get("languages"):
+                    extra.append(f"**Languages:** {', '.join(pr_lbl['languages'])}")
+                if pr_lbl.get("framework"):
+                    extra.append(f"**Framework:** {pr_lbl['framework']}")
+                if pr_lbl.get("issue_types"):
+                    extra.append(f"**Issue types:** {', '.join(pr_lbl['issue_types'])}")
+                extra.append(f"**Test changes:** {'Yes' if pr_lbl.get('test_changes') else 'No'}")
+                st.markdown(" | ".join(extra))
 
         col_s, col_a = st.columns(2)
 

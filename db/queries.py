@@ -173,6 +173,63 @@ UPDATE_PR_ANALYZED = """
     UPDATE prs SET status = 'analyzed', analyzed_at = $1 WHERE id = $2
 """
 
+# -- PR labels -----------------------------------------------------------------
+
+INSERT_PR_LABELS = """
+    INSERT INTO pr_labels (pr_id, chatbot_id, labels, model_name)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (pr_id, chatbot_id) DO UPDATE SET
+        labels = $3, model_name = $4, labeled_at = CURRENT_TIMESTAMP
+"""
+
+GET_ANALYZED_NOT_LABELED = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'analyzed'
+      AND pl.id IS NULL
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $2
+"""
+
+GET_ALL_ANALYZED_NOT_LABELED = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.status = 'analyzed'
+      AND pl.id IS NULL
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $1
+"""
+
+GET_ANALYZED_NOT_LABELED_SINCE = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'analyzed'
+      AND pl.id IS NULL
+      AND p.bot_reviewed_at >= $2
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $3
+"""
+
+GET_ALL_ANALYZED_NOT_LABELED_SINCE = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.status = 'analyzed'
+      AND pl.id IS NULL
+      AND p.bot_reviewed_at >= $1
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $2
+"""
+
 # -- Dashboard queries ---------------------------------------------------------
 
 GET_ANALYSES_BY_CHATBOT = """

@@ -70,6 +70,17 @@ TABLES = [
         UNIQUE(pr_id, chatbot_id)
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS pr_labels (
+        id          SERIAL PRIMARY KEY,
+        pr_id       INTEGER NOT NULL REFERENCES prs(id),
+        chatbot_id  INTEGER NOT NULL REFERENCES chatbots(id),
+        labels      TEXT NOT NULL,
+        model_name  TEXT,
+        labeled_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(pr_id, chatbot_id)
+    )
+    """,
 ]
 
 # Indexes for common query patterns
@@ -79,6 +90,7 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_prs_enrichment ON prs(status, enrichment_step)",
     "CREATE INDEX IF NOT EXISTS idx_llm_analyses_pr ON llm_analyses(pr_id)",
     "CREATE INDEX IF NOT EXISTS idx_llm_analyses_chatbot ON llm_analyses(chatbot_id)",
+    "CREATE INDEX IF NOT EXISTS idx_pr_labels_pr ON pr_labels(pr_id)",
 ]
 
 

@@ -171,6 +171,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_imp.add_argument("--database-url")
     p_imp.add_argument("--verbose", action="store_true")
 
+    # label
+    p_lbl = sub.add_parser("label", help="Generate labels for analyzed PRs")
+    p_lbl.add_argument("--chatbot", help="Specific chatbot, or use --all")
+    p_lbl.add_argument("--all", action="store_true", dest="all_chatbots")
+    p_lbl.add_argument("--limit", type=int, default=100)
+    p_lbl.add_argument("--since", help="Only label PRs reviewed since this date (e.g. '7d', '2026-02-05')")
+    p_lbl.add_argument("--database-url")
+    p_lbl.add_argument("--verbose", action="store_true")
+
     # dashboard
     p_dash = sub.add_parser("dashboard", help="Launch Streamlit dashboard")
     p_dash.add_argument("--port", type=int, default=8501)
@@ -309,6 +318,53 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
         await db.close()
 
 
+async def cmd_label(args: argparse.Namespace) -> None:
+    from db.connection import DBAdapter
+    from db.repository import PRRepository
+    from db.schema import create_tables
+    from pipeline.label import label_prs
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+    if not cfg.martian_api_key:
+        logger.error("MARTIAN_API_KEY required")
+        return
+
+    # Parse --since
+    since = None
+    if args.since:
+        import re
+        from datetime import datetime, timedelta, timezone
+        m = re.match(r"^(\d+)d$", args.since)
+        if m:
+            since = (datetime.now(timezone.utc) - timedelta(days=int(m.group(1)))).isoformat()
+        else:
+            since = args.since
+        logger.info(f"Filtering PRs reviewed since {since}")
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        repo = PRRepository(db)
+
+        if args.all_chatbots:
+            chatbots = await repo.get_all_chatbots()
+            for bot in chatbots:
+                await label_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+        elif args.chatbot:
+            bot = await repo.get_chatbot(args.chatbot)
+            if not bot:
+                logger.error(f"Chatbot '{args.chatbot}' not found.")
+                return
+            await label_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+        else:
+            logger.error("Specify --chatbot or --all")
+    finally:
+        await db.close()
+
+
 async def cmd_import(args: argparse.Namespace) -> None:
     from migration.import_filesystem import import_all
 
@@ -350,6 +406,8 @@ def main() -> None:
         asyncio.run(cmd_enrich(args))
     elif args.command == "analyze":
         asyncio.run(cmd_analyze(args))
+    elif args.command == "label":
+        asyncio.run(cmd_label(args))
     elif args.command == "import":
         asyncio.run(cmd_import(args))
 

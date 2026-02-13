@@ -433,21 +433,26 @@ async def analyze_prs(
     )
 
     analyzed = 0
-    batch_size = 60
+    errors = 0
+    concurrency = 60
+    sem = asyncio.Semaphore(concurrency)
+
+    async def _run(pr_row: dict) -> bool:
+        async with sem:
+            return await analyze_single_pr(llm, repo, pr_row, chatbot_username, cfg.martian_model_name, beta=cfg.f_beta)
+
     try:
-        for i in range(0, len(prs), batch_size):
-            batch = prs[i : i + batch_size]
-            tasks = []
-            for pr_row in batch:
-                tasks.append(analyze_single_pr(llm, repo, pr_row, chatbot_username, cfg.martian_model_name, beta=cfg.f_beta))
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for j, result in enumerate(results):
-                if isinstance(result, Exception):
-                    pr_row = batch[j]
-                    logger.error(f"Error analyzing {pr_row['repo_name']}#{pr_row['pr_number']}: {result}")
-                elif result is True:
+        tasks = [asyncio.create_task(_run(pr_row)) for pr_row in prs]
+        for coro in asyncio.as_completed(tasks):
+            try:
+                result = await coro
+                if result:
                     analyzed += 1
-            logger.info(f"Analyzed {analyzed} PRs so far ({i + len(batch)}/{len(prs)})")
+            except Exception as exc:
+                errors += 1
+                logger.error(f"Error analyzing PR: {exc}")
+            if (analyzed + errors) % 20 == 0:
+                logger.info(f"Progress: {analyzed} analyzed, {errors} errors / {len(prs)} total")
     finally:
         await llm.close()
 

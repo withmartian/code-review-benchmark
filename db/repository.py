@@ -154,6 +154,30 @@ class PRRepository:
         now = datetime.now(timezone.utc).isoformat()
         await self.db.execute(Q.UPDATE_PR_ANALYZED, (now, pr_id))
 
+    # -- PR labels -------------------------------------------------------------
+
+    async def insert_labels(
+        self,
+        pr_id: int,
+        chatbot_id: int,
+        labels: dict,
+        model_name: str | None,
+    ) -> None:
+        await self.db.execute(Q.INSERT_PR_LABELS, (
+            pr_id, chatbot_id, json.dumps(labels), model_name,
+        ))
+
+    async def get_analyzed_not_labeled(
+        self, chatbot_id: int | None = None, limit: int = 100, since: str | None = None
+    ) -> list[dict[str, Any]]:
+        if since:
+            if chatbot_id is not None:
+                return await self.db.fetchall(Q.GET_ANALYZED_NOT_LABELED_SINCE, (chatbot_id, since, limit))
+            return await self.db.fetchall(Q.GET_ALL_ANALYZED_NOT_LABELED_SINCE, (since, limit))
+        if chatbot_id is not None:
+            return await self.db.fetchall(Q.GET_ANALYZED_NOT_LABELED, (chatbot_id, limit))
+        return await self.db.fetchall(Q.GET_ALL_ANALYZED_NOT_LABELED, (limit,))
+
     # -- Dashboard queries -----------------------------------------------------
 
     async def get_analyses(self, chatbot_id: int | None = None) -> list[dict[str, Any]]:

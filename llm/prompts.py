@@ -66,6 +66,29 @@ Repository: {repo_name}
 {post_review_activity}
 """
 
+LABEL_PR = """You are classifying a pull request with structured labels based on its metadata, changed files, and review analysis.
+
+PR Title: {pr_title}
+Repository: {repo_name}
+PR Author: {pr_author}
+
+=== Files Changed ===
+{file_list}
+
+=== Review Analysis Summary ===
+{suggestion_summary}
+
+Based on the above, classify this PR:
+- language: the primary programming language (by file count/significance)
+- languages: all languages present
+- domain: frontend | backend | infra | fullstack | docs | other
+- pr_type: feature | bugfix | refactor | chore | docs | test | other
+- issue_types: list of issue categories found in the review (bug, style, performance, security, refactor, docs, other)
+- severity: overall severity of issues found (low, medium, high, critical). If no issues, use "low".
+- framework: detected framework (React, Django, Flask, Spring, etc.) or null if unclear
+- test_changes: whether any test files were modified
+"""
+
 JUDGE_MATCHING = """You are judging whether a bot's code review suggestions correspond to actual code issues that were later fixed.
 
 The bot's username is: {bot_username}

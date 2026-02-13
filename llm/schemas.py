@@ -41,3 +41,18 @@ class MatchResult(BaseModel):
 
 class MatchingResponse(BaseModel):
     matches: list[MatchResult] = Field(description="Match results for each bot suggestion")
+
+
+class PRLabels(BaseModel):
+    language: str = Field(description="Primary programming language in the PR")
+    languages: list[str] = Field(description="All programming languages present in the PR")
+    domain: str = Field(description="Domain: 'frontend', 'backend', 'infra', 'fullstack', 'docs', 'other'")
+    pr_type: str = Field(description="PR type: 'feature', 'bugfix', 'refactor', 'chore', 'docs', 'test', 'other'")
+    issue_types: list[str] = Field(description="Issue types found: 'bug', 'style', 'performance', 'security', 'refactor', 'docs', 'other'")
+    severity: str = Field(description="Overall severity: 'low', 'medium', 'high', 'critical'")
+    framework: str | None = Field(default=None, description="Framework detected (e.g. React, Django) or null")
+    test_changes: bool = Field(description="Whether the PR includes test file changes")
+
+
+class PRLabelsResponse(BaseModel):
+    labels: PRLabels

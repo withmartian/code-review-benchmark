@@ -115,6 +115,14 @@ uv run python main.py analyze --chatbot "coderabbitai[bot]"
 uv run python main.py analyze --all
 ```
 
+### Label PRs
+
+```bash
+uv run python main.py label --chatbot "coderabbitai[bot]" --limit 5
+uv run python main.py label --all
+uv run python main.py label --chatbot "coderabbitai[bot]" --since 7d
+```
+
 ### Import legacy filesystem data
 
 ```bash

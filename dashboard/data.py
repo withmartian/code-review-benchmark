@@ -49,10 +49,12 @@ def get_analyses(database_url: str, chatbot_id: int | None = None) -> list[dict[
     conn = _get_sync_connection(database_url)
     try:
         base = """SELECT la.*, p.repo_name, p.pr_number, p.pr_url, p.pr_created_at,
-                         p.bot_reviewed_at, c.github_username, c.display_name
+                         p.bot_reviewed_at, c.github_username, c.display_name,
+                         pl.labels as pr_labels_json
                   FROM llm_analyses la
                   JOIN prs p ON la.pr_id = p.id
-                  JOIN chatbots c ON la.chatbot_id = c.id"""
+                  JOIN chatbots c ON la.chatbot_id = c.id
+                  LEFT JOIN pr_labels pl ON pl.pr_id = la.pr_id AND pl.chatbot_id = la.chatbot_id"""
         if chatbot_id is not None:
             return _fetchall(conn, f"{base} WHERE la.chatbot_id = {ph} ORDER BY la.analyzed_at DESC", (chatbot_id,))
         return _fetchall(conn, f"{base} ORDER BY la.analyzed_at DESC")

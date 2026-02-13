@@ -37,6 +37,9 @@ TABLES = [
         commit_details      TEXT,
         assembled           TEXT,
 
+        -- Computed metrics
+        diff_lines          INTEGER,
+
         -- Concurrency
         locked_by           TEXT,
         locked_at           TIMESTAMPTZ,
@@ -94,9 +97,29 @@ INDEXES = [
 ]
 
 
+MIGRATIONS = [
+    "ALTER TABLE prs ADD COLUMN IF NOT EXISTS diff_lines INTEGER",
+]
+
+# SQLite doesn't support IF NOT EXISTS on ALTER TABLE ADD COLUMN
+MIGRATIONS_SQLITE = [
+    ("diff_lines", "ALTER TABLE prs ADD COLUMN diff_lines INTEGER"),
+]
+
+
 async def create_tables(db: DBAdapter) -> None:
     """Create all tables and indexes, translating DDL for the target database."""
     for ddl in TABLES:
         await db.execute(db.translate_ddl(ddl))
     for idx in INDEXES:
         await db.execute(idx)
+    # Run migrations for existing databases
+    if db.database_url.startswith("sqlite"):
+        for col_name, sql in MIGRATIONS_SQLITE:
+            try:
+                await db.execute(sql)
+            except Exception:
+                pass  # column already exists
+    else:
+        for sql in MIGRATIONS:
+            await db.execute(sql)

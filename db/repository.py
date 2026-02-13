@@ -104,8 +104,18 @@ class PRRepository:
     async def update_threads(self, pr_id: int, threads: list) -> None:
         await self.db.execute(Q.UPDATE_PR_THREADS, (json.dumps(threads), pr_id))
 
+    @staticmethod
+    def compute_diff_lines(details: list) -> int:
+        """Sum additions + deletions across all files in all commits."""
+        total = 0
+        for commit in details:
+            for f in commit.get("files", []):
+                total += f.get("additions", 0) + f.get("deletions", 0)
+        return total
+
     async def update_commit_details(self, pr_id: int, details: list) -> None:
-        await self.db.execute(Q.UPDATE_PR_COMMIT_DETAILS, (json.dumps(details), pr_id))
+        diff_lines = self.compute_diff_lines(details)
+        await self.db.execute(Q.UPDATE_PR_COMMIT_DETAILS, (json.dumps(details), diff_lines, pr_id))
 
     async def mark_enrichment_done(self, pr_id: int) -> None:
         now = datetime.now(timezone.utc).isoformat()
@@ -120,6 +130,22 @@ class PRRepository:
 
     async def mark_skipped(self, pr_id: int, reason: str) -> None:
         await self.db.execute(Q.MARK_PR_SKIPPED, (reason, pr_id))
+
+    async def count_missing_diff_lines(self) -> int:
+        row = await self.db.fetchone(Q.COUNT_PRS_MISSING_DIFF_LINES)
+        return row["count"] if row else 0
+
+    async def backfill_diff_lines(self, batch_size: int = 1000) -> int:
+        """Compute diff_lines for PRs that have commit_details but no diff_lines. Returns count updated."""
+        rows = await self.db.fetchall(Q.GET_PRS_MISSING_DIFF_LINES, (batch_size,))
+        count = 0
+        for row in rows:
+            raw = row["commit_details"]
+            details = json.loads(raw) if isinstance(raw, str) else raw
+            diff_lines = self.compute_diff_lines(details)
+            await self.db.execute(Q.UPDATE_PR_DIFF_LINES, (diff_lines, row["id"]))
+            count += 1
+        return count
 
     async def update_metadata(
         self, pr_id: int, pr_title: str, pr_author: str | None,

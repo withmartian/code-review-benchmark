@@ -124,7 +124,22 @@ UPDATE_PR_THREADS = """
 """
 
 UPDATE_PR_COMMIT_DETAILS = """
-    UPDATE prs SET commit_details = $1, enrichment_step = 'details' WHERE id = $2
+    UPDATE prs SET commit_details = $1, diff_lines = $2, enrichment_step = 'details' WHERE id = $3
+"""
+
+UPDATE_PR_DIFF_LINES = """
+    UPDATE prs SET diff_lines = $1 WHERE id = $2
+"""
+
+GET_PRS_MISSING_DIFF_LINES = """
+    SELECT id, commit_details FROM prs
+    WHERE commit_details IS NOT NULL AND diff_lines IS NULL
+    LIMIT $1
+"""
+
+COUNT_PRS_MISSING_DIFF_LINES = """
+    SELECT COUNT(*) as count FROM prs
+    WHERE commit_details IS NOT NULL AND diff_lines IS NULL
 """
 
 UPDATE_PR_ENRICHMENT_DONE = """

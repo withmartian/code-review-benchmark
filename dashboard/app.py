@@ -50,6 +50,15 @@ min_daily_prs = st.sidebar.number_input("Min PRs per day", min_value=0, value=0,
 # Pre-fetch analyses to extract label options
 _all_analyses = get_analyses(DATABASE_URL, chatbot_id=chatbot_id)
 
+# Diff lines filter
+diff_over_2k = st.sidebar.checkbox("More than 2k LOC", value=False)
+diff_range = st.sidebar.slider(
+    "Diff lines range",
+    min_value=0, max_value=2000, value=(0, 2000), step=50,
+    help="Filter PRs by number of changed lines",
+    disabled=diff_over_2k,
+)
+
 
 def _parse_labels(row):
     raw = row.get("pr_labels_json")
@@ -94,8 +103,16 @@ def _label_matches(row) -> bool:
         return False
     return True
 
-# Apply label filters once — all charts and tables use this filtered list
-analyses = [a for a in _all_analyses if _label_matches(a)]
+# Apply label + diff_lines filters once — all charts and tables use this filtered list
+def _diff_lines_ok(row) -> bool:
+    dl = row.get("diff_lines")
+    if dl is None:
+        return not diff_over_2k and diff_range == (0, 2000)
+    if diff_over_2k:
+        return dl > 2000
+    return diff_range[0] <= dl <= diff_range[1]
+
+analyses = [a for a in _all_analyses if _label_matches(a) and _diff_lines_ok(a)]
 
 start_str = str(start_date) if start_date else None
 end_str = str(end_date) if end_date else None
@@ -180,6 +197,7 @@ if analyses:
     df = pd.DataFrame(analyses)
     display_cols = [
         "github_username", "repo_name", "pr_number", "pr_url",
+        "diff_lines",
         "total_bot_comments", "matched_bot_comments",
         "precision", "recall", "f_beta",
         "label_language", "label_domain", "label_pr_type", "label_severity",
@@ -191,6 +209,7 @@ if analyses:
         use_container_width=True,
         column_config={
             "pr_url": st.column_config.LinkColumn("PR URL", display_text="View PR"),
+            "diff_lines": st.column_config.NumberColumn("Diff Lines"),
             "total_bot_comments": st.column_config.NumberColumn("# Comments"),
             "matched_bot_comments": st.column_config.NumberColumn("# Acted On"),
             "precision": st.column_config.NumberColumn("% Acted On", format="%.2f"),

@@ -53,7 +53,7 @@ def get_analyses(database_url: str, chatbot_id: int | None = None) -> list[dict[
     conn = _get_sync_connection(database_url)
     try:
         base = """SELECT la.*, p.repo_name, p.pr_number, p.pr_url, p.pr_created_at,
-                         p.bot_reviewed_at, c.github_username, c.display_name,
+                         p.bot_reviewed_at, p.diff_lines, c.github_username, c.display_name,
                          pl.labels as pr_labels_json
                   FROM llm_analyses la
                   JOIN prs p ON la.pr_id = p.id

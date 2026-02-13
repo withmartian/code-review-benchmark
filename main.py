@@ -180,6 +180,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_lbl.add_argument("--database-url")
     p_lbl.add_argument("--verbose", action="store_true")
 
+    # backfill
+    p_bf = sub.add_parser("backfill", help="Backfill computed columns (e.g. diff_lines)")
+    p_bf.add_argument("--database-url")
+    p_bf.add_argument("--batch-size", type=int, default=5000)
+    p_bf.add_argument("--verbose", action="store_true")
+
     # dashboard
     p_dash = sub.add_parser("dashboard", help="Launch Streamlit dashboard")
     p_dash.add_argument("--port", type=int, default=8501)
@@ -365,6 +371,41 @@ async def cmd_label(args: argparse.Namespace) -> None:
         await db.close()
 
 
+async def cmd_backfill(args: argparse.Namespace) -> None:
+    from db.connection import DBAdapter
+    from db.repository import PRRepository
+    from db.schema import create_tables
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        repo = PRRepository(db)
+        remaining = await repo.count_missing_diff_lines()
+        if remaining == 0:
+            logger.info("Nothing to backfill — all PRs already have diff_lines")
+            return
+        logger.info(f"Backfilling diff_lines for {remaining} PRs")
+        total = 0
+        while True:
+            updated = await repo.backfill_diff_lines(batch_size=args.batch_size)
+            total += updated
+            if updated > 0:
+                pct = min(100, total * 100 // remaining)
+                bar = "=" * (pct // 2) + " " * (50 - pct // 2)
+                print(f"\r  [{bar}] {pct}% ({total}/{remaining})", end="", flush=True)
+            if updated < args.batch_size:
+                break
+        print()  # newline after progress bar
+        logger.info(f"Backfill complete: {total} PRs updated")
+    finally:
+        await db.close()
+
+
 async def cmd_import(args: argparse.Namespace) -> None:
     from migration.import_filesystem import import_all
 
@@ -408,6 +449,8 @@ def main() -> None:
         asyncio.run(cmd_analyze(args))
     elif args.command == "label":
         asyncio.run(cmd_label(args))
+    elif args.command == "backfill":
+        asyncio.run(cmd_backfill(args))
     elif args.command == "import":
         asyncio.run(cmd_import(args))
 

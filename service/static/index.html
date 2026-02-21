@@ -57,7 +57,7 @@ tr:hover td{background:#f9f9f9}
 <div class="main">
   <h1>PR Review Bot Analysis Dashboard</h1>
   <h2>F&beta; Score Over Time</h2>
-  <p class="caption">Includes all PRs with at least one bot suggestion (precision not null).</p>
+  <p class="caption">Null precision/recall treated as 0. All analyzed PRs included.</p>
   <div id="chart-fbeta" class="chart"></div>
   <h2>Precision / Recall Explorer</h2>
   <p class="caption">One dot per chatbot, aggregated. Bubble size = PR count.</p>
@@ -69,6 +69,16 @@ tr:hover td{background:#f9f9f9}
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const checked=cls=>$$('.'+cls).filter(e=>e.checked).map(e=>e.value);
+
+// Stable color palette — same colors used across all charts
+const COLORS=['#636EFA','#EF553B','#00CC96','#AB63FA','#FFA15A','#19D3F3','#FF6692','#B6E880','#FF97FF','#FECB52'];
+let botColorMap={};
+
+function assignColors(botNames){
+  const sorted=[...new Set(botNames)].sort();
+  botColorMap={};
+  sorted.forEach((name,i)=>{ botColorMap[name]=COLORS[i%COLORS.length]; });
+}
 
 function filterCbs(id,query){
   const q=query.toLowerCase();
@@ -83,6 +93,14 @@ function makeCbs(id,vals,cls){
   el.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',refresh));
 }
 
+function defaultDates(){
+  const end=new Date();
+  const start=new Date();
+  start.setDate(start.getDate()-21);
+  const fmt=d=>d.toISOString().slice(0,10);
+  return {start:fmt(start),end:fmt(end)};
+}
+
 async function init(){
   const o=await fetch('/api/options').then(r=>r.json());
   makeCbs('f-chatbot',o.chatbots,'cb-bot');
@@ -90,7 +108,12 @@ async function init(){
   makeCbs('f-language',o.languages,'cb-lang');
   makeCbs('f-pr-type',o.pr_types,'cb-prt');
   makeCbs('f-severity',o.severities,'cb-sev');
-  // Don't auto-fill dates — match dashboard default of no date filter
+  // Default to last 3 weeks
+  const d=defaultDates();
+  $('#start-date').value=d.start;
+  $('#end-date').value=d.end;
+  // Build initial color map from all chatbots
+  assignColors(o.chatbots);
   for(const id of['start-date','end-date','beta','min-prs','diff-min','diff-max'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
@@ -126,16 +149,25 @@ async function refresh(){
 }
 
 function renderFbeta(data){
+  const traces=[];
   const byBot={};
   for(const r of data.series){
-    if(!byBot[r.chatbot]) byBot[r.chatbot]={x:[],y:[],text:[],name:r.chatbot,mode:'lines+markers',type:'scatter'};
+    if(!byBot[r.chatbot]) byBot[r.chatbot]={x:[],y:[],text:[]};
     const t=byBot[r.chatbot];
     t.x.push(r.date);
     t.y.push(r.avg_f_beta);
     t.text.push(`P:${r.avg_precision.toFixed(2)} R:${r.avg_recall.toFixed(2)} n:${r.pr_count}`);
   }
+  for(const [name,d] of Object.entries(byBot)){
+    traces.push({
+      x:d.x, y:d.y, text:d.text,
+      name, mode:'lines+markers', type:'scatter',
+      marker:{color:botColorMap[name]||'#999'},
+      line:{color:botColorMap[name]||'#999'},
+    });
+  }
   const b=$('#beta').value||'1.0';
-  Plotly.newPlot('chart-fbeta',Object.values(byBot),{
+  Plotly.newPlot('chart-fbeta',traces,{
     title:`F${b} Score Over Time (Daily Average)`,
     yaxis:{range:[0,1],title:`F${b} Score`},
     xaxis:{title:'Date',tickformat:'%Y-%m-%d'},
@@ -148,16 +180,17 @@ function renderFbeta(data){
 function renderScatter(data){
   if(!data.rows.length){Plotly.purge('chart-scatter');return;}
   const maxPrs=Math.max(...data.rows.map(r=>r.total_prs));
-  const trace={
-    x:data.rows.map(r=>r.precision),
-    y:data.rows.map(r=>r.recall),
-    text:data.rows.map(r=>`${r.chatbot}<br>F:${r.f_score!=null?r.f_score.toFixed(3):'—'} n:${r.total_prs}`),
-    marker:{size:data.rows.map(r=>10+40*r.total_prs/maxPrs)},
-    mode:'markers',type:'scatter',hoverinfo:'text',
-  };
+  const traces=data.rows.map(r=>({
+    x:[r.precision], y:[r.recall],
+    text:[`${r.chatbot}<br>F:${r.f_score!=null?r.f_score.toFixed(3):'—'} n:${r.total_prs}`],
+    name:r.chatbot,
+    marker:{size:[10+40*r.total_prs/maxPrs], color:botColorMap[r.chatbot]||'#999'},
+    mode:'markers', type:'scatter', hoverinfo:'text',
+    showlegend:false,
+  }));
   const b=$('#beta').value||'1.0';
-  Plotly.newPlot('chart-scatter',[trace],{
-    title:`% Acted On vs # Comments Acted On`,
+  Plotly.newPlot('chart-scatter',traces,{
+    title:'% Acted On vs # Comments Acted On',
     xaxis:{range:[0,1.05],title:'Precision (% Acted On)'},
     yaxis:{range:[0,1.05],title:'Recall'},
     margin:{t:40,b:40,l:50,r:20},
@@ -168,8 +201,10 @@ function renderScatter(data){
 function renderTable(data){
   const b=$('#beta').value||'1.0';
   let h=`<table><thead><tr><th>Chatbot</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">F${b}</th><th class="n">PRs</th></tr></thead><tbody>`;
-  for(const r of data.rows)
-    h+=`<tr><td>${r.chatbot}</td><td class="n">${r.precision.toFixed(4)}</td><td class="n">${r.recall.toFixed(4)}</td><td class="n">${r.f_score!=null?r.f_score.toFixed(4):'—'}</td><td class="n">${r.total_prs}</td></tr>`;
+  for(const r of data.rows){
+    const c=botColorMap[r.chatbot]||'#999';
+    h+=`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:6px"></span>${r.chatbot}</td><td class="n">${r.precision.toFixed(4)}</td><td class="n">${r.recall.toFixed(4)}</td><td class="n">${r.f_score!=null?r.f_score.toFixed(4):'—'}</td><td class="n">${r.total_prs}</td></tr>`;
+  }
   h+='</tbody></table>';
   $('#leaderboard').innerHTML=h;
 }

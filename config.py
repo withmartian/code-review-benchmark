@@ -67,9 +67,12 @@ class Config:
 DEFAULT_CHATBOT_USERNAMES = [
     "augmentcode[bot]",
     "baz-reviewer[bot]",
+    "chatgpt-codex-connector[bot]",
+    "claude[bot]",
     "coderabbitai[bot]",
     "Copilot",
     "cursor[bot]",
+    "factory-droid[bot]",
     "gemini-code-assist[bot]",
     "graphite-app[bot]",
     "greptile-apps[bot]",

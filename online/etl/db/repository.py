@@ -46,10 +46,13 @@ class PRRepository:
         status: str = "pending",
         bq_events: list | None = None,
         bot_reviewed_at: str | None = None,
-    ) -> None:
-        """Insert a PR row (ON CONFLICT DO NOTHING for idempotency)."""
+    ) -> bool:
+        """Insert a PR row (ON CONFLICT DO NOTHING for idempotency).
+
+        Returns True if the row was actually inserted, False if it already existed.
+        """
         bq_json = json.dumps(bq_events) if bq_events is not None else None
-        await self.db.execute(
+        row = await self.db.fetchone(
             q.INSERT_PR,
             (
                 chatbot_id,
@@ -65,6 +68,7 @@ class PRRepository:
                 bot_reviewed_at,
             ),
         )
+        return row is not None
 
     async def get_pr(self, chatbot_id: int, repo_name: str, pr_number: int) -> dict[str, Any] | None:
         return await self.db.fetchone(q.GET_PR, (chatbot_id, repo_name, pr_number))
@@ -229,6 +233,11 @@ class PRRepository:
         if chatbot_id is not None:
             return await self.db.fetchall(q.GET_ANALYZED_NOT_LABELED, (chatbot_id, limit))
         return await self.db.fetchall(q.GET_ALL_ANALYZED_NOT_LABELED, (limit,))
+
+    # -- PR volumes ------------------------------------------------------------
+
+    async def upsert_pr_volume(self, chatbot_id: int, date: str, pr_count: int) -> None:
+        await self.db.execute(q.UPSERT_PR_VOLUME, (chatbot_id, date, pr_count))
 
     # -- Dashboard queries -----------------------------------------------------
 

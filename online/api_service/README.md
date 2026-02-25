@@ -40,6 +40,7 @@ docker run -e DATABASE_URL=postgresql://... -p 3000:3000 pr-review-api
 | `GET` | `/api/options` | Available filter options (chatbots, languages, domains, etc.) |
 | `GET` | `/api/daily-metrics` | Daily time-series metrics with filtering |
 | `GET` | `/api/leaderboard` | Chatbot leaderboard with filtering |
+| `GET` | `/api/volumes` | PR volume per tool per day (formal reviews from BigQuery) |
 
 ### Filter Parameters (for `/api/daily-metrics` and `/api/leaderboard`)
 
@@ -55,4 +56,20 @@ docker run -e DATABASE_URL=postgresql://... -p 3000:3000 pr-review-api
 | `diff_lines_min` | Minimum diff lines |
 | `diff_lines_max` | Maximum diff lines |
 | `beta` | F-beta score beta parameter (default: 1.0) |
-| `min_prs_per_day` | Minimum PRs per day to include in series |
+| `min_total_prs` | Minimum total PRs to include a chatbot in leaderboard/scatter |
+| `min_prs_per_day` | Minimum PRs per day to include in time series |
+
+### `/api/volumes` Parameters
+
+Returns the number of unique PRs each tool first interacted with per day, from GitHub Archive. Each PR is counted exactly once on the earliest day the bot touched it, so summing daily counts gives the true unique total (no double-counting PRs that span multiple days). Only date range and chatbot filters apply — label filters are not relevant since this is raw BigQuery count data, not analyzed data. Days where a bot had no activity are zero-filled in the response so the chart shows gaps correctly.
+
+| Parameter | Description |
+|---|---|
+| `start_date` | Start date (`YYYY-MM-DD`) |
+| `end_date` | End date (`YYYY-MM-DD`) |
+| `chatbot` | Comma-separated chatbot names |
+
+```bash
+curl 'localhost:3000/api/volumes?start_date=2026-01-01&end_date=2026-02-25'
+curl 'localhost:3000/api/volumes?chatbot=coderabbitai%5Bbot%5D,Copilot'
+```

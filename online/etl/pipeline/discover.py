@@ -15,8 +15,10 @@ logger = logging.getLogger(__name__)
 
 # Same combined query from bq_extract.py, with per-day random sampling.
 # The all_target_prs CTE finds every PR the bot touched, grouped by first-seen day.
-# The sampled_prs CTE uses FARM_FINGERPRINT for deterministic pseudo-random ordering
+# The sampled_prs CTE uses RAND() for random ordering (different sample each run)
 # and keeps at most @max_prs_per_day PRs per day.
+# If the total PRs across all days is <= @max_prs_per_day, sampling is skipped
+# and all PRs are returned (no point sampling when we have fewer than the target).
 COMBINED_QUERY = """
 WITH raw_target_prs AS (
   SELECT
@@ -59,8 +61,9 @@ sampled_prs AS (
   SELECT *,
     ROW_NUMBER() OVER (
       PARTITION BY first_seen_day
-      ORDER BY FARM_FINGERPRINT(CONCAT(repo_name, '/', CAST(pr_number AS STRING)))
-    ) AS rn
+      ORDER BY RAND()
+    ) AS rn,
+    COUNT(*) OVER () AS total_prs
   FROM all_target_prs
 )
 SELECT
@@ -75,7 +78,7 @@ SELECT
 FROM `githubarchive.day.20*` e
 INNER JOIN sampled_prs t ON e.repo.name = t.repo_name
 WHERE
-  t.rn <= @max_prs_per_day
+  (t.total_prs <= @max_prs_per_day OR t.rn <= @max_prs_per_day)
   AND e._TABLE_SUFFIX BETWEEN @suffix_start AND @suffix_end
   AND (
     (CAST(JSON_EXTRACT_SCALAR(e.payload, '$.pull_request.number') AS INT64) = t.pr_number)
@@ -135,8 +138,9 @@ sampled_prs AS (
   SELECT *,
     ROW_NUMBER() OVER (
       PARTITION BY bot_username, first_seen_day
-      ORDER BY FARM_FINGERPRINT(CONCAT(repo_name, '/', CAST(pr_number AS STRING)))
-    ) AS rn
+      ORDER BY RAND()
+    ) AS rn,
+    COUNT(*) OVER (PARTITION BY bot_username) AS total_prs
   FROM all_target_prs
 )
 SELECT
@@ -152,7 +156,7 @@ SELECT
 FROM `githubarchive.day.20*` e
 INNER JOIN sampled_prs t ON e.repo.name = t.repo_name
 WHERE
-  t.rn <= @max_prs_per_day
+  (t.total_prs <= @max_prs_per_day OR t.rn <= @max_prs_per_day)
   AND e._TABLE_SUFFIX BETWEEN @suffix_start AND @suffix_end
   AND (
     (CAST(JSON_EXTRACT_SCALAR(e.payload, '$.pull_request.number') AS INT64) = t.pr_number)
@@ -212,7 +216,8 @@ async def discover_prs(
 ) -> int:
     """Run BQ discovery for a chatbot and insert new PRs into the database.
 
-    Randomly samples at most max_prs_per_day PRs per day (deterministic via FARM_FINGERPRINT).
+    Randomly samples at most max_prs_per_day PRs per day (different sample each run).
+    If the total PRs across all days is <= max_prs_per_day, all PRs are kept without sampling.
     Returns the number of new PRs inserted.
     """
     repo = PRRepository(db)
@@ -285,7 +290,7 @@ async def discover_prs(
             bot_events = [e for e in events if e.get("actor") == chatbot_username and e.get("created_at")]
             bot_reviewed_at = min(e["created_at"] for e in bot_events) if bot_events else None
 
-            await repo.insert_pr(
+            was_inserted = await repo.insert_pr(
                 chatbot_id=chatbot_id,
                 repo_name=repo_name,
                 pr_number=pr_number,
@@ -298,9 +303,10 @@ async def discover_prs(
                 bq_events=events,
                 bot_reviewed_at=bot_reviewed_at,
             )
-            inserted += 1
+            if was_inserted:
+                inserted += 1
 
-    logger.info(f"Discovered {len(events_by_key)} PRs, inserted {inserted} new")
+    logger.info(f"Discovered {len(events_by_key)} PRs, inserted {inserted} new ({total - inserted} already existed)")
     return inserted
 
 
@@ -395,7 +401,7 @@ async def discover_prs_batch(
             bot_events = [e for e in events if e.get("actor") == bot_username and e.get("created_at")]
             bot_reviewed_at = min(e["created_at"] for e in bot_events) if bot_events else None
 
-            await repo.insert_pr(
+            was_inserted = await repo.insert_pr(
                 chatbot_id=chatbot_id,
                 repo_name=repo_name,
                 pr_number=pr_number,
@@ -408,9 +414,11 @@ async def discover_prs_batch(
                 bq_events=events,
                 bot_reviewed_at=bot_reviewed_at,
             )
-            inserted += 1
+            if was_inserted:
+                inserted += 1
 
     logger.info(
-        f"Batch discovered {len(events_by_key)} PRs across {len(chatbot_usernames)} chatbots, inserted {inserted} new"
+        f"Batch discovered {len(events_by_key)} PRs across {len(chatbot_usernames)} chatbots, "
+        f"inserted {inserted} new ({total - inserted} already existed)"
     )
     return inserted

@@ -36,6 +36,7 @@ mod tests {
             no_date,
             chatbots: chatbot_infos,
             languages: lang_strs,
+            volumes: BTreeMap::new(),
         }
     }
 
@@ -85,7 +86,7 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
-    // filter_records tests
+    // apply_filters tests
     // -----------------------------------------------------------------------
 
     #[test]
@@ -104,9 +105,9 @@ mod tests {
             end_date: Some(date(2026, 2, 2)),
             ..Default::default()
         };
-        let result = filter_records(&snap, &params);
-        assert_eq!(result.len(), 1);
-        assert!((result[0].precision.unwrap() - 0.6).abs() < 0.001);
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 1);
+        assert!((result.records[0].1.precision.unwrap() - 0.6).abs() < 0.001);
     }
 
     #[test]
@@ -124,9 +125,9 @@ mod tests {
             chatbots: Some(vec!["bot2".to_string()]),
             ..Default::default()
         };
-        let result = filter_records(&snap, &params);
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].chatbot_idx, 1);
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 1);
+        assert_eq!(result.records[0].1.chatbot_idx, 1);
     }
 
     #[test]
@@ -151,8 +152,8 @@ mod tests {
             domains: Some(vec![Domain::Backend]),
             ..Default::default()
         };
-        let result = filter_records(&snap, &params);
-        assert_eq!(result.len(), 2);
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 2);
     }
 
     #[test]
@@ -177,8 +178,8 @@ mod tests {
             severities: Some(vec![Severity::High, Severity::Critical]),
             ..Default::default()
         };
-        let result = filter_records(&snap, &params);
-        assert_eq!(result.len(), 2);
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 2);
     }
 
     #[test]
@@ -207,9 +208,9 @@ mod tests {
             diff_lines_max: Some(2000),
             ..Default::default()
         };
-        let result = filter_records(&snap, &params);
+        let result = apply_filters(&snap, &params);
         // r1 (50) excluded by min, r2 (500) passes, r3 (3000) excluded by max, r4 (None) passes
-        assert_eq!(result.len(), 2);
+        assert_eq!(result.records.len(), 2);
     }
 
     // -----------------------------------------------------------------------
@@ -321,12 +322,14 @@ mod tests {
         let bot1 = resp.rows.iter().find(|r| r.chatbot == "bot1").unwrap();
         assert!((bot1.precision - 0.5).abs() < 0.001);
         assert!((bot1.recall - 0.7).abs() < 0.001);
-        assert_eq!(bot1.total_prs, 2);
+        assert_eq!(bot1.sampled_prs, 2);
+        assert_eq!(bot1.scored_prs, 2);
 
         // bot2: p=0.7, r=0.9
         let bot2 = resp.rows.iter().find(|r| r.chatbot == "bot2").unwrap();
         assert!((bot2.precision - 0.7).abs() < 0.001);
-        assert_eq!(bot2.total_prs, 1);
+        assert_eq!(bot2.sampled_prs, 1);
+        assert_eq!(bot2.scored_prs, 1);
     }
 
     #[test]
@@ -341,8 +344,8 @@ mod tests {
             ],
         );
         let params = FilterParams::default();
-        let result = filter_records(&snap, &params);
-        assert_eq!(result.len(), 3);
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 3);
     }
 
     #[test]
@@ -367,8 +370,8 @@ mod tests {
             languages: Some(vec!["rust".to_string()]),
             ..Default::default()
         };
-        let result = filter_records(&snap, &params);
-        assert_eq!(result.len(), 2);
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 2);
     }
 
     #[test]

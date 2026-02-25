@@ -41,7 +41,9 @@ tr:hover td{background:#f9f9f9}
   </div>
   <label>F-beta (&beta;)</label>
   <input type="number" id="beta" value="1.0" min="0.1" max="10" step="0.1">
-  <label>Min PRs per day</label>
+  <label>Min PRs (total)</label>
+  <input type="number" id="min-prs-total" value="0" min="0" step="1">
+  <label>Min PRs (per day)</label>
   <input type="number" id="min-prs" value="0" min="0" step="1">
   <label>Diff lines range</label>
   <div class="row">
@@ -59,6 +61,9 @@ tr:hover td{background:#f9f9f9}
   <h2>F&beta; Score Over Time</h2>
   <p class="caption">Null precision/recall treated as 0. All analyzed PRs included.</p>
   <div id="chart-fbeta" class="chart"></div>
+  <h2>PR Volume Over Time</h2>
+  <p class="caption">New unique PRs first reviewed per tool per day (from GitHub Archive).</p>
+  <div id="chart-volumes" class="chart"></div>
   <h2>Precision / Recall Explorer</h2>
   <p class="caption">One dot per chatbot, aggregated. Bubble size = PR count.</p>
   <div id="chart-scatter" class="chart"></div>
@@ -114,7 +119,7 @@ async function init(){
   $('#end-date').value=d.end;
   // Build initial color map from all chatbots
   assignColors(o.chatbots);
-  for(const id of['start-date','end-date','beta','min-prs','diff-min','diff-max'])
+  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
 }
@@ -125,6 +130,8 @@ function qs(){
   if(sd) p.set('start_date',sd);
   if(ed) p.set('end_date',ed);
   p.set('beta',$('#beta').value||'1.0');
+  const mpt=$('#min-prs-total').value;
+  if(mpt&&mpt!=='0') p.set('min_total_prs',mpt);
   const mp=$('#min-prs').value;
   if(mp&&mp!=='0') p.set('min_prs_per_day',mp);
   const dmin=$('#diff-min').value, dmax=$('#diff-max').value;
@@ -135,15 +142,29 @@ function qs(){
   return p.toString();
 }
 
+function volumeQs(){
+  const p=new URLSearchParams();
+  const sd=$('#start-date').value, ed=$('#end-date').value;
+  if(sd) p.set('start_date',sd);
+  if(ed) p.set('end_date',ed);
+  const bots=checked('cb-bot');
+  if(bots.length) p.set('chatbot',bots.join(','));
+  const mpt=$('#min-prs-total').value;
+  if(mpt&&mpt!=='0') p.set('min_total_prs',mpt);
+  return p.toString();
+}
+
 let seq=0;
 async function refresh(){
-  const id=++seq, q=qs();
-  const [m,lb]=await Promise.all([
+  const id=++seq, q=qs(), vq=volumeQs();
+  const [m,lb,vol]=await Promise.all([
     fetch('/api/daily-metrics?'+q).then(r=>r.json()),
     fetch('/api/leaderboard?'+q).then(r=>r.json()),
+    fetch('/api/volumes?'+vq).then(r=>r.json()),
   ]);
   if(id!==seq) return;
   renderFbeta(m);
+  renderVolumes(vol);
   renderScatter(lb);
   renderTable(lb);
 }
@@ -177,14 +198,41 @@ function renderFbeta(data){
   },{responsive:true});
 }
 
+function renderVolumes(data){
+  const traces=[];
+  const byBot={};
+  for(const r of data.series){
+    if(!byBot[r.chatbot]) byBot[r.chatbot]={x:[],y:[]};
+    const t=byBot[r.chatbot];
+    t.x.push(r.date);
+    t.y.push(r.pr_count);
+  }
+  for(const [name,d] of Object.entries(byBot)){
+    traces.push({
+      x:d.x, y:d.y,
+      name, mode:'lines+markers', type:'scatter',
+      marker:{color:botColorMap[name]||'#999'},
+      line:{color:botColorMap[name]||'#999'},
+    });
+  }
+  Plotly.newPlot('chart-volumes',traces,{
+    title:'PRs Reviewed Per Day',
+    yaxis:{title:'PR Count'},
+    xaxis:{title:'Date',tickformat:'%Y-%m-%d'},
+    hovermode:'x unified',
+    margin:{t:40,b:40,l:50,r:20},
+    legend:{orientation:'h',y:-0.2},
+  },{responsive:true});
+}
+
 function renderScatter(data){
   if(!data.rows.length){Plotly.purge('chart-scatter');return;}
-  const maxPrs=Math.max(...data.rows.map(r=>r.total_prs));
+  const maxPrs=Math.max(...data.rows.map(r=>r.sampled_prs));
   const traces=data.rows.map(r=>({
     x:[r.precision], y:[r.recall],
-    text:[`${r.chatbot}<br>F:${r.f_score!=null?r.f_score.toFixed(3):'—'} n:${r.total_prs}`],
+    text:[`${r.chatbot}<br>F:${r.f_score!=null?r.f_score.toFixed(3):'—'} sampled:${r.sampled_prs} scored:${r.scored_prs} total:${r.total_prs}`],
     name:r.chatbot,
-    marker:{size:[10+40*r.total_prs/maxPrs], color:botColorMap[r.chatbot]||'#999'},
+    marker:{size:[10+40*r.sampled_prs/maxPrs], color:botColorMap[r.chatbot]||'#999'},
     mode:'markers', type:'scatter', hoverinfo:'text',
     showlegend:false,
   }));
@@ -200,10 +248,10 @@ function renderScatter(data){
 
 function renderTable(data){
   const b=$('#beta').value||'1.0';
-  let h=`<table><thead><tr><th>Chatbot</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">F${b}</th><th class="n">PRs</th></tr></thead><tbody>`;
+  let h=`<table><thead><tr><th>Chatbot</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">F${b}</th><th class="n">Sampled</th><th class="n">Scored</th><th class="n">Total PRs</th></tr></thead><tbody>`;
   for(const r of data.rows){
     const c=botColorMap[r.chatbot]||'#999';
-    h+=`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:6px"></span>${r.chatbot}</td><td class="n">${r.precision.toFixed(4)}</td><td class="n">${r.recall.toFixed(4)}</td><td class="n">${r.f_score!=null?r.f_score.toFixed(4):'—'}</td><td class="n">${r.total_prs}</td></tr>`;
+    h+=`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:6px"></span>${r.chatbot}</td><td class="n">${r.precision.toFixed(4)}</td><td class="n">${r.recall.toFixed(4)}</td><td class="n">${r.f_score!=null?r.f_score.toFixed(4):'—'}</td><td class="n">${r.sampled_prs}</td><td class="n">${r.scored_prs}</td><td class="n">${r.total_prs}</td></tr>`;
   }
   h+='</tbody></table>';
   $('#leaderboard').innerHTML=h;

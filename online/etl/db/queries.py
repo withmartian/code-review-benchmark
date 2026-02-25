@@ -24,6 +24,7 @@ INSERT_PR = """
                      pr_created_at, pr_merged, status, bq_events, bot_reviewed_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     ON CONFLICT (chatbot_id, repo_name, pr_number) DO NOTHING
+    RETURNING id
 """
 
 GET_PR = """
@@ -243,6 +244,15 @@ GET_ALL_ANALYZED_NOT_LABELED_SINCE = """
       AND p.bot_reviewed_at >= $1
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
     LIMIT $2
+"""
+
+# -- PR volumes ----------------------------------------------------------------
+
+UPSERT_PR_VOLUME = """
+    INSERT INTO pr_volumes (chatbot_id, date, pr_count)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (chatbot_id, date) DO UPDATE SET
+        pr_count = $3, created_at = CURRENT_TIMESTAMP
 """
 
 # -- Dashboard queries ---------------------------------------------------------

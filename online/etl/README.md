@@ -127,6 +127,25 @@ uv run python main.py label --all
 uv run python main.py label --chatbot "coderabbitai[bot]" --since 7d
 ```
 
+### Fetch PR volumes from BigQuery
+
+```bash
+# All chatbots, last 7 days
+uv run python main.py volumes --all --days-back 7
+
+# All chatbots, specific date range
+uv run python main.py volumes --all \
+  --start-date 2025-01-01 \
+  --end-date 2026-02-25
+
+# Single chatbot
+uv run python main.py volumes \
+  --chatbot "coderabbitai[bot]" \
+  --days-back 30
+```
+
+Queries `githubarchive.day.*` for all PR-related events (reviews, review comments, issue comments on PRs), assigns each unique PR to the first day the bot touched it, and upserts daily counts into the `pr_volumes` table. Each PR is counted exactly once so summing daily counts gives the true unique total — this ensures total PRs >= sampled PRs holds in the leaderboard. Days with no activity for a bot are zero-filled by the API service.
+
 ### Import legacy filesystem data
 
 ```bash

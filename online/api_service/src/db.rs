@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::postgres::PgPoolOptions;
 use tracing::info;
 
@@ -33,11 +33,24 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
     .fetch_all(&pool)
     .await?;
 
+    // Load PR volumes
+    let volume_rows = sqlx::query_as::<_, VolumeRawRow>(
+        r#"
+        SELECT pv.chatbot_id, pv.date, pv.pr_count,
+               c.github_username, c.display_name
+        FROM pr_volumes pv
+        JOIN chatbots c ON pv.chatbot_id = c.id
+        ORDER BY pv.date ASC
+        "#,
+    )
+    .fetch_all(&pool)
+    .await?;
+
     pool.close().await;
 
-    info!("Loaded {} rows from Postgres", rows.len());
+    info!("Loaded {} analysis rows, {} volume rows from Postgres", rows.len(), volume_rows.len());
 
-    build_snapshot(rows)
+    build_snapshot(rows, volume_rows)
 }
 
 #[derive(sqlx::FromRow)]
@@ -52,7 +65,16 @@ struct RawRow {
     pr_labels_json: Option<String>,
 }
 
-fn build_snapshot(rows: Vec<RawRow>) -> anyhow::Result<Snapshot> {
+#[derive(sqlx::FromRow)]
+struct VolumeRawRow {
+    chatbot_id: i32,
+    date: String,
+    pr_count: i32,
+    github_username: String,
+    display_name: Option<String>,
+}
+
+fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>) -> anyhow::Result<Snapshot> {
     let mut chatbot_map: HashMap<i32, u8> = HashMap::new();
     let mut chatbots: Vec<ChatbotInfo> = Vec::new();
     let mut language_map: HashMap<String, u16> = HashMap::new();
@@ -108,13 +130,35 @@ fn build_snapshot(rows: Vec<RawRow>) -> anyhow::Result<Snapshot> {
     let has_severity: usize = by_date.values().flat_map(|v| v.iter()).chain(no_date.iter())
         .filter(|r| r.severity.is_some()).count();
 
+    // Build volumes BTreeMap, reusing chatbot_map when possible
+    let mut volumes: BTreeMap<NaiveDate, Vec<VolumeRecord>> = BTreeMap::new();
+    for vrow in &volume_rows {
+        let date = match NaiveDate::parse_from_str(&vrow.date, "%Y-%m-%d") {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+        let chatbot_idx = *chatbot_map.entry(vrow.chatbot_id).or_insert_with(|| {
+            let idx = chatbots.len() as u8;
+            chatbots.push(ChatbotInfo {
+                github_username: vrow.github_username.clone(),
+                display_name: vrow.display_name.clone().unwrap_or_else(|| vrow.github_username.clone()),
+            });
+            idx
+        });
+        volumes.entry(date).or_default().push(VolumeRecord {
+            chatbot_idx,
+            pr_count: vrow.pr_count as u32,
+        });
+    }
+
     info!(
-        "Built snapshot: {} records, {} chatbots, {} languages, {} dates, {} no-date | labels: {}/{} have domain, {}/{} have severity",
+        "Built snapshot: {} records, {} chatbots, {} languages, {} dates, {} no-date, {} volume dates | labels: {}/{} have domain, {}/{} have severity",
         total_records,
         chatbots.len(),
         languages.len(),
         by_date.len(),
         no_date.len(),
+        volumes.len(),
         has_domain, total_records,
         has_severity, total_records,
     );
@@ -124,6 +168,7 @@ fn build_snapshot(rows: Vec<RawRow>) -> anyhow::Result<Snapshot> {
         no_date,
         chatbots,
         languages,
+        volumes,
     })
 }
 
@@ -145,7 +190,8 @@ fn parse_labels(
     let language = obj
         .get("language")
         .and_then(|v| v.as_str())
-        .map(|s| s.to_lowercase())
+        .map(|s| s.trim().to_lowercase())
+        .filter(|s| !s.is_empty())
         .map(|s| {
             let len = languages.len() as u16;
             *language_map.entry(s.clone()).or_insert_with(|| {

@@ -198,6 +198,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_lbl.add_argument("--database-url")
     p_lbl.add_argument("--verbose", action="store_true")
 
+    # volumes
+    p_vol = sub.add_parser("volumes", help="Fetch PR volume counts from BigQuery")
+    p_vol.add_argument("--chatbot", help="GitHub username of the chatbot")
+    p_vol.add_argument(
+        "--all", action="store_true", dest="all_chatbots", help="Fetch volumes for all registered chatbots"
+    )
+    p_vol.add_argument("--days-back", type=int, default=7)
+    p_vol.add_argument("--start-date", help="YYYY-MM-DD")
+    p_vol.add_argument("--end-date", help="YYYY-MM-DD")
+    p_vol.add_argument("--database-url", help="Override DATABASE_URL")
+    p_vol.add_argument("--gcp-project", help="Override GCP_PROJECT")
+    p_vol.add_argument("--verbose", action="store_true")
+
     # backfill
     p_bf = sub.add_parser("backfill", help="Backfill computed columns (e.g. diff_lines)")
     p_bf.add_argument("--database-url")
@@ -452,6 +465,47 @@ async def cmd_label(args: argparse.Namespace) -> None:
         await db.close()
 
 
+async def cmd_volumes(args: argparse.Namespace) -> None:
+    from datetime import datetime
+    from datetime import timedelta
+
+    from db.connection import DBAdapter
+    from db.repository import PRRepository
+    from db.schema import create_tables
+    from pipeline.volumes import fetch_pr_volumes
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+    if args.gcp_project:
+        cfg.gcp_project = args.gcp_project
+
+    end_date = args.end_date or datetime.now(UTC).strftime("%Y-%m-%d")
+    start_date = args.start_date or (datetime.now(UTC) - timedelta(days=args.days_back)).strftime("%Y-%m-%d")
+
+    if not args.chatbot and not args.all_chatbots:
+        logger.error("Specify --chatbot or --all")
+        return
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        if args.all_chatbots:
+            repo = PRRepository(db)
+            chatbots = await repo.get_all_chatbots()
+            db_usernames = {bot["github_username"] for bot in chatbots}
+            usernames = sorted(db_usernames | set(DEFAULT_CHATBOT_USERNAMES))
+        else:
+            usernames = [args.chatbot]
+
+        logger.info(f"Fetching PR volumes for {len(usernames)} chatbot(s): {start_date} to {end_date}")
+        count = await fetch_pr_volumes(cfg, db, usernames, start_date, end_date)
+        logger.info(f"Done: {count} volume rows upserted")
+    finally:
+        await db.close()
+
+
 async def cmd_backfill(args: argparse.Namespace) -> None:
     from db.connection import DBAdapter
     from db.repository import PRRepository
@@ -531,6 +585,8 @@ def main() -> None:
         asyncio.run(cmd_analyze(args))
     elif args.command == "label":
         asyncio.run(cmd_label(args))
+    elif args.command == "volumes":
+        asyncio.run(cmd_volumes(args))
     elif args.command == "backfill":
         asyncio.run(cmd_backfill(args))
     elif args.command == "import":

@@ -96,6 +96,16 @@ pub struct PrRecord {
 }
 
 // ---------------------------------------------------------------------------
+// VolumeRecord — one per chatbot per date (from pr_volumes table)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct VolumeRecord {
+    pub chatbot_idx: u8,
+    pub pr_count: u32,
+}
+
+// ---------------------------------------------------------------------------
 // Snapshot — immutable in-memory dataset
 // ---------------------------------------------------------------------------
 
@@ -111,6 +121,7 @@ pub struct Snapshot {
     pub no_date: Vec<PrRecord>,
     pub chatbots: Vec<ChatbotInfo>,
     pub languages: Vec<String>,
+    pub volumes: BTreeMap<NaiveDate, Vec<VolumeRecord>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +141,7 @@ pub struct FilterParams {
     pub diff_lines_max: Option<u32>,
     pub beta: f32,
     pub min_prs_per_day: usize,
+    pub min_total_prs: usize,
 }
 
 impl Default for FilterParams {
@@ -146,6 +158,7 @@ impl Default for FilterParams {
             diff_lines_max: None,
             beta: 1.0,
             min_prs_per_day: 0,
+            min_total_prs: 0,
         }
     }
 }
@@ -176,7 +189,9 @@ pub struct LeaderboardRow {
     pub precision: f64,
     pub recall: f64,
     pub f_score: Option<f64>,
-    pub total_prs: usize,
+    pub sampled_prs: usize,
+    pub scored_prs: usize,
+    pub total_prs: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -193,4 +208,17 @@ pub struct FilterOptionsResponse {
     pub severities: Vec<String>,
     pub first_date: Option<String>,
     pub last_date: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct VolumeRow {
+    pub date: NaiveDate,
+    pub chatbot: String,
+    pub pr_count: u32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct VolumesResponse {
+    pub chatbots: Vec<String>,
+    pub series: Vec<VolumeRow>,
 }

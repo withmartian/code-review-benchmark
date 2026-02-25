@@ -36,6 +36,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/options", get(handlers::options_handler))
         .route("/api/daily-metrics", get(handlers::daily_metrics))
         .route("/api/leaderboard", get(handlers::leaderboard_handler))
+        .route("/api/volumes", get(handlers::volumes_handler))
         .route("/up", get(|| async { "ok" }))
         .layer(CorsLayer::permissive())
         .with_state(state);

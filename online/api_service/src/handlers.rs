@@ -25,6 +25,7 @@ pub struct MetricsQuery {
     pub diff_lines_max: Option<u32>,
     pub beta: Option<f32>,
     pub min_prs_per_day: Option<usize>,
+    pub min_total_prs: Option<usize>,
 }
 
 fn parse_date(s: &str) -> Option<NaiveDate> {
@@ -66,6 +67,7 @@ fn to_filter_params(q: &MetricsQuery) -> FilterParams {
         diff_lines_max: q.diff_lines_max,
         beta: q.beta.unwrap_or(1.0),
         min_prs_per_day: q.min_prs_per_day.unwrap_or(0),
+        min_total_prs: q.min_total_prs.unwrap_or(0),
     }
 }
 
@@ -106,6 +108,15 @@ pub async fn options_handler(
     State(snapshot): State<AppState>,
 ) -> Json<FilterOptionsResponse> {
     Json(compute::filter_options(&snapshot))
+}
+
+pub async fn volumes_handler(
+    State(snapshot): State<AppState>,
+    Query(query): Query<MetricsQuery>,
+) -> Json<VolumesResponse> {
+    info!(?query, "volumes request");
+    let params = to_filter_params(&query);
+    Json(compute::pr_volumes(&snapshot, &params))
 }
 
 pub async fn dashboard() -> Html<&'static str> {

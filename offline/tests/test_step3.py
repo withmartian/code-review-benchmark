@@ -14,7 +14,7 @@ from code_review_benchmark import step3_judge_comments as step3
 def test_get_candidates_prefers_cached():
     cached = {
         "https://example/pr": {
-            "tool-a": [{"text": "cached comment"}],
+            "tool-a": [{"text": "cached comment"}, {"text": "/propel review"}],
         }
     }
     review = {"tool": "tool-a", "review_comments": [{"body": "raw"}]}
@@ -25,7 +25,7 @@ def test_get_candidates_prefers_cached():
 
 def test_get_candidates_fallback_to_comments():
     cached = {}
-    review = {"tool": "tool-b", "review_comments": [{"body": "first"}, {"body": "second"}]}
+    review = {"tool": "tool-b", "review_comments": [{"body": "first"}, {"body": "/propel review"}, {"body": "second"}]}
     result = step3.get_candidates(review, cached, "https://example/pr")
     assert result == ["first", "second"]
 
@@ -76,6 +76,32 @@ def test_evaluate_review_no_candidates():
     assert result["fn"] == 1
     assert result["precision"] == 0.0
     assert result["recall"] == 0.0
+
+
+def test_evaluate_review_ignores_propel_review_candidate(monkeypatch):
+    golden_comments = [{"comment": "Issue A", "severity": "High"}]
+    candidates = ["/propel review", "Issue A fix"]
+
+    responses = [
+        {"match": True, "confidence": 0.9, "reasoning": "same"},
+    ]
+
+    async def fake_process(tasks):
+        results = []
+        for task in tasks:
+            results.append(await task)
+        return results
+
+    monkeypatch.setattr(step3, "process_batch", fake_process)
+
+    class DummyJudge:
+        async def match_comment(self, _golden_comment, _candidate):
+            return responses.pop(0)
+
+    result = asyncio.run(step3.evaluate_review(DummyJudge(), golden_comments, candidates))
+    assert result["total_candidates"] == 1
+    assert result["fp"] == 0
+    assert result["precision"] == 1.0
 
 
 def test_evaluation_state_roundtrip(tmp_path):

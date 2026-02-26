@@ -139,9 +139,12 @@ pub fn apply_filters<'a>(snapshot: &'a Snapshot, params: &FilterParams) -> Filte
     // 1. Volume totals (needed for min_total_prs check + leaderboard total_prs column)
     let vol = volume_totals(snapshot, params);
 
-    // 2. Eligible chatbots: name filter + min_total_prs threshold
+    // 2. Eligible chatbots: ignored filter + name filter + min_total_prs threshold
     let eligible: HashSet<u8> = (0..snapshot.chatbots.len() as u8)
         .filter(|&idx| {
+            if !params.include_ignored && snapshot.chatbots[idx as usize].ignored {
+                return false;
+            }
             if !chatbot_name_matches(idx, snapshot, params) {
                 return false;
             }
@@ -417,10 +420,12 @@ pub fn pr_volumes(snapshot: &Snapshot, params: &FilterParams) -> VolumesResponse
 }
 
 /// Extract available filter options from the snapshot.
+/// Excluded ignored chatbots from the options list.
 pub fn filter_options(snapshot: &Snapshot) -> FilterOptionsResponse {
     let chatbots: Vec<String> = snapshot
         .chatbots
         .iter()
+        .filter(|c| !c.ignored)
         .map(|c| c.github_username.clone())
         .collect();
 

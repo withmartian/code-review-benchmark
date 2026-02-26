@@ -26,6 +26,7 @@ pub struct MetricsQuery {
     pub beta: Option<f32>,
     pub min_prs_per_day: Option<usize>,
     pub min_total_prs: Option<usize>,
+    pub include_ignored: Option<bool>,
 }
 
 fn parse_date(s: &str) -> Option<NaiveDate> {
@@ -68,6 +69,7 @@ fn to_filter_params(q: &MetricsQuery) -> FilterParams {
         beta: q.beta.unwrap_or(1.0),
         min_prs_per_day: q.min_prs_per_day.unwrap_or(0),
         min_total_prs: q.min_total_prs.unwrap_or(0),
+        include_ignored: q.include_ignored.unwrap_or(false),
     }
 }
 

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::postgres::PgPoolOptions;
@@ -33,6 +33,16 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
     .fetch_all(&pool)
     .await?;
 
+    // Load ignored tools
+    let ignored_rows: Vec<(String,)> = sqlx::query_as(
+        "SELECT github_username FROM ignored_tools",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_default();
+    let ignored_usernames: HashSet<String> = ignored_rows.into_iter().map(|(u,)| u).collect();
+    info!("Loaded {} ignored tools", ignored_usernames.len());
+
     // Load PR volumes
     let volume_rows = sqlx::query_as::<_, VolumeRawRow>(
         r#"
@@ -50,7 +60,7 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
 
     info!("Loaded {} analysis rows, {} volume rows from Postgres", rows.len(), volume_rows.len());
 
-    build_snapshot(rows, volume_rows)
+    build_snapshot(rows, volume_rows, &ignored_usernames)
 }
 
 #[derive(sqlx::FromRow)]
@@ -74,7 +84,7 @@ struct VolumeRawRow {
     display_name: Option<String>,
 }
 
-fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>) -> anyhow::Result<Snapshot> {
+fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_usernames: &HashSet<String>) -> anyhow::Result<Snapshot> {
     let mut chatbot_map: HashMap<i32, u8> = HashMap::new();
     let mut chatbots: Vec<ChatbotInfo> = Vec::new();
     let mut language_map: HashMap<String, u16> = HashMap::new();
@@ -90,6 +100,7 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>) -> anyhow::
             chatbots.push(ChatbotInfo {
                 github_username: row.github_username.clone(),
                 display_name: row.display_name.clone().unwrap_or_else(|| row.github_username.clone()),
+                ignored: ignored_usernames.contains(&row.github_username),
             });
             idx
         });
@@ -142,6 +153,7 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>) -> anyhow::
             chatbots.push(ChatbotInfo {
                 github_username: vrow.github_username.clone(),
                 display_name: vrow.display_name.clone().unwrap_or_else(|| vrow.github_username.clone()),
+                ignored: ignored_usernames.contains(&vrow.github_username),
             });
             idx
         });

@@ -11,13 +11,24 @@ use axum::Router;
 use axum::routing::get;
 use tower_http::cors::CorsLayer;
 use tracing::info;
+use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse()?))
-        .init();
+    let filter = EnvFilter::from_default_env().add_directive("info".parse()?);
+
+    // Cloud Run sets K_SERVICE — use structured JSON there, human-readable locally
+    if std::env::var("K_SERVICE").is_ok() {
+        tracing_subscriber::registry()
+            .with(filter)
+            .with(tracing_stackdriver::layer())
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .init();
+    }
 
     let database_url =
         std::env::var("DATABASE_URL").expect("DATABASE_URL environment variable required");

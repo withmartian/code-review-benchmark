@@ -16,6 +16,7 @@ mod tests {
             .map(|(user, display)| ChatbotInfo {
                 github_username: user.to_string(),
                 display_name: display.to_string(),
+                ignored: false,
             })
             .collect();
         let lang_strs: Vec<String> = languages.into_iter().map(|s| s.to_string()).collect();

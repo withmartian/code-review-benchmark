@@ -113,6 +113,7 @@ pub struct VolumeRecord {
 pub struct ChatbotInfo {
     pub github_username: String,
     pub display_name: String,
+    pub ignored: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -142,6 +143,7 @@ pub struct FilterParams {
     pub beta: f32,
     pub min_prs_per_day: usize,
     pub min_total_prs: usize,
+    pub include_ignored: bool,
 }
 
 impl Default for FilterParams {
@@ -159,6 +161,7 @@ impl Default for FilterParams {
             beta: 1.0,
             min_prs_per_day: 0,
             min_total_prs: 0,
+            include_ignored: false,
         }
     }
 }

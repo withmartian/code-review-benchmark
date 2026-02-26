@@ -15,7 +15,12 @@ from tqdm import tqdm
 
 # GitHub API allows ~30 concurrent requests, stay conservative
 MAX_WORKERS = 15
-IGNORED_COMMAND_COMMENTS = {"/propel review"}
+IGNORED_COMMAND_COMMENTS = {
+    "/propel review",
+    "baz review",
+    "bugbot review",
+    "@greptile",
+}
 
 
 def load_dotenv(filepath: str = ".env") -> None:

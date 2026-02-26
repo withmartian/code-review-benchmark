@@ -14,7 +14,13 @@ from code_review_benchmark import step3_judge_comments as step3
 def test_get_candidates_prefers_cached():
     cached = {
         "https://example/pr": {
-            "tool-a": [{"text": "cached comment"}, {"text": "/propel review"}],
+            "tool-a": [
+                {"text": "cached comment"},
+                {"text": "/propel review"},
+                {"text": "Baz review"},
+                {"text": "Bugbot review"},
+                {"text": "@greptile"},
+            ],
         }
     }
     review = {"tool": "tool-a", "review_comments": [{"body": "raw"}]}
@@ -25,7 +31,17 @@ def test_get_candidates_prefers_cached():
 
 def test_get_candidates_fallback_to_comments():
     cached = {}
-    review = {"tool": "tool-b", "review_comments": [{"body": "first"}, {"body": "/propel review"}, {"body": "second"}]}
+    review = {
+        "tool": "tool-b",
+        "review_comments": [
+            {"body": "first"},
+            {"body": "/propel review"},
+            {"body": "Baz review"},
+            {"body": "Bugbot review"},
+            {"body": "@greptile"},
+            {"body": "second"},
+        ],
+    }
     result = step3.get_candidates(review, cached, "https://example/pr")
     assert result == ["first", "second"]
 

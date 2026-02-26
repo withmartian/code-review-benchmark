@@ -23,7 +23,12 @@ BENCHMARK_DATA_FILE = RESULTS_DIR / "benchmark_data.json"
 BATCH_SIZE = 40
 LLM_CALL_TIMEOUT = 30  # seconds per individual LLM call
 REVIEW_TIMEOUT = 1800  # seconds per full review evaluation (30 min)
-IGNORED_COMMAND_COMMENTS = {"/propel review"}
+IGNORED_COMMAND_COMMENTS = {
+    "/propel review",
+    "baz review",
+    "bugbot review",
+    "@greptile",
+}
 
 
 JUDGE_PROMPT = """You are evaluating AI code review tools.

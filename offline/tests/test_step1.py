@@ -72,6 +72,9 @@ def test_fetch_review_comments(monkeypatch):
         [
             {"body": "issue", "created_at": "2024-01-01"},
             {"body": "/propel review", "created_at": "2024-01-01"},
+            {"body": "Baz review", "created_at": "2024-01-01"},
+            {"body": "Bugbot review", "created_at": "2024-01-01"},
+            {"body": "@greptile", "created_at": "2024-01-01"},
         ],
     ]
 

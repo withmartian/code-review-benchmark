@@ -73,6 +73,7 @@ DEFAULT_CHATBOT_USERNAMES = [
     "coderabbitai[bot]",
     "Copilot",
     "cursor[bot]",
+    "devin-ai-integration[bot]",
     "entelligence-ai-pr-reviews[bot]",
     "factory-droid[bot]",
     "gemini-code-assist[bot]",

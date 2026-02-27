@@ -175,7 +175,7 @@ We welcome contributions — new tools, better golden comments, improved judge p
 If you use this benchmark in your research or product evaluation, please cite:
 
 ```bibtex
-@software{code_review_benchmark,
+@misc{code_review_benchmark,
   title   = {Code Review Bench},
   author  = {Aleksandr Zverianskii, Jacob Clyne, Antía Garcia, Fazl Barez, Shriyash Upadhyay},
   url     = {https://github.com/withmartian/code-review-benchmark},

@@ -15,6 +15,12 @@ from tqdm import tqdm
 
 # GitHub API allows ~30 concurrent requests, stay conservative
 MAX_WORKERS = 15
+IGNORED_COMMAND_COMMENTS = {
+    "/propel review",
+    "baz review",
+    "bugbot review",
+    "@greptile",
+}
 
 
 def load_dotenv(filepath: str = ".env") -> None:
@@ -32,6 +38,14 @@ def load_dotenv(filepath: str = ".env") -> None:
                 key = key.strip()
                 value = value.strip().strip("'\"")
                 os.environ.setdefault(key, value)
+
+
+def is_ignored_comment_body(body: str | None) -> bool:
+    """True when the text is a non-review command that should not be evaluated."""
+    if not body:
+        return False
+    normalized = " ".join(body.strip().split()).lower()
+    return normalized in IGNORED_COMMAND_COMMENTS
 
 
 def gh(args: list[str]) -> dict | list:
@@ -104,10 +118,13 @@ def fetch_review_comments(org: str, repo: str, pr: int) -> list[dict]:
     try:
         review_comments = gh(["api", f"/repos/{org}/{repo}/pulls/{pr}/comments"])
         for c in review_comments:
+            body = c.get("body")
+            if is_ignored_comment_body(body):
+                continue
             comments.append({
                 "path": c.get("path"),
                 "line": c.get("line") or c.get("original_line"),
-                "body": c.get("body"),
+                "body": body,
                 "created_at": c.get("created_at"),
             })
     except subprocess.CalledProcessError:
@@ -117,11 +134,12 @@ def fetch_review_comments(org: str, repo: str, pr: int) -> list[dict]:
     try:
         reviews = gh(["api", f"/repos/{org}/{repo}/pulls/{pr}/reviews"])
         for r in reviews:
-            if r.get("body"):
+            body = r.get("body")
+            if body and not is_ignored_comment_body(body):
                 comments.append({
                     "path": None,
                     "line": None,
-                    "body": r.get("body"),
+                    "body": body,
                     "created_at": r.get("submitted_at"),
                 })
     except subprocess.CalledProcessError:
@@ -131,10 +149,13 @@ def fetch_review_comments(org: str, repo: str, pr: int) -> list[dict]:
     try:
         issue_comments = gh(["api", f"/repos/{org}/{repo}/issues/{pr}/comments"])
         for c in issue_comments:
+            body = c.get("body")
+            if is_ignored_comment_body(body):
+                continue
             comments.append({
                 "path": None,
                 "line": None,
-                "body": c.get("body"),
+                "body": body,
                 "created_at": c.get("created_at"),
             })
     except subprocess.CalledProcessError:

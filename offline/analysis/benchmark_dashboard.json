@@ -257,7 +257,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 1
             },
             "copilot": {
@@ -267,7 +267,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 1
             },
             "greptile": {
@@ -507,7 +507,7 @@
             },
             "greptile": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "baz": {
@@ -542,7 +542,7 @@
           "tool_metrics": {
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "gemini": {
@@ -947,7 +947,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "augment": {
@@ -957,7 +957,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -1247,7 +1247,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 3
             },
             "augment": {
@@ -1472,7 +1472,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "augment": {
@@ -1482,7 +1482,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -1632,7 +1632,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -1697,7 +1697,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "augment": {
@@ -1782,7 +1782,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -1857,7 +1857,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 1
             },
             "coderabbit": {
@@ -2007,7 +2007,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -2157,7 +2157,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 5
             },
             "coderabbit": {
@@ -2232,7 +2232,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -2302,12 +2302,12 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -3037,7 +3037,7 @@
             },
             "bugbot": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "copilot": {
@@ -3582,7 +3582,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 4
             },
             "coderabbit": {
@@ -3732,7 +3732,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -3862,20 +3862,20 @@
           "num_prs": 50
         },
         "bugbot": {
-          "precision": 46.2,
+          "precision": 46.5,
           "recall": 43.8,
-          "f1": 44.9,
+          "f1": 45.1,
           "tp": 60,
-          "fp": 70,
+          "fp": 69,
           "fn": 77,
           "num_prs": 50
         },
         "propel": {
-          "precision": 46.0,
+          "precision": 48.6,
           "recall": 38.0,
-          "f1": 41.6,
+          "f1": 42.6,
           "tp": 52,
-          "fp": 61,
+          "fp": 55,
           "fn": 85,
           "num_prs": 50
         },
@@ -3907,20 +3907,20 @@
           "num_prs": 50
         },
         "baz": {
-          "precision": 44.0,
+          "precision": 51.3,
           "recall": 29.2,
-          "f1": 35.1,
+          "f1": 37.2,
           "tp": 40,
-          "fp": 51,
+          "fp": 38,
           "fn": 97,
           "num_prs": 50
         },
         "greptile": {
-          "precision": 38.4,
+          "precision": 38.7,
           "recall": 38.7,
-          "f1": 38.5,
+          "f1": 38.7,
           "tp": 53,
-          "fp": 85,
+          "fp": 84,
           "fn": 84,
           "num_prs": 50
         },
@@ -4201,7 +4201,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 1
             },
             "copilot": {
@@ -4211,7 +4211,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 1
             },
             "greptile": {
@@ -4451,7 +4451,7 @@
             },
             "greptile": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "baz": {
@@ -4486,7 +4486,7 @@
           "tool_metrics": {
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "gemini": {
@@ -4891,7 +4891,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "augment": {
@@ -4901,7 +4901,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -5191,7 +5191,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 3
             },
             "augment": {
@@ -5416,7 +5416,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "augment": {
@@ -5426,7 +5426,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -5576,7 +5576,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -5641,7 +5641,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "augment": {
@@ -5726,7 +5726,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -5801,7 +5801,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 1
             },
             "coderabbit": {
@@ -5951,7 +5951,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -6101,7 +6101,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 5
             },
             "coderabbit": {
@@ -6176,7 +6176,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -6246,12 +6246,12 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -6981,7 +6981,7 @@
             },
             "bugbot": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "copilot": {
@@ -7526,7 +7526,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 4
             },
             "coderabbit": {
@@ -7676,7 +7676,7 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 1,
+              "fp": 0,
               "fn": 2
             },
             "coderabbit": {
@@ -7806,20 +7806,20 @@
           "num_prs": 50
         },
         "bugbot": {
-          "precision": 38.3,
+          "precision": 38.6,
           "recall": 43.1,
-          "f1": 40.5,
+          "f1": 40.7,
           "tp": 59,
-          "fp": 95,
+          "fp": 94,
           "fn": 78,
           "num_prs": 50
         },
         "propel": {
-          "precision": 38.9,
+          "precision": 40.8,
           "recall": 37.2,
-          "f1": 38.1,
+          "f1": 38.9,
           "tp": 51,
-          "fp": 80,
+          "fp": 74,
           "fn": 86,
           "num_prs": 50
         },
@@ -7851,20 +7851,20 @@
           "num_prs": 50
         },
         "baz": {
-          "precision": 34.6,
+          "precision": 39.4,
           "recall": 27.0,
-          "f1": 30.3,
+          "f1": 32.0,
           "tp": 37,
-          "fp": 70,
+          "fp": 57,
           "fn": 100,
           "num_prs": 50
         },
         "greptile": {
-          "precision": 33.8,
+          "precision": 34.0,
           "recall": 36.5,
-          "f1": 35.1,
+          "f1": 35.2,
           "tp": 50,
-          "fp": 98,
+          "fp": 97,
           "fn": 87,
           "num_prs": 50
         },
@@ -8437,7 +8437,7 @@
       "description": "Significant impact, potential data loss. Auth and access control.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "bugbot",
-      "best_score": 49.1
+      "best_score": 51.2
     },
     {
       "id": "concern_security",

@@ -23,6 +23,12 @@ BENCHMARK_DATA_FILE = RESULTS_DIR / "benchmark_data.json"
 BATCH_SIZE = 40
 LLM_CALL_TIMEOUT = 30  # seconds per individual LLM call
 REVIEW_TIMEOUT = 1800  # seconds per full review evaluation (30 min)
+IGNORED_COMMAND_COMMENTS = {
+    "/propel review",
+    "baz review",
+    "bugbot review",
+    "@greptile",
+}
 
 
 JUDGE_PROMPT = """You are evaluating AI code review tools.
@@ -96,6 +102,14 @@ def get_model_dir() -> Path:
     model_dir = RESULTS_DIR / sanitize_model_name(model)
     model_dir.mkdir(parents=True, exist_ok=True)
     return model_dir
+
+
+def is_ignored_candidate(candidate: str | None) -> bool:
+    """True when candidate text is non-review command chatter."""
+    if not candidate:
+        return False
+    normalized = " ".join(candidate.strip().split()).lower()
+    return normalized in IGNORED_COMMAND_COMMENTS
 
 
 class LLMJudge:
@@ -205,11 +219,11 @@ def get_candidates(review: dict, all_candidates: dict, golden_url: str) -> list[
     # Prefer model-specific candidates file
     if golden_url in all_candidates and tool in all_candidates[golden_url]:
         candidates = all_candidates[golden_url][tool]
-        return [c["text"] for c in candidates if c.get("text")]
+        return [c["text"] for c in candidates if c.get("text") and not is_ignored_candidate(c["text"])]
 
     # Fall back to raw comment bodies
     comments = review.get("review_comments", [])
-    return [c["body"] for c in comments if c.get("body")]
+    return [c["body"] for c in comments if c.get("body") and not is_ignored_candidate(c["body"])]
 
 
 async def evaluate_review(
@@ -218,6 +232,7 @@ async def evaluate_review(
     candidates: list[str],
 ) -> dict:
     """Evaluate candidates against golden comments. Returns precision and recall metrics."""
+    candidates = [candidate for candidate in candidates if not is_ignored_candidate(candidate)]
 
     if not golden_comments:
         return {

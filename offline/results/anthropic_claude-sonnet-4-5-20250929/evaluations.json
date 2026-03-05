@@ -1562,11 +1562,7 @@
     "propel": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "/propel review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Incorrect method call for exit codes. The picocli.exit() method calls System.exit() directly, which is problematic:",
@@ -1574,10 +1570,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 1,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 1,
       "errors_count": 0,
       "precision": 0.0,
@@ -1622,11 +1618,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Incorrect method call for exit codes. The picocli.exit() method calls System.exit() directly, which is problematic:",
@@ -1634,10 +1626,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 1,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 1,
       "errors_count": 0,
       "precision": 0.0,
@@ -3046,11 +3038,7 @@
     "greptile": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "@greptile"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Returns wrong provider (default keystore instead of BouncyCastle)",
@@ -3062,10 +3050,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -3177,11 +3165,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Returning null from getSubGroupsCount() violates the GroupModel contract (Javadoc says it never returns null) and may lead to NPEs in callers that expect a non-null count.",
@@ -3193,10 +3177,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -5954,11 +5938,7 @@
     "propel": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "/propel review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "A race condition in BuildIndex allows multiple goroutines to concurrently build the same expensive index for the same key. This is caused by moving the b.cacheMu lock from protecting the entire function to only protecting the final cache assignment. ",
@@ -5970,10 +5950,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -6022,11 +6002,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "A race condition in BuildIndex allows multiple goroutines to concurrently build the same expensive index for the same key. This is caused by moving the b.cacheMu lock from protecting the entire function to only protecting the final cache assignment. ",
@@ -6038,10 +6014,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -7718,11 +7694,7 @@
     "propel": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "/propel review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The queue.shutdown() method with 'immediate=False' parameter may not exist in the standard Python queue module. This could cause AttributeError at runtime. Verify the correct API or implement a custom shutdown mechanism.",
@@ -7738,10 +7710,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 3,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 3,
       "errors_count": 0,
       "precision": 0.0,
@@ -9231,11 +9203,7 @@
     "propel": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "/propel review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The Check operation exhibits asymmetric cache trust logic: cached permission grants are trusted and returned immediately, but cached denials from the same permission cache are ignored, leading to a fresh database lookup. This allows stale cached grants to provide access to revoked resources, posing a security risk. ",
@@ -9247,10 +9215,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -9297,11 +9265,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The Check operation exhibits asymmetric cache trust logic: cached permission grants are trusted and returned immediately, but cached denials from the same permission cache are ignored, leading to a fresh database lookup. This allows stale cached grants to provide access to revoked resources, posing a security risk. ",
@@ -9313,10 +9277,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -10213,11 +10177,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Recursive caching call using session instead of delegate",
@@ -10229,10 +10189,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -10563,11 +10523,7 @@
     "propel": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "/propel review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The enableSqlExpressions function has flawed logic that always returns false, effectively disabling SQL expressions unconditionally:",
@@ -10579,10 +10535,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -11017,11 +10973,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The GetWebAssets function implements an incomplete double-checked locking pattern for caching web assets. The function first checks if the cache is populated using a read lock (RLock), and if the cache is empty, it acquires a write lock to populate it. However, it fails to re-check whether the cache was populated by another goroutine while waiting to acquire the write lock.",
@@ -11033,10 +10985,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -11423,11 +11375,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The code uses Error log level for what appears to be debugging information. This will pollute error logs in production. Consider using Debug or Info level instead.",
@@ -11435,10 +11383,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 1,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 1,
       "errors_count": 0,
       "precision": 0.0,
@@ -12455,11 +12403,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The rendered GrafanaRuleListItem is missing the required key prop for React list items. This can cause rendering issues when the list order changes.",
@@ -12471,10 +12415,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -13339,11 +13283,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Race condition: Multiple concurrent requests could pass the device count check simultaneously and create devices beyond the limit. Consider using a database transaction or lock.",
@@ -13367,10 +13307,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 5,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 5,
       "errors_count": 0,
       "precision": 0.0,
@@ -13802,11 +13742,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Thread-safety issue with lazy @loaded_locales",
@@ -13818,10 +13754,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -14148,11 +14084,7 @@
     "propel": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "/propel review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The ContextualLoggerMiddleware methods (QueryData, CallResource, CheckHealth, CollectMetrics) panic when a nil request is received. This occurs because they directly access req.PluginContext (via the instrumentContext function) without first checking if req is nil. This is a regression, as previous middleware layers gracefully handled nil requests.",
@@ -14164,10 +14096,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -14179,11 +14111,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The ContextualLoggerMiddleware methods (QueryData, CallResource, CheckHealth, CollectMetrics) panic when a nil request is received. This occurs because they directly access req.PluginContext (via the instrumentContext function) without first checking if req is nil. This is a regression, as previous middleware layers gracefully handled nil requests.",
@@ -14195,10 +14123,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -19103,11 +19031,7 @@
     "bugbot": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Bugbot review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The updateManyByCredentialId call uses an empty data object, which prevents Prisma's @updatedAt decorator from updating the updatedAt timestamp. This results in inaccurate cache status tracking, as the timestamp isn't updated when the cache is refreshed. To fix this, explicitly set the updatedAt field.",
@@ -19119,10 +19043,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,
@@ -23034,11 +22958,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "The exported function TwoFactor handles backup codes and is in BackupCode.tsx. Inconsistent naming.",
@@ -23058,10 +22978,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 4,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 4,
       "errors_count": 0,
       "precision": 0.0,
@@ -24120,11 +24040,7 @@
     "baz": {
       "skipped": false,
       "true_positives": [],
-      "false_positives": [
-        {
-          "candidate": "Baz review"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "golden_comment": "Consider adding try-catch around the await to handle import failures gracefully",
@@ -24136,10 +24052,10 @@
         }
       ],
       "errors": [],
-      "total_candidates": 1,
+      "total_candidates": 0,
       "total_golden": 2,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "fn": 2,
       "errors_count": 0,
       "precision": 0.0,

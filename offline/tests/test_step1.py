@@ -69,7 +69,13 @@ def test_fetch_review_comments(monkeypatch):
             {"path": "file.py", "line": 10, "body": "inline", "created_at": "2024-01-01"}
         ],
         [{"body": "top-level", "submitted_at": "2024-01-01"}],
-        [{"body": "issue", "created_at": "2024-01-01"}],
+        [
+            {"body": "issue", "created_at": "2024-01-01"},
+            {"body": "/propel review", "created_at": "2024-01-01"},
+            {"body": "Baz review", "created_at": "2024-01-01"},
+            {"body": "Bugbot review", "created_at": "2024-01-01"},
+            {"body": "@greptile", "created_at": "2024-01-01"},
+        ],
     ]
 
     def fake_gh(_args):

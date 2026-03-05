@@ -81,6 +81,7 @@ DEFAULT_CHATBOT_USERNAMES = [
     "kiloconnect[bot]",
     "propel-code-bot[bot]",
     "qodo-code-review[bot]",
+    "devin-ai-integration[bot]",
 ]
 
 

@@ -20,9 +20,11 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
                la.recall,
                p.bot_reviewed_at,
                p.diff_lines,
+               p.pr_author,
                c.github_username,
                c.display_name,
-               pl.labels as pr_labels_json
+               pl.labels as pr_labels_json,
+               (p.reviews IS NOT NULL AND p.reviews != '[]') as has_reviews
         FROM llm_analyses la
         JOIN prs p ON la.pr_id = p.id
         JOIN chatbots c ON la.chatbot_id = c.id
@@ -70,9 +72,11 @@ struct RawRow {
     recall: Option<f32>,
     bot_reviewed_at: Option<DateTime<Utc>>,
     diff_lines: Option<i32>,
+    pr_author: Option<String>,
     github_username: String,
     display_name: Option<String>,
     pr_labels_json: Option<String>,
+    has_reviews: Option<bool>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -112,6 +116,10 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             &mut languages,
         );
 
+        let self_authored = row.pr_author.as_ref()
+            .map(|a| a.eq_ignore_ascii_case(&row.github_username))
+            .unwrap_or(false);
+
         let record = PrRecord {
             chatbot_idx,
             bot_reviewed_at: row.bot_reviewed_at,
@@ -122,6 +130,8 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             domain,
             pr_type,
             severity,
+            self_authored,
+            has_reviews: row.has_reviews.unwrap_or(false),
         };
 
         match row.bot_reviewed_at {

@@ -74,6 +74,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 4
             }
           }
         },
@@ -108,6 +113,4205 @@
             "augment": {
               "tp": 2,
               "fp": 2,
+              "fn": 2
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "graphite": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/38446",
+          "language": "Java",
+          "pr_size": "medium",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/36882",
+          "language": "Java",
+          "pr_size": "small",
+          "domain": "configuration",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "gemini": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/36880",
+          "language": "Java",
+          "pr_size": "medium",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "complex",
+          "difficulty": "very_subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "claude": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 3
+            },
+            "gemini": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 6,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 6,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/37038",
+          "language": "Java",
+          "pr_size": "small",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "complex",
+          "difficulty": "very_subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "gemini": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/33832",
+          "language": "Java",
+          "pr_size": "medium",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "claude": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 1
+            },
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 5,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 5,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/40940",
+          "language": "Java",
+          "pr_size": "small",
+          "domain": "concurrency",
+          "change_type": "bug_fix",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1",
+          "language": "Java",
+          "pr_size": "medium",
+          "domain": "authentication",
+          "change_type": "bug_fix",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "augment": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "gemini": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/getsentry/sentry/pull/93824",
+          "language": "Python",
+          "pr_size": "large",
+          "domain": "concurrency",
+          "change_type": "feature",
+          "complexity": "complex",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "baz": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "augment": {
+              "tp": 5,
+              "fp": 1,
+              "fn": 0
+            },
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 4
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 5
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 4
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 5
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 4
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 4
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 3
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "qodo-v2": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 2
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5",
+          "language": "Python",
+          "pr_size": "large",
+          "domain": "API",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 3
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 16,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1",
+          "language": "Python",
+          "pr_size": "medium",
+          "domain": "API",
+          "change_type": "performance",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 3
+            },
+            "claude": {
+              "tp": 2,
+              "fp": 6,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 3,
+              "fp": 7,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "coderabbit": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 6,
+              "fn": 3
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 2
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/97529",
+          "language": "Go",
+          "pr_size": "small",
+          "domain": "concurrency",
+          "change_type": "performance",
+          "complexity": "complex",
+          "difficulty": "very_subtle",
+          "risk": "critical",
+          "context": "cross_file",
+          "concern": "reliability",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/getsentry/sentry/pull/80168",
+          "language": "Python",
+          "pr_size": "small",
+          "domain": "data_processing",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/getsentry/sentry/pull/80528",
+          "language": "Python",
+          "pr_size": "small",
+          "domain": "scheduling",
+          "change_type": "refactoring",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 5,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/getsentry/sentry/pull/77754",
+          "language": "Python",
+          "pr_size": "medium",
+          "domain": "serialization",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
+            },
+            "claude": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 3
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 3
+            },
+            "coderabbit": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
+            }
+          }
+        },
+        {
+          "url": "https://github.com/getsentry/sentry/pull/95633",
+          "language": "Python",
+          "pr_size": "medium",
+          "domain": "concurrency",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 6,
+              "fn": 3
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "augment": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 7,
+              "fn": 3
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 3
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2",
+          "language": "Python",
+          "pr_size": "medium",
+          "domain": "data_processing",
+          "change_type": "performance",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 3
+            },
+            "claude": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "copilot": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3",
+          "language": "Python",
+          "pr_size": "medium",
+          "domain": "caching",
+          "change_type": "feature",
+          "complexity": "complex",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 5,
+              "fn": 3
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "coderabbit": {
+              "tp": 2,
+              "fp": 6,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/103633",
+          "language": "Go",
+          "pr_size": "small",
+          "domain": "caching",
+          "change_type": "performance",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "security",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 6,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/getsentry/sentry/pull/67876",
+          "language": "Python",
+          "pr_size": "small",
+          "domain": "authentication",
+          "change_type": "security_patch",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "security",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/32918",
+          "language": "Java",
+          "pr_size": "small",
+          "domain": "caching",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/94942",
+          "language": "Go",
+          "pr_size": "small",
+          "domain": "data_processing",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "high",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/90939",
+          "language": "Go",
+          "pr_size": "small",
+          "domain": "caching",
+          "change_type": "performance",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/80329",
+          "language": "Go",
+          "pr_size": "small",
+          "domain": "logging",
+          "change_type": "performance",
+          "complexity": "simple",
+          "difficulty": "obvious",
+          "risk": "low",
+          "context": "local",
+          "concern": "maintainability",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 0
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 0
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 0
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 0
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/90045",
+          "language": "Go",
+          "pr_size": "medium",
+          "domain": "logging",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 3,
+              "fp": 5,
+              "fn": 0
+            },
+            "claude": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 0
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 3,
+              "fp": 4,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 0
+            },
+            "copilot": {
+              "tp": 3,
+              "fp": 7,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 3,
+              "fp": 5,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 0
+            },
+            "kg": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 6,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/106778",
+          "language": "Go",
+          "pr_size": "medium",
+          "domain": "UI",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 10,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 6,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/107534",
+          "language": "Go",
+          "pr_size": "small",
+          "domain": "testing",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "low",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/79265",
+          "language": "Go",
+          "pr_size": "large",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 4
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 7,
+              "fn": 3
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 5
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 5
+            },
+            "coderabbit": {
+              "tp": 3,
+              "fp": 4,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 4
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 4
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 3
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9",
+          "language": "Ruby",
+          "pr_size": "small",
+          "domain": "configuration",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "file",
+          "concern": "reliability",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/grafana/grafana/pull/76186",
+          "language": "Go",
+          "pr_size": "small",
+          "domain": "logging",
+          "change_type": "refactoring",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "reliability",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/10",
+          "language": "Ruby",
+          "pr_size": "large",
+          "domain": "configuration",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 2,
+              "fp": 10,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 4
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "bugbot": {
+              "tp": 3,
+              "fp": 4,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 3
+            },
+            "propel": {
+              "tp": 3,
+              "fp": 0,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 2,
+              "fp": 9,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 4
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 2
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7",
+          "language": "Ruby",
+          "pr_size": "medium",
+          "domain": "UI",
+          "change_type": "bug_fix",
+          "complexity": "simple",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 3,
+              "fp": 5,
+              "fn": 0
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "bugbot": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "copilot": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 3
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/8",
+          "language": "Ruby",
+          "pr_size": "medium",
+          "domain": "API",
+          "change_type": "bug_fix",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 9,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 2,
+              "fp": 8,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3",
+          "language": "Ruby",
+          "pr_size": "medium",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 6,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 7,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5",
+          "language": "Ruby",
+          "pr_size": "small",
+          "domain": "UI",
+          "change_type": "performance",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6",
+          "language": "Ruby",
+          "pr_size": "small",
+          "domain": "serialization",
+          "change_type": "feature",
+          "complexity": "simple",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 0
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 0
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/4",
+          "language": "Ruby",
+          "pr_size": "large",
+          "domain": "API",
+          "change_type": "feature",
+          "complexity": "complex",
+          "difficulty": "subtle",
+          "risk": "critical",
+          "context": "cross_file",
+          "concern": "security",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 5,
+              "fp": 3,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 3,
+              "fp": 4,
+              "fn": 3
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 6
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 4
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 5
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 5
+            },
+            "augment": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 3
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 5
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 5
+            },
+            "coderabbit": {
+              "tp": 4,
+              "fp": 20,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 4,
+              "fp": 2,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 6
+            },
+            "qodo-v2": {
+              "tp": 3,
+              "fp": 8,
+              "fn": 3
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1",
+          "language": "Ruby",
+          "pr_size": "medium",
+          "domain": "file_io",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 2,
+              "fp": 7,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2",
+          "language": "Ruby",
+          "pr_size": "medium",
+          "domain": "UI",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 2,
+              "fp": 6,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/22532",
+          "language": "TypeScript",
+          "pr_size": "medium",
+          "domain": "caching",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 11,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 1,
+              "fp": 10,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/8330",
+          "language": "TypeScript",
+          "pr_size": "small",
+          "domain": "scheduling",
+          "change_type": "bug_fix",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
+            },
+            "claude": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "graphite": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "coderabbit": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/14943",
+          "language": "TypeScript",
+          "pr_size": "small",
+          "domain": "scheduling",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/22345",
+          "language": "TypeScript",
+          "pr_size": "small",
+          "domain": "database",
+          "change_type": "migration",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "medium",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/11059",
+          "language": "TypeScript",
+          "pr_size": "large",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "complex",
+          "difficulty": "subtle",
+          "risk": "critical",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "qodo": {
+              "tp": 3,
+              "fp": 7,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 4,
+              "fp": 6,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 4,
+              "fp": 11,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 5,
+              "fp": 6,
+              "fn": 0
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "baz": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 5,
+              "fp": 14,
+              "fn": 0
+            },
+            "greptile": {
+              "tp": 3,
+              "fp": 7,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "qodo-v2": {
+              "tp": 4,
+              "fp": 4,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/7232",
+          "language": "TypeScript",
+          "pr_size": "medium",
+          "domain": "scheduling",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "reliability",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 2,
+              "fp": 10,
+              "fn": 0
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/14740",
+          "language": "TypeScript",
+          "pr_size": "large",
+          "domain": "scheduling",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "critical",
+          "context": "cross_file",
+          "concern": "security",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 4
+            },
+            "claude": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 3
+            },
+            "graphite": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 4
+            },
+            "qodo": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 3
+            },
+            "bugbot": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 2
+            },
+            "copilot": {
+              "tp": 3,
+              "fp": 7,
+              "fn": 2
+            },
+            "augment": {
+              "tp": 4,
+              "fp": 3,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 4,
+              "fp": 0,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "coderabbit": {
+              "tp": 4,
+              "fp": 7,
+              "fn": 1
+            },
+            "greptile": {
+              "tp": 4,
+              "fp": 2,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 4,
+              "fp": 3,
+              "fn": 1
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/10600",
+          "language": "TypeScript",
+          "pr_size": "medium",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "security",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 3
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 8,
+              "fn": 3
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 5,
+              "fn": 4
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 9,
+              "fn": 3
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 3
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 3
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 4
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "greptile": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 4
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 3
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/10967",
+          "language": "TypeScript",
+          "pr_size": "large",
+          "domain": "scheduling",
+          "change_type": "bug_fix",
+          "complexity": "complex",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 9,
+              "fn": 4
+            },
+            "claude": {
+              "tp": 3,
+              "fp": 4,
+              "fn": 2
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 5
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 4,
+              "fp": 7,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 3
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 4
+            },
+            "baz": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 3
+            },
+            "kg": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 4
+            }
+          }
+        },
+        {
+          "url": "https://github.com/calcom/cal.com/pull/8087",
+          "language": "TypeScript",
+          "pr_size": "medium",
+          "domain": "concurrency",
+          "change_type": "refactoring",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "critical",
+          "context": "cross_file",
+          "concern": "reliability",
+          "summary": "",
+          "tool_metrics": {
+            "gemini": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "qodo": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "bugbot": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "copilot": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "augment": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 1
+            },
+            "propel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "greptile": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            }
+          }
+        }
+      ],
+      "tools": [
+        "augment",
+        "baz",
+        "bugbot",
+        "claude",
+        "coderabbit",
+        "copilot",
+        "gemini",
+        "graphite",
+        "greptile",
+        "kg",
+        "propel",
+        "qodo",
+        "qodo-v2"
+      ],
+      "dimensions": {
+        "language": [
+          "Go",
+          "Java",
+          "Python",
+          "Ruby",
+          "TypeScript"
+        ],
+        "pr_size": [
+          "small",
+          "medium",
+          "large"
+        ],
+        "domain": [
+          "API",
+          "UI",
+          "authentication",
+          "caching",
+          "concurrency",
+          "configuration",
+          "data_processing",
+          "database",
+          "file_io",
+          "logging",
+          "scheduling",
+          "serialization",
+          "testing"
+        ],
+        "change_type": [
+          "bug_fix",
+          "feature",
+          "migration",
+          "performance",
+          "refactoring",
+          "security_patch"
+        ],
+        "complexity": [
+          "simple",
+          "moderate",
+          "complex"
+        ],
+        "difficulty": [
+          "obvious",
+          "moderate",
+          "subtle",
+          "very_subtle"
+        ],
+        "risk": [
+          "low",
+          "medium",
+          "high",
+          "critical"
+        ],
+        "context": [
+          "local",
+          "file",
+          "cross_file",
+          "system"
+        ],
+        "concern": [
+          "correctness",
+          "maintainability",
+          "reliability",
+          "security"
+        ]
+      },
+      "overall_metrics": {
+        "bugbot": {
+          "precision": 46.2,
+          "recall": 43.8,
+          "f1": 44.9,
+          "tp": 60,
+          "fp": 70,
+          "fn": 77,
+          "num_prs": 50
+        },
+        "graphite": {
+          "precision": 75.0,
+          "recall": 8.8,
+          "f1": 15.7,
+          "tp": 12,
+          "fp": 4,
+          "fn": 125,
+          "num_prs": 50
+        },
+        "qodo": {
+          "precision": 30.6,
+          "recall": 43.8,
+          "f1": 36.0,
+          "tp": 60,
+          "fp": 136,
+          "fn": 77,
+          "num_prs": 50
+        },
+        "copilot": {
+          "precision": 26.6,
+          "recall": 53.3,
+          "f1": 35.5,
+          "tp": 73,
+          "fp": 201,
+          "fn": 64,
+          "num_prs": 50
+        },
+        "greptile": {
+          "precision": 38.4,
+          "recall": 38.7,
+          "f1": 38.5,
+          "tp": 53,
+          "fp": 85,
+          "fn": 84,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 29.8,
+          "recall": 37.2,
+          "f1": 33.1,
+          "tp": 51,
+          "fp": 120,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "qodo-v2": {
+          "precision": 42.6,
+          "recall": 54.7,
+          "f1": 47.9,
+          "tp": 75,
+          "fp": 101,
+          "fn": 62,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 33.1,
+          "recall": 35.8,
+          "f1": 34.4,
+          "tp": 49,
+          "fp": 99,
+          "fn": 88,
+          "num_prs": 50
+        },
+        "coderabbit": {
+          "precision": 23.9,
+          "recall": 39.4,
+          "f1": 29.8,
+          "tp": 54,
+          "fp": 172,
+          "fn": 83,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 47.0,
+          "recall": 62.8,
+          "f1": 53.8,
+          "tp": 86,
+          "fp": 97,
+          "fn": 51,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 46.0,
+          "recall": 38.0,
+          "f1": 41.6,
+          "tp": 52,
+          "fp": 61,
+          "fn": 85,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 44.0,
+          "recall": 29.2,
+          "f1": 35.1,
+          "tp": 40,
+          "fp": 51,
+          "fn": 97,
+          "num_prs": 50
+        },
+        "kg": {
+          "precision": 46.9,
+          "recall": 16.8,
+          "f1": 24.7,
+          "tp": 23,
+          "fp": 26,
+          "fn": 114,
+          "num_prs": 50
+        }
+      }
+    },
+    "anthropic_claude-sonnet-4-5-20250929": {
+      "prs": [
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/37429",
+          "language": "Java",
+          "pr_size": "medium",
+          "domain": "UI",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "moderate",
+          "risk": "medium",
+          "context": "cross_file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "graphite": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "qodo": {
+              "tp": 0,
+              "fp": 5,
+              "fn": 4
+            },
+            "gemini": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 4
+            },
+            "claude": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 3
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 2
+            },
+            "bugbot": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "propel": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
+            },
+            "copilot": {
+              "tp": 3,
+              "fp": 5,
+              "fn": 1
+            },
+            "baz": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "greptile": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 2
+            },
+            "kg": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 3
+            }
+          }
+        },
+        {
+          "url": "https://github.com/keycloak/keycloak/pull/37634",
+          "language": "Java",
+          "pr_size": "medium",
+          "domain": "authentication",
+          "change_type": "feature",
+          "complexity": "moderate",
+          "difficulty": "subtle",
+          "risk": "high",
+          "context": "file",
+          "concern": "correctness",
+          "summary": "",
+          "tool_metrics": {
+            "claude": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 2
+            },
+            "gemini": {
+              "tp": 3,
+              "fp": 0,
+              "fn": 1
+            },
+            "coderabbit": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "augment": {
+              "tp": 2,
+              "fp": 1,
               "fn": 2
             },
             "propel": {
@@ -207,7 +4411,7 @@
             },
             "qodo": {
               "tp": 1,
-              "fp": 3,
+              "fp": 4,
               "fn": 1
             },
             "bugbot": {
@@ -217,7 +4421,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 1,
+              "fp": 4,
               "fn": 2
             },
             "kg": {
@@ -277,7 +4481,7 @@
             },
             "coderabbit": {
               "tp": 0,
-              "fp": 1,
+              "fp": 2,
               "fn": 1
             },
             "graphite": {
@@ -287,7 +4491,7 @@
             },
             "qodo": {
               "tp": 1,
-              "fp": 2,
+              "fp": 5,
               "fn": 0
             },
             "augment": {
@@ -317,7 +4521,7 @@
           "tool_metrics": {
             "claude": {
               "tp": 0,
-              "fp": 4,
+              "fp": 5,
               "fn": 3
             },
             "gemini": {
@@ -327,7 +4531,7 @@
             },
             "propel": {
               "tp": 2,
-              "fp": 2,
+              "fp": 3,
               "fn": 1
             },
             "augment": {
@@ -337,12 +4541,12 @@
             },
             "coderabbit": {
               "tp": 1,
-              "fp": 6,
+              "fp": 3,
               "fn": 2
             },
             "bugbot": {
               "tp": 2,
-              "fp": 1,
+              "fp": 2,
               "fn": 1
             },
             "graphite": {
@@ -352,13 +4556,13 @@
             },
             "qodo": {
               "tp": 0,
-              "fp": 3,
+              "fp": 4,
               "fn": 3
             },
             "copilot": {
-              "tp": 1,
-              "fp": 6,
-              "fn": 2
+              "tp": 0,
+              "fp": 7,
+              "fn": 3
             },
             "baz": {
               "tp": 2,
@@ -391,9 +4595,9 @@
           "summary": "",
           "tool_metrics": {
             "qodo": {
-              "tp": 1,
+              "tp": 2,
               "fp": 2,
-              "fn": 1
+              "fn": 0
             },
             "gemini": {
               "tp": 0,
@@ -412,7 +4616,7 @@
             },
             "augment": {
               "tp": 2,
-              "fp": 1,
+              "fp": 5,
               "fn": 0
             },
             "greptile": {
@@ -437,7 +4641,7 @@
             },
             "propel": {
               "tp": 2,
-              "fp": 3,
+              "fp": 2,
               "fn": 0
             },
             "baz": {
@@ -502,7 +4706,7 @@
             },
             "propel": {
               "tp": 0,
-              "fp": 5,
+              "fp": 4,
               "fn": 2
             },
             "greptile": {
@@ -512,7 +4716,7 @@
             },
             "baz": {
               "tp": 2,
-              "fp": 1,
+              "fp": 0,
               "fn": 0
             },
             "coderabbit": {
@@ -562,7 +4766,7 @@
             },
             "qodo": {
               "tp": 2,
-              "fp": 1,
+              "fp": 2,
               "fn": 0
             },
             "bugbot": {
@@ -577,12 +4781,12 @@
             },
             "propel": {
               "tp": 1,
-              "fp": 2,
+              "fp": 4,
               "fn": 1
             },
             "augment": {
               "tp": 2,
-              "fp": 0,
+              "fp": 1,
               "fn": 0
             },
             "coderabbit": {
@@ -636,9 +4840,9 @@
               "fn": 2
             },
             "qodo": {
-              "tp": 1,
+              "tp": 2,
               "fp": 2,
-              "fn": 1
+              "fn": 0
             },
             "bugbot": {
               "tp": 0,
@@ -666,9 +4870,9 @@
               "fn": 0
             },
             "greptile": {
-              "tp": 2,
+              "tp": 1,
               "fp": 0,
-              "fn": 0
+              "fn": 1
             },
             "kg": {
               "tp": 1,
@@ -711,9 +4915,9 @@
               "fn": 4
             },
             "coderabbit": {
-              "tp": 0,
-              "fp": 1,
-              "fn": 5
+              "tp": 1,
+              "fp": 3,
+              "fn": 4
             },
             "graphite": {
               "tp": 1,
@@ -727,18 +4931,18 @@
             },
             "qodo": {
               "tp": 1,
-              "fp": 3,
+              "fp": 2,
               "fn": 4
             },
             "copilot": {
               "tp": 1,
-              "fp": 5,
+              "fp": 4,
               "fn": 4
             },
             "propel": {
-              "tp": 2,
+              "tp": 1,
               "fp": 2,
-              "fn": 3
+              "fn": 4
             },
             "greptile": {
               "tp": 1,
@@ -782,7 +4986,7 @@
             },
             "coderabbit": {
               "tp": 1,
-              "fp": 16,
+              "fp": 32,
               "fn": 2
             },
             "qodo": {
@@ -797,7 +5001,7 @@
             },
             "bugbot": {
               "tp": 1,
-              "fp": 1,
+              "fp": 2,
               "fn": 2
             },
             "copilot": {
@@ -842,12 +5046,12 @@
           "tool_metrics": {
             "gemini": {
               "tp": 1,
-              "fp": 3,
+              "fp": 4,
               "fn": 3
             },
             "claude": {
               "tp": 2,
-              "fp": 6,
+              "fp": 8,
               "fn": 2
             },
             "graphite": {
@@ -867,7 +5071,7 @@
             },
             "bugbot": {
               "tp": 3,
-              "fp": 1,
+              "fp": 2,
               "fn": 1
             },
             "augment": {
@@ -887,12 +5091,12 @@
             },
             "coderabbit": {
               "tp": 3,
-              "fp": 2,
+              "fp": 5,
               "fn": 1
             },
             "greptile": {
               "tp": 1,
-              "fp": 6,
+              "fp": 4,
               "fn": 3
             },
             "kg": {
@@ -932,7 +5136,7 @@
             },
             "qodo": {
               "tp": 2,
-              "fp": 2,
+              "fp": 3,
               "fn": 0
             },
             "bugbot": {
@@ -966,9 +5170,9 @@
               "fn": 1
             },
             "greptile": {
-              "tp": 0,
-              "fp": 2,
-              "fn": 2
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             },
             "kg": {
               "tp": 1,
@@ -1016,13 +5220,13 @@
               "fn": 1
             },
             "copilot": {
-              "tp": 2,
+              "tp": 1,
               "fp": 3,
-              "fn": 0
+              "fn": 1
             },
             "propel": {
               "tp": 1,
-              "fp": 0,
+              "fp": 1,
               "fn": 1
             },
             "augment": {
@@ -1036,9 +5240,9 @@
               "fn": 2
             },
             "coderabbit": {
-              "tp": 0,
-              "fp": 1,
-              "fn": 2
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
             },
             "greptile": {
               "tp": 1,
@@ -1076,9 +5280,9 @@
               "fn": 2
             },
             "qodo": {
-              "tp": 1,
-              "fp": 2,
-              "fn": 1
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             },
             "graphite": {
               "tp": 1,
@@ -1107,7 +5311,7 @@
             },
             "baz": {
               "tp": 1,
-              "fp": 0,
+              "fp": 1,
               "fn": 1
             },
             "coderabbit": {
@@ -1252,12 +5456,12 @@
             },
             "augment": {
               "tp": 0,
-              "fp": 3,
+              "fp": 6,
               "fn": 3
             },
             "baz": {
               "tp": 0,
-              "fp": 3,
+              "fp": 1,
               "fn": 3
             },
             "coderabbit": {
@@ -1297,7 +5501,7 @@
             },
             "claude": {
               "tp": 2,
-              "fp": 5,
+              "fp": 6,
               "fn": 1
             },
             "graphite": {
@@ -1322,12 +5526,12 @@
             },
             "augment": {
               "tp": 3,
-              "fp": 3,
+              "fp": 2,
               "fn": 0
             },
             "propel": {
               "tp": 2,
-              "fp": 4,
+              "fp": 3,
               "fn": 1
             },
             "baz": {
@@ -1382,7 +5586,7 @@
             },
             "qodo": {
               "tp": 2,
-              "fp": 1,
+              "fp": 3,
               "fn": 1
             },
             "bugbot": {
@@ -1412,7 +5616,7 @@
             },
             "coderabbit": {
               "tp": 2,
-              "fp": 6,
+              "fp": 4,
               "fn": 1
             },
             "greptile": {
@@ -1442,13 +5646,13 @@
           "tool_metrics": {
             "gemini": {
               "tp": 1,
-              "fp": 1,
+              "fp": 2,
               "fn": 1
             },
             "claude": {
-              "tp": 0,
-              "fp": 6,
-              "fn": 2
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
             },
             "graphite": {
               "tp": 0,
@@ -1521,9 +5725,9 @@
               "fn": 2
             },
             "claude": {
-              "tp": 1,
+              "tp": 2,
               "fp": 1,
-              "fn": 2
+              "fn": 1
             },
             "graphite": {
               "tp": 0,
@@ -1531,9 +5735,9 @@
               "fn": 3
             },
             "qodo": {
-              "tp": 1,
-              "fp": 3,
-              "fn": 2
+              "tp": 2,
+              "fp": 8,
+              "fn": 1
             },
             "bugbot": {
               "tp": 1,
@@ -1546,9 +5750,9 @@
               "fn": 2
             },
             "augment": {
-              "tp": 1,
+              "tp": 2,
               "fp": 2,
-              "fn": 2
+              "fn": 1
             },
             "propel": {
               "tp": 1,
@@ -1561,9 +5765,9 @@
               "fn": 2
             },
             "baz": {
-              "tp": 1,
+              "tp": 2,
               "fp": 1,
-              "fn": 2
+              "fn": 1
             },
             "greptile": {
               "tp": 1,
@@ -1622,7 +5826,7 @@
             },
             "augment": {
               "tp": 1,
-              "fp": 0,
+              "fp": 1,
               "fn": 1
             },
             "propel": {
@@ -1667,12 +5871,12 @@
           "tool_metrics": {
             "gemini": {
               "tp": 1,
-              "fp": 0,
+              "fp": 1,
               "fn": 1
             },
             "claude": {
               "tp": 2,
-              "fp": 0,
+              "fp": 3,
               "fn": 0
             },
             "graphite": {
@@ -1742,7 +5946,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 1,
-              "fp": 1,
+              "fp": 0,
               "fn": 1
             },
             "claude": {
@@ -1761,9 +5965,9 @@
               "fn": 1
             },
             "copilot": {
-              "tp": 2,
+              "tp": 1,
               "fp": 0,
-              "fn": 0
+              "fn": 1
             },
             "bugbot": {
               "tp": 1,
@@ -1777,7 +5981,7 @@
             },
             "augment": {
               "tp": 2,
-              "fp": 0,
+              "fp": 1,
               "fn": 0
             },
             "baz": {
@@ -1852,7 +6056,7 @@
             },
             "augment": {
               "tp": 1,
-              "fp": 1,
+              "fp": 3,
               "fn": 0
             },
             "baz": {
@@ -1862,7 +6066,7 @@
             },
             "coderabbit": {
               "tp": 1,
-              "fp": 4,
+              "fp": 2,
               "fn": 0
             },
             "greptile": {
@@ -1907,7 +6111,7 @@
             },
             "qodo": {
               "tp": 3,
-              "fp": 4,
+              "fp": 5,
               "fn": 0
             },
             "bugbot": {
@@ -1917,13 +6121,13 @@
             },
             "copilot": {
               "tp": 3,
-              "fp": 7,
+              "fp": 8,
               "fn": 0
             },
             "propel": {
-              "tp": 1,
-              "fp": 2,
-              "fn": 2
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
             },
             "augment": {
               "tp": 3,
@@ -1937,7 +6141,7 @@
             },
             "coderabbit": {
               "tp": 3,
-              "fp": 2,
+              "fp": 3,
               "fn": 0
             },
             "greptile": {
@@ -1972,7 +6176,7 @@
             },
             "claude": {
               "tp": 0,
-              "fp": 10,
+              "fp": 12,
               "fn": 2
             },
             "graphite": {
@@ -1982,7 +6186,7 @@
             },
             "qodo": {
               "tp": 0,
-              "fp": 3,
+              "fp": 4,
               "fn": 2
             },
             "bugbot": {
@@ -2002,7 +6206,7 @@
             },
             "propel": {
               "tp": 1,
-              "fp": 2,
+              "fp": 3,
               "fn": 1
             },
             "baz": {
@@ -2012,12 +6216,12 @@
             },
             "coderabbit": {
               "tp": 1,
-              "fp": 6,
+              "fp": 5,
               "fn": 1
             },
             "greptile": {
               "tp": 1,
-              "fp": 0,
+              "fp": 1,
               "fn": 1
             },
             "kg": {
@@ -2042,7 +6246,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 0,
-              "fp": 3,
+              "fp": 1,
               "fn": 1
             },
             "claude": {
@@ -2067,7 +6271,7 @@
             },
             "copilot": {
               "tp": 0,
-              "fp": 4,
+              "fp": 3,
               "fn": 1
             },
             "augment": {
@@ -2122,7 +6326,7 @@
             },
             "claude": {
               "tp": 1,
-              "fp": 2,
+              "fp": 5,
               "fn": 4
             },
             "graphite": {
@@ -2136,9 +6340,9 @@
               "fn": 3
             },
             "copilot": {
-              "tp": 2,
-              "fp": 7,
-              "fn": 3
+              "tp": 3,
+              "fp": 6,
+              "fn": 2
             },
             "bugbot": {
               "tp": 0,
@@ -2312,7 +6516,7 @@
             },
             "coderabbit": {
               "tp": 1,
-              "fp": 0,
+              "fp": 3,
               "fn": 1
             },
             "greptile": {
@@ -2342,7 +6546,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 2,
-              "fp": 10,
+              "fp": 8,
               "fn": 2
             },
             "claude": {
@@ -2362,17 +6566,17 @@
             },
             "bugbot": {
               "tp": 3,
-              "fp": 4,
+              "fp": 5,
               "fn": 1
             },
             "copilot": {
-              "tp": 1,
+              "tp": 2,
               "fp": 4,
-              "fn": 3
+              "fn": 2
             },
             "propel": {
               "tp": 3,
-              "fp": 0,
+              "fp": 1,
               "fn": 1
             },
             "augment": {
@@ -2387,7 +6591,7 @@
             },
             "coderabbit": {
               "tp": 2,
-              "fp": 9,
+              "fp": 10,
               "fn": 2
             },
             "greptile": {
@@ -2396,9 +6600,9 @@
               "fn": 2
             },
             "kg": {
-              "tp": 0,
-              "fp": 2,
-              "fn": 4
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
             }
           }
         },
@@ -2416,13 +6620,13 @@
           "summary": "",
           "tool_metrics": {
             "gemini": {
-              "tp": 2,
+              "tp": 3,
               "fp": 3,
-              "fn": 1
+              "fn": 0
             },
             "claude": {
               "tp": 3,
-              "fp": 5,
+              "fp": 4,
               "fn": 0
             },
             "graphite": {
@@ -2452,7 +6656,7 @@
             },
             "propel": {
               "tp": 1,
-              "fp": 0,
+              "fp": 1,
               "fn": 2
             },
             "baz": {
@@ -2466,9 +6670,9 @@
               "fn": 3
             },
             "greptile": {
-              "tp": 1,
-              "fp": 5,
-              "fn": 2
+              "tp": 3,
+              "fp": 4,
+              "fn": 0
             },
             "kg": {
               "tp": 0,
@@ -2491,9 +6695,9 @@
           "summary": "",
           "tool_metrics": {
             "gemini": {
-              "tp": 1,
-              "fp": 5,
-              "fn": 2
+              "tp": 2,
+              "fp": 4,
+              "fn": 1
             },
             "claude": {
               "tp": 2,
@@ -2507,13 +6711,13 @@
             },
             "qodo": {
               "tp": 1,
-              "fp": 5,
+              "fp": 6,
               "fn": 2
             },
             "bugbot": {
-              "tp": 1,
-              "fp": 1,
-              "fn": 2
+              "tp": 0,
+              "fp": 2,
+              "fn": 3
             },
             "copilot": {
               "tp": 1,
@@ -2566,13 +6770,13 @@
           "summary": "",
           "tool_metrics": {
             "gemini": {
-              "tp": 1,
-              "fp": 1,
-              "fn": 1
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
             },
             "claude": {
               "tp": 1,
-              "fp": 6,
+              "fp": 5,
               "fn": 1
             },
             "graphite": {
@@ -2582,13 +6786,13 @@
             },
             "qodo": {
               "tp": 1,
-              "fp": 3,
+              "fp": 6,
               "fn": 1
             },
             "copilot": {
-              "tp": 1,
-              "fp": 1,
-              "fn": 1
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
             },
             "bugbot": {
               "tp": 0,
@@ -2607,18 +6811,18 @@
             },
             "baz": {
               "tp": 0,
-              "fp": 2,
+              "fp": 3,
               "fn": 2
             },
             "coderabbit": {
               "tp": 1,
-              "fp": 7,
+              "fp": 2,
               "fn": 1
             },
             "greptile": {
-              "tp": 1,
-              "fp": 0,
-              "fn": 1
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
             },
             "kg": {
               "tp": 0,
@@ -2682,7 +6886,7 @@
             },
             "baz": {
               "tp": 1,
-              "fp": 2,
+              "fp": 1,
               "fn": 1
             },
             "coderabbit": {
@@ -2732,17 +6936,17 @@
             },
             "qodo": {
               "tp": 1,
-              "fp": 4,
+              "fp": 5,
               "fn": 0
             },
             "bugbot": {
               "tp": 1,
-              "fp": 2,
+              "fp": 4,
               "fn": 0
             },
             "copilot": {
               "tp": 1,
-              "fp": 3,
+              "fp": 2,
               "fn": 0
             },
             "augment": {
@@ -2792,13 +6996,13 @@
           "tool_metrics": {
             "gemini": {
               "tp": 5,
-              "fp": 3,
+              "fp": 5,
               "fn": 1
             },
             "claude": {
-              "tp": 3,
-              "fp": 4,
-              "fn": 3
+              "tp": 5,
+              "fp": 5,
+              "fn": 1
             },
             "graphite": {
               "tp": 0,
@@ -2806,9 +7010,9 @@
               "fn": 6
             },
             "qodo": {
-              "tp": 2,
-              "fp": 3,
-              "fn": 4
+              "tp": 3,
+              "fp": 4,
+              "fn": 3
             },
             "bugbot": {
               "tp": 1,
@@ -2837,7 +7041,7 @@
             },
             "coderabbit": {
               "tp": 4,
-              "fp": 20,
+              "fp": 22,
               "fn": 2
             },
             "greptile": {
@@ -2867,7 +7071,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 2,
-              "fp": 2,
+              "fp": 4,
               "fn": 1
             },
             "claude": {
@@ -2882,7 +7086,7 @@
             },
             "qodo": {
               "tp": 3,
-              "fp": 1,
+              "fp": 2,
               "fn": 0
             },
             "bugbot": {
@@ -2892,12 +7096,12 @@
             },
             "copilot": {
               "tp": 2,
-              "fp": 4,
+              "fp": 5,
               "fn": 1
             },
             "augment": {
               "tp": 2,
-              "fp": 5,
+              "fp": 6,
               "fn": 1
             },
             "propel": {
@@ -2911,9 +7115,9 @@
               "fn": 1
             },
             "coderabbit": {
-              "tp": 2,
-              "fp": 7,
-              "fn": 1
+              "tp": 1,
+              "fp": 6,
+              "fn": 2
             },
             "greptile": {
               "tp": 2,
@@ -2942,13 +7146,13 @@
           "tool_metrics": {
             "gemini": {
               "tp": 2,
-              "fp": 0,
+              "fp": 1,
               "fn": 0
             },
             "claude": {
-              "tp": 0,
+              "tp": 1,
               "fp": 1,
-              "fn": 2
+              "fn": 1
             },
             "graphite": {
               "tp": 0,
@@ -2957,7 +7161,7 @@
             },
             "qodo": {
               "tp": 2,
-              "fp": 2,
+              "fp": 3,
               "fn": 0
             },
             "bugbot": {
@@ -2967,7 +7171,7 @@
             },
             "copilot": {
               "tp": 2,
-              "fp": 3,
+              "fp": 4,
               "fn": 0
             },
             "augment": {
@@ -2986,9 +7190,9 @@
               "fn": 1
             },
             "coderabbit": {
-              "tp": 2,
-              "fp": 6,
-              "fn": 0
+              "tp": 1,
+              "fp": 5,
+              "fn": 1
             },
             "greptile": {
               "tp": 2,
@@ -3031,9 +7235,9 @@
               "fn": 2
             },
             "qodo": {
-              "tp": 1,
-              "fp": 3,
-              "fn": 1
+              "tp": 0,
+              "fp": 4,
+              "fn": 2
             },
             "bugbot": {
               "tp": 0,
@@ -3051,9 +7255,9 @@
               "fn": 0
             },
             "propel": {
-              "tp": 2,
-              "fp": 2,
-              "fn": 0
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
             },
             "baz": {
               "tp": 1,
@@ -3062,13 +7266,13 @@
             },
             "coderabbit": {
               "tp": 1,
-              "fp": 10,
+              "fp": 4,
               "fn": 1
             },
             "greptile": {
-              "tp": 1,
-              "fp": 1,
-              "fn": 1
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
             },
             "kg": {
               "tp": 0,
@@ -3092,7 +7296,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 2,
-              "fp": 4,
+              "fp": 5,
               "fn": 0
             },
             "claude": {
@@ -3132,12 +7336,12 @@
             },
             "baz": {
               "tp": 2,
-              "fp": 1,
+              "fp": 0,
               "fn": 0
             },
             "coderabbit": {
               "tp": 2,
-              "fp": 2,
+              "fp": 3,
               "fn": 0
             },
             "greptile": {
@@ -3146,9 +7350,9 @@
               "fn": 0
             },
             "kg": {
-              "tp": 1,
-              "fp": 2,
-              "fn": 1
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
             }
           }
         },
@@ -3207,7 +7411,7 @@
             },
             "baz": {
               "tp": 1,
-              "fp": 0,
+              "fp": 4,
               "fn": 1
             },
             "coderabbit": {
@@ -3242,7 +7446,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 0,
-              "fp": 4,
+              "fp": 5,
               "fn": 2
             },
             "claude": {
@@ -3256,9 +7460,9 @@
               "fn": 2
             },
             "qodo": {
-              "tp": 1,
-              "fp": 3,
-              "fn": 1
+              "tp": 0,
+              "fp": 5,
+              "fn": 2
             },
             "bugbot": {
               "tp": 1,
@@ -3291,9 +7495,9 @@
               "fn": 2
             },
             "greptile": {
-              "tp": 0,
-              "fp": 1,
-              "fn": 2
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
             },
             "kg": {
               "tp": 0,
@@ -3332,27 +7536,27 @@
             },
             "qodo": {
               "tp": 3,
-              "fp": 7,
+              "fp": 6,
               "fn": 2
             },
             "bugbot": {
               "tp": 4,
-              "fp": 6,
+              "fp": 3,
               "fn": 1
             },
             "copilot": {
               "tp": 4,
-              "fp": 11,
+              "fp": 12,
               "fn": 1
             },
             "augment": {
               "tp": 5,
-              "fp": 6,
+              "fp": 7,
               "fn": 0
             },
             "propel": {
               "tp": 1,
-              "fp": 1,
+              "fp": 0,
               "fn": 4
             },
             "baz": {
@@ -3362,13 +7566,13 @@
             },
             "coderabbit": {
               "tp": 5,
-              "fp": 14,
+              "fp": 12,
               "fn": 0
             },
             "greptile": {
-              "tp": 3,
+              "tp": 4,
               "fp": 7,
-              "fn": 2
+              "fn": 1
             },
             "kg": {
               "tp": 0,
@@ -3392,7 +7596,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 0,
-              "fp": 3,
+              "fp": 4,
               "fn": 2
             },
             "claude": {
@@ -3407,7 +7611,7 @@
             },
             "qodo": {
               "tp": 1,
-              "fp": 2,
+              "fp": 3,
               "fn": 1
             },
             "bugbot": {
@@ -3442,7 +7646,7 @@
             },
             "greptile": {
               "tp": 1,
-              "fp": 4,
+              "fp": 3,
               "fn": 1
             },
             "kg": {
@@ -3482,7 +7686,7 @@
             },
             "qodo": {
               "tp": 2,
-              "fp": 3,
+              "fp": 2,
               "fn": 3
             },
             "bugbot": {
@@ -3492,7 +7696,7 @@
             },
             "copilot": {
               "tp": 3,
-              "fp": 7,
+              "fp": 8,
               "fn": 2
             },
             "augment": {
@@ -3512,7 +7716,7 @@
             },
             "coderabbit": {
               "tp": 4,
-              "fp": 7,
+              "fp": 4,
               "fn": 1
             },
             "greptile": {
@@ -3521,9 +7725,9 @@
               "fn": 1
             },
             "kg": {
-              "tp": 2,
-              "fp": 0,
-              "fn": 3
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
             }
           }
         },
@@ -3557,7 +7761,7 @@
             },
             "qodo": {
               "tp": 0,
-              "fp": 5,
+              "fp": 8,
               "fn": 4
             },
             "bugbot": {
@@ -3617,13 +7821,13 @@
           "tool_metrics": {
             "gemini": {
               "tp": 1,
-              "fp": 9,
+              "fp": 7,
               "fn": 4
             },
             "claude": {
-              "tp": 3,
-              "fp": 4,
-              "fn": 2
+              "tp": 4,
+              "fp": 5,
+              "fn": 1
             },
             "graphite": {
               "tp": 0,
@@ -3641,9 +7845,9 @@
               "fn": 3
             },
             "copilot": {
-              "tp": 4,
-              "fp": 7,
-              "fn": 1
+              "tp": 3,
+              "fp": 8,
+              "fn": 2
             },
             "augment": {
               "tp": 2,
@@ -3667,7 +7871,7 @@
             },
             "greptile": {
               "tp": 2,
-              "fp": 2,
+              "fp": 1,
               "fn": 3
             },
             "kg": {
@@ -3692,7 +7896,7 @@
           "tool_metrics": {
             "gemini": {
               "tp": 1,
-              "fp": 2,
+              "fp": 1,
               "fn": 1
             },
             "claude": {
@@ -3712,7 +7916,7 @@
             },
             "bugbot": {
               "tp": 1,
-              "fp": 1,
+              "fp": 2,
               "fn": 1
             },
             "copilot": {
@@ -3722,7 +7926,7 @@
             },
             "augment": {
               "tp": 1,
-              "fp": 5,
+              "fp": 8,
               "fn": 1
             },
             "propel": {
@@ -3742,7 +7946,7 @@
             },
             "greptile": {
               "tp": 1,
-              "fp": 1,
+              "fp": 3,
               "fn": 1
             },
             "kg": {
@@ -3834,13 +8038,13 @@
         ]
       },
       "overall_metrics": {
-        "qodo": {
-          "precision": 30.6,
-          "recall": 43.8,
-          "f1": 36.0,
-          "tp": 60,
-          "fp": 136,
-          "fn": 77,
+        "bugbot": {
+          "precision": 44.0,
+          "recall": 43.1,
+          "f1": 43.5,
+          "tp": 59,
+          "fp": 75,
+          "fn": 78,
           "num_prs": 50
         },
         "graphite": {
@@ -3852,94 +8056,94 @@
           "fn": 125,
           "num_prs": 50
         },
-        "claude": {
-          "precision": 33.1,
-          "recall": 35.8,
-          "f1": 34.4,
-          "tp": 49,
-          "fp": 99,
-          "fn": 88,
-          "num_prs": 50
-        },
-        "bugbot": {
-          "precision": 46.2,
-          "recall": 43.8,
-          "f1": 44.9,
-          "tp": 60,
-          "fp": 70,
-          "fn": 77,
-          "num_prs": 50
-        },
-        "propel": {
-          "precision": 46.0,
-          "recall": 38.0,
-          "f1": 41.6,
-          "tp": 52,
-          "fp": 61,
-          "fn": 85,
-          "num_prs": 50
-        },
-        "kg": {
-          "precision": 46.9,
-          "recall": 16.8,
-          "f1": 24.7,
-          "tp": 23,
-          "fp": 26,
-          "fn": 114,
-          "num_prs": 50
-        },
-        "coderabbit": {
-          "precision": 23.9,
-          "recall": 39.4,
-          "f1": 29.8,
-          "tp": 54,
-          "fp": 172,
-          "fn": 83,
+        "qodo": {
+          "precision": 27.9,
+          "recall": 46.0,
+          "f1": 34.7,
+          "tp": 63,
+          "fp": 163,
+          "fn": 74,
           "num_prs": 50
         },
         "copilot": {
-          "precision": 26.6,
-          "recall": 53.3,
-          "f1": 35.5,
-          "tp": 73,
-          "fp": 201,
-          "fn": 64,
-          "num_prs": 50
-        },
-        "baz": {
-          "precision": 44.0,
-          "recall": 29.2,
-          "f1": 35.1,
-          "tp": 40,
-          "fp": 51,
-          "fn": 97,
+          "precision": 25.5,
+          "recall": 51.1,
+          "f1": 34.0,
+          "tp": 70,
+          "fp": 205,
+          "fn": 67,
           "num_prs": 50
         },
         "greptile": {
-          "precision": 38.4,
-          "recall": 38.7,
-          "f1": 38.5,
-          "tp": 53,
-          "fp": 85,
-          "fn": 84,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 47.0,
-          "recall": 62.8,
-          "f1": 53.8,
-          "tp": 86,
-          "fp": 97,
-          "fn": 51,
+          "precision": 39.9,
+          "recall": 40.1,
+          "f1": 40.0,
+          "tp": 55,
+          "fp": 83,
+          "fn": 82,
           "num_prs": 50
         },
         "gemini": {
-          "precision": 29.8,
-          "recall": 37.2,
-          "f1": 33.1,
-          "tp": 51,
-          "fp": 120,
-          "fn": 86,
+          "precision": 28.9,
+          "recall": 36.5,
+          "f1": 32.3,
+          "tp": 50,
+          "fp": 123,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 33.1,
+          "recall": 40.1,
+          "f1": 36.3,
+          "tp": 55,
+          "fp": 111,
+          "fn": 82,
+          "num_prs": 50
+        },
+        "coderabbit": {
+          "precision": 23.3,
+          "recall": 39.4,
+          "f1": 29.3,
+          "tp": 54,
+          "fp": 178,
+          "fn": 83,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 43.7,
+          "recall": 63.5,
+          "f1": 51.8,
+          "tp": 87,
+          "fp": 112,
+          "fn": 50,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 42.4,
+          "recall": 36.5,
+          "f1": 39.2,
+          "tp": 50,
+          "fp": 68,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 44.1,
+          "recall": 29.9,
+          "f1": 35.7,
+          "tp": 41,
+          "fp": 52,
+          "fn": 96,
+          "num_prs": 50
+        },
+        "kg": {
+          "precision": 44.9,
+          "recall": 16.1,
+          "f1": 23.7,
+          "tp": 22,
+          "fp": 27,
+          "fn": 115,
           "num_prs": 50
         }
       }
@@ -4018,6 +8222,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 4
             }
           }
         },
@@ -4093,6 +8302,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 2
             }
           }
         },
@@ -4168,6 +8382,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
             }
           }
         },
@@ -4242,6 +8461,11 @@
             "kg": {
               "tp": 0,
               "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -4318,6 +8542,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 2
             }
           }
         },
@@ -4393,6 +8622,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -4468,6 +8702,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -4543,6 +8782,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
             }
           }
         },
@@ -4618,6 +8862,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -4693,6 +8942,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 5
+            },
+            "qodo-v2": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 2
             }
           }
         },
@@ -4768,6 +9022,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 2
             }
           }
         },
@@ -4843,6 +9102,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 2
             }
           }
         },
@@ -4918,6 +9182,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
             }
           }
         },
@@ -4993,6 +9262,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -5068,6 +9342,11 @@
               "tp": 0,
               "fp": 1,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -5142,6 +9421,11 @@
             "kg": {
               "tp": 1,
               "fp": 0,
+              "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
               "fn": 3
             }
           }
@@ -5218,6 +9502,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 4,
+              "fn": 3
             }
           }
         },
@@ -5293,6 +9582,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -5368,6 +9662,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -5443,6 +9742,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -5518,6 +9822,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 1
             }
           }
         },
@@ -5593,6 +9902,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -5665,6 +9979,11 @@
               "fn": 1
             },
             "kg": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
+            },
+            "qodo-v2": {
               "tp": 2,
               "fp": 0,
               "fn": 0
@@ -5743,6 +10062,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -5818,6 +10142,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 6,
+              "fn": 0
             }
           }
         },
@@ -5892,6 +10221,11 @@
             "kg": {
               "tp": 2,
               "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 6,
               "fn": 1
             }
           }
@@ -5968,6 +10302,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -6040,6 +10379,11 @@
               "fn": 1
             },
             "kg": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "qodo-v2": {
               "tp": 0,
               "fp": 2,
               "fn": 1
@@ -6118,6 +10462,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 4
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 4
             }
           }
         },
@@ -6193,6 +10542,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -6268,6 +10622,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -6343,6 +10702,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 4
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 8,
+              "fn": 2
             }
           }
         },
@@ -6418,6 +10782,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -6493,6 +10862,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
             }
           }
         },
@@ -6568,6 +10942,11 @@
               "tp": 0,
               "fp": 1,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 5,
+              "fn": 1
             }
           }
         },
@@ -6642,6 +11021,11 @@
             "kg": {
               "tp": 1,
               "fp": 0,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -6718,6 +11102,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 1
             }
           }
         },
@@ -6793,6 +11182,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 6
+            },
+            "qodo-v2": {
+              "tp": 3,
+              "fp": 15,
+              "fn": 3
             }
           }
         },
@@ -6868,6 +11262,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 1
             }
           }
         },
@@ -6942,6 +11341,11 @@
             "kg": {
               "tp": 1,
               "fp": 1,
+              "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 3,
               "fn": 1
             }
           }
@@ -7018,6 +11422,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
             }
           }
         },
@@ -7093,6 +11502,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
             }
           }
         },
@@ -7168,6 +11582,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -7243,6 +11662,11 @@
               "tp": 0,
               "fp": 1,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
             }
           }
         },
@@ -7318,6 +11742,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 5
+            },
+            "qodo-v2": {
+              "tp": 5,
+              "fp": 6,
+              "fn": 0
             }
           }
         },
@@ -7393,6 +11822,11 @@
               "tp": 0,
               "fp": 1,
               "fn": 2
+            },
+            "qodo-v2": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 0
             }
           }
         },
@@ -7468,6 +11902,11 @@
               "tp": 2,
               "fp": 0,
               "fn": 3
+            },
+            "qodo-v2": {
+              "tp": 4,
+              "fp": 4,
+              "fn": 1
             }
           }
         },
@@ -7543,6 +11982,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 4
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 6,
+              "fn": 3
             }
           }
         },
@@ -7618,6 +12062,11 @@
               "tp": 0,
               "fp": 0,
               "fn": 5
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 4
             }
           }
         },
@@ -7693,6 +12142,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "qodo-v2": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         }
@@ -7709,7 +12163,8 @@
         "greptile",
         "kg",
         "propel",
-        "qodo"
+        "qodo",
+        "qodo-v2"
       ],
       "dimensions": {
         "language": [
@@ -7778,13 +12233,13 @@
         ]
       },
       "overall_metrics": {
-        "qodo": {
-          "precision": 23.4,
-          "recall": 42.3,
-          "f1": 30.1,
-          "tp": 58,
-          "fp": 190,
-          "fn": 79,
+        "bugbot": {
+          "precision": 38.3,
+          "recall": 43.1,
+          "f1": 40.5,
+          "tp": 59,
+          "fp": 95,
+          "fn": 78,
           "num_prs": 50
         },
         "graphite": {
@@ -7796,49 +12251,13 @@
           "fn": 125,
           "num_prs": 50
         },
-        "claude": {
-          "precision": 30.5,
-          "recall": 37.2,
-          "f1": 33.6,
-          "tp": 51,
-          "fp": 116,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "bugbot": {
-          "precision": 38.3,
-          "recall": 43.1,
-          "f1": 40.5,
-          "tp": 59,
-          "fp": 95,
-          "fn": 78,
-          "num_prs": 50
-        },
-        "propel": {
-          "precision": 38.9,
-          "recall": 37.2,
-          "f1": 38.1,
-          "tp": 51,
-          "fp": 80,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "kg": {
-          "precision": 48.9,
-          "recall": 16.8,
-          "f1": 25.0,
-          "tp": 23,
-          "fp": 24,
-          "fn": 114,
-          "num_prs": 50
-        },
-        "coderabbit": {
-          "precision": 21.2,
-          "recall": 41.6,
-          "f1": 28.1,
-          "tp": 57,
-          "fp": 212,
-          "fn": 80,
+        "qodo": {
+          "precision": 23.4,
+          "recall": 42.3,
+          "f1": 30.1,
+          "tp": 58,
+          "fp": 190,
+          "fn": 79,
           "num_prs": 50
         },
         "copilot": {
@@ -7850,15 +12269,6 @@
           "fn": 64,
           "num_prs": 50
         },
-        "baz": {
-          "precision": 34.6,
-          "recall": 27.0,
-          "f1": 30.3,
-          "tp": 37,
-          "fp": 70,
-          "fn": 100,
-          "num_prs": 50
-        },
         "greptile": {
           "precision": 33.8,
           "recall": 36.5,
@@ -7866,6 +12276,42 @@
           "tp": 50,
           "fp": 98,
           "fn": 87,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 24.6,
+          "recall": 32.8,
+          "f1": 28.1,
+          "tp": 45,
+          "fp": 138,
+          "fn": 92,
+          "num_prs": 50
+        },
+        "qodo-v2": {
+          "precision": 34.4,
+          "recall": 55.5,
+          "f1": 42.5,
+          "tp": 76,
+          "fp": 145,
+          "fn": 61,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 30.5,
+          "recall": 37.2,
+          "f1": 33.6,
+          "tp": 51,
+          "fp": 116,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "coderabbit": {
+          "precision": 21.2,
+          "recall": 41.6,
+          "f1": 28.1,
+          "tp": 57,
+          "fp": 212,
+          "fn": 80,
           "num_prs": 50
         },
         "augment": {
@@ -7877,13 +12323,31 @@
           "fn": 56,
           "num_prs": 50
         },
-        "gemini": {
-          "precision": 24.6,
-          "recall": 32.8,
-          "f1": 28.1,
-          "tp": 45,
-          "fp": 138,
-          "fn": 92,
+        "propel": {
+          "precision": 38.9,
+          "recall": 37.2,
+          "f1": 38.1,
+          "tp": 51,
+          "fp": 80,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 34.6,
+          "recall": 27.0,
+          "f1": 30.3,
+          "tp": 37,
+          "fp": 70,
+          "fn": 100,
+          "num_prs": 50
+        },
+        "kg": {
+          "precision": 48.9,
+          "recall": 16.8,
+          "f1": 25.0,
+          "tp": 23,
+          "fp": 24,
+          "fn": 114,
           "num_prs": 50
         }
       }
@@ -7930,20 +12394,46 @@
       "best_score": 66.7
     },
     {
-      "id": "tool_claude_language_typescript_domain_scheduling",
-      "label": "Typescript + Scheduling",
+      "id": "tool_baz_language_java_domain_authentication",
+      "label": "Java + Authentication",
       "filters": {
         "language": [
-          "TypeScript"
+          "Java"
         ],
         "domain": [
-          "scheduling"
+          "authentication"
         ]
       },
-      "description": "TypeScript codebases with frontend patterns. Task scheduling.",
-      "best_model": "openai_gpt-5.2",
+      "description": "Java codebases with OOP patterns. Auth and access control.",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "baz",
+      "best_score": 64.0
+    },
+    {
+      "id": "concern_reliability",
+      "label": "Best for Reliability",
+      "filters": {
+        "concern": [
+          "reliability"
+        ]
+      },
+      "description": "Error handling and system stability",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "qodo-v2",
+      "best_score": 60.9
+    },
+    {
+      "id": "risk_critical",
+      "label": "Best for Critical Risk",
+      "filters": {
+        "risk": [
+          "critical"
+        ]
+      },
+      "description": "Critical security or data corruption risk.",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
       "best_tool": "claude",
-      "best_score": 60.6
+      "best_score": 58.5
     },
     {
       "id": "domain_scheduling",
@@ -7975,22 +12465,6 @@
       "best_score": 57.1
     },
     {
-      "id": "tool_qodo_risk_high_context_file",
-      "label": "High Risk + File Context",
-      "filters": {
-        "risk": [
-          "high"
-        ],
-        "context": [
-          "file"
-        ]
-      },
-      "description": "Significant impact, potential data loss. Requires full file understanding.",
-      "best_model": "openai_gpt-5.2",
-      "best_tool": "qodo",
-      "best_score": 57.1
-    },
-    {
       "id": "tool_copilot_language_java_difficulty_subtle",
       "label": "Java + Subtle Bugs",
       "filters": {
@@ -8007,20 +12481,20 @@
       "best_score": 56.3
     },
     {
-      "id": "tool_gemini_domain_authentication_difficulty_subtle",
-      "label": "Authentication + Subtle Bugs",
+      "id": "tool_qodo_change_type_feature_context_file",
+      "label": "Features + File Context",
       "filters": {
-        "domain": [
-          "authentication"
+        "change_type": [
+          "feature"
         ],
-        "difficulty": [
-          "subtle"
+        "context": [
+          "file"
         ]
       },
-      "description": "Auth and access control. Non-obvious, needs domain knowledge.",
+      "description": "New feature implementation Requires full file understanding.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "gemini",
-      "best_score": 49.1
+      "best_tool": "qodo",
+      "best_score": 52.9
     },
     {
       "id": "tool_coderabbit_language_go_risk_high",
@@ -8039,19 +12513,6 @@
       "best_score": 46.7
     },
     {
-      "id": "domain_authentication",
-      "label": "Best for Authentication",
-      "filters": {
-        "domain": [
-          "authentication"
-        ]
-      },
-      "description": "Auth and access control.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "baz",
-      "best_score": 46.4
-    },
-    {
       "id": "tool_kg_language_go_complexity_moderate",
       "label": "Go + Moderate Code",
       "filters": {
@@ -8066,6 +12527,22 @@
       "best_model": "openai_gpt-5.2",
       "best_tool": "kg",
       "best_score": 43.8
+    },
+    {
+      "id": "tool_gemini_domain_authentication_difficulty_subtle",
+      "label": "Authentication + Subtle Bugs",
+      "filters": {
+        "domain": [
+          "authentication"
+        ],
+        "difficulty": [
+          "subtle"
+        ]
+      },
+      "description": "Auth and access control. Non-obvious, needs domain knowledge.",
+      "best_model": "openai_gpt-5.2",
+      "best_tool": "gemini",
+      "best_score": 42.9
     },
     {
       "id": "change_type_performance",
@@ -8142,9 +12619,9 @@
       "filters": {},
       "sort": "recall",
       "description": "Tools ranked by recall - catches more issues, may have more noise",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
       "best_tool": "augment",
-      "best_score": 62.8
+      "best_score": 63.5
     },
     {
       "id": "pr_size_small",
@@ -8199,19 +12676,6 @@
       "best_score": 58.3
     },
     {
-      "id": "risk_critical",
-      "label": "Best for Critical Risk",
-      "filters": {
-        "risk": [
-          "critical"
-        ]
-      },
-      "description": "Critical security or data corruption risk.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "augment",
-      "best_score": 57.7
-    },
-    {
       "id": "pr_size_large",
       "label": "Best for Large PRs",
       "filters": {
@@ -8223,6 +12687,32 @@
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "augment",
       "best_score": 57.1
+    },
+    {
+      "id": "language_java",
+      "label": "Best for Java",
+      "filters": {
+        "language": [
+          "Java"
+        ]
+      },
+      "description": "Java codebases with OOP patterns.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "qodo-v2",
+      "best_score": 56.0
+    },
+    {
+      "id": "language_python",
+      "label": "Best for Python",
+      "filters": {
+        "language": [
+          "Python"
+        ]
+      },
+      "description": "Python codebases with dynamic typing.",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "augment",
+      "best_score": 55.6
     },
     {
       "id": "concern_correctness",
@@ -8238,30 +12728,17 @@
       "best_score": 55.6
     },
     {
-      "id": "language_python",
-      "label": "Best for Python",
+      "id": "domain_authentication",
+      "label": "Best for Authentication",
       "filters": {
-        "language": [
-          "Python"
+        "domain": [
+          "authentication"
         ]
       },
-      "description": "Python codebases with dynamic typing.",
+      "description": "Auth and access control.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "augment",
-      "best_score": 55.1
-    },
-    {
-      "id": "language_java",
-      "label": "Best for Java",
-      "filters": {
-        "language": [
-          "Java"
-        ]
-      },
-      "description": "Java codebases with OOP patterns.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "augment",
-      "best_score": 54.9
+      "best_tool": "qodo-v2",
+      "best_score": 54.5
     },
     {
       "id": "difficulty_subtle",
@@ -8287,6 +12764,23 @@
       "description": "Spans multiple files.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "augment",
+      "best_score": 54.2
+    },
+    {
+      "id": "high_risk_auth",
+      "label": "High Risk Auth",
+      "filters": {
+        "risk": [
+          "high",
+          "critical"
+        ],
+        "domain": [
+          "authentication"
+        ]
+      },
+      "description": "Significant impact, potential data loss. Auth and access control.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "qodo-v2",
       "best_score": 54.2
     },
     {
@@ -8342,6 +12836,52 @@
       "best_score": 51.9
     },
     {
+      "id": "java_medium",
+      "label": "Best for Medium Java PRs",
+      "filters": {
+        "language": [
+          "Java"
+        ],
+        "pr_size": [
+          "medium"
+        ]
+      },
+      "description": "Java codebases with OOP patterns. Medium PRs with 3-5 files, typical feature development",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "qodo-v2",
+      "best_score": 51.4
+    },
+    {
+      "id": "concern_security",
+      "label": "Best for Security",
+      "filters": {
+        "concern": [
+          "security"
+        ]
+      },
+      "description": "Security vulnerabilities and attack vectors",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "augment",
+      "best_score": 51.2
+    },
+    {
+      "id": "security_critical",
+      "label": "Security Critical",
+      "filters": {
+        "concern": [
+          "security"
+        ],
+        "risk": [
+          "high",
+          "critical"
+        ]
+      },
+      "description": "Security vulnerabilities and attack vectors Significant impact, potential data loss.",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "augment",
+      "best_score": 51.2
+    },
+    {
       "id": "change_type_feature",
       "label": "Best for Features",
       "filters": {
@@ -8381,22 +12921,6 @@
       "best_score": 50.0
     },
     {
-      "id": "java_medium",
-      "label": "Best for Medium Java PRs",
-      "filters": {
-        "language": [
-          "Java"
-        ],
-        "pr_size": [
-          "medium"
-        ]
-      },
-      "description": "Java codebases with OOP patterns. Medium PRs with 3-5 files, typical feature development",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "greptile",
-      "best_score": 50.0
-    },
-    {
       "id": "complexity_moderate",
       "label": "Best for Moderate Code",
       "filters": {
@@ -8423,53 +12947,6 @@
       "best_score": 49.6
     },
     {
-      "id": "high_risk_auth",
-      "label": "High Risk Auth",
-      "filters": {
-        "risk": [
-          "high",
-          "critical"
-        ],
-        "domain": [
-          "authentication"
-        ]
-      },
-      "description": "Significant impact, potential data loss. Auth and access control.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "bugbot",
-      "best_score": 49.1
-    },
-    {
-      "id": "concern_security",
-      "label": "Best for Security",
-      "filters": {
-        "concern": [
-          "security"
-        ]
-      },
-      "description": "Security vulnerabilities and attack vectors",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "augment",
-      "best_score": 47.6
-    },
-    {
-      "id": "security_critical",
-      "label": "Security Critical",
-      "filters": {
-        "concern": [
-          "security"
-        ],
-        "risk": [
-          "high",
-          "critical"
-        ]
-      },
-      "description": "Security vulnerabilities and attack vectors Significant impact, potential data loss.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "augment",
-      "best_score": 47.6
-    },
-    {
       "id": "risk_medium",
       "label": "Best for Medium Risk",
       "filters": {
@@ -8481,19 +12958,6 @@
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "augment",
       "best_score": 46.3
-    },
-    {
-      "id": "concern_reliability",
-      "label": "Best for Reliability",
-      "filters": {
-        "concern": [
-          "reliability"
-        ]
-      },
-      "description": "Error handling and system stability",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "augment",
-      "best_score": 44.4
     }
   ],
   "tool_display_names": {

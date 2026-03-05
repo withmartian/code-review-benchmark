@@ -50,6 +50,9 @@ tr:hover td{background:#f9f9f9}
     <div><input type="number" id="diff-min" value="0" min="0" step="50"></div>
     <div><input type="number" id="diff-max" value="2000" min="0" step="50"></div>
   </div>
+  <h3>Quality Filters</h3>
+  <label><input type="checkbox" id="exclude-self-authored"> Exclude self-authored</label>
+  <label><input type="checkbox" id="require-reviews"> Require reviews</label>
   <h3>Label Filters</h3>
   <label>Domain</label><div class="cb-group" id="f-domain"></div>
   <label>Language</label><input type="text" class="search-input" placeholder="Type to filter..." oninput="filterCbs('f-language',this.value)"><div class="cb-group" id="f-language"></div>
@@ -119,7 +122,7 @@ async function init(){
   $('#end-date').value=d.end;
   // Build initial color map from all chatbots
   assignColors(o.chatbots);
-  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max'])
+  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max','exclude-self-authored','require-reviews'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
 }
@@ -137,6 +140,8 @@ function qs(){
   const dmin=$('#diff-min').value, dmax=$('#diff-max').value;
   if(dmin&&dmin!=='0') p.set('diff_lines_min',dmin);
   if(dmax) p.set('diff_lines_max',dmax);
+  if($('#exclude-self-authored').checked) p.set('exclude_self_authored','true');
+  if($('#require-reviews').checked) p.set('require_reviews','true');
   const j=(cls,key)=>{const v=checked(cls);if(v.length)p.set(key,v.join(','));};
   j('cb-bot','chatbot');j('cb-dom','domain');j('cb-lang','language');j('cb-prt','pr_type');j('cb-sev','severity');
   return p.toString();

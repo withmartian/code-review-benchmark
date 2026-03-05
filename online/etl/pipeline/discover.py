@@ -201,6 +201,15 @@ def _extract_pr_metadata(events: list[dict]) -> dict:
                 meta["pr_author"] = (pr_obj.get("user") or {}).get("login")
             if meta["pr_created_at"] is None:
                 meta["pr_created_at"] = pr_obj.get("created_at")
+        elif event["type"] == "IssueCommentEvent":
+            issue_obj = payload.get("issue", {})
+            pr_obj = issue_obj.get("pull_request", {})
+            if not meta["pr_title"]:
+                meta["pr_title"] = issue_obj.get("title", "")
+            if meta["pr_author"] is None:
+                meta["pr_author"] = (issue_obj.get("user") or {}).get("login")
+            if meta["pr_created_at"] is None:
+                meta["pr_created_at"] = issue_obj.get("created_at")
     return meta
 
 

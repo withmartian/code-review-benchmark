@@ -217,6 +217,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_bf.add_argument("--batch-size", type=int, default=5000)
     p_bf.add_argument("--verbose", action="store_true")
 
+    # backfill-pr-author
+    p_bfa = sub.add_parser("backfill-pr-author", help="Backfill pr_author from GitHub API")
+    p_bfa.add_argument("--database-url")
+    p_bfa.add_argument("--batch-size", type=int, default=5000)
+    p_bfa.add_argument("--max-prs", type=int, default=None, help="Max PRs to process (default: all)")
+    p_bfa.add_argument("--verbose", action="store_true")
+
     # dashboard
     p_dash = sub.add_parser("dashboard", help="Launch Streamlit dashboard")
     p_dash.add_argument("--port", type=int, default=8501)
@@ -541,6 +548,26 @@ async def cmd_backfill(args: argparse.Namespace) -> None:
         await db.close()
 
 
+async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
+    from db.connection import DBAdapter
+    from db.schema import create_tables
+    from pipeline.backfill_pr_author import backfill_pr_authors
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        await backfill_pr_authors(
+            cfg, db, batch_size=args.batch_size, max_prs=args.max_prs
+        )
+    finally:
+        await db.close()
+
+
 async def cmd_import(args: argparse.Namespace) -> None:
     from migration.import_filesystem import import_all
 
@@ -589,6 +616,8 @@ def main() -> None:
         asyncio.run(cmd_volumes(args))
     elif args.command == "backfill":
         asyncio.run(cmd_backfill(args))
+    elif args.command == "backfill-pr-author":
+        asyncio.run(cmd_backfill_pr_author(args))
     elif args.command == "import":
         asyncio.run(cmd_import(args))
 

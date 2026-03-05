@@ -93,6 +93,8 @@ pub struct PrRecord {
     pub domain: Option<Domain>,
     pub pr_type: Option<PrType>,
     pub severity: Option<Severity>,
+    pub self_authored: bool,
+    pub has_reviews: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +146,8 @@ pub struct FilterParams {
     pub min_prs_per_day: usize,
     pub min_total_prs: usize,
     pub include_ignored: bool,
+    pub exclude_self_authored: bool,
+    pub require_reviews: bool,
 }
 
 impl Default for FilterParams {
@@ -162,6 +166,8 @@ impl Default for FilterParams {
             min_prs_per_day: 0,
             min_total_prs: 0,
             include_ignored: false,
+            exclude_self_authored: false,
+            require_reviews: false,
         }
     }
 }

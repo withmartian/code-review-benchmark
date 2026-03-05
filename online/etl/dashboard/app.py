@@ -60,6 +60,10 @@ min_daily_prs = st.sidebar.number_input(
 # Pre-fetch analyses to extract label options
 _all_analyses = get_analyses(DATABASE_URL, chatbot_id=chatbot_id)
 
+# Quality filters
+exclude_self = st.sidebar.checkbox("Exclude self-authored PRs", value=False)
+require_reviews = st.sidebar.checkbox("Require non-empty reviews", value=False)
+
 # Diff lines filter
 diff_over_2k = st.sidebar.checkbox("More than 2k LOC", value=False)
 diff_range = st.sidebar.slider(
@@ -125,7 +129,22 @@ def _diff_lines_ok(row) -> bool:
     return diff_range[0] <= dl <= diff_range[1]
 
 
-analyses = [a for a in _all_analyses if _label_matches(a) and _diff_lines_ok(a)]
+def _author_ok(row) -> bool:
+    if not exclude_self:
+        return True
+    author = (row.get("pr_author") or "").strip()
+    if not author:
+        return False  # exclude unknown-author PRs when filter is on
+    return author.lower() != (row.get("github_username") or "").lower()
+
+
+def _reviews_ok(row) -> bool:
+    if not require_reviews:
+        return True
+    return row.get("has_reviews", False)
+
+
+analyses = [a for a in _all_analyses if _label_matches(a) and _diff_lines_ok(a) and _author_ok(a) and _reviews_ok(a)]
 
 start_str = str(start_date) if start_date else None
 end_str = str(end_date) if end_date else None

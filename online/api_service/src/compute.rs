@@ -109,6 +109,16 @@ fn record_matches(record: &PrRecord, snapshot: &Snapshot, params: &FilterParams)
         }
     }
 
+    // Exclude self-authored PRs (bot reviewing its own PR)
+    if params.exclude_self_authored && record.self_authored {
+        return false;
+    }
+
+    // Require non-empty reviews
+    if params.require_reviews && !record.has_reviews {
+        return false;
+    }
+
     true
 }
 

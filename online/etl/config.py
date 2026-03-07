@@ -72,6 +72,7 @@ DEFAULT_CHATBOT_USERNAMES = [
     "claude[bot]",
     "coderabbitai[bot]",
     "Copilot",
+    "cubic-dev-ai[bot]",
     "cursor[bot]",
     "entelligence-ai-pr-reviews[bot]",
     "factory-droid[bot]",

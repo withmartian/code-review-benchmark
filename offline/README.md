@@ -144,7 +144,19 @@ uv run python -m code_review_benchmark.step3_judge_comments --tool claude --forc
 
 **Output:** `results/{model}/evaluations.json` with TP/FP/FN, precision, recall per review.
 
-### 4. Summary table
+### 4. Generate dashboard
+
+Regenerate the dashboard JSON and HTML from evaluation results:
+
+```bash
+uv run python analysis/benchmark_dashboard.py
+```
+
+**Output:** `analysis/benchmark_dashboard.json` and `analysis/benchmark_dashboard.html`
+
+Open `analysis/benchmark_dashboard.html` in a browser to view results. Run this after adding new tools or re-running the judge to update the dashboard.
+
+### 5. Summary table
 
 Show review counts by tool and repo:
 
@@ -161,7 +173,7 @@ coderabbit  10           10           10           10           10           50
 ...
 ```
 
-### 5. Export by tool
+### 6. Export by tool
 
 Export tool reviews with evaluation results:
 

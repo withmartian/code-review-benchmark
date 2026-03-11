@@ -205,6 +205,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "Lithuanian translation files contain Italian text instead of Lithuanian - 'Installa una delle seguenti applicazioni sul tuo cellulare:' appears in loginTotpStep1 (messages_lt.properties:71) and totpStep1 (account/messages_lt.properties:101)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Simplified Chinese (zh_CN) translation uses Traditional Chinese characters instead of Simplified Chinese - totpStep1 contains '\u5728\u60a8\u7684\u624b\u6a5f\u4e0a\u5b89\u88dd\u4ee5\u4e0b\u61c9\u7528\u7a0b\u5f0f\u4e4b\u4e00\uff1a' but should use '\u5728\u60a8\u7684\u624b\u673a\u4e0a\u5b89\u88c5\u4ee5\u4e0b\u5e94\u7528\u7a0b\u5e8f\u4e4b\u4e00\uff1a'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "StringIndexOutOfBoundsException in VerifyMessageProperties.java verifySafeHtml method when start + end indices exceed shorter string length - substring(start, length - end) can have beginIndex > endIndex",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -433,6 +453,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "Null check validates `grantType` instead of `rawTokenId` in AccessTokenContext constructor line 73, allowing null rawTokenId to pass validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId matcher uses wrong substring indices (3,5) instead of (4,6) for extracting grant type shortcut",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId matcher has inverted equality logic, returning false when grant type matches instead of when it doesn't match",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientCredentialsGrantType does not set GRANT_TYPE on clientSessionCtx, causing client credentials tokens to get 'unknown' (na) grant type encoded in token ID instead of 'cc'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -622,7 +668,8 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": []
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
     "claude": [],
@@ -723,7 +770,8 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": []
   },
   "https://github.com/keycloak/keycloak/pull/36880": {
     "claude": [
@@ -974,7 +1022,15 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "NullPointerException when getResourceTypeResource returns null - the result of getResourceTypeResource at line 217 is used at line 219 in findByResource without null check, but getResourceTypeResource can return null if supportsAuthorizationSchema returns false or findByName returns null",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/keycloak/keycloak/pull/37038": {
     "qodo": [
@@ -1139,7 +1195,15 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "canManage() method incorrectly checks for both VIEW and MANAGE scopes instead of only MANAGE scope, allowing users with only VIEW permission to perform management operations like creating top-level groups (privilege escalation vulnerability)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
     "claude": [
@@ -1360,7 +1424,8 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": []
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
     "gemini": [
@@ -1557,7 +1622,15 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "getSubGroupsCount() returns null when modelSupplier.get() returns null (concurrent deletion case), violating the API contract that explicitly states 'Never returns null', which may cause NullPointerException in callers that auto-unbox the Long value",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1": {
     "augment": [
@@ -1929,7 +2002,21 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "isinstance(process, multiprocessing.Process) check at lines 253-257 is always False for spawn-context processes (SpawnProcess), preventing kill() from being called on hung/dead flusher processes and causing zombie processes and potential double-flushing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isinstance(process, multiprocessing.Process) check at lines 346-347 in join() is always False for spawn-context processes, preventing terminate() from being called and causing shutdown hangs or orphan processes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5": {
     "gemini": [
@@ -2256,7 +2343,27 @@
       }
     ],
     "baz": [],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "fetch_error_details zips error_ids with unordered nodestore dict values, causing mismatched error data due to dict ordering not matching input order and missing entries causing silent misalignment",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "HIDDEN_ATTRIBUTES filter only applied when search query is active, not when browsing all attributes, causing internal attributes to be visible in default state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics event recorded before feature flag check, tracking events for disabled feature and inflating analytics counts with rejected requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1": {
     "gemini": [
@@ -2621,6 +2728,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "OptimizedCursorPaginator.get_item_key crashes with TypeError when called on datetime fields because it uses math.floor() directly on datetime objects instead of converting them to timestamps first",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.value_from_cursor returns raw integer cursor values instead of converting them back to datetime objects for queryset WHERE clauses",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator passes negative start_offset to Django queryset slicing when enable_advanced_features=True and cursor.offset < 0, causing AssertionError since Django doesn't support negative indexing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Line 71 in organization_auditlogs.py accesses organization_context.member.has_global_access without checking if member is None, risking AttributeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BasePaginator.get_result allows negative offset to flow through to Django queryset slicing for is_prev cursors, which causes AssertionError in Django ORM",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -2769,6 +2908,20 @@
     "kg": [
       {
         "text": "Mutex lock scope is too narrow - only protects cache assignment instead of entire BuildIndex function, allowing concurrent builds for the same index key which can cause duplicate index creation, resource waste, and potential conflicts or errors for file-based indices",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "History() method missing nil check on s.search field, causing nil pointer panic when search is not configured",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Origin() method missing nil check on s.search field, causing nil pointer panic when search is not configured",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -2944,7 +3097,21 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "MetricAlertDetectorHandler is now abstract and will crash on instantiation - it extends StatefulDetectorHandler but doesn't implement the four required abstract methods (counter_names, get_dedupe_value, get_group_key_values, build_occurrence_and_event_data)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test builds expected occurrence with wrong group_key causing incorrect assertion - test_dedupe builds expected occurrence with group_key 'val1' but evaluates with group_key 'group_key', producing mismatched fingerprints",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
     "gemini": [
@@ -3096,6 +3263,14 @@
     "kg": [
       {
         "text": "Typo in docstring - 'humam' should be 'human'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "get_monitor_environment_context returns original monitor_environment.monitor.config instead of the modified local config variable, causing the schedule_type transformation to be dead code and the raw integer value to be sent instead of the human-readable display string",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -3264,6 +3439,14 @@
     "kg": [
       {
         "text": "Using `timezone.now()` as default in dataclass sets the same timestamp for all instances - should use `field(default_factory=timezone.now)` instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "The `queued` field default `timezone.now()` is evaluated once at class definition time rather than per-instance, causing all instances without an explicit `queued` value to share the same timestamp from module load time. Should use `field(default_factory=timezone.now)` instead.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -3465,6 +3648,20 @@
       },
       {
         "text": "Offset is marked as completed even when processing fails, allowing commits for failed messages. This violates the guarantee that offsets are only committed after successful processing.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "FixedQueuePool.shutdown() sets worker.shutdown = True before draining queues, causing message loss during graceful shutdown or Kafka consumer rebalance",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SimpleQueueProcessingStrategy.close() shuts down factory's shared queue_pool, breaking consumer rebalancing by making the pool unusable for subsequent strategy creation",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -3995,7 +4192,21 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Upsampling eligibility check uses outer closure's `dataset` instead of `scoped_dataset` parameter, causing incorrect upsampling decisions when `_get_event_stats` is called with a different dataset than the outer one",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cache key uses Python's non-deterministic `hash()` function, making cache ineffective across processes due to PYTHONHASHSEED randomization",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
     "gemini": [
@@ -4158,7 +4369,59 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Denial cache serves stale denials that override correctly-refreshed permission cache - the denial cache is checked first in Check() and short-circuits all subsequent checks, including the permission cache. When the permission cache is refreshed with newly-granted permissions, the denial cache still serves stale denials for up to 30 seconds, causing incorrect authorization denials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Denial cache is never invalidated when the permission cache is refreshed - getIdentityPermissions refreshes the perm cache on every call but doesn't clear the corresponding denial cache entries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Ambiguous cache keys from shared underlying cache - userPermDenialCacheKey uses underscore separator between action, name, and parent components, creating potential key collisions since components can contain underscores. A denial cache key with action='X', name='Y', parent='Z' produces the same string as a perm cache key with action='X_Y_Z', causing silent JSON unmarshal failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Duplicate NoopCache type defined in both pkg/services/authz/rbac.go and pkg/services/authac/rbac/service.go causing compile-time redefinition error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Insecure default transport credentials used for remote RBAC client when certFile is not provided, enabling potential MITM attacks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Compilation bug in cacheWrap.Set: undefined 'err' variable in pkg/services/authz/rbac/cache.go line 92",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In-process RBAC client caching disabled via NoopCache in ProvideAuthZClient, potentially degrading performance under load",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing explicit cache invalidation on policy or permission updates, potentially causing stale cache data to persist beyond policy changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/getsentry/sentry/pull/67876": {
     "gemini": [
@@ -4433,7 +4696,15 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "KeyError on integration.metadata[\"sender\"] when sender key is missing from metadata, causing 500 error when accessing integration.metadata[\"sender\"][\"login\"] at line 503",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
     "gemini": [
@@ -4767,6 +5038,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "enableSqlExpressions function has inverted logic on line 195 - negates the feature flag check with '!' operator, causing enabled to be false when flag is on",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "enableSqlExpressions function always returns false in both code branches (lines 196-199), making it impossible to enable SQL expressions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQL expressions are permanently broken - all queries rejected with 'sqlExpressions is not implemented' error even when feature flag is enabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -4881,6 +5172,52 @@
       },
       {
         "text": "Typo in error message at line 119: 'asssets-manifest' should be 'assets-manifest'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "Missing re-check of entryPointAssetsCache after acquiring write lock in double-checked locking pattern, causing redundant disk I/O when multiple goroutines race to populate the cache",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "GetWebAssets cache population has a race condition under concurrent requests where reads may observe partially initialized state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GetWebAssets can trigger multiple fetches for the same key under concurrent access",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GetWebAssets cache population lacks re-check after acquiring write lock, allowing redundant expensive fetches when multiple goroutines race",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GetWebAssets cache may have inconsistent state under contention due to missing double-checked locking pattern",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing concurrent tests with -race flag to verify GetWebAssets race-free behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing tests to verify only a single underlying fetch is invoked per missing cache key in GetWebAssets",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -5110,7 +5447,107 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Six log.Error() calls in CleanAnnotations and CleanOrphanedAnnotationTags methods (lines 534, 537, 554, 557, 576, 579) log routine informational messages instead of actual errors, flooding error logs in production",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Log statements in cleanup methods dump all annotation IDs into logs via 'ids' key-value pair, potentially creating very large log entries for big batches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup service ticker interval reduced from 10 minutes to 1 minute (line 77 in cleanup.go), causing all cleanup jobs to run 10x more frequently and significantly increasing database load",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "1-minute ticker interval conflicts with 9-minute timeout in clean() method, potentially causing cleanup jobs to run back-to-back when they take longer than 1 minute",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Deadlock/lock-contention risk persists under concurrent inserts in xorm_store.go - transactions spanning multiple batches or large concurrent writers can still deadlock or cause long lock waits on MySQL/InnoDB and SQLite",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ProvideCleanupService constructs cleanup store with a nil tagService, which will cause nil pointer dereference crash if cleanup operations touch annotation tags via ensureTags() method",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Use of errors.Join in cleanup_test.go requires Go 1.20+ and will fail to compile on older Go versions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup ticker cadence changed from 10 minutes to 1 minute without configurability, potentially increasing database load and contention under high write-throughput workloads",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Insert paths may hold locks during subsequent operations instead of running each write in its own isolated transaction",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing high-concurrency tests to simulate multiple concurrent inserts and reproduce potential deadlocks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No validation or fallback for nil tagService dependency in ProvideCleanupService",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No tests verifying behavior when tagService is nil in cleanup paths",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup cadence is hardcoded and not exposed as a configuration option",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing metrics/logging around cleanup cadence and execution to observe impact and behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No retry/backoff mechanism for deadlocks in batch deletion operations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing instrumentation for lock wait times and batch success/failure rates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/grafana/grafana/pull/90045": {
     "gemini": [
@@ -5554,6 +5991,94 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "Create error path at line 45 calls d.recordLegacyDuration instead of d.recordStorageDuration, recording storage failure duration under wrong metric",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Update error path at line 129 calls d.recordLegacyDuration instead of d.recordStorageDuration, recording storage failure duration under wrong metric",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DeleteCollection goroutine at line 166 calls d.recordStorageDuration instead of d.recordLegacyDuration for legacy operation, recording legacy duration under wrong metric",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete success path at line 106 passes object name instead of options.Kind to recordStorageDuration, causing metric label cardinality explosion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete method at line 97 uses d.Log instead of enriched log variable in klog.NewContext, losing name/kind/method context fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Major churn in DualWriterMode3 implementation (Mode3) in pkg/apiserver/rest/dualwriter_mode3.go affects API stability and increases regression risk",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Undefined registry variable in pkg/apiserver/rest/dualwriter_mode1_test.go - test calls NewDualWriter with undefined variable 'p'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dependency churn in go.work.sum with otel/genproto/prometheus modules may cause build differences and compatibility issues",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mode3 tests in pkg/apiserver/rest/dualwriter_mode3_test.go are extensive and may be brittle due to heavy reliance on mocks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Playlist tests in pkg/tests/apis/playlist/playlist_test.go lack explicit unit test coverage for async behavior and metrics in Mode3 dual-writer",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mode3 dual-writer tests don't explicitly verify async legacy writes behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mode3 dual-writer tests don't explicitly verify metrics reporting and collection paths",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Playlist tests don't verify divergence detection via Compare in Mode3",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Playlist tests don't verify observability via metrics when enabled in Mode3",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -5816,6 +6341,112 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "Silence drawer never renders when only promRule is provided (no rulerRule) - SilenceGrafanaRuleDrawer is guarded by rulerRuleType.grafana.alertingRule(rule) which fails when rule is undefined, preventing the drawer from mounting even though the silence menu item is enabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing key prop on GrafanaRuleListItem in FilterView's list rendering - key variable is destructured but not passed to the component, causing React reconciliation issues",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ModifyExport ability incorrectly restricted to alerting rules only in useAllGrafanaPromRuleAbilities - uses prometheusRuleType.grafana.alertingRule() instead of checking all Grafana rules, preventing recording rules from showing the Export menu item",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "High churn in useAbilities and Grafana Prom rule RBAC integration - core RBAC hooks heavily refactored to support Grafana Prometheus rules alongside ruler rules, creating high-risk architectural change requiring all call sites to be updated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Use of skipToken to bypass Grafana Prometheus rule checks can lead to silent fallbacks and inconsistent permission behavior depending on whether a rule is present",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CHANGELOG/README not updated to reflect RBAC and Grafana Prometheus rule integration changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AlertRuleMenu refactored to use plural RBAC hooks increases surface area for compatibility issues with promRule vs rulerRule",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mimir data source integration added to tests may cause mismatches if test data doesn't mirror production data sources and permissions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Extensive mock changes in RulesTable RBAC tests may cause flaky tests if mocks aren't synchronized across all code paths",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Grafana translation tests and mocks require alignment across suite due to new Grafana RBAC integration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GrafanaGroupLoader.tsx now drops ruler-rule rendering and may hide non-Grafana rules, potentially breaking correctness or user expectations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GrafanaRuleListItem.tsx has no unit tests despite being a core path exercised by GrafanaGroupLoader and the Grafana rule list UI",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RuleActionsButtons.V2.tsx refactoring introduces new provisioned/editable logic with potential for misalignment with old components that assume rulerRule-based identifiers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No explicit server-side RBAC enforcement visible in the diff - relies on client checks without corroborating server-side RBAC verification",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New helper isProvisionedPromRule lacks unit tests to ensure it correctly detects provenance on Grafana-provisioned rules",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GrafanaPromRuleDTO gains provenance field but if server data does not populate provenance consistently, edge cases may hide or expose actions unexpectedly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "I18n translation keys 'cannot-find-rule-details-for' and 'cannot-load-rule-details-for' were removed, breaking localization contract for downstream tooling or custom UIs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -5923,6 +6554,58 @@
       },
       {
         "text": "In shardQuerySplitting.ts line 50: filter((query) => query.expr) is applied before applyTemplateVariables, checking the original expr instead of the interpolated one. If a template variable resolves to an empty string, the query should be filtered out but would be incorrectly included. Move the filter after the map to filter on interpolated expressions.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "Double interpolation when shard splitting delegates to time splitting causes duplicate ad-hoc filters: runShardSplitQuery interpolates queries via applyTemplateVariables at shardQuerySplitting.ts:52, then passes already-interpolated targets into runSplitQuery at shardQuerySplitting.ts:163, where applyTemplateVariables is called again at querySplitting.ts:299, resulting in duplicate filter labels in queries sent to Loki",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Loki interpolation API migration introduces injection risk through unsanitized interpolated values that may come from user controls, enabling potential LogQL injection or query manipulation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "applyTemplateVariables mutates LokiQuery objects in place during runSplitQuery, risking cross-request contamination and hard-to-trace bugs when input objects are reused",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Two parallel interpolation entry points (applyTemplateVariables in backend, interpolateVariablesInQueries in frontend UI) create API divergence with potentially different semantics for variable substitution and ad-hoc filters",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Lack of input validation and escaping for interpolated values, missing unit tests for edge cases like quotes, braces, pipes, and backslashes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tests in querySplitting.test.ts rely on exact string substitutions for interpolation, making them brittle to changes in interpolation logic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Shard-splitting tests lack coverage for edge cases such as empty or single shard scenarios and concurrent requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing documentation describing the two interpolation methods, when each is used, how ad-hoc filters are handled, and security considerations",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -6171,6 +6854,100 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "tagDeviceUI sets local cache before DB call, allowing device limit bypass for 29 minutes when CreateOrUpdateDevice returns ErrDeviceLimitReached",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TOCTOU race condition in CreateOrUpdateDevice allows exceeding device limit when concurrent requests pass count check before inserts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Duplicate anonymousDeviceExpiration constant defined in both pkg/services/anonymous/anonimpl/api/api.go and pkg/services/anonymous/anonimpl/anonstore/database.go causing compile-time error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "API contract mismatch: anonymousDeviceLimit semantics not aligned between frontend (number | undefined) and backend (int64), where 0 means unlimited but frontend expects possibly undefined",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-atomic limit enforcement in CreateOrUpdateDevice: check-then-act pattern allows race condition where concurrent requests can bypass device limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition in device limit enforcement: CountDevices check and CreateOrUpdateDevice insert are not atomic, allowing multiple concurrent requests to exceed configured limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Atomicity issue in anonymous device limit: read-then-act pattern in CountDevices followed by CreateOrUpdateDevice allows concurrent requests to violate limit cap",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Breaking change: TagDevice changed from asynchronous goroutine to synchronous call, propagating ErrDeviceLimitReached and potentially breaking existing login flows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ErrDeviceLimitReached not mapped to proper HTTP status code (should be 429 Too Many Requests instead of 500)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Duplication of 30-day expiration constant across pkg/services/anonymous/anonimpl/anonstore/database.go and pkg/services/anonymous/anonimpl/api/api.go risks drift",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Type mismatch between backend FrontendSettingsDTO.AnonymousDeviceLimit (int64) and frontend TypeScript type (number | undefined) can cause semantic confusion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "FrontendSettingsDTO.AnonymousDeviceLimit lacks omitempty tag, causing 0 to always be serialized in JSON instead of being omitted for 'unlimited'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration revert marker KEYCLOAK-18286-revert found in devenv/docker/blocks/auth/oauth/cloak.sql may cause environment drift",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Synchronous TagDevice call in Authenticate flow changes authentication latency and error handling behavior, potentially slowing down login",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Multiple definitions of 30-day expiration constant across api.go, impl.go, and admin.go create maintenance risk",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -6304,7 +7081,101 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "LRU cache key in translate_accelerator.rb line 72 doesn't include SiteSetting.default_locale, causing stale translations when the site's default locale changes because the dynamic fallback chain [locale, SiteSetting.default_locale.to_sym, :en] is not reflected in the cache key",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "I18n.ensure_loaded! may not exist depending on load order - FallbackLocaleList#ensure_loaded! assumes a patch defines I18n.ensure_loaded!, creating fragile patch ordering dependency that could crash in production with NoMethodError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Thread-safety risk in in-memory I18n fallback loading cache - @loaded_locales check with include? is not synchronized with mutation inside load_locale, allowing race conditions where multiple threads attempt to load same locale concurrently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Server-side and client-side i18n fallback mechanisms may be inconsistent - parallel fallback mechanisms (Ruby I18n fallbacks vs JS I18n.fallbacks with getFallbacks) may cause inconsistencies in translations presented to users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Removed explicit I18n fallback toggles from production environment - config.i18n.fallbacks = true removed, increasing coupling between I18n and SiteSetting.default_locale without runtime variability",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition risk in ensure_loaded! without per-thread isolation - I18n.fallbacks.ensure_loaded! invoked per request in set_locale without synchronization at FallbackLocaleList level",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "First-request performance cost from eager loading all rb locale files - load_locale loads all rb files via I18n.backend.load_translations on first load when @loaded_locales is empty, causing heavy initialization dip",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing dependency declaration for lru_redux gem - translation layer introduces LruRedux::ThreadSafeCache but dependency may not be declared in Gemfile, risking startup or runtime failure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Documentation and test coverage gaps for client-side fallback integration - no tests or docs cover client-side fallback semantics and connection to server-side FallbackLocaleList",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Frontend i18n fallback disabled creating server/client mismatch - i18n.js sets I18n.fallbacks = false while server-side fallbacks are enabled, creating potential translation inconsistency",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "I18n.fallbacks.ensure_loaded! in ApplicationController may raise if fallback chain misconfigured - controller calls ensure_loaded! after setting locale, relying on new fallback logic that could fail at runtime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Removed config.i18n.fallbacks = true in production environment - fallback behavior now depends on initializer load order, risking missing fallbacks if initializer not loaded early enough",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Removed config.i18n.fallbacks = true in profile environment - similar risk as production that fallback behavior depends on initializer load order",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Pluralization backend initializer removed - file requiring i18n/backend/pluralization removed, potentially losing pluralization behavior in some locales",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing tests for thread-safety and fallback behavior - no tests cover multi-threaded request handling, translation fallback sequences, or concurrent locale loading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
     "gemini": [
@@ -6392,7 +7263,95 @@
       }
     ],
     "greptile": [],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "TestLogger.FromContext returns a new disconnected TestLogger instance instead of returning the receiver (f), causing log assertions to silently fail because logs are recorded on a throwaway instance rather than the TestLogger the test holds a reference to",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "TestLogger.FromContext ignores provided context in fake logger - returns a brand-new TestLogger without preserving or propagating context attributes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "grafanaInfraLogWrapper.FromContext type assertion may fail if underlying FromContext returns non-concrete logger type, falling back to default logger",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logger interface extended with FromContext and New(ctx ...any) - breaking API change affecting all call sites and implementations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "InstrumentationMiddleware renamed to MetricsMiddleware causing high churn across codebase",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Contextual logger middleware and wrappers show churn in contextual attribute attachment - fake logger may not respect context properly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cross-package changes to logging and integration wiring risk compile/run-time mismatches between logger.go, fake.go, and related files",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "FromContext API addition exists across multiple files with potential duplication of logic and wrappers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Nil validation patterns are inconsistent across middlewares - LoggerMiddleware checks for nil req but ContextualLoggerMiddleware does not",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "instrumentContext creates strong dependency on internal log helper WithContextualAttributes - behavior may diverge if downstream loggers change",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "LoggerMiddleware uses m.logger.FromContext(ctx) creating tight coupling to extended Logger interface - risk of compile-time breakages",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CreateMiddlewares now includes MetricsMiddleware and ContextualLoggerMiddleware changing plugin request handling pipeline",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Duplicate FromContext contract between infra/log package and plugin log wrappers increases maintenance overhead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "MetricsMiddleware internals substantially reworked with changed labels, added plugin_request_size_bytes and plugin_request_duration_seconds metrics - potential regressions in monitoring",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/10": {
     "gemini": [
@@ -6776,6 +7735,124 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "Migration crashes with NoMethodError when `embed_category` setting is absent or has no matching category - unconditional access of `[0]['id']` on query result that may be nil",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQL injection vulnerability in migration via unescaped host value interpolation in INSERT statement",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Missing timeouts and size limits for server-side HTTP fetches in TopicRetriever - malicious/slow remote host could degrade server performance or lead to Denial of Service",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SSRF risk in TopicEmbed.find_remote due to unguarded HTTP(S) fetch without URL host validation - attacker could access internal services or exfiltrate data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQL injection risk in migration 20150818190757 using raw SQL interpolation to insert embeddable_hosts - malicious input could compromise database",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Referer-based gating in embed endpoints is spoofable and unsafe for authorization - could enable unauthorized embedding access or data exposure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "EmbeddableHost.host_allowed? logic may be incomplete or misapplied - could leave endpoints exposed or block valid hosts unintentionally",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "High churn in EmbeddableHost scaffolding and embedding UI/controllers lacks comprehensive tests - affects stability and security",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TopicEmbed.find_remote fetches remote content before allowlist gating is applied - SSRF vulnerability allows fetching internal resources",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration uses string interpolation for SQL INSERT with site_settings values - SQL injection risk during migration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ensure_embeddable relies solely on spoofable Referer header for security decisions - insufficient access control for sensitive operations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "High churn in embedding admin adapter across multiple frontend/backend layers - increases risk of API mismatches and runtime errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Significant Ember component changes in embeddable-host with decorators and buffering logic - potential regressions in UI editing flows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New Admin::EmbeddableHostsController lacks verified parameter handling and authorization - potential security gaps",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "EmbeddableHost model host normalization and lookup methods may not handle nil/invalid inputs gracefully",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New EmbeddableHostSerializer and EmbeddingSerializer expand API surface without compatibility tests - risk of over-fetching data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New embedding routes lack verified authentication/authorization alignment with admin constraints",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration from site_settings to DB-backed EmbeddableHost configuration lacks upgrade guide - backward compatibility risk for existing installations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Removal of embeddable_hosts site_setting without migration plan - config drift risk for sites expecting this setting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -7039,7 +8116,167 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Light-theme color changed from 30% to 70% lightness for embedded post meta-data links in app/assets/stylesheets/desktop/topic-post.scss line 291 - light and dark values appear to have been swapped, making embedded post author names hard to read on light themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme color inverted for mobile .custom-message-length (70% \u2192 30%) in app/assets/stylesheets/mobile/modal.scss line 102 - custom message length indicator has incorrect contrast on both light and dark themes on mobile",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme color changed from 20% to 50% for mobile .topic-map h3 in app/assets/stylesheets/mobile/topic-post.scss line 182 - topic map headings on mobile become noticeably lighter and less prominent on light themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme color changed from 30% to 50% for .group-member-info .name in app/assets/stylesheets/desktop/user.scss line 522 - group member names in the user stream become lighter and less readable on light themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme color changed from 30% to 50% for .group-member-info .name in app/assets/stylesheets/mobile/user.scss line 497 - group member names in the user stream become lighter on light themes on mobile",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Hard-coded hex color #fe7a15 used in heatmap styling in app/assets/stylesheets/common/base/discourse.scss:85 and app/assets/stylesheets/desktop/topic.scss:211-214, bypassing theming helpers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "admin_base.scss .desc color changed from fixed color to dark-light-choose, which could alter appearance depending on theme and affect contrast with backgrounds",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "admin_base.scss p.help color changed to dark-light-choose, yielding potentially inconsistent lighter/darker text across themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "admin_base.scss .current-badge-actions border-top color changed to dark-light-choose, semantic change from fixed to theme-dependent color",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "admin_base.scss color changes lack tests for accessible contrast across dark backgrounds, hover states, and focus outlines",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Login link color changed to dark-light-choose without verification that focus states remain visible across themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "badges.css.scss:285 uses dark-light-choose(normal, bold) for font-weight property, misusing a color-theming function for non-color property",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Color decisions flow through tokens in many files creating potential for wide ripple effects from future token changes without regression checks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "mobile/compose.scss #draft-status color changed to dark-light-choose without verification of legibility against mobile compose background in all themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mobile topic list uses a.title color: $primary, bypassing the new tokenization pattern",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hard-coded color #fe7a15 used in heatmap-high styling in desktop/topic.scss:211-214, breaking theming",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "WCAG contrast checks not verified for new dark-light-choose color pairs across body text, UI text, and focus indicators",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Visual/UI changes may break automated tests or visual regression tests that rely on exact color outputs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "_topic-list.scss topic title color declarations changed to dark-light-choose affecting readability and accessibility if contrast is not preserved",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "header.scss icon color changed to dark-light-choose making color depend on brightness comparison and header palette",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Desktop topic list .fa-thumb-tack and .fa-bookmark colors replaced with dark-light-choose variant risking inconsistent behavior if secondary color not aligned with theme",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "desktop/topic-list.scss fa-thumb-tack and fa-bookmark color replacements need audit to ensure consistent icon coloring and contrast ratios across themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Desktop topic-post .title and icon colors switched to dark-light-choose affecting readability and UI consistency in posts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "desktop/topic-post.scss anchor color changed to dark-light-choose causing dynamic selection that may not match design intent or accessibility contrast",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mobile topic list uses dark-light-choose for text/icon colors with widespread impact on mobile UI and potential legibility issues on small screens",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mobile topic-post color updates for title, domain, usernames, and counters using dark-light-choose risk mobile UI regressions if contrast is reduced",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/8": {
     "gemini": [
@@ -7392,7 +8629,89 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "totalPages calculation is off-by-one when user_count is evenly divisible by limit - uses Math.floor(user_count / limit) + 1 instead of Math.ceil(user_count / limit), causing showingLast property to never be true on the real last page and allowing navigation to a phantom empty final page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Group membership AJAX flows in route/group-members.js.es6 do not propagate errors to the UI; errors may be swallowed, making retries invisible and causing inconsistent UI state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "findMembers function in app/assets/javascripts/discourse/models/group.js returns undefined (early return with 'return;') when group name is blank, breaking promise chains that expect a Promise",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Group.findMembers returns nil instead of a promise when group name is empty, breaking promise chains for callers that rely on .then()",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Group.findMembers promise contract broken on blank names - returns undefined instead of a promise, breaking promise chaining in admin-group.js and causing silent failures in pagination and member loading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin::GroupsController#create assigns trimmed name and saves without explicit validation of presence or format, allowing groups with blank or invalid names to be persisted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Massive edits to admin group controller with high churn (usernames handling, pagination helpers, removal of old 'members' flow) risks runtime or UX regressions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "afterModel lifecycle hook removed from admin_group_route.js in favor of setupController loading; data may be loaded at wrong time or fail to serialize predictably if code relied on afterModel",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Heavy refactor of admin/group template to form-based layout with new blocks for pagination and member listing lacks accompanying tests, risking compile/run-time issues or broken bindings",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin::GroupsController create action has no explicit validation in controller or model for presence/uniqueness of name, potentially creating empty or duplicate groups",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Breaking API changes to group creation/update and membership endpoints - create/update no longer accept usernames payload, new endpoints introduced for adding/removing members, breaking existing consumers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "API route changes for group membership moved to DELETE/PUT on /groups/:group_id/members may cause client incompatibility without corresponding client updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New membership management endpoints (add_members/remove_member) represent behavioral shift from previous approach without deprecation strategy, risking silent breakage of existing integrations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
     "gemini": [
@@ -7626,6 +8945,70 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "BlockedEmail match_count is double-incremented because validation runs twice per signup (once in user.valid? and once in user.save), causing both calls to increment the counter",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-atomic increment of match_count causes lost updates under concurrent requests due to read-modify-write race condition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "checkUsernameAvailability returns a promise without a .catch handler, causing unhandled promise rejections that may leave UI in inconsistent state or fail to surface errors to the user",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "users_controller.rb:220 exposes error payload fields (errors: user.errors.to_hash and values with email) in signup response, potentially leaking internal validation state and user data to the client",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BlockedEmail model's should_block? method has a race condition when incrementing match_count and updating last_match_at - the sequence is not atomic and can corrupt counters or miss block actions under concurrent requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "User model's email presence validation may break OAuth/social signups when provider omits email, causing signup failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Client-side rejectedEmails list in CreateAccountController is session-scoped and can be cleared or manipulated by users, reducing effectiveness of email blocking if not enforced server-side",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "users_controller.rb:200 API response includes 'values' field with client-submitted data (name, username, email) which could expose sensitive information in logs or cached responses",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration file db/migrate/20130724201552_create_blocked_emails.rb may cause duplicate migrations or conflicts during deployment if a previous migration with the same name already exists",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "EmailValidator regex construction using domains.gsub('.', '\\.') is fragile and doesn't properly escape all regex-significant characters, potentially leading to incorrect matches or vulnerabilities",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -7754,6 +9137,76 @@
     "kg": [
       {
         "text": "Invalid CSS property `-ms-align-items` does not exist and should be removed - IE10 uses `-ms-flex-align` instead, which is already included",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "`-webkit-box-ordinal-group` and `-moz-box-ordinal-group` in `order` mixin should be `$val + 1` instead of `$val` because old flexbox spec is 1-indexed while standard `order` is 0-indexed, causing inconsistent ordering across browsers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`order(2)` on `.extra-info-wrapper` has no effect because it's not a direct child of flex container `.contents` - it's wrapped inside an Ember component div, so the order property doesn't apply",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Foundation mixins file contains duplicate mixin definitions (flexbox, inline-flex, align-items, order) that would cause Sass redefinition errors and build failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Vendor file ember.custom.debug.js contains executable code blocks with Markdown code fences (App.Filterable examples) that would cause syntax errors or unintended execution",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing CHANGELOG entry for vendor documentation cleanup changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Header layout migration from float-based to flexbox may silently break alignment and wrapping across breakpoints without DOM structure updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Topic post .small-action flexbox with align-items center may affect nested element layout and vertical alignment of action icons/text",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Topic extra-info-wrapper order(2) and line-height changes may affect badge/metadata alignment next to topic title",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Badges component refactor uses flexbox mixins (inline-flex, align-items baseline) with potential browser compatibility and vendor-prefix concerns",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing regression tests for per-instance behavior of filters in App.Filterable to prevent shared state across instances",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Global state flag Ember['default'].anyUnprocessedMixins in vendor file causes potential cross-app interference and debugging issues in multi-app scenarios",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -7936,7 +9389,83 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Method `include_website_name` is missing the trailing `?` suffix required by ActiveModel::Serializer to function as an inclusion guard, causing it to never be called and `website_name` to always be serialized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` leaks user's website hostname to anonymous viewers of TL0 user profiles because the broken inclusion guard bypasses the privacy protection that `untrusted_attributes` enforces for `website`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Client-side websiteName computed property removed without backward-compatible alias, breaking existing consumers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Server-side website_name attribute not included in untrusted_attributes, causing potential data leakage to anonymous viewers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Template references model.website_name without graceful handling of nil values",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing tests for website_name gating across different viewer scopes (owner, admin, anonymous)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No tests verifying website_name is hidden for TL0 anonymous viewers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing tests for edge cases: nil values, empty strings, and conflicting scopes for website_name",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No regression tests for website_name display path in UI",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing tests for malformed websites or unusual host/path combinations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "API payload may not always supply website_name, causing template rendering issues",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "include_website_name may be called for untrusted scopes without proper gating",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/4": {
     "gemini": [
@@ -8433,7 +9962,107 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "ERB syntax error: `end if` (missing condition) crashes template rendering in app/views/embed/best.html.erb line 6",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "NoMethodError when RSS feed item has no `content` field in app/jobs/scheduled/poll_feed.rb line 35",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "XSS via unescaped `request.referer` in JavaScript string literal in app/views/layouts/embed.html.erb line 11",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`import` mutates caller's `contents` string via `<<` operator in app/models/topic_embed.rb line 13",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "TopicEmbed database table is new and will raise exceptions if migrations are not run in all environments, potentially crashing the embed feature",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Post cook_method column added with default to raw_html (value 1), changing default post-cooking behavior and potentially causing XSS exposure or layout changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TopicEmbed.import ingests external content and uses raw_html rendering without sanitization, allowing stored XSS from RSS/Atom sources",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "EmbedController uses params.require(:embed_url) which raises ParameterMissing without explicit rescue, inconsistent with expected 404 response",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "PollFeed scheduled job performs network I/O without rescue blocks, causing job failures on network errors with no retry mechanism",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration create_topic_embeds uses create_table with force: true, risking data loss by dropping existing tables in production",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration create_top_topics uses create_table with force: true, risking data loss by dropping existing tables in production",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Embed route relies on SiteSetting.embeddable_host and referer checks but may produce generic 500 errors instead of explicit 403/400 responses when misconfigured",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TopicRetriever may trigger concurrent or repeated fetches despite Redis throttling if processes run in parallel, causing race conditions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "embed.js postMessage handler uses substring check (indexOf) for origin validation, allowing spoofed origins that are substrings of discourseUrl",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Embed layout uses request.referer as targetOrigin for postMessage, which is spoofable and may leak messages to unintended origins",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TopicRetriever depends on $redis for throttling without fallback, risking failures if Redis is unavailable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
     "gemini": [
@@ -8750,7 +10379,101 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Duplicate `downsize` method definition in Ruby overwrites the 4-argument version - the new 3-argument version at line 149 replaces the 4-argument version at line 145, breaking callers like resize_emoji.rb:14 and uploads.rake:347 that pass 5 positional arguments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hardcoded 10MB max upload size at line 182 ignores admin-configured `max_image_size_kb` and `max_attachment_size_kb` settings, preventing admins from enforcing smaller limits and breaking existing tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hardcoded 10MB in 413 error handler at line 246 always shows wrong max size to users, displaying 10240 KB regardless of actual server-side configuration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Frontend 413 handling uses hard-coded 10MB limit instead of aligning with actual server limit (SiteSetting-based), causing confusing error messages",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SSRF vulnerability in uploads_controller.rb:120 - API allows file uploads via remote URL without validating host or scheme, enabling attacks on internal services",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ResizeEmoji job (resize_emoji.rb:15) uses old 5-argument downsize signature that no longer matches the refactored method signature, causing runtime failure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedImage.downsize has signature collision - two definitions exist but Ruby doesn't support overloading, second definition overwrites first breaking call sites using old arity",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tests in test/javascripts/lib/utilities-test.js.es6 expect SiteSettings.max_image_size_kb but frontend hard-codes 10MB, causing test failures due to mismatch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "XSS vulnerability in utilities.js:221 - attachment rendering uses unescaped original_filename directly in HTML construction, allowing malicious filenames to inject HTML/JS",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Frontend validateUploadedFile uses hard-coded 10MB maxSizeKB instead of deriving from site settings, creating mismatch with server-side limits",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Frontend 413 error handling (utilities.js:248) uses hard-coded 10MB maxSizeKB that can diverge from server config",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Client-side validation hardcodes 10MB upload limit (utilities.js:186) which can be bypassed and causes inconsistent UX if server config differs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Some call sites still use old OptimizedImage.downsize signature causing runtime errors due to incomplete refactor updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Image processing relies on shell commands which has security implications if inputs are not properly sanitized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Multiple remote file fetchers across repository (e.g., avatar_importer.rb:439) fetch remote URLs without proper SSRF protections like domain allowlists and timeouts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
     "gemini": [
@@ -8968,6 +10691,76 @@
       },
       {
         "text": "Typo in property name - `stopNotificiationsText` should be `stopNotificationsText` in app/assets/javascripts/discourse/templates/topic/unsubscribe.hbs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "NullPointerException when TopicUser record doesn't exist in unsubscribe action - find_by returns nil when no TopicUser record exists, then tu.notification_level is called on nil causing NoMethodError at line 107",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Unsubscribe route/handler lacks explicit authorization - unauthorized users could unsubscribe from topics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unsubscribe endpoint missing input validation for topic IDs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No audit logging for unsubscribe actions (should log user_id, topic_id, timestamp)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unsubscribe operation may not be idempotent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing unit/integration tests for unsubscribe success, failure, and edge cases",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unsubscribe routes should use POST instead of GET (config/routes.rb)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "topics_controller.rb unsubscribe method needs nil check for TopicUser (tu) and early return",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "topic/unsubscribe.hbs template relies on HTML in translations instead of escaping content properly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "client.en.yml stop_notifications translation contains HTML that should be removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "topic-unsubscribe.js.es6 controller relies on stopNotificiationsText which may need adjustment or renaming for clarity",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9245,7 +11038,125 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Prisma updateMany with empty data does not trigger @updatedAt decorator - the call updateManyByCredentialId(this.credential.id, {}) at CalendarService.ts:1024 is a no-op that never updates SelectedCalendar.updatedAt timestamps",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Direct CalendarCacheRepository instantiation in connectedCalendarsHandler bypasses the calendar-cache feature flag check, causing cache UI elements to appear even when the feature is disabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "GoogleCalendarService calls SelectedCalendarRepository.updateManyByCredentialId with empty object {}, which could translate to invalid query or cause runtime errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateManyByCredentialId called with empty data at line 1030 - Prisma requires at least one field to update, will throw at runtime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateManyByCredentialId called with empty data at line 60 in GoogleCalendarService - empty payload will not update updatedAt as intended",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CalendarCache updatedAt column migration adds non-nullable column with DEFAULT NOW() without proper backfill for existing rows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async forEach used with async callback in ensureDefaultCalendars at line 120 - asynchronous work not awaited, can cause race conditions and unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateManyByCredentialId called with empty update payload at line 1025 in CalendarService - Prisma will reject or perform no updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateManyByCredentialId repository method at line 420 expects non-empty payload but receives {} - will cause runtime error or no updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error handling for cache deletion at line 60 in deleteCache.handler.ts uses generic Error instead of TRPCError, losing proper HTTP error semantics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dev scripts updated in package.json line 40 (dev:cron uses npx tsx) appears unrelated to calendar-cache feature, indicating scope creep",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Type safety issue at line 90: updateManyByCredentialId parameter type Prisma.SelectedCalendarUpdateInput may not match Prisma.SelectedCalendarUpdateManyArgs['data']",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CalendarCache mock at line 80 returns [] for getCacheStatusByCredentialIds while real repo queries DB - inconsistent behavior when feature flag is off",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SelectedCalendar surface expanded with updatedAt and googleChannelId at line 200 - increases surface area and may affect performance if not fetched efficiently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateManyByCredentialId repository method at line 120 uses Prisma.SelectedCalendarUpdateInput type instead of Prisma.SelectedCalendarUpdateManyArgs['data']",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "UI refactor at line 400 in SelectedCalendarsSettingsWebWrapper replaces DisconnectIntegration with CredentialActionsDropdown - may affect styling and behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CalendarCache.updatedAt column migration at line 80 in schema.prisma may be problematic for non-empty tables and requires backfilling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "connectedCalendarsHandler at line 400 adds runtime dependency on calendar-cache module, creating cross-service coupling and potentially larger payloads",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test-gcal-webhooks.sh script at line 400 uses sed -i '' which is macOS-specific and will fail on Linux",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
     "gemini": [
@@ -9541,6 +11452,88 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "Dayjs object reference comparison with === at line 114 always evaluates to false - should use .isSame() method instead to compare timestamps",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Variable 'end' at line 142 incorrectly uses slotStartTime instead of slotEndTime, causing working hours boundary check to only validate slot start time and miss slots that extend past working hours",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Relying on Date.toString() for timezone offset calculations in date overrides - Date.toString() is implementation-specific and not guaranteed to be stable across environments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Date override logic uses strict equality (===) on Dayjs objects, which compares by reference and will almost never be true - should use valueOf() or isSame()",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "organizerTimeZone propagation into checkIfIsAvailable may cause mismatches if schedule.timeZone is undefined",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition: shared mutable currentSeats in getSchedule can lead to inconsistent seat counts under concurrent requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential undefined timeZone usage in date override offset calculation - override.timeZone may be undefined causing runtime errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Incorrect endTime calculation for working hours check - uses slotStartTime instead of slotEndTime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential DST/timezone handling fragility - manual DST offset calculations can yield off-by-one-hour errors around DST transitions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent timezone propagation from multiple sources (organizerTimeZone, schedule.timeZone, eventType.timeZone) lacks single source of truth",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Time zone offset handling for date overrides is brittle - DST changes and cross-zone edge cases can cause off-by-one-minute errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hardcoded test fixture secrets in repository - synthetic credentials embedded in test code risk accidental exposure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async forEach patterns lack error propagation - using forEach with async callbacks can lead to unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -9740,6 +11733,76 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "The deleteMany query's second OR clause filters only on retryCount > 1 without a method constraint, causing the SMS cron job to delete all WorkflowReminder rows across all methods (EMAIL, WHATSAPP, SMS) that have retryCount > 1, not just SMS reminders",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "scheduleEmailReminders.ts has inconsistent deletion gating between SMS and Email cleanup - Email cleanup gates by method: EMAIL while SMS path uses broader OR for retryCount > 1 that can delete non-SMS reminders",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SMS deletion path lacks method: SMS filter in retryCount-based deletion, risking unintended deletion of non-SMS reminders",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing tests for retryCount semantics (incrementing, persistence, bounds)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing tests for SMS vs non-SMS deletion paths to ensure parity",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing regression tests for retryCount behavior after failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getWorkflowReminders.ts public select helper does not include retryCount by default, causing inconsistent data shapes for callers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration adds retryCount INTEGER NOT NULL DEFAULT 0 but potential data integrity issues and null handling until migration completes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Prisma schema includes retryCount but Prisma client may need regeneration to validate typings",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RetryCount field lacks indexing consideration despite potential frequent querying",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RetryCount select contracts are undocumented and inconsistent across callers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/22345": {
@@ -9883,6 +11946,63 @@
     "kg": [
       {
         "text": "Breaking API change - The `findMany` method has been removed from `InsightsBookingService`, replaced by `getBaseConditions` which returns a `Prisma.Sql` object. Existing code using `findMany` will break.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [],
+    "mra-nano": [
+      {
+        "text": "Per-instance caching of predicates (cachedAuthConditions, cachedFilterConditions) can cause cross-request data leakage if service instances are reused across requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Refactor from Prisma WhereInput to raw Prisma.sql fragments breaks type-safety and portability for authorization and filtering conditions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Changes to SQL-fragment based conditions can break builds in dependent services that consume BookingTimeStatusDenormalizedWhereInput",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tests asserting exact SQL fragments are brittle and fail on refactors even when behavior is correct",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Empty arrays in SQL-IN or ANY(...) conditions can cause edge-case bugs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DI/container scoping may not ensure per-request stateless behavior, enabling state leakage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Downstream code relying on Prisma.Cast/WhereInput semantics may break due to SQL-fragment refactor",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Integration tests depending on Prisma.sql fragments are fragile and tightly coupled to implementation details",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BookingTimeStatusDenormalizedWhereInput typing surface changes affect consumers without compatibility shims or migration plan",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -10422,7 +12542,137 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Google Calendar stores SafeParseResult wrapper `{success, data}` as credential key instead of just the parsed data, breaking the integration after first token refresh",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Zoho Bigin passes credential database ID instead of user ID to `refreshOAuthTokens`, causing sync endpoint to receive wrong user information",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hubspot refreshOAuthTokens returns raw fetch Response when credential sharing is enabled, but caller expects HubspotToken and accesses non-existent properties like `.expiresIn` and `.accessToken`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`minimumTokenResponseSchema` computed property keys resolve to literal string `\"[object Object]\"` instead of dynamic validators, losing expiry date validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "APP_CREDENTIAL_SHARING_ENABLED is not strictly boolean - may be a string value when both CALCOM_WEBHOOK_SECRET and CALCOM_APP_CREDENTIAL_ENCRYPTION_KEY are set, leading to subtle bugs in credential-sharing flow gating",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook decrypts credentials and stores them directly in the DB in plaintext (apps/web/pages/api/webhook/app-credential.ts:120), creating serious exposure risk if DB storage is not encrypted at rest or if keys are logged",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CALCOM_CREDENTIAL_SYNC_ENDPOINT external credential sync endpoint lacks contract validation, timeouts, TLS enforcement, and mutual auth (packages/app-store/_utils/oauth/refreshOAuthTokens.ts:200), risking credential leaks or invalid token acceptance",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "refreshOAuthTokens has inconsistent return type - sometimes returns raw Response object, other times returns object with data property, causing runtime errors when callers expect res.data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook credential sharing endpoint has race condition vulnerability - concurrent requests can create duplicate credentials due to non-atomic findFirst then create/update pattern without unique constraint (/apps/web/pages/api/webhook/app-credential.ts:160)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "parseRefreshTokenResponse defaults missing refresh_token to literal string 'refresh_token' placeholder (/packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts:200), leading to invalid credentials and authentication failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Credential sharing webhook lacks strict authentication, auditable logs, and allowlist of callers/sources (/packages/lib/constants.ts:110), allowing arbitrary credential writes if webhook secret leaks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "parseRefreshTokenResponse returns SafeParseReturn object but callers treat it as token payload (packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts:400), causing runtime type errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Google Calendar integration stores parseRefreshTokenResponse result directly as credential key instead of extracting parsed data (packages/app-store/googlecalendar/lib/CalendarService.ts:1), storing Zod parse result object rather than actual token data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Google Calendar refresh flow incorrectly handles parseRefreshTokenResponse result, storing ZodParseReturn instead of parsed data as credential key (packages/app-store/googlecalendar/lib/CalendarService.ts:105)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Zoho Bigin token expiry calculation missing millisecond conversion - uses Date.now() + expires_in instead of Date.now() + expires_in * 1000 (packages/app-store/zoho-bigin/lib/CalendarService.ts:100)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook credential sharing header name lookup not normalized - relies on exact case match but Node/Next.js normalizes headers to lowercase, potentially bypassing verification",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook decrypt-keys handling lacks error handling and validation around symmetricDecrypt and JSON.parse, risking 500 responses on decryption failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "APP_CREDENTIAL_SHARING_ENABLED is static at module load time, not dynamic at runtime, preventing enable/disable without process restart",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "External token refresh wrapper has inconsistent error handling and timeouts across OAuth flows, with missing error propagation and non-uniform response shapes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Broad OAuth utilities refactor causes high churn across app-store integrations, increasing regression risk and making token lifecycle reasoning harder across providers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Increased cross-provider coupling through shared refreshOAuthTokens and parseRefreshTokenResponse creates single failure mode affecting many providers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
     "gemini": [
@@ -10681,6 +12931,142 @@
     "kg": [
       {
         "text": "In packages/features/ee/workflows/api/scheduleEmailReminders.ts at line 44, the `where` clause for `remindersToCancel` should include `method: WorkflowMethods.EMAIL` to ensure only email reminders are processed by the SendGrid cancellation logic, preventing potential errors if SMS reminders were ever marked as cancelled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "deleteScheduledEmailReminder with immediateDelete=true never deletes the DB record when referenceId exists - the function cancels SendGrid scheduled send but returns without deleting the workflowReminder record from the database, causing orphaned records to accumulate for rescheduled bookings",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CRON cancel loop try-catch wraps entire for loop - if any single SendGrid cancel request fails, the loop aborts and none of the DB records are deleted (even for successfully cancelled reminders), potentially causing cancelled/rescheduled bookings to still receive scheduled reminder emails",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "Database schema change adds cancelled column to WorkflowReminder, breaking schema change for consumers that read or write to WorkflowReminder",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteScheduledEmailReminder signature changed to require reminderId as first argument, breaking API contract for existing callers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteScheduledEmailReminder does not always cancel external service when referenceId exists unless immediateDelete is explicitly used",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteScheduledSMSReminder signature changed to require reminderId as first argument, breaking API contract for existing callers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "handleCancelBooking.ts deletes workflow reminders in non-awaited loop, causing missing cancellations or unpropagated errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "handleNewBooking.ts calls deleteScheduledEmailReminder/deleteScheduledSMSReminder in forEach without awaiting, fire-and-forget pattern discards errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "bookings viewer router cancels workflow reminders in forEach without awaiting, leading to potential silent failures and races",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "workflows router cancels reminders in forEach with async callback without awaiting, causing unobserved errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "handleCancelBooking.ts cancellation flow calls deleteScheduledEmailReminder/deleteScheduledSMSReminder in forEach without awaiting promises",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Next-hour cancellation logic for email reminders may cause wave of unintended cancellations if flags are set incorrectly or race conditions occur",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteScheduledEmailReminder API signature change is non-backward-compatible, requiring all call sites to be updated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent cancellation semantics between Email and SMS reminders - email supports immediateDelete flag with three modes, SMS always deletes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteScheduledSMSReminder API signature change is breaking and requires all call sites to be updated and tested",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Multiple call sites invoke deleteScheduledEmailReminder/deleteScheduledSMSReminder without awaiting results, creating race conditions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent use of immediateDelete flag at call sites leads to inconsistent external cancellation behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "scheduleEmailReminders.ts wraps webhook cancellation logic in try/catch that logs errors but does not propagate them to caller",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DB migration adds cancelled column requiring coordination across services during deployment to avoid runtime errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Schema migration adds cancelled Boolean field requiring proper migration testing and rollback path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "WorkflowReminder model touched by multiple modules increases risk of subtle inconsistencies and performance hotspots",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TRPC viewer bookings calls deleteScheduledEmailReminder without awaiting, risking unhandled rejections",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -11047,6 +13433,82 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "devin": [
+      {
+        "text": "Authorization check uses && (AND) instead of || (OR) at lines 46-48, requiring users to be both admin AND owner, which denies team admins access since only owners can satisfy both conditions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Wrong email type sent to pre-existing attendees at line 168 - passes unfiltered 'guests' array instead of 'uniqueGuests' to sendAddGuestsEmails, causing pre-existing attendees to receive 'you're booked' emails instead of 'guests were added' notifications",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "addGuests flow uses AND condition instead of OR in isTeamAdminOrOwner permission check, blocking legitimate users who are admin or owner but not both (packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts:46-49)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async map usage at line 200 in addGuests.handler.ts may discard promises, causing potential runtime bugs or race conditions if not properly awaited",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Email templates emit ICS with attendee lists that may expose private information without proper access controls",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async callback in .map at line 121 in addGuests.handler.ts is potentially error-prone for error propagation despite using Promise.all",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error handling at lines 167-171 in addGuestsHandler swallows email notification failures with only console logging, causing silent failures without signaling to user",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "High UI churn in BookingListItem.tsx:210 from AddGuestsDialog integration may cause UI instability across locales and tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New AddGuestsDialog component at apps/web/components/dialog/AddGuestsDialog.tsx:260 introduces complexity with potential UI bugs in focus trapping and accessibility",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New i18n keys for guests not translated across all locale files (apps/web/public/static/locales/*/common.json:400), risking missing translations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New email dispatch path sendAddGuestsEmails in email-manager.ts:200 lacks integration test coverage and graceful failure reporting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dynamic lazy-loading for addGuests handler in _router.tsx:180 using UNSTABLE_HANDLER_CACHE may introduce race conditions during lazy-load",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -11343,7 +13805,89 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Case-sensitive backup code comparison rejects valid uppercase input - backup codes generated as lowercase hex but compared without case normalization using indexOf, causing valid uppercase codes to fail authentication",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "DB schema adds backupCodes String? field to User table, increasing sensitive data in user records and requiring careful access control and encryption handling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition in backup code authentication: concurrent login requests can reuse the same backup code due to non-atomic read/modify/write operations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code usage stores null entries in codes array which may break UI rendering when mapped to components",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "FormatBackupCode function used before definition in EnableTwoFactorModal.tsx, causing runtime error due to lack of hoisting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "UI renders backupCodes.map(formatBackupCode) without filtering null values, causing runtime errors when codes are set to null in storage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup codes mutation sets backupCodes[index] = null instead of removing the code, creating null entries that break frontend rendering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Setup endpoint fails with 500 error when CALENDSO_ENCRYPTION_KEY is missing, but pattern should be consistently applied across all encryption usage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup codes encrypted with symmetric key CALENDSO_ENCRYPTION_KEY without rotation or per-user keys, creating central risk if key is leaked",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code verification and mutation logic duplicated across multiple layers (disable path and login path), risking drift and inconsistent behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "backupCodes field added as String? with null default may lead to runtime issues in UI if not normalized to empty array",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Disable flow lacks explicit atomic invalidation of used backup codes, creating potential race condition with concurrent code validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async flows in login.tsx may fail silently without proper error propagation to user, particularly in two-factor backup code and lost-access branches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/calcom/cal.com/pull/10967": {
     "gemini": [
@@ -11659,7 +14203,119 @@
         "source": "extracted"
       }
     ],
-    "kg": []
+    "kg": [],
+    "devin": [
+      {
+        "text": "Google Calendar `createEvent` patch call uses potentially undefined `selectedCalendar` while insert used fallback - the patch at line 168 uses raw `selectedCalendar` without the `|| \"primary\"` fallback that the insert call correctly uses, causing hangout link updates to fail when event is created on primary calendar",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Null dereference crash when `destinationCalendar` is empty or undefined - destructuring `evt.destinationCalendar ?? []` can result in `mainHostDestinationCalendar` being undefined, then accessing `.integration` property throws TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Google Calendar `updateEvent` fallback always resolves to `undefined` due to self-referencing falsy variable - the else-branch searches destinationCalendar array using `externalCalendarId` which is already falsy, so the find() never matches and selectedCalendar becomes undefined",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Google Calendar `deleteEvent` fallback always resolves to `undefined` due to self-referencing falsy variable - identical bug to updateEvent where find() uses falsy `externalCalendarId` as search criterion, causing calendarId to become undefined and fall back to wrong calendar",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Organization creation slug logic is inverted - slug is set when billing IS enabled instead of when it's NOT enabled, breaking organization URLs in non-billing deployments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "GoogleCalendarService.updateEvent: potential undefined calendarId - when externalCalendarId is undefined, selectedCalendar becomes undefined causing calendar.events.update to be called with undefined calendarId",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "bookingReminder: potential nested destinationCalendar array - empty array is truthy, leading to wrapping [] as [[]], producing nested arrays that cause malformed structures or runtime errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async callback in Array.map may discard promises in handleCancelBooking - map callback is async but return value not used, risking unhandled rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent handling of destinationCalendar treated as scalar/array/null causing potential data shape drift and risk of overlooking calendars or errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition due to mutation of teamDestinationCalendars inside async map - multiple asynchronous iterations mutate shared state concurrently, causing inconsistent or unpredictable merged calendars",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async map usage in EventManager.ts causing potential unhandled promises - async callback inside Array.map wrapped by Promise.all can lead to unhandled rejections or subtle sequencing bugs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async map usage in handleNewBooking.ts team member generation - async callback in map is an anti-pattern that can be clearer with for...of loop",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inefficient/sequential cleanup path in lastAttendeeDeleteBooking - mixing await with then() on Promise.all is confusing and may delay error propagation or cause incomplete state updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DestinationCalendar now modeled as an array causing potential runtime/type safety risk - empty or inconsistently populated arrays may cause calendarId lookups to fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Silent error handling in createEvent path - 404 errors return undefined instead of propagating error, silently dropping failed calendar operations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential performance and DB load due to on-demand credential fetches - high number of DB reads during multi-calendar bookings or cancellations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Widespread semantic change of DestinationCalendar to array risks nested arrays or misinterpreted data - affects all call sites that previously expected an object",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "createEvent API now requires credentialId - missing credentialId or mismatched resolution could cause runtime errors or wrong calendar updates across many call sites",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
     "gemini": [
@@ -11861,6 +14517,136 @@
       },
       {
         "text": "Async function in forEach not awaited in packages/trpc/server/routers/viewer/bookings.tsx at line 553 - promises may not resolve before function continues",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "devin": [
+      {
+        "text": "In packages/app-store/vital/lib/reschedule.ts lines 125-134: forEach(async ...) does not await async callbacks, causing try/catch to be bypassed and errors from getCalendar or deleteEvent to become unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/vital/lib/reschedule.ts lines 125-134: forEach(async ...) causes calendar/video deletions to be fire-and-forget, allowing sendRequestRescheduleEmail to execute before deletions complete",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/wipemycalother/lib/reschedule.ts lines 125-134: forEach(async ...) does not await async callbacks, causing try/catch to be bypassed and errors from getCalendar or deleteEvent to become unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/wipemycalother/lib/reschedule.ts lines 125-134: forEach(async ...) causes calendar/video deletions to be fire-and-forget, allowing sendRequestRescheduleEmail to execute before deletions complete",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/trpc/server/routers/viewer/bookings.tsx lines 553-567: forEach(async ...) causes calendar/video deletions to be fire-and-forget with no error handling, allowing sendRequestRescheduleEmail at line 570 to execute before deletions complete",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/trpc/server/routers/viewer/bookings.tsx lines 553-567: forEach(async ...) errors become unhandled promise rejections with no try/catch or .catch() handler",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/features/bookings/lib/handleCancelBooking.ts lines 460-470: forEach(async ...) causes apiDeletes array to be empty when Promise.all runs at line 652, preventing calendar events for recurring bookings from being properly deleted before function returns",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "mra-nano": [
+      {
+        "text": "getCalendarCredentials calls async getCalendar without awaiting in packages/core/CalendarManager.ts, causing calendar value to become a Promise instead of Calendar | null",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "appStore modules are now loaded via dynamic import() returning Promises instead of static module objects, breaking synchronous consumers that read appStore[...] without awaiting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Array.forEach used with async callbacks in vital reschedule.ts line 125 does not wait for promises and can swallow errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Array.forEach used with async callbacks in wipemycalother reschedule.ts line 125 does not wait for promises and can swallow errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TRPC bookings router uses forEach with async callback at lines 553-567, discarding promises and potentially causing unhandled errors or missed calendar updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async callbacks in forEach for bookingRefsFiltered in vital reschedule.ts line 150 are not awaited, risking unhandled rejections and race conditions with calendar.deleteEvent calls",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Async callbacks in forEach for bookingRefsFiltered in wipemycalother reschedule.ts line 140 are not awaited, risking missed deletions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getCalendarCredentials in packages/core/CalendarManager.ts line 36 calls getCalendar without awaiting inside flatMap, making calendar property a Promise<Calendar|null> instead of Calendar|null",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TRPC viewer bookings router at line 570 uses forEach(async ...) without awaiting, potentially leaking unhandled promises in reschedule/delete flows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Duplicate async forEach anti-pattern in both Vital and WipemyCalOther reschedule flows with bookingRefsFiltered not being awaited",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getCalendar API changed from synchronous to asynchronous returning Promise<Calendar | null>, breaking call sites that don't await the result",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "appStore populated with dynamic imports requires all call sites to await modules, but some synchronous accesses may remain causing runtime failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "scheduleTrigger in packages/app-store/zapier/lib/nodeScheduler.ts line 89 uses forEach with async callback, causing unhandled rejections and inconsistent DB updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "handleCancelBooking in packages/features/bookings/lib/handleCancelBooking.ts line 473 uses forEach over credentials with async callback for calendar.deleteEvent without awaiting, causing inconsistent calendar state",
         "path": null,
         "line": null,
         "source": "extracted"

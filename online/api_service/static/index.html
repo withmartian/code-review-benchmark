@@ -35,6 +35,7 @@ tr:hover td{background:#f9f9f9}
   <h3>Filters</h3>
   <label>Chatbot</label>
   <div class="cb-group" id="f-chatbot"></div>
+  <label><input type="checkbox" id="include-ignored"> Show ignored chatbots</label>
   <div class="row">
     <div><label>Start Date</label><input type="date" id="start-date"></div>
     <div><label>End Date</label><input type="date" id="end-date"></div>
@@ -78,11 +79,17 @@ const checked=cls=>$$('.'+cls).filter(e=>e.checked).map(e=>e.value);
 // Stable color palette — same colors used across all charts
 const COLORS=['#636EFA','#EF553B','#00CC96','#AB63FA','#FFA15A','#19D3F3','#FF6692','#B6E880','#FF97FF','#FECB52'];
 let botColorMap={};
+let nextColorIdx=0;
 
 function assignColors(botNames){
   const sorted=[...new Set(botNames)].sort();
-  botColorMap={};
-  sorted.forEach((name,i)=>{ botColorMap[name]=COLORS[i%COLORS.length]; });
+  sorted.forEach(name=>ensureColor(name));
+}
+
+function ensureColor(name){
+  if(botColorMap[name]) return;
+  botColorMap[name]=COLORS[nextColorIdx%COLORS.length];
+  nextColorIdx++;
 }
 
 function filterCbs(id,query){
@@ -119,7 +126,7 @@ async function init(){
   $('#end-date').value=d.end;
   // Build initial color map from all chatbots
   assignColors(o.chatbots);
-  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max'])
+  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max','include-ignored'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
 }
@@ -139,6 +146,7 @@ function qs(){
   if(dmax) p.set('diff_lines_max',dmax);
   const j=(cls,key)=>{const v=checked(cls);if(v.length)p.set(key,v.join(','));};
   j('cb-bot','chatbot');j('cb-dom','domain');j('cb-lang','language');j('cb-prt','pr_type');j('cb-sev','severity');
+  if($('#include-ignored').checked) p.set('include_ignored','true');
   return p.toString();
 }
 
@@ -151,6 +159,7 @@ function volumeQs(){
   if(bots.length) p.set('chatbot',bots.join(','));
   const mpt=$('#min-prs-total').value;
   if(mpt&&mpt!=='0') p.set('min_total_prs',mpt);
+  if($('#include-ignored').checked) p.set('include_ignored','true');
   return p.toString();
 }
 
@@ -163,6 +172,11 @@ async function refresh(){
     fetch('/api/volumes?'+vq).then(r=>r.json()),
   ]);
   if(id!==seq) return;
+  const seenBots=new Set();
+  m.series.forEach(r=>seenBots.add(r.chatbot));
+  lb.rows.forEach(r=>seenBots.add(r.chatbot));
+  vol.series.forEach(r=>seenBots.add(r.chatbot));
+  assignColors([...seenBots]);
   renderFbeta(m);
   renderVolumes(vol);
   renderScatter(lb);

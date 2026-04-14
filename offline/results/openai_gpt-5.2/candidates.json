@@ -1103,6 +1103,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Lithuanian (lt) translation string is incorrectly in Italian ('Installa una delle seguenti applicazioni sul tuo cellulare:') in account messages file, so Lithuanian users see Italian text during TOTP setup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same incorrect Italian string appears in the Lithuanian (lt) login message file as well, affecting the TOTP setup step there too",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Chinese Simplified (zh_CN) account translation uses Traditional Chinese characters ('\u5728\u60a8\u7684\u624b\u6a5f\u4e0a\u5b89\u88dd\u4ee5\u4e0b\u61c9\u7528\u7a0b\u5f0f\u4e4b\u4e00\uff1a') instead of Simplified, creating an incorrect/inconsistent zh_CN locale translation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "VerifyMessageProperties.containsHtml() checks the English value before stripping anchor tags while translations have anchors sanitized, causing POLICY_SOME_HTML to be selected when English contains only <a> tags and unintentionally allowing other HTML tags (e.g., <br>, <p>, <strong>, <b>) in translations contrary to the intended policy",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -1515,6 +1541,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Null-check bug in AccessTokenContext: Objects.requireNonNull is called on grantType with message \"Null rawTokenId not allowed\" instead of checking rawTokenId, so rawTokenId can be null and cause NPEs later (e.g., in encodeTokenId concatenation).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId matcher uses wrong substring indices: items[0].substring(3, 5) extracts the wrong characters for the 2-char grantType shortcut; it should extract positions 4-5 (substring(4, 6)) given the 6-char prefix layout.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId matcher has inverted grant-type comparison logic: it returns false when the extracted grant shortcut equals the expected value, instead of returning false when it does not match (missing negation).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -1839,6 +1885,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "getCredentials() creates a RecoveryAuthnCodesCredentialModel with a null ID because createFromValues() doesn't set the stored credential ID, so downstream removeStoredCredentialById(recoveryCodeCredentialModel.getId()) is called with null when codes are exhausted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BackwardsCompatibilityUserStorage.isValid() for recovery codes accepts any matching code (anyMatch) instead of only the next sequential code, diverging from production behavior and allowing out-of-order validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BackwardsCompatibilityUserStorage.isValid() does not consume/remove a recovery code after successful validation, allowing the same code to be reused indefinitely and preventing tests from catching one-time-use behavior regressions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RecoveryAuthnCodesFormAuthenticator removes exhausted recovery-code credentials via removeStoredCredentialById() which targets local storage; for federated users the credential resides in federated storage so removal silently fails, leaving a stale exhausted credential that can cause a loop where allCodesUsed() remains true on subsequent logins",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BackwardsCompatibilityUserStorage.updateCredential() stores raw recovery codes JSON in credentialData (instead of standard metadata in credentialData and hashed codes in secretData), and isValid()/getCredentials() depend on this nonstandard format, making the implementation fragile and likely to break if storage is changed to the standard model format",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
@@ -2032,7 +2110,27 @@
         "source": "extracted"
       }
     ],
-    "macroscope": []
+    "macroscope": [],
+    "tusk": [
+      {
+        "text": "Operator advanced-configuration documentation incorrectly claims the Operator will fail unless the `rolling-updates` feature is enabled, but the Operator code never checks `Profile.Feature.ROLLING_UPDATES` or runs `kc.sh update-compatibility` and instead decides rolling vs recreate purely via StatefulSet image/args/env comparisons",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No test verifies the `FEATURE_DISABLED` exit code (4) for the feature-disabled scenario because `testFeatureNotEnabled` uses `@Launch` where `picocli.exit()` does not call `System.exit`, so only the error message is asserted and exit code 4 could change without failing tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Feature-disabled behavior is only tested for the `metadata` subcommand; the `check` subcommand has its own independent feature check path that is never covered by tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/keycloak/keycloak/pull/36880": {
     "claude": [
@@ -2479,6 +2577,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Potential NullPointerException: getResourceTypeResource() may return null but its result is passed to PolicyStore.findByResource(server, resource) without a null check, violating the non-null contract and causing an NPE",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2.getClientsWithPermission uses findByType(server, \"Clients\", ...) but per-client resources created via getOrCreateResource never set resource.setType(), so per-client permissions are not found and the method can return an empty set incorrectly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getClientsWithPermission may include the all-clients type resource name \"Clients\" in the returned set; downstream AvailableRoleMappingResource.getRoleIdsWithPermissions calls realm.getClientById(\"Clients\") which returns null, leading to an NPE when calling .getRolesStream()",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2.canMapRoles/canMapCompositeRoles/canMapClientScopeRoles do not check the MANAGE_CLIENTS admin role, preventing users with that admin role from mapping roles unless they also have fine-grained permissions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Incorrect Javadoc: requireView() documentation claims it returns boolean, but the method is void and should be documented as throwing ForbiddenException when canView() is false",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Incorrect Javadoc: requireViewClientScopes() documentation claims it returns boolean, but the method is void and should be documented as throwing ForbiddenException when the check fails",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37038": {
@@ -2854,6 +2990,38 @@
       },
       {
         "text": "GroupResource.getSubGroups lost the canViewGlobal short-circuit, causing callers with only global/schema-level group view/manage permission to have visible child groups filtered out (auth.groups().canView(child) returns false per child), resulting in empty subgroup lists",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "GroupPermissionsV2.canManage() (no-arg) incorrectly checks both VIEW and MANAGE scopes, allowing users with only VIEW permission to pass manage checks (e.g., gating group creation via requireManage())",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getGroupIdsWithViewPermission() uses groupResource.getId() (authorization resource internal UUID) instead of groupResource.getName() (actual group model ID), breaking per-group permission evaluation because resourceStore.findByName() won\u2019t find resources by the internal UUID",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getGroupIdsWithViewPermission() adds authorization resource UUIDs to the granted set, but downstream queries compare these values to group model IDs (e.g., groupId column), so permission-based filtering never matches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupPermissionEvaluator.canManage() docstring claims VIEW or MANAGE is sufficient, which becomes misleading if canManage() is corrected to require MANAGE (or indicates an intentional but insecure design if left as-is)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tests call ApiUtil.handleCreatedResponse(response) inside an outer try-with-resources even though handleCreatedResponse also closes the response, causing double-close/double-assert and potentially unsafe access to headers/streams after closure (pattern repeated at multiple line ranges)",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -3298,6 +3466,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Adding `order()` to the public `CryptoProvider` SPI interface without a default implementation breaks binary/source compatibility for third-party `ServiceLoader` implementations (they will fail to compile/load)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`ECDSAAlgorithmTest` reuses a single P-256 EC key pair for ES384 and ES512 tests, so signatures have ~32-byte r/s values instead of the required 48/66 bytes, meaning ES384/ES512-specific conversion bugs may not be caught",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`AuthzClientCryptoProvider.concatenatedRSToASN1DER` contains dead code that creates `ASN1Encoder` instances and writes integers but discards the results, causing unnecessary allocations each call",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`CryptoIntegration.detectProvider` builds the \"Ignored crypto providers\" log message with an unconditional trailing \", \" after the last provider name, producing malformed log output",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -3651,6 +3845,32 @@
       },
       {
         "text": "GroupTest spawns a reader thread but does not join/wait for it before asserting caughtExceptions is empty, allowing exceptions to be recorded after the assertion and making the test flaky/false-positive",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "getSubGroupsStream(String, Integer, Integer) calls modelSupplier.get().getSubGroupsStream(...) without checking if modelSupplier.get() is null, risking an NPE under concurrent-deletion scenarios",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The getSubGroupsStream overload at line 262 calls modelSupplier.get() without a null check, risking an NPE under concurrent-deletion scenarios",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The getSubGroupsStream overload at line 268 calls modelSupplier.get() without a null check, risking an NPE under concurrent-deletion scenarios",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test in GroupTest asserts caughtExceptions is empty without joining the reader thread first, so exceptions from an in-flight groups() call may be recorded after the assertion and the test can miss failures",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -4031,6 +4251,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "UsernameForm.java calls isConditionalPasskeysEnabled() with no arguments, but the parent method signature changed to isConditionalPasskeysEnabled(UserModel user), causing a compilation error (should pass context.getUser())",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Regression in UsernamePasswordForm.authenticate(): fillContextForm is no longer called when context.getUser() is null (initial login), so WebAuthn challenge/rpId/conditional UI attributes are not set on the initial login form, breaking passkey conditional UI setup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Regression in UsernamePasswordForm.challenge(error path): fillContextForm is no longer called when context.getUser() is null, so after an invalid username/password on initial login the error page does not re-render passkey UI elements, preventing switching to passkey login",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential future NullPointerException risk in WebAuthnAuthenticator.fillContextForm(): user is passed to WebAuthnAuthenticatorsBean when shouldShowWebAuthnAuthenticators(context) is true; since shouldShowWebAuthnAuthenticators is protected/overridable, a subclass could return true without ensuring a non-null user, leading to null user usage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/93824": {
@@ -4379,6 +4625,26 @@
       },
       {
         "text": "In src/sentry/spans/consumers/process/flusher.py, restart limit check uses '>' instead of '>=', allowing one extra restart beyond MAX_PROCESS_RESTARTS (e.g., 11 when max is 10)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Metrics tag key is inconsistent: uses \"shards\" instead of \"shard\", causing the metric to be missing from dashboards/alerts filtering on the \"shard\" tag",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When join() exceeds the deadline, a break exits the loop and skips calling .terminate() on remaining processes, leaving potentially hung processes alive (zombies)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Each sub-buffer calls get_memory_info() which queries Redis INFO on all cluster nodes; doing this once per sub-buffer causes redundant roundtrips and adds unnecessary latency on the submit() hot path",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -4830,6 +5096,32 @@
       },
       {
         "text": "In organization_preprod_artifact_assemble.py, `analytics.record(\"preprod_artifact.api.assemble\", ...)` runs before the feature-flag check, so analytics are recorded even when the feature is disabled and the endpoint returns 404; the call should be moved after the check or renamed to indicate an attempt.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "fetch_error_details incorrectly zips error_ids with events.values() even though nodestore.backend.get_multi() returns a dict keyed by node_ids, causing error IDs to be paired with the wrong event data when dict insertion order differs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "nodestore/base.py items.update(cache_items) can append cached entries at the end of the dict, breaking insertion-order alignment with the original requested IDs and contributing to mis-association when relying on dict.values() ordering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "gen_request_data compares error event timestamps in Unix epoch seconds to rrweb replay event timestamps in Unix epoch milliseconds, causing incorrect chronological ordering (errors always appear far earlier and are yielded before replay breadcrumbs)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unit test masks the timestamp unit mismatch by using the same small float timestamp values for both error events and replay events, so it passes despite the bug",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -5433,6 +5725,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "OptimizedCursorPaginator.get_item_key calls math.floor/math.ceil on a datetime value (from getattr(item, self.key) when order_by='-datetime'), causing a TypeError; it should convert datetime to a numeric timestamp first (as DateTimePaginator does).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When enable_advanced_features is True and cursor.offset is negative, BasePaginator/OptimizedCursorPaginator can slice a Django queryset with a negative start (queryset[start_offset:stop]), which raises AssertionError because Django querysets do not support negative indexing; the comment claiming Django handles negative slicing is incorrect.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.value_from_cursor returns the raw numeric cursor.value without converting it back to a datetime; when ordering/filtering by a DateTimeField (e.g., datetime__lte=<int>), this can produce incorrect results or a database type error (unlike DateTimePaginator which converts back to a timezone-aware datetime).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In organization_auditlogs.py, organization_context.member can be None for users without org membership; accessing organization_context.member.has_global_access will raise AttributeError, and this check runs on every request due to being evaluated before the use_optimized guard.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BasePaginator allows negative start_offset when cursor.is_prev is True (start_offset = offset without clamping), so a malformed/malicious cursor with negative offset can trigger Django AssertionError during queryset slicing; a refactor/rename obscured this safety behavior change.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -5787,6 +6111,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Race condition due to reduced cacheMu lock scope in BuildIndex/getOrCreateIndex allowing concurrent callers to build the same index key simultaneously",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "For file-based indexes, concurrent builds can cause the second bleve.New(dir, mapper) to fail because the index directory already exists",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "For in-memory indexes, concurrent builds cause duplicate work and the first built index can be silently overwritten in the cache",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Data race/correctness bug: shared outer err variable is captured by multiple errgroup goroutines and concurrently written/read, so a goroutine may return another goroutine\u2019s error (or nil)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Data race: totalBatchesIndexed is incremented from multiple errgroup goroutines without synchronization when initWorkers > 1",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80168": {
@@ -6105,7 +6461,45 @@
         "source": "extracted"
       }
     ],
-    "macroscope": []
+    "macroscope": [],
+    "tusk": [
+      {
+        "text": "MetricAlertDetectorHandler now subclasses StatefulDetectorHandler but does not implement required abstract methods (counter_names, get_dedupe_value, get_group_key_values, build_occurrence_and_event_data), so instantiating it will raise a TypeError when Detector.detector_handler constructs the handler",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TestEvaluateGroupKeyValue.test_dedupe builds the expected occurrence using group_key=\"val1\" but calls evaluate_group_key_value with group_key=\"group_key\", so the expected fingerprint/group_key does not match the actual code path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TestEvaluateGroupKeyValue.test_dedupe is ineffective because IssueOccurrence.__eq__ compares only the hardcoded id, allowing the test to pass even when fingerprint/group_key are wrong",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_state_results_multi_group builds the expected occurrence for group_2 with value=6 even though the input packet has group_2=10 and the real code forwards value=10",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_state_results_multi_group can pass incorrectly because the mock occurrence builder does not vary output based on value and IssueOccurrence.__eq__ compares only by id",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_state_results constructs expected occurrences using detector.detector_handler, but detector.detector_handler returns a new handler instance on each access, so the expected handler instance differs from the one used in process_detectors, making the test fragile if handler instance state matters",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
     "gemini": [
@@ -6327,6 +6721,14 @@
     "macroscope": [
       {
         "text": "get_monitor_environment_context returns the original monitor_environment.monitor.config instead of the modified copied config with human-readable schedule_type, causing raw integer schedule_type values to be returned rather than display names",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "get_monitor_environment_context returns monitor_environment.monitor.config (original config) instead of the locally modified config copy, so the schedule_type human-readable override is discarded and the context contains the raw schedule_type value",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -6589,6 +6991,38 @@
     "macroscope": [
       {
         "text": "Dataclass field `queued` uses `timezone.now()` as a default value, which is evaluated at class definition/import time so all `AssignmentSource` instances share the same timestamp instead of getting a fresh per-instance timestamp; should use `field(default_factory=timezone.now)`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Dataclass field `queued` uses `timezone.now()` as a default value, causing it to be evaluated at import time so instances share the same timestamp; should use `field(default_factory=timezone.now)`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`assignment_source` parameter was added to the abstract `sync_status_outbound` method even though status sync is unrelated to this PR\u2019s assignee sync changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`ExampleIntegration.sync_status_outbound(self, external_issue, is_resolved, project_id)` does not accept `**kwargs`, so callers passing the new `assignment_source` argument will raise a TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test name `test_from_dict_empty_array` is misleading because it tests an empty dict `{}` rather than an empty array",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test name `test_from_dict_inalid_data` contains a typo ('inalid' instead of 'invalid'), making it harder to search and understand",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -6956,6 +7390,56 @@
       },
       {
         "text": "`create_thread_queue_parallel_worker` reuses `self.queue_pool` across `create_with_partitions` calls; after a rebalance the previous strategy may have already shut down the pool in `close()`, so new strategies receive a shutdown pool and `FixedQueuePool.submit()` can raise when putting to a shutdown queue, breaking message processing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "close() stops/joins the commit thread before draining/shutting down the worker pool, so messages processed during worker drain have side effects but their offsets are never committed, causing duplicate processing after restart",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_thread_queue_parallel_error_handling has a docstring claiming errors shouldn't block commits for other messages, but the assertion checks that no commits happened (opposite of the stated intent)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_thread_queue_parallel_error_handling is timing-dependent/flaky because the commit loop runs every ~1s while the test only waits ~0.2s, so it can pass simply because commits haven't occurred yet",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OrderedQueueWorker.run() marks offsets complete in a finally block even when processing raises, so failed messages are treated as successfully processed for committing purposes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SimpleQueueProcessingStrategy docstring incorrectly claims natural backpressure, but worker queues are created unbounded (queue.Queue() without maxsize), allowing unbounded memory growth under load",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SimpleQueueProcessingStrategy docstring incorrectly claims offsets are only committed after successful processing, but offsets are completed/committed even on exceptions due to the finally block behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OffsetTracker._get_partition_lock accesses/creates entries in partition_locks without synchronization, relying on CPython GIL behavior rather than guaranteed thread-safety",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OffsetTracker.get_committable_offsets iterates all_offsets keys without holding a lock while other threads may mutate all_offsets (including via defaultdict auto-creation), relying on non-guaranteed CPython atomicity",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -7501,6 +7985,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "OptimizedCursorPaginator.get_item_key applies math.floor()/math.ceil() directly to a datetime value (from order_by=\"-datetime\"), which will raise a TypeError; it should convert the datetime to a numeric value first (as DateTimePaginator does).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Optimized pagination path slices a Django queryset with a negative start index (queryset[negative_offset:stop]); Django ORM does not support negative indexing and raises AssertionError, so a crafted cursor with negative offset can trigger a 500 error.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A flush-time safety guard that skipped segments exceeding max_segment_spans (with metrics/logging) was removed; this eliminates protection against edge cases where segments can exceed the cap despite the Lua insert-side limit.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "max_segment_spans is still initialized on the class but is now unused/dead code after the flush-side guard removal.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -7942,6 +8452,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Cache key construction uses Python built-in hash(), which is randomized per process (PYTHONHASHSEED), causing cross-process cache key mismatches and cache misses in shared Redis/Memcached",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "invalidate_upsampling_cache also uses non-deterministic hash() in its cache key, so invalidation from one process may not clear entries written by another process",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cache key for upsampling decision does not include dataset/request context, so a cached True/False can be reused across different query contexts and yield inconsistent behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logic change from any(project_id in allowlist) to all(project_id in allowlist) alters semantics and can prevent upsampling for mixed allowlisted/non-allowlisted project queries, leading to underestimated counts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Removed validation in organization_events_stats.py (top_events > 0 branch) that disallowed grouping by 'timestamp' (ParseError check), allowing previously forbidden groupby and potentially causing unexpected behavior or downstream errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -8305,6 +8847,32 @@
       },
       {
         "text": "`name` and `parent` values are taken directly from the request without sanitization/escaping before being used in the cache key, increasing the risk of delimiter-related collisions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Cache key collision risk in userPermDenialCacheKey because it concatenates name and parent with '_' even though both fields may contain underscores, allowing different resources to produce identical denial cache keys and cause incorrect access denials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test \"Should deny on explicit cache deny entry\" is invalid/misleading because it sets the permission cache entry to false while claiming it allows access, so the test would deny via the permission cache regardless of whether the denial cache is checked and therefore doesn't prove denial-cache priority",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "permDenialCache and permCache share the same underlying cache instance while storing different serialized Go types (bool vs map[string]bool) and use overlapping key prefixes, so an accidental key collision could cause json.Unmarshal type mismatches, spurious cache misses, and warning logs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "permissionCacheUsage metric increments with label \"false\" when the permission cache is hit but the requested resource isn't in the cached permission set, conflating a cache miss with a cache hit containing stale/incomplete data and reducing monitoring clarity",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -8696,6 +9264,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "OAuth2 `state` parameter is set to `pipeline.signature`, a deterministic MD5 of pipeline view class names, making it static across users/sessions and allowing attackers to forge `state` and bypass CSRF protection; `state` should include a cryptographically random, session-bound nonce",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Accessing `integration.metadata[\"sender\"][\"login\"]` can raise `KeyError` when `sender` is missing (e.g., integrations created before sender metadata existed or via non-webhook paths), causing a 500 instead of a user-facing error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When `Integration.DoesNotExist` occurs, the code calls `pipeline.next_step()` without performing the authenticated sender/user validation, allowing first-time installations to bypass the intended security check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`redirect_uri` is included in the OAuth authorization request but omitted from the token exchange request, violating RFC 6749 requirements and potentially causing token exchange failures or unexpected provider behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`error()` assumes `org.organization` exists even though `self.active_organization` may be `None` or an unexpected type if `determine_active_organization()` wasn't called or returns a different structure, leading to potential crashes in error handling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -8946,6 +9546,32 @@
       },
       {
         "text": "Because the cleanup callback fails to remove the created identity providers, the 20 identity providers created in the test leak into subsequent tests and can cause later test failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Test cleanup registers IDP removal using the literal string \"alias\" instead of the actual generated IDP alias (e.g., \"idp-alias-\" + i), so the IDPs created in the loop are not cleaned up and can leak state into other tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test cleanup at line 425 similarly uses an incorrect alias for removal (hardcoded/mismatched for \"idp-alias-20\"), leaving that IDP uncleared after the test",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In getForLogin cached path, results are returned from a HashSet<IdentityProviderModel>, which does not preserve delegate query ordering, causing inconsistent ordering behavior between cached and non-cached paths for callers that might rely on ordering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In registerIDPLoginInvalidationOnUpdate, the \"original\" model is org-aware wrapped (isEnabled depends on org state) while the \"updated\" model is raw; comparing them via getLoginPredicate can differ solely due to wrapper behavior, causing unnecessary (over-)invalidation of the login cache",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9398,6 +10024,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "`enableSqlExpressions` always returns `false` regardless of `FlagSqlExpressions`, making the feature-flag check dead code and misleading about the ability to re-enable SQL expressions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`sql_command.go:Execute` appends an (empty) result frame to `rsp.Values` even when `DB.QueryFramesInto` returns an error (\"not implemented\"), leading to results containing empty frames alongside an error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -9638,6 +10278,20 @@
       },
       {
         "text": "On error from readWebAssetsFromFile or cfg.GetContentDeliveryURL, result remains nil but is still assigned to entryPointAssetsCache, overwriting a previously valid cached value with nil and causing subsequent callers to receive nil or retry unnecessarily",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "After releasing the read lock and acquiring the write lock, the code does not re-check whether `entryPointAssetsCache` was populated by another goroutine, leading to redundant manifest reads/parses (double-checked locking bug)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In non-dev mode under concurrent startup requests, the missing second cache check can cause a thundering herd of redundant file I/O when multiple goroutines re-read the manifest unnecessarily",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -10085,6 +10739,38 @@
     "macroscope": [
       {
         "text": "r.log.Error is used for normal operational logging in xorm_store.go (lines 534, 537, 554, 557), causing non-error messages to be emitted as error logs during each cleanup cycle; should use Debug/Info to avoid polluting error logs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Cleanup service ticker interval was changed from 10 minutes to 1 minute, likely an accidental debug leftover, causing cleanup to run 10x more frequently and increasing production database load",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup ticker interval (1 minute) is shorter than the clean() method timeout (9 minutes), so a new cleanup cycle can start while the previous one is still running (overlapping executions)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup-path diagnostic logs incorrectly use r.log.Error() for informational messages, which will flood error logs and potentially trigger alerts on successful cleanup cycles",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQLite parameter limit guard checks r.cfg.AnnotationCleanupJobBatchSize > sqliteParameterLimit instead of len(ids) > sqliteParameterLimit, causing unnecessary fallback to inline SQL when few IDs are returned and reducing safety vs parameterized queries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test helper createTestAnnotations hardcodes annotation IDs starting at 1, which can conflict with SQLite auto-increment behavior across shared test DB usage and lead to ID collisions when other tests insert rows without explicit IDs",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -10749,6 +11435,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Create error path records latency with `recordLegacyDuration` instead of `recordStorageDuration`, misattributing a failed storage operation and corrupting metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Update error path records latency with `recordLegacyDuration` instead of `recordStorageDuration`, misattributing a failed storage operation and corrupting metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DeleteCollection goroutine records legacy write latency with `recordStorageDuration` instead of `recordLegacyDuration`, misattributing legacy latency to storage metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete success path passes `name` as the metric label to `recordStorageDuration` instead of `options.Kind`, creating high-cardinality Prometheus labels",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete method calls `klog.NewContext(ctx, d.Log)` with the base logger instead of the enriched `log` containing name/kind/method, losing contextual logging",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -11287,6 +12005,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Missing React `key` prop on `GrafanaRuleListItem` when rendering the filter view list, which can cause React reconciliation problems on updates/reordering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete menu item never renders in the new list view because `AlertRuleMenu` guards it with `canDelete && rulerRule && (...)`, but `rulerRule` is always undefined from the `GrafanaRuleListItem -> RuleActionsButtons.V2 -> AlertRuleMenu` path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Pause menu item never renders in the new list view because it requires `rulerRuleType.grafana.rule(rulerRule)` but `rulerRule` is undefined in the new list view path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Silence drawer never opens in the new list view because `RuleActionsButtons.V2` only renders the drawer when `rulerRuleType.grafana.alertingRule(rule)` is true, but `rule` (RulerRuleDTO) is undefined when only `promRule` is passed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`useGrafanaPromRuleAbility` is called with `promRule` typed as `Rule` instead of `GrafanaPromRuleDTO | SkipToken`; the boolean check `prometheusRuleType.grafana.rule()` does not narrow the type, risking a TypeScript error or incorrect permission checks when fields like `folderUid` are missing/optional",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -11553,7 +12303,39 @@
         "source": "extracted"
       }
     ],
-    "macroscope": []
+    "macroscope": [],
+    "tusk": [
+      {
+        "text": "Queries are interpolated twice in the shard-splitting path because both runShardSplitQuery() and runSplitQuery() call applyTemplateVariables(), causing non-idempotent interpolation side effects",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Ad-hoc filters are appended twice to the query expression because addAdHocFilters()/addLabelToQuery() unconditionally adds label matchers, so double interpolation duplicates matchers like env=\"prod\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The shard splitting test masks the double-interpolation bug because its applyTemplateVariables mock uses idempotent string replacement and asserts the double-call pattern (5 calls), so it doesn\u2019t catch duplicated ad-hoc filters",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The applyTemplateVariables test mock mutates the input query object in place instead of returning a new object like the real implementation, potentially hiding bugs that depend on request.targets remaining unmodified",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "runShardSplitQuery changed the order of filtering vs interpolation (filtering before interpolation), which can allow template-only expressions that interpolate to an empty string to slip through and be processed/sent as empty queries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/grafana/grafana/pull/79265": {
     "gemini": [
@@ -12019,6 +12801,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "TagDevice was changed from asynchronous fire-and-forget to synchronous on the authentication request path, so slow/failing DB operations now block anonymous authentication and add latency to every anonymous request",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TagDevice now inherits the HTTP request context (potentially short timeout) instead of using an independent background context with a 2-minute timeout, changing timeout/cancellation behavior for device tagging",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Device limit enforcement has a TOCTOU race: CreateOrUpdateDevice counts devices then updates/inserts, allowing concurrent requests to exceed the configured device limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateDevice returns ErrDeviceLimitReached when rowsAffected == 0, conflating 'device not found' with 'device exists but is outside the updated_at BETWEEN window (expired)', causing expired returning devices to be incorrectly rejected and producing a misleading error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "FrontendSettingsDTO.AnonymousDeviceLimit always serializes as a number (0 when unset) due to missing omitempty, but the TypeScript type is number | undefined, so frontend checks for undefined to mean 'no limit configured' will never work",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -12391,7 +13205,33 @@
         "source": "extracted"
       }
     ],
-    "macroscope": []
+    "macroscope": [],
+    "tusk": [
+      {
+        "text": "LRU translation cache key omits SiteSetting.default_locale even though it affects the fallback chain, so changing default_locale can serve stale cached translations resolved via the old fallback chain",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No I18n.reload! (or equivalent cache invalidation) is triggered when SiteSetting.default_locale changes, leaving the translation cache populated with entries based on the previous default locale",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "translate only ensures config.locale is loaded; with I18n::Backend::Fallbacks enabled, fallback locales in the chain may not be loaded in non-controller contexts (Sidekiq/rake/console), causing fallbacks to silently fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ensure_loaded! initializes @loaded_locales ||= [] outside the LOAD_MUTEX, creating a race where concurrent threads can overwrite the array and lose loaded-locale state, leading to redundant loads or missed locale loading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
     "gemini": [
@@ -12607,6 +13447,20 @@
     "macroscope": [
       {
         "text": "TestLogger.FromContext returns a new *TestLogger instance, so logs written via the returned logger are captured on an ephemeral logger and never appear in the original logger's InfoLogs/DebugLogs/etc., preventing tests from verifying logs; it should return the existing receiver (f) instead.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "TestLogger.FromContext creates and returns a new disconnected TestLogger via NewTestLogger(), so LoggerMiddleware.logRequest logs to a throwaway instance and tests cannot capture/verify log output",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ContextualLoggerMiddleware methods (QueryData, CallResource, CheckHealth, CollectMetrics) dereference req.PluginContext without checking if req is nil, risking a nil pointer panic when used outside the Decorator or in tests",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -13457,6 +14311,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Migration can crash on fresh installs when the 'embed_category' site setting is missing because the SQL query returns 0 rows and code accesses [0]['id'], causing NoMethodError and bypassing the category_id == 0 fallback",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration builds SQL INSERT statements by interpolating host values ('#{h}') from the old embeddable_hosts setting, allowing single quotes to break SQL and enabling SQL injection if the setting is corrupted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin EmbeddableHostsController destroy/update actions can crash when EmbeddableHost.where(id: params[:id]).first returns nil; destroy calls host.destroy and update passes nil into save_host leading to NoMethodError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "EmbeddableHost model before_validation callback calls self.host.sub! even when host is nil, causing NoMethodError before validations can reject missing host (e.g., when params[:embeddable_host][:host] is absent)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fabricator definitions are in the wrong files: category_fabricator.rb contains Fabricator(:embeddable_host) while embeddable_host_fabricator.rb contains category fabricators, causing confusing mismatch between filenames and contents",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "JavaScript basePath uses type.replace('_','-') which only replaces the first underscore, so types with multiple underscores will be converted incorrectly and may fail to match ADMIN_MODELS",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -13948,6 +14840,32 @@
     "macroscope": [
       {
         "text": "In desktop/topic-post.scss, the dark-light-choose call for .topic-meta-data h5 a uses lightness: 70% for the light theme instead of the intended/original 30%, making embedded post links too light and less visible in light themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "In app/assets/stylesheets/desktop/topic-post.scss around line 291, the light-theme lightness for .embedded-posts link text was changed from 30% to 70%, making it washed out; the light/dark theme lightness values appear to be accidentally swapped",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/assets/stylesheets/mobile/modal.scss around line 102, dark-light-choose arguments for .custom-message-length are reversed compared to desktop (mobile uses 30% for light and 70% for dark), causing inverted character count contrast on light vs dark themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/assets/stylesheets/mobile/topic-post.scss around line 182, the light-theme lightness for h3 changed from 20% to 50%, making headings too grey on light themes; the dark-theme counterpart should be ~80% (complementary to 20%) rather than 50%",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/assets/stylesheets/desktop/user.scss around line 522 (and corresponding mobile user stylesheet), the light-theme lightness for .name changed from 30% to 50%, making names washed out and inconsistent with .username a in common/base/user.scss which keeps 30%",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -14593,6 +15511,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Public GroupsController#members endpoint response format changed from a flat JSON array to an object with {members, meta}, breaking existing consumers expecting an array",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupsController#members now always paginates with a default limit (50), so callers not providing pagination params may silently receive truncated member lists (previously non-automatic groups returned all members)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Off-by-one bug in totalPages calculation: using Math.floor(user_count / limit) + 1 produces an extra page when user_count is exactly divisible by limit; should use Math.ceil(user_count / limit)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Controller spec for removing members from automatic groups uses xhr :put even though the route is DELETE, so the test doesn't validate the real HTTP method/path and could miss routing/method bugs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin groups update unconditionally sets group.visible based on params[:visible] == \"true\"; if visible is omitted in a partial update, visibility is unintentionally set to false",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New group creation visibility can be incorrectly forced to false because the JS model asJSON() sends visible: !!this.get('visible') (false when unset) and the create action interprets params[:visible] == \"true\", so checkbox state/defaults may not be respected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -14993,6 +15949,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "BlockedEmail.should_block? performs DB writes (incrementing match_count and updating last_match_at) as a side effect during model validation, so repeated validation calls can inflate blocked-email statistics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BlockedEmail.should_block? calls record.save inside validation, triggering BlockedEmail validations (including a uniqueness query) and making validation unnecessarily expensive",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Client-side create account JS adds the email to rejectedEmails for any email validation error (including uniqueness/taken email), causing valid emails to be permanently marked rejected until page refresh",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rejectedEmails is initialized as Em.A([]) on the Ember class prototype, so the array is shared across controller instances and can cause cross-instance state pollution",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BlockedEmail.should_block? calls record.save without checking whether it succeeded, so failures can be silently ignored and the method may return based on dirty/stale in-memory state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -15340,7 +16328,45 @@
         "source": "extracted"
       }
     ],
-    "macroscope": []
+    "macroscope": [],
+    "tusk": [
+      {
+        "text": "The `order` mixin passes raw `$val` to `-webkit-box-ordinal-group`/`-moz-box-ordinal-group` even though those legacy properties are 1-based, so it should use `$val + 1` to match standard `order` behavior in old WebKit/Firefox",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In `.small-action`, `.topic-avatar` still has `float: left` even though the parent is now `display: flex`, indicating an incomplete flex migration and causing confusing/obsolete styling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In `.small-action-desc`, changing padding from `0.5em 0 0.5em 4em` to `0 1.5%` removes the fixed left spacing for the avatar, potentially shrinking the gap on narrow viewports and causing text to appear too tight or overlap",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The mixin uses invalid `-ms-align-items`, which IE10/11 will ignore; only `-ms-flex-align` should be used for IE",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The `align-items` mixin does not translate `flex-start`/`flex-end` to IE10/11 `-ms-flex-align` values (`start`/`end`), so callers using `flex-start`/`flex-end` would break in IE",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`.badge-wrapper.bullet` has inconsistent `margin-top: 5px` between contexts (removed in one rule but retained under `#topic-title .title-wrapper`), leading to inconsistent bullet badge alignment/styling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6": {
     "gemini": [
@@ -15724,6 +16750,26 @@
       },
       {
         "text": "As a result of the missing `?`, `website_name` is always serialized even when `website` is blank",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Serializer conditional include hook is misnamed: `include_website_name` lacks the required trailing `?`, so ActiveModel::Serializer never calls it and `website_name` is always serialized even when `website` is nil/blank",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` is missing from the `untrusted_attributes` list while `website` is included, allowing TL0 users' website info to leak via `website_name` when `scope.restrict_user_fields?` should hide it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test setup is fragile: `Discourse.stubs(:current_hostname)` is applied inside the `it` block after `let(:json)` is defined, so if `json` is evaluated before the stub (e.g., in a `before`/shared example) the stub won\u2019t take effect; the stub should be set before `json` is accessed",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -16621,6 +17667,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Invalid ERB/Ruby syntax in app/views/embed/best.html.erb line 6: `<%- end if %>` uses `end if` without a condition and should be `<%- end %>`, causing a SyntaxError when rendering the template",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RSpec controller specs do not render views by default, so the ERB SyntaxError in best.html.erb is not caught by the existing controller spec coverage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential XSS in app/views/layouts/embed.html.erb line 11: `request.referer` is interpolated into a single-quoted JavaScript string without JS-escaping/sanitizing path/query/fragment, allowing JS string breakout despite HTML escaping",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Nil handling bug in app/jobs/scheduled/poll_feed.rb line 35: `i.content` can be nil for RSS items lacking `content:encoded`, so calling `.scrub` can raise `NoMethodError`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Insecure postMessage origin validation in app/assets/javascripts/embed.js line 17: using `discourseUrl.indexOf(e.origin)` performs substring matching and can be bypassed by attacker-controlled domains that contain the expected origin as a substring/prefix",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unintended string mutation in app/models/topic_embed.rb line 13: using `contents << ...` mutates the caller's string, causing the footer to be appended multiple times across repeated imports and leading to incorrect content SHA1 comparisons on re-import/update",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -17322,6 +18406,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "In app/models/optimized_image.rb, the method `downsize` is defined twice; the second definition overrides the first, leaving only the 3-arg/4-arg signature and removing the 5-arg variant",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The caller in app/jobs/regular/resize_emoji.rb:14 invokes `OptimizedImage.downsize` with 5 arguments, which will raise `ArgumentError (given 5, expected 3..4)` at runtime and break emoji resizing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/assets/javascripts/discourse/lib/utilities.js, client-side upload size validation is hardcoded to 10MB for all upload types, ignoring the dynamic site settings (e.g., max_image_size_kb/max_attachment_size_kb)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Because client-side validation is hardcoded to 10MB, non-image attachments may be accepted client-side above the configured limits and then rejected by the server",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/assets/javascripts/discourse/lib/utilities.js, the 413 (entity too large) error handler hardcodes `maxSizeKB` to 10MB, causing the displayed error message to be incorrect when the real server limit differs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/controllers/uploads_controller.rb, the API URL download limit is hardcoded to `10.megabytes` instead of using `SiteSetting.max_image_size_kb.kilobytes`, artificially limiting uploads when the admin setting is higher than 10MB",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/controllers/uploads_controller.rb, the hardcoded 10MB API URL download limit applies to non-image URL uploads as well because the type check occurs later",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -17840,6 +18968,38 @@
     "macroscope": [
       {
         "text": "`TopicUser.find_by` in `unsubscribe` can return `nil` for users with no existing `TopicUser` record, but the code immediately calls `tu.notification_level` without a nil check, causing a `NoMethodError`.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Possible NoMethodError crash in topics_controller: TopicUser.find_by can return nil and code calls tu.notification_level without a nil check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "I18n unsubscribe_link string now requires %{unsubscribe_url}; email paths using add_unsubscribe_link: true without providing unsubscribe_url can raise I18n::MissingInterpolationArgument or produce an empty/broken link",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "XSS risk in dropdown-button component: title is concatenated into HTML without escaping, allowing user-controlled content to render as raw HTML",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "XSS risk in topic unsubscribe template/controller: triple-stache {{{stopNotificiationsText}}} renders raw HTML and interpolates model.fancyTitle into an i18n string, potentially allowing malicious HTML to be rendered unescaped",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Email html_part placeholder substitution bug: %{respond_instructions} and %{unsubscribe_link} are only replaced when add_unsubscribe_link is true, but the template always includes %{respond_instructions}, so literals can appear in emails when add_unsubscribe_link is false",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -18465,6 +19625,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Calling `updateManyByCredentialId(credentialId, {})` with an empty update object is a no-op, so `SelectedCalendar.updatedAt` is never updated as intended (Prisma `updateMany` doesn\u2019t trigger `@updatedAt`).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`deleteCache` handler authorizes credentials only by `credential.userId === user.id`, ignoring delegation via `delegationCredentialId`, which can prevent delegated users from deleting their own cache.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`deleteCache` handler does not verify the credential is a calendar credential, so any user-owned credential ID could be used to attempt calendar cache deletion.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`CalendarCache.updatedAt` relies on Prisma `@updatedAt`, but raw SQL upserts/inserts (e.g., `$queryRaw` in `upsertCachedAvailability`) won\u2019t trigger it, so `updatedAt` may never update beyond the DB default insert timestamp.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `cacheStatusMap.get(id) || null` conflates `undefined` (missing key) with `null` (present-but-null) and should use `?? null` for correct semantics.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`CredentialActionsDropdown` is rendered unconditionally and initializes state and tRPC mutations even when it returns `null`, causing unnecessary hook/mutation setup overhead (including `trpc.viewer.credentials.delete.useMutation()` subscriptions) for credentials that won\u2019t show the dropdown.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -18967,6 +20165,32 @@
       },
       {
         "text": "In lib/slots.ts around line 211, date override timezone conversion can cross midnight but the code reduces times to minutes-of-day (0-1439) without tracking day offset, causing overrides/slots to be applied to the wrong day when the conversion shifts into an adjacent day",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Uses object reference equality (===) to compare two different dayjs instances, so the override start==end (zero-length/unavailable-day) check never triggers and unavailable-day overrides are treated as available",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Copy-paste bug: `end` is computed from `slotStartTime` instead of `slotEndTime`, so slots whose end extends past working hours may not be rejected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Timezone conversion bug: `dayjs(date.start)` is parsed in server-local time then adjusted by a negated organizer offset, causing incorrect override boundaries when server timezone differs from UTC and creating inconsistency with other offset logic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Incorrect use of `.find()` with a mutated `dateOverrideExist` flag: short-circuiting on the first truthy return can reject a slot based on the first override and skip other overrides that might allow it",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -19708,6 +20932,38 @@
     "macroscope": [
       {
         "text": "When an organization has no child teams, `userIdsFromOrg` is set to an empty array and the org membership query is skipped, causing personal (non-team) bookings from direct org members to be missing from org-scope insights.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Public methods getAuthorizationConditions() and getFilterConditions() return Prisma.Sql fragments containing OR expressions without wrapping the overall expression in outer parentheses, so callers composing them with AND can hit SQL operator-precedence bugs where one OR branch bypasses the AND filter (potential privilege escalation / incorrect filtering).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Constructor options type was changed from a discriminated union (requiring teamId when scope='team') to a flat type with optional teamId, removing compile-time enforcement and allowing callers to omit teamId for team scope, leading to runtime zod validation failure and silently returning NOTHING_CONDITION (no data).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Filters use falsy guards (e.g., if (this.filters.eventTypeId) / if (this.filters.memberUserId)) which skip applying filters when the value is 0, causing unintended unfiltered results for valid numeric IDs equal to 0.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getBaseConditions() contains dead/unreachable branches because authConditions is always a truthy Prisma.Sql object (including NOTHING_CONDITION), so logic that assumes authConditions can be falsy is incorrect and prevents short-circuiting when authorization fails.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Caching tests for getAuthorizationConditions() and getFilterConditions() were removed while caching logic remains, leaving caching behavior untested and allowing regressions that could cause repeated membership-check queries.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -20769,6 +22025,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "parseRefreshTokenResponse returns the full safeParse result ({success,data}) and Google Calendar stores it directly as the credential key, causing the DB to persist a wrapped object instead of the expected token fields and corrupting subsequent credential reads",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When APP_CREDENTIAL_SHARING_ENABLED is true, refreshOAuthTokens returns a raw fetch Response instead of the previously expected parsed/app-specific token object, causing callers (Google Calendar/Hubspot/Zoho) to access missing properties and crash due to inconsistent return types across code paths",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "minimumTokenResponseSchema incorrectly uses [z.string().toString()] as a computed property key, creating a literal key (e.g., 'ZodString') and failing to validate presence of an expiry field like expires_in/expiry_date, making minimum token validation ineffective",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Salesforce getClient refreshes and saves a new access token but then instantiates jsforce.Connection with credentialKey.access_token (the old token), so the current connection uses a stale/expired token despite the DB being updated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook endpoint does not enforce POST-only requests; non-POST methods (e.g., GET without JSON body) can trigger zod parse errors/500s and violate the intended endpoint semantics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -21406,6 +22694,38 @@
       },
       {
         "text": "In scheduleEmailReminders.ts, if client.request throws for any reminder in the loop, execution jumps to catch and Promise.all(workflowRemindersToDelete) is never executed, so reminders already cancelled in SendGrid may not have their workflowReminder database records deleted, causing inconsistent state and retries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "When `immediateDelete` is true and `referenceId` is non-null, the code cancels the SendGrid batch but returns without deleting or marking the `workflowReminder` DB record (e.g., not setting `cancelled=true`), leaving an orphaned reminder that won\u2019t be cleaned up by either the CRON cancel loop or the unscheduled query",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In the CRON job, `deleteMany` removes all reminders with past `scheduledDate` before processing `cancelled: true` reminders; if a reminder is cancelled shortly before send time and the CRON runs after `scheduledDate`, the DB record is deleted before SendGrid cancellation occurs, so the email is still delivered",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The CRON cancellation loop is wrapped in a single try/catch; one SendGrid cancel failure aborts the entire loop, leaving remaining cancelled reminders unprocessed (not cancelled in SendGrid and not deleted), so emails may still be sent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In the reschedule path, async deletions are invoked inside `forEach` without awaiting; errors won\u2019t be caught by the surrounding try/catch and can become unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "After a refactor, the sender name/sender ID input section is rendered unconditionally instead of only when `isPhoneNumberNeeded || isSenderIdNeeded`, causing irrelevant sender fields to appear for email-type workflow steps",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -22096,6 +23416,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "Authorization logic for `isTeamAdminOrOwner` uses `&&` instead of `||`, requiring users to be both team admin and owner and incorrectly denying admins (making the admin check effectively dead code)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Handler passes raw `guests` input to `sendAddGuestsEmails` instead of filtered `uniqueGuests`, causing existing attendees to be treated as new guests and receive the wrong email template (booking confirmation instead of add-guests notification)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Blacklist email comparison lowercases `blacklistedGuestEmails` but compares incoming guest emails without lowercasing, allowing case-variant emails to bypass the blacklist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When `booking.userId` is null, `booking.userId || 0` leads to querying user id 0 with `findFirstOrThrow`, throwing an unhandled Prisma NotFoundError instead of a proper TRPC error (reachable if organizer account was deleted)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`OrganizerAddGuestsEmail.getNodeMailerPayload()` accesses `this.calEvent.attendees[0].name` without guarding for an empty attendees array, risking a runtime TypeError that can crash the whole email batch sent via `Promise.all`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -22682,6 +24034,32 @@
       },
       {
         "text": "In `totp/disable.ts`, `req.body.backupCode` is only checked for truthiness and may be a non-string; calling `.replaceAll('-', '')` on a non-string can throw a `TypeError` and crash the request",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Password verification can be bypassed by supplying a non-empty dummy totpCode along with a valid backupCode, causing the password check to be skipped and the backup-code branch to succeed without verifying the password",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code login is blocked for third-party identity provider (e.g., Google/SAML) users because a guard throws when totpCode is missing, preventing the backup-code path from being reached and making backup codes unusable for these users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "API route throws an unhandled exception when CALENDSO_ENCRYPTION_KEY is missing, leading Next.js to return an HTML 500 page instead of structured JSON; client code expecting response.json() then fails/silently errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Blob/object URL created via URL.createObjectURL for backup code download is not revoked on dialog close/unmount (resetState lacks cleanup), causing a memory/resource leak per 2FA setup flow",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -23350,6 +24728,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tusk": [
+      {
+        "text": "In updateEvent/deleteEvent, when externalCalendarId is falsy the code does event.destinationCalendar?.find(cal => cal.externalId === externalCalendarId), which can never match and returns undefined; it should fall back to event.destinationCalendar?.externalId, otherwise updates/deletes use an undefined calendar ID",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In EventManager, destructuring const [mainHostDestinationCalendar] = evt.destinationCalendar ?? [] can yield undefined for null/empty destinationCalendar, but the next line accesses mainHostDestinationCalendar.integration without optional chaining, causing a TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In updateAllCalendarEvents, if reference.credentialId is set but the credential is missing from cache and the DB lookup fails, credential stays undefined and is still passed to updateEvent, which will crash when getCalendar(credential) is called",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In handleNewBooking, evt.destinationCalendar is set to null when neither eventType.destinationCalendar nor organizerUser.destinationCalendar exist, so evt.destinationCalendar?.push(...teamDestinationCalendars) becomes a no-op and team member destination calendars are silently dropped",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In organization creation, the slug/requestedSlug conditional logic is inverted: slug is now set only when billing is enabled (and requestedSlug also only when enabled), resulting in non-billing orgs getting neither slug nor requestedSlug and billing orgs getting both, opposite of intended behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -23738,6 +25148,80 @@
       },
       {
         "text": "The function may return success (e.g., `true`) before the calendar/video deletions complete due to not awaiting the async work started in the `forEach` loop",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tusk": [
+      {
+        "text": "Using an async callback inside Array.forEach in packages/app-store/vital/lib/reschedule.ts causes fire-and-forget behavior because forEach doesn\u2019t await returned promises",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/vital/lib/reschedule.ts, errors thrown in async operations inside the forEach won\u2019t be caught by the surrounding try/catch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/vital/lib/reschedule.ts, deleteEvent/deleteMeeting calls inside the async forEach are not awaited before sending reschedule emails, causing races or silent failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using an async callback inside Array.forEach in packages/app-store/wipemycalother/lib/reschedule.ts discards promises, leaving calendar deleteEvent calls unawaited",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/wipemycalother/lib/reschedule.ts, errors from async operations inside the forEach won\u2019t be caught and the function proceeds to send reschedule emails immediately",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/trpc/server/routers/viewer/bookings.tsx, the forEach on line 553 uses an async callback that forEach ignores, so deleteEvent/deleteMeeting operations are unawaited",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/trpc/server/routers/viewer/bookings.tsx, the code proceeds to send reschedule emails before deletions complete, and errors from deletions are silently swallowed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/features/bookings/lib/handleCancelBooking.ts, an async callback inside forEach discards promises, so async work isn\u2019t awaited",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/features/bookings/lib/handleCancelBooking.ts, apiDeletes is populated inside the unawaited async forEach callback, so Promise.all(apiDeletes) runs with an empty array and skips calendar deletions for recurring events",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/core/CalendarManager.ts, getCalendarCredentials is synchronous but calls async getCalendar inside flatMap, resulting in returned objects where calendar is a Promise instead of Calendar|null",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/core/CalendarManager.ts, the function\u2019s type contract is broken because it claims calendar is Calendar|null but actually returns Promise<Calendar|null>",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/core/CalendarManager.ts, callers that don\u2019t await item.calendar may treat a truthy Promise as a valid calendar and bypass null checks",
         "path": null,
         "line": null,
         "source": "extracted"

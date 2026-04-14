@@ -31,6 +31,7 @@ TOOL_DISPLAY_NAMES = {
     "cubic-dev": "Cubic",
     "sourcery": "Sourcery",
     "mesa": "Mesa",
+    "tusk": "Tusk",
 }
 
 TOOL_COLORS = {
@@ -50,6 +51,7 @@ TOOL_COLORS = {
     "cubic-dev": "#d946ef",
     "sourcery": "#84cc16",
     "mesa": "#f43f5e",
+    "tusk": "#9333ea",
 }
 
 

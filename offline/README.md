@@ -17,6 +17,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | [Greptile](https://www.greptile.com/) | AI code review |
 | [Propel](https://propelauth.com/) | AI code review |
 | [Qodo](https://www.qodo.ai/) | AI code review |
+| [Tusk](https://www.usetusk.ai/) | AI code review & testing |
 
 Adding a new tool requires forking the benchmark PRs and collecting the tool's reviews — see Steps 0 and 1 below.
 

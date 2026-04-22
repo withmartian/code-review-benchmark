@@ -421,6 +421,9 @@ def _parse_time_bound(value: str | None) -> str | None:
     """Parse a CLI time bound: relative ("7d") or absolute ("2026-02-05") -> ISO timestamp.
 
     Returns None when value is falsy. Relative values are anchored to "now" (UTC).
+    Bare dates ("YYYY-MM-DD") are normalized to midnight UTC so asyncpg can bind
+    them to a timestamptz column — without this the bare-date form is forwarded
+    as a raw string and asyncpg raises DataError.
     """
     if not value:
         return None
@@ -431,6 +434,8 @@ def _parse_time_bound(value: str | None) -> str | None:
     m = re.match(r"^(\d+)d$", value)
     if m:
         return (datetime.now(UTC) - timedelta(days=int(m.group(1)))).isoformat()
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        return f"{value}T00:00:00+00:00"
     return value
 
 

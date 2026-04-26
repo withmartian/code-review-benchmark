@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 OUT_DIR = Path(__file__).resolve().parent / "results"
 
-TARGET_SAMPLE_SIZE = 100
-MIN_TOOL_SAMPLES = 3
+TARGET_SAMPLE_SIZE = 200
+MIN_TOOL_SAMPLES = 5
 MIN_TOOL_SCORED_PRS = 50
 RNG_SEED = 42
 

@@ -28,7 +28,7 @@ from pipeline.analyze import (  # noqa: E402
     _split_commits_at_hash,
 )
 
-from car_prompts import CAR_JUDGE  # noqa: E402
+from car_prompts import CAR_JUDGE, CAR_JUDGE_V1, CAR_JUDGE_V2, CAR_ACTIONABILITY_FILTER  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ RESULTS_DIR = Path(__file__).resolve().parent / "results"
 CAR_MODEL = os.environ.get("MARTIAN_MODEL_NAME", "openai/gpt-5-nano")
 CONCURRENCY = 10
 
+PROMPT_VERSIONS = {"v1": CAR_JUDGE_V1, "v2": CAR_JUDGE_V2}
 
 # Structured output schema for CAR judge
 from pydantic import BaseModel, Field  # noqa: E402
@@ -51,6 +52,15 @@ class CARResult(BaseModel):
 
 class CARResponse(BaseModel):
     result: CARResult
+
+
+class ActionabilityResult(BaseModel):
+    is_actionable: bool = Field(description="Whether the comment is an actionable suggestion")
+    reasoning: str = Field(description="Brief explanation")
+
+
+class ActionabilityResponse(BaseModel):
+    result: ActionabilityResult
 
 
 def _parse_json(raw: str | list | dict | None) -> list | dict:
@@ -134,9 +144,22 @@ def _get_thread_for_comment(events: list[dict], comment: dict, bot_username: str
     return "\n".join(thread_lines) if thread_lines else "(no thread replies)"
 
 
+async def _check_actionability(llm: LLMClient, comment_body: str) -> bool:
+    """Pre-filter: is this comment an actionable suggestion?"""
+    prompt = CAR_ACTIONABILITY_FILTER.format(bot_comment=comment_body)
+    try:
+        response = await llm.structured_completion(prompt, ActionabilityResponse)
+        return response.result.is_actionable
+    except Exception as exc:
+        logger.warning(f"Actionability check failed: {exc}")
+        return True  # default to including on error
+
+
 async def _evaluate_pr_car(
     llm: LLMClient,
     pr: dict,
+    prompt_version: str = "v2",
+    filter_actionable: bool = True,
 ) -> dict:
     """Run the CAR judge on all bot comments in a PR."""
     assembled = _parse_json(pr.get("assembled"))
@@ -170,8 +193,18 @@ async def _evaluate_pr_car(
             "f_beta": None,
         }
 
+    car_prompt_template = PROMPT_VERSIONS.get(prompt_version, CAR_JUDGE_V2)
+
     comment_results: list[dict] = []
+    n_filtered = 0
     for comment in bot_comments:
+        # Actionability pre-filter: skip summaries, praise, non-suggestions
+        if filter_actionable:
+            is_actionable = await _check_actionability(llm, comment["body"])
+            if not is_actionable:
+                n_filtered += 1
+                continue
+
         thread = _get_thread_for_comment(events, comment, bot_username)
 
         bot_comment_text = comment["body"]
@@ -183,7 +216,7 @@ async def _evaluate_pr_car(
         if comment.get("diff_hunk"):
             bot_comment_text += f"\n\nCode context:\n```\n{comment['diff_hunk']}\n```"
 
-        prompt = CAR_JUDGE.format(
+        prompt = car_prompt_template.format(
             pr_title=assembled.get("pr_title", ""),
             repo_name=pr["repo_name"],
             pr_author=assembled.get("pr_author", "unknown"),
@@ -207,23 +240,22 @@ async def _evaluate_pr_car(
             **result,
         })
 
-    # Compute CAR-based metrics
     n_total = len(comment_results)
     n_addressed = sum(1 for r in comment_results if r.get("addressed"))
 
-    # CAR precision analog: fraction of bot comments that were addressed
-    # (addressed = the developer acted on it, analogous to a matched suggestion)
     precision = n_addressed / n_total if n_total > 0 else None
 
-    # We can't compute recall the same way (no separate "action" list),
-    # but we report the addressed rate as the key metric
     return {
         "pr_id": pr["pr_id"],
         "tool": pr["tool"],
+        "n_comments_raw": len(bot_comments),
+        "n_filtered_non_actionable": n_filtered,
         "n_comments": n_total,
         "n_addressed": n_addressed,
         "addressed_rate": precision,
         "comment_results": comment_results,
+        "prompt_version": prompt_version,
+        "filter_actionable": filter_actionable,
     }
 
 
@@ -232,6 +264,9 @@ async def run_car(
     model_name: str | None = None,
     base_url: str | None = None,
     api_key: str | None = None,
+    prompt_version: str = "v2",
+    filter_actionable: bool = True,
+    output_suffix: str | None = None,
 ) -> None:
     """Run the CAR judge on all PRs in the manifest."""
     base_url = base_url or os.environ.get("MARTIAN_BASE_URL", "")
@@ -241,7 +276,10 @@ async def run_car(
     with open(manifest_path) as f:
         manifest = json.load(f)
 
-    logger.info(f"Running CAR judge on {len(manifest)} PRs with {model_name}")
+    label = f"{prompt_version}{'_actionable' if filter_actionable else '_all'}"
+    logger.info(
+        f"Running CAR judge ({label}) on {len(manifest)} PRs with {model_name}"
+    )
 
     llm = LLMClient(base_url=base_url, api_key=api_key, model_name=model_name)
     sem = asyncio.Semaphore(CONCURRENCY)
@@ -250,7 +288,11 @@ async def run_car(
 
     async def _process(pr: dict) -> dict:
         async with sem:
-            return await _evaluate_pr_car(llm, pr)
+            return await _evaluate_pr_car(
+                llm, pr,
+                prompt_version=prompt_version,
+                filter_actionable=filter_actionable,
+            )
 
     tasks = [asyncio.create_task(_process(pr)) for pr in manifest]
     for i, coro in enumerate(asyncio.as_completed(tasks)):
@@ -265,7 +307,8 @@ async def run_car(
     await llm.close()
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = RESULTS_DIR / "car_results.json"
+    suffix = output_suffix or label
+    out_path = RESULTS_DIR / f"car_results_{suffix}.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2, default=str)
     logger.info(f"Wrote {len(results)} results to {out_path}")
@@ -273,7 +316,11 @@ async def run_car(
     # Summary
     valid = [r for r in results if "error" not in r and r.get("n_comments", 0) > 0]
     rates = [r["addressed_rate"] for r in valid if r.get("addressed_rate") is not None]
-    print(f"\nCAR Results: {len(valid)}/{len(results)} PRs evaluated")
+    n_filtered = sum(r.get("n_filtered_non_actionable", 0) for r in valid)
+    n_raw = sum(r.get("n_comments_raw", 0) for r in valid)
+    print(f"\nCAR Results ({label}): {len(valid)}/{len(results)} PRs evaluated")
+    if filter_actionable:
+        print(f"  Comments filtered as non-actionable: {n_filtered}/{n_raw} ({100*n_filtered/n_raw:.1f}%)" if n_raw else "")
     if rates:
         print(f"  Median addressed rate: {sorted(rates)[len(rates)//2]:.3f}")
         print(f"  Mean addressed rate: {sum(rates)/len(rates):.3f}")
@@ -286,9 +333,19 @@ def main() -> int:
     parser.add_argument("--model", help="Override model name")
     parser.add_argument("--base-url", help="Override MARTIAN_BASE_URL")
     parser.add_argument("--api-key", help="Override MARTIAN_API_KEY")
+    parser.add_argument("--version", choices=["v1", "v2"], default="v2",
+                        help="Prompt version: v1=lenient, v2=strict (default)")
+    parser.add_argument("--no-filter", action="store_true",
+                        help="Skip actionability filter (include all comments)")
+    parser.add_argument("--output-suffix", help="Custom suffix for output file")
     args = parser.parse_args()
 
-    asyncio.run(run_car(args.manifest, args.model, args.base_url, args.api_key))
+    asyncio.run(run_car(
+        args.manifest, args.model, args.base_url, args.api_key,
+        prompt_version=args.version,
+        filter_actionable=not args.no_filter,
+        output_suffix=args.output_suffix,
+    ))
     return 0
 
 

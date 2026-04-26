@@ -18,7 +18,9 @@ import logging
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "../../online/etl"))
+# Repo root is 3 levels up: judge_agreement -> validation -> analysis -> repo root
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(_REPO_ROOT / "online" / "etl"))
 
 from config import DBConfig  # noqa: E402
 from db.connection import DBAdapter  # noqa: E402

@@ -30,9 +30,23 @@ logger = logging.getLogger(__name__)
 OUT_DIR = Path(__file__).resolve().parent / "results"
 
 TARGET_SAMPLE_SIZE = 100
-MIN_TOOL_SAMPLES = 2
+MIN_TOOL_SAMPLES = 3
 MIN_TOOL_SCORED_PRS = 50
 RNG_SEED = 42
+
+# Tools to exclude: too small, not in the paper leaderboard, or not a real code review bot
+EXCLUDED_TOOLS = frozenset({
+    "sentry[bot]",
+    "propel-code-bot[bot]",
+    "mesa-dot-dev[bot]",
+    "macroscopeapp[bot]",
+    "kody-ai[bot]",
+    "factory-droid[bot]",
+    "kiloconnect[bot]",
+    "bito-code-review[bot]",
+    "entelligence-ai-pr-reviews[bot]",
+    "linearb[bot]",
+})
 
 
 def _stratified_tool_allocation(tool_counts: dict[str, int], target: int) -> dict[str, int]:
@@ -99,7 +113,11 @@ async def _sample_prs(db: DBAdapter, target: int = TARGET_SAMPLE_SIZE) -> list[d
         WHERE {default_filter}
         GROUP BY c.github_username
     """)
-    tool_counts = {r["github_username"]: r["n"] for r in tool_counts_rows}
+    tool_counts = {
+        r["github_username"]: r["n"]
+        for r in tool_counts_rows
+        if r["github_username"] not in EXCLUDED_TOOLS
+    }
     logger.info(f"Found {len(tool_counts)} tools with scored PRs (default filters): {tool_counts}")
 
     alloc = _stratified_tool_allocation(tool_counts, target)
@@ -145,27 +163,32 @@ async def _sample_prs(db: DBAdapter, target: int = TARGET_SAMPLE_SIZE) -> list[d
                 capped_rows.append(r)
         rows = capped_rows
 
-        # Stratify by outcome: split into terciles by precision
-        rows_sorted = sorted(rows, key=lambda r: r["precision"] or 0)
-        tercile_size = max(1, len(rows_sorted) // 3)
-        low = rows_sorted[:tercile_size]
-        mid = rows_sorted[tercile_size:2 * tercile_size]
-        high = rows_sorted[2 * tercile_size:]
-
-        # Also grab zero-suggestion PRs if any
+        # Stratify by outcome: split into terciles by precision, but only
+        # among PRs that have at least 1 suggestion (nonzero denominator).
+        has_suggestions = [r for r in rows if (r["n_suggestions"] or 0) > 0]
         zero_sugg = [r for r in rows if (r["n_suggestions"] or 0) == 0]
 
-        # Allocate across strata
-        n_zero = min(max(1, n_needed // 5), len(zero_sugg))
-        remaining = n_needed - n_zero
-        n_per_tercile = max(1, remaining // 3)
+        if not has_suggestions:
+            # Edge case: tool has no PRs with suggestions at all
+            picked = rng.sample(rows, min(n_needed, len(rows)))
+        else:
+            rows_sorted = sorted(has_suggestions, key=lambda r: r["precision"] or 0)
+            tercile_size = max(1, len(rows_sorted) // 3)
+            low = rows_sorted[:tercile_size]
+            mid = rows_sorted[tercile_size:2 * tercile_size]
+            high = rows_sorted[2 * tercile_size:]
 
-        picked: list[dict] = []
-        if zero_sugg:
-            picked.extend(rng.sample(zero_sugg, min(n_zero, len(zero_sugg))))
-        picked.extend(rng.sample(low, min(n_per_tercile, len(low))))
-        picked.extend(rng.sample(mid, min(n_per_tercile, len(mid))))
-        picked.extend(rng.sample(high, min(n_per_tercile, len(high))))
+            # Allocate: 1 zero-suggestion (if any), rest split evenly across terciles
+            n_zero = min(1, len(zero_sugg)) if zero_sugg else 0
+            remaining = n_needed - n_zero
+            n_per_tercile = max(1, remaining // 3)
+
+            picked: list[dict] = []
+            if n_zero > 0:
+                picked.extend(rng.sample(zero_sugg, n_zero))
+            picked.extend(rng.sample(low, min(n_per_tercile, len(low))))
+            picked.extend(rng.sample(mid, min(n_per_tercile, len(mid))))
+            picked.extend(rng.sample(high, min(n_per_tercile, len(high))))
 
         # Deduplicate and trim to n_needed
         seen_ids = set()

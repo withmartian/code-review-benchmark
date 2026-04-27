@@ -33,6 +33,12 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
         JOIN chatbots c ON la.chatbot_id = c.id
         LEFT JOIN pr_labels pl ON pl.pr_id = la.pr_id AND pl.chatbot_id = la.chatbot_id
         WHERE p.pr_merged = TRUE
+          -- Qodo shipped a new version whose summary comment contains "Code Review by Qodo".
+          -- Old-version PRs (without the marker) are excluded so the leaderboard reflects
+          -- only the current product. See: analysis/validation changepoint analysis.
+          AND NOT (c.github_username = 'qodo-code-review[bot]'
+                   AND (p.assembled NOT ILIKE '%Code Review by Qodo%'
+                        OR p.assembled IS NULL))
         ORDER BY p.bot_reviewed_at ASC NULLS FIRST
         "#,
     )

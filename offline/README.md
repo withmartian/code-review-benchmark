@@ -8,6 +8,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 |---|---|
 | [Augment](https://www.augmentcode.com/) | AI code review |
 | [Claude Code](https://claude.ai) | AI assistant |
+| [CloudAEye](https://cloudaeye.com/) | AI code review |
 | [CodeRabbit](https://www.coderabbit.ai/) | AI code review |
 | [Codex](https://openai.com/codex) | AI assistant |
 | [Cursor Bugbot](https://cursor.com) | AI code review |

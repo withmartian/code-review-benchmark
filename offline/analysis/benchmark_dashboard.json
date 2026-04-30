@@ -124,6 +124,11 @@
               "tp": 1,
               "fp": 4,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
             }
           }
         },
@@ -249,6 +254,11 @@
               "tp": 2,
               "fp": 0,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -373,6 +383,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 1,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
               "fn": 0
             }
           }
@@ -499,6 +514,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -624,6 +644,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 0
             }
           }
         },
@@ -748,6 +773,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 1,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 4,
               "fn": 0
             }
           }
@@ -874,6 +904,11 @@
               "tp": 1,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -998,6 +1033,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -1124,6 +1164,11 @@
               "tp": 2,
               "fp": 1,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -1249,6 +1294,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -1374,6 +1424,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -1499,6 +1554,11 @@
               "tp": 3,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -1621,6 +1681,11 @@
               "fn": 0
             },
             "greptile-v4-1": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "cloudaeye": {
               "tp": 2,
               "fp": 1,
               "fn": 0
@@ -1749,6 +1814,11 @@
               "tp": 2,
               "fp": 1,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -1873,6 +1943,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 1,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -1999,6 +2074,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -2124,6 +2204,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 2
             }
           }
         },
@@ -2249,6 +2334,11 @@
               "tp": 2,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -2373,6 +2463,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 1,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -2499,6 +2594,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -2624,6 +2724,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -2749,6 +2854,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -2874,6 +2984,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -2999,6 +3114,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -3123,6 +3243,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 3,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
               "fn": 0
             }
           }
@@ -3249,6 +3374,11 @@
               "tp": 3,
               "fp": 3,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -3373,6 +3503,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 3,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -3499,6 +3634,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -3624,6 +3764,11 @@
               "tp": 3,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -3749,6 +3894,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -3874,6 +4024,11 @@
               "tp": 0,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 0
             }
           }
         },
@@ -3998,6 +4153,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 3,
+              "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
               "fn": 2
             }
           }
@@ -4124,6 +4284,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
             }
           }
         },
@@ -4246,6 +4411,11 @@
               "fn": 1
             },
             "greptile-v4-1": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
               "tp": 2,
               "fp": 2,
               "fn": 1
@@ -4374,6 +4544,11 @@
               "tp": 1,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -4499,6 +4674,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -4623,6 +4803,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 3,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
               "fn": 0
             }
           }
@@ -4749,6 +4934,11 @@
               "tp": 2,
               "fp": 3,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 6,
+              "fn": 2
             }
           }
         },
@@ -4874,6 +5064,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -4999,6 +5194,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -5124,6 +5324,11 @@
               "tp": 0,
               "fp": 5,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -5248,6 +5453,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 2,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
               "fn": 0
             }
           }
@@ -5374,6 +5584,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -5498,6 +5713,11 @@
             "greptile-v4-1": {
               "tp": 0,
               "fp": 2,
+              "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -5624,6 +5844,11 @@
               "tp": 4,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 2
             }
           }
         },
@@ -5749,6 +5974,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
             }
           }
         },
@@ -5874,6 +6104,11 @@
               "tp": 3,
               "fp": 2,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -5999,6 +6234,11 @@
               "tp": 2,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -6124,6 +6364,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 3,
+              "fn": 1
             }
           }
         },
@@ -6249,6 +6494,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
             }
           }
         }
@@ -6259,6 +6509,7 @@
         "bugbot",
         "claude",
         "claude-code",
+        "cloudaeye",
         "codeant-v2",
         "coderabbit",
         "copilot",
@@ -6344,49 +6595,76 @@
         ]
       },
       "overall_metrics": {
-        "greptile-v4-1": {
-          "precision": 40.5,
-          "recall": 48.2,
-          "f1": 44.0,
-          "tp": 66,
-          "fp": 97,
-          "fn": 71,
+        "graphite": {
+          "precision": 100.0,
+          "recall": 8.8,
+          "f1": 16.1,
+          "tp": 12,
+          "fp": 0,
+          "fn": 125,
           "num_prs": 50
         },
-        "copilot": {
-          "precision": 28.3,
-          "recall": 53.3,
-          "f1": 37.0,
-          "tp": 73,
-          "fp": 185,
-          "fn": 64,
-          "num_prs": 50
-        },
-        "propel": {
-          "precision": 55.8,
-          "recall": 38.7,
-          "f1": 45.7,
-          "tp": 53,
-          "fp": 42,
-          "fn": 84,
-          "num_prs": 50
-        },
-        "kg": {
-          "precision": 50.0,
-          "recall": 16.8,
-          "f1": 25.1,
-          "tp": 23,
-          "fp": 23,
-          "fn": 114,
-          "num_prs": 50
-        },
-        "gemini": {
-          "precision": 31.1,
+        "devin": {
+          "precision": 54.3,
           "recall": 37.2,
-          "f1": 33.9,
+          "f1": 44.2,
           "tp": 51,
-          "fp": 113,
+          "fp": 43,
           "fn": 86,
+          "num_prs": 50
+        },
+        "qodo-extended": {
+          "precision": 37.2,
+          "recall": 62.8,
+          "f1": 46.7,
+          "tp": 86,
+          "fp": 145,
+          "fn": 51,
+          "num_prs": 50
+        },
+        "sourcery": {
+          "precision": 33.3,
+          "recall": 51.8,
+          "f1": 40.6,
+          "tp": 71,
+          "fp": 142,
+          "fn": 66,
+          "num_prs": 50
+        },
+        "kodus-v2": {
+          "precision": 46.7,
+          "recall": 35.8,
+          "f1": 40.5,
+          "tp": 49,
+          "fp": 56,
+          "fn": 88,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 49.0,
+          "recall": 34.3,
+          "f1": 40.3,
+          "tp": 47,
+          "fp": 49,
+          "fn": 90,
+          "num_prs": 50
+        },
+        "cubic-v2": {
+          "precision": 56.3,
+          "recall": 68.6,
+          "f1": 61.8,
+          "tp": 94,
+          "fp": 73,
+          "fn": 43,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 47.5,
+          "recall": 61.3,
+          "f1": 53.5,
+          "tp": 84,
+          "fp": 93,
+          "fn": 53,
           "num_prs": 50
         },
         "qodo-extended-v2": {
@@ -6398,6 +6676,33 @@
           "fn": 53,
           "num_prs": 50
         },
+        "propel": {
+          "precision": 55.8,
+          "recall": 38.7,
+          "f1": 45.7,
+          "tp": 53,
+          "fp": 42,
+          "fn": 84,
+          "num_prs": 50
+        },
+        "bugbot": {
+          "precision": 47.2,
+          "recall": 43.8,
+          "f1": 45.5,
+          "tp": 60,
+          "fp": 67,
+          "fn": 77,
+          "num_prs": 50
+        },
+        "greptile-v4-1": {
+          "precision": 40.5,
+          "recall": 48.2,
+          "f1": 44.0,
+          "tp": 66,
+          "fp": 97,
+          "fn": 71,
+          "num_prs": 50
+        },
         "qodo-v2": {
           "precision": 42.9,
           "recall": 55.5,
@@ -6407,13 +6712,22 @@
           "fn": 61,
           "num_prs": 50
         },
-        "kodus-v2": {
-          "precision": 46.7,
-          "recall": 35.8,
-          "f1": 40.5,
-          "tp": 49,
-          "fp": 56,
-          "fn": 88,
+        "claude-code": {
+          "precision": 34.8,
+          "recall": 40.9,
+          "f1": 37.6,
+          "tp": 56,
+          "fp": 105,
+          "fn": 81,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 31.1,
+          "recall": 37.2,
+          "f1": 33.9,
+          "tp": 51,
+          "fp": 113,
+          "fn": 86,
           "num_prs": 50
         },
         "coderabbit": {
@@ -6434,51 +6748,6 @@
           "fn": 77,
           "num_prs": 50
         },
-        "sourcery": {
-          "precision": 33.3,
-          "recall": 51.8,
-          "f1": 40.6,
-          "tp": 71,
-          "fp": 142,
-          "fn": 66,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 47.5,
-          "recall": 61.3,
-          "f1": 53.5,
-          "tp": 84,
-          "fp": 93,
-          "fn": 53,
-          "num_prs": 50
-        },
-        "codeant-v2": {
-          "precision": 31.9,
-          "recall": 38.0,
-          "f1": 34.7,
-          "tp": 52,
-          "fp": 111,
-          "fn": 85,
-          "num_prs": 50
-        },
-        "qodo-extended": {
-          "precision": 37.2,
-          "recall": 62.8,
-          "f1": 46.7,
-          "tp": 86,
-          "fp": 145,
-          "fn": 51,
-          "num_prs": 50
-        },
-        "devin": {
-          "precision": 54.3,
-          "recall": 37.2,
-          "f1": 44.2,
-          "tp": 51,
-          "fp": 43,
-          "fn": 86,
-          "num_prs": 50
-        },
         "propel-v2": {
           "precision": 44.4,
           "recall": 49.6,
@@ -6497,49 +6766,40 @@
           "fn": 88,
           "num_prs": 50
         },
-        "bugbot": {
-          "precision": 47.2,
-          "recall": 43.8,
-          "f1": 45.5,
-          "tp": 60,
-          "fp": 67,
-          "fn": 77,
+        "cloudaeye": {
+          "precision": 62.3,
+          "recall": 72.3,
+          "f1": 66.9,
+          "tp": 99,
+          "fp": 60,
+          "fn": 38,
           "num_prs": 50
         },
-        "claude-code": {
-          "precision": 34.8,
-          "recall": 40.9,
-          "f1": 37.6,
-          "tp": 56,
-          "fp": 105,
-          "fn": 81,
+        "codeant-v2": {
+          "precision": 31.9,
+          "recall": 38.0,
+          "f1": 34.7,
+          "tp": 52,
+          "fp": 111,
+          "fn": 85,
           "num_prs": 50
         },
-        "graphite": {
-          "precision": 100.0,
-          "recall": 8.8,
-          "f1": 16.1,
-          "tp": 12,
-          "fp": 0,
-          "fn": 125,
+        "kg": {
+          "precision": 50.0,
+          "recall": 16.8,
+          "f1": 25.1,
+          "tp": 23,
+          "fp": 23,
+          "fn": 114,
           "num_prs": 50
         },
-        "cubic-v2": {
-          "precision": 56.3,
-          "recall": 68.6,
-          "f1": 61.8,
-          "tp": 94,
-          "fp": 73,
-          "fn": 43,
-          "num_prs": 50
-        },
-        "baz": {
-          "precision": 49.0,
-          "recall": 34.3,
-          "f1": 40.3,
-          "tp": 47,
-          "fp": 49,
-          "fn": 90,
+        "copilot": {
+          "precision": 28.3,
+          "recall": 53.3,
+          "f1": 37.0,
+          "tp": 73,
+          "fp": 185,
+          "fn": 64,
           "num_prs": 50
         }
       }
@@ -6663,6 +6923,11 @@
               "tp": 1,
               "fp": 4,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
             }
           }
         },
@@ -6783,6 +7048,11 @@
               "tp": 2,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -6902,6 +7172,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 1,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
               "fn": 0
             }
           }
@@ -7023,6 +7298,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -7143,6 +7423,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 0
             }
           }
         },
@@ -7262,6 +7547,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 2,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 4,
               "fn": 0
             }
           }
@@ -7383,6 +7673,11 @@
               "tp": 1,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -7502,6 +7797,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 3,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -7623,6 +7923,11 @@
               "tp": 2,
               "fp": 0,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -7743,6 +8048,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -7863,6 +8173,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -7980,6 +8295,11 @@
               "fn": 1
             },
             "greptile-v4-1": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
               "tp": 3,
               "fp": 2,
               "fn": 1
@@ -8103,6 +8423,11 @@
               "tp": 2,
               "fp": 1,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -8220,6 +8545,11 @@
               "fn": 0
             },
             "greptile-v4-1": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "cloudaeye": {
               "tp": 2,
               "fp": 1,
               "fn": 0
@@ -8343,6 +8673,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -8463,6 +8798,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -8583,6 +8923,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 2
             }
           }
         },
@@ -8703,6 +9048,11 @@
               "tp": 2,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -8822,6 +9172,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 1,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -8943,6 +9298,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -9063,6 +9423,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -9183,6 +9548,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -9303,6 +9673,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
             }
           }
         },
@@ -9423,6 +9798,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -9542,6 +9922,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 3,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
               "fn": 0
             }
           }
@@ -9663,6 +10048,11 @@
               "tp": 3,
               "fp": 2,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -9782,6 +10172,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 3,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -9903,6 +10298,11 @@
               "tp": 0,
               "fp": 4,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -10023,6 +10423,11 @@
               "tp": 2,
               "fp": 4,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -10143,6 +10548,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -10263,6 +10673,11 @@
               "tp": 0,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 6,
+              "fn": 0
             }
           }
         },
@@ -10383,6 +10798,11 @@
               "tp": 1,
               "fp": 3,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 2
             }
           }
         },
@@ -10503,6 +10923,11 @@
               "tp": 2,
               "fp": 0,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
             }
           }
         },
@@ -10623,6 +11048,11 @@
               "tp": 1,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -10743,6 +11173,11 @@
               "tp": 0,
               "fp": 4,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -10862,6 +11297,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -10983,6 +11423,11 @@
               "tp": 0,
               "fp": 4,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -11103,6 +11548,11 @@
               "tp": 2,
               "fp": 3,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 7,
+              "fn": 2
             }
           }
         },
@@ -11223,6 +11673,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -11343,6 +11798,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -11462,6 +11922,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 4,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 2,
               "fn": 1
             }
           }
@@ -11583,6 +12048,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -11703,6 +12173,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -11822,6 +12297,11 @@
             "greptile-v4-1": {
               "tp": 0,
               "fp": 5,
+              "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -11943,6 +12423,11 @@
               "tp": 3,
               "fp": 5,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 2
             }
           }
         },
@@ -12063,6 +12548,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
             }
           }
         },
@@ -12183,6 +12673,11 @@
               "tp": 3,
               "fp": 2,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -12303,6 +12798,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -12423,6 +12923,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 5,
+              "fn": 2
             }
           }
         },
@@ -12543,6 +13048,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 1
             }
           }
         }
@@ -12553,6 +13063,7 @@
         "bugbot",
         "claude",
         "claude-code",
+        "cloudaeye",
         "codeant-v2",
         "coderabbit",
         "copilot",
@@ -12637,40 +13148,76 @@
         ]
       },
       "overall_metrics": {
-        "greptile-v4-1": {
-          "precision": 36.5,
-          "recall": 45.3,
-          "f1": 40.4,
-          "tp": 62,
-          "fp": 108,
-          "fn": 75,
+        "graphite": {
+          "precision": 100.0,
+          "recall": 8.8,
+          "f1": 16.1,
+          "tp": 12,
+          "fp": 0,
+          "fn": 125,
           "num_prs": 50
         },
-        "copilot": {
-          "precision": 27.2,
-          "recall": 51.1,
-          "f1": 35.5,
-          "tp": 70,
-          "fp": 187,
-          "fn": 67,
+        "devin": {
+          "precision": 54.2,
+          "recall": 38.0,
+          "f1": 44.6,
+          "tp": 52,
+          "fp": 44,
+          "fn": 85,
           "num_prs": 50
         },
-        "propel": {
-          "precision": 52.6,
-          "recall": 36.5,
-          "f1": 43.1,
-          "tp": 50,
-          "fp": 45,
-          "fn": 87,
+        "qodo-extended": {
+          "precision": 35.3,
+          "recall": 61.3,
+          "f1": 44.8,
+          "tp": 84,
+          "fp": 154,
+          "fn": 53,
           "num_prs": 50
         },
-        "kg": {
-          "precision": 44.7,
-          "recall": 15.3,
-          "f1": 22.8,
-          "tp": 21,
-          "fp": 26,
-          "fn": 116,
+        "sourcery": {
+          "precision": 33.3,
+          "recall": 51.8,
+          "f1": 40.6,
+          "tp": 71,
+          "fp": 142,
+          "fn": 66,
+          "num_prs": 50
+        },
+        "kodus-v2": {
+          "precision": 44.9,
+          "recall": 35.0,
+          "f1": 39.3,
+          "tp": 48,
+          "fp": 59,
+          "fn": 89,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 49.0,
+          "recall": 35.8,
+          "f1": 41.4,
+          "tp": 49,
+          "fp": 51,
+          "fn": 88,
+          "num_prs": 50
+        },
+        "cubic-v2": {
+          "precision": 55.6,
+          "recall": 68.6,
+          "f1": 61.4,
+          "tp": 94,
+          "fp": 75,
+          "fn": 43,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 46.0,
+          "recall": 63.5,
+          "f1": 53.4,
+          "tp": 87,
+          "fp": 102,
+          "fn": 50,
           "num_prs": 50
         },
         "qodo-extended-v2": {
@@ -12682,13 +13229,31 @@
           "fn": 54,
           "num_prs": 50
         },
-        "gemini": {
-          "precision": 29.7,
-          "recall": 35.8,
-          "f1": 32.5,
-          "tp": 49,
-          "fp": 116,
-          "fn": 88,
+        "propel": {
+          "precision": 52.6,
+          "recall": 36.5,
+          "f1": 43.1,
+          "tp": 50,
+          "fp": 45,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "bugbot": {
+          "precision": 45.4,
+          "recall": 43.1,
+          "f1": 44.2,
+          "tp": 59,
+          "fp": 71,
+          "fn": 78,
+          "num_prs": 50
+        },
+        "greptile-v4-1": {
+          "precision": 36.5,
+          "recall": 45.3,
+          "f1": 40.4,
+          "tp": 62,
+          "fp": 108,
+          "fn": 75,
           "num_prs": 50
         },
         "qodo-v2": {
@@ -12700,13 +13265,22 @@
           "fn": 60,
           "num_prs": 50
         },
-        "kodus-v2": {
-          "precision": 44.9,
-          "recall": 35.0,
-          "f1": 39.3,
-          "tp": 48,
-          "fp": 59,
-          "fn": 89,
+        "claude-code": {
+          "precision": 30.7,
+          "recall": 40.1,
+          "f1": 34.8,
+          "tp": 55,
+          "fp": 124,
+          "fn": 82,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 29.7,
+          "recall": 35.8,
+          "f1": 32.5,
+          "tp": 49,
+          "fp": 116,
+          "fn": 88,
           "num_prs": 50
         },
         "coderabbit": {
@@ -12727,22 +13301,22 @@
           "fn": 77,
           "num_prs": 50
         },
-        "sourcery": {
-          "precision": 33.3,
-          "recall": 51.8,
-          "f1": 40.6,
-          "tp": 71,
-          "fp": 142,
-          "fn": 66,
+        "claude": {
+          "precision": 35.7,
+          "recall": 40.1,
+          "f1": 37.8,
+          "tp": 55,
+          "fp": 99,
+          "fn": 82,
           "num_prs": 50
         },
-        "augment": {
-          "precision": 46.0,
-          "recall": 63.5,
-          "f1": 53.4,
-          "tp": 87,
-          "fp": 102,
-          "fn": 50,
+        "cloudaeye": {
+          "precision": 59.6,
+          "recall": 72.3,
+          "f1": 65.3,
+          "tp": 99,
+          "fp": 67,
+          "fn": 38,
           "num_prs": 50
         },
         "codeant-v2": {
@@ -12754,76 +13328,22 @@
           "fn": 87,
           "num_prs": 50
         },
-        "qodo-extended": {
-          "precision": 35.3,
-          "recall": 61.3,
-          "f1": 44.8,
-          "tp": 84,
-          "fp": 154,
-          "fn": 53,
+        "kg": {
+          "precision": 44.7,
+          "recall": 15.3,
+          "f1": 22.8,
+          "tp": 21,
+          "fp": 26,
+          "fn": 116,
           "num_prs": 50
         },
-        "devin": {
-          "precision": 54.2,
-          "recall": 38.0,
-          "f1": 44.6,
-          "tp": 52,
-          "fp": 44,
-          "fn": 85,
-          "num_prs": 50
-        },
-        "claude": {
-          "precision": 35.7,
-          "recall": 40.1,
-          "f1": 37.8,
-          "tp": 55,
-          "fp": 99,
-          "fn": 82,
-          "num_prs": 50
-        },
-        "bugbot": {
-          "precision": 45.4,
-          "recall": 43.1,
-          "f1": 44.2,
-          "tp": 59,
-          "fp": 71,
-          "fn": 78,
-          "num_prs": 50
-        },
-        "claude-code": {
-          "precision": 30.7,
-          "recall": 40.1,
-          "f1": 34.8,
-          "tp": 55,
-          "fp": 124,
-          "fn": 82,
-          "num_prs": 50
-        },
-        "graphite": {
-          "precision": 100.0,
-          "recall": 8.8,
-          "f1": 16.1,
-          "tp": 12,
-          "fp": 0,
-          "fn": 125,
-          "num_prs": 50
-        },
-        "cubic-v2": {
-          "precision": 55.6,
-          "recall": 68.6,
-          "f1": 61.4,
-          "tp": 94,
-          "fp": 75,
-          "fn": 43,
-          "num_prs": 50
-        },
-        "baz": {
-          "precision": 49.0,
-          "recall": 35.8,
-          "f1": 41.4,
-          "tp": 49,
-          "fp": 51,
-          "fn": 88,
+        "copilot": {
+          "precision": 27.2,
+          "recall": 51.1,
+          "f1": 35.5,
+          "tp": 70,
+          "fp": 187,
+          "fn": 67,
           "num_prs": 50
         }
       }
@@ -12952,6 +13472,11 @@
               "tp": 1,
               "fp": 4,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
             }
           }
         },
@@ -13077,6 +13602,11 @@
               "tp": 2,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -13202,6 +13732,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -13327,6 +13862,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -13452,6 +13992,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 0
             }
           }
         },
@@ -13576,6 +14121,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 2,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 4,
               "fn": 0
             }
           }
@@ -13702,6 +14252,11 @@
               "tp": 1,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -13827,6 +14382,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -13949,6 +14509,11 @@
               "fn": 0
             },
             "greptile-v4-1": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "cloudaeye": {
               "tp": 2,
               "fp": 1,
               "fn": 0
@@ -14077,6 +14642,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -14202,6 +14772,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -14324,6 +14899,11 @@
               "fn": 1
             },
             "greptile-v4-1": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
               "tp": 3,
               "fp": 2,
               "fn": 1
@@ -14452,6 +15032,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
             }
           }
         },
@@ -14574,6 +15159,11 @@
               "fn": 0
             },
             "greptile-v4-1": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
+            },
+            "cloudaeye": {
               "tp": 2,
               "fp": 1,
               "fn": 0
@@ -14702,6 +15292,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -14827,6 +15422,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -14952,6 +15552,11 @@
               "tp": 0,
               "fp": 5,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 2
             }
           }
         },
@@ -15077,6 +15682,11 @@
               "tp": 2,
               "fp": 4,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -15201,6 +15811,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -15327,6 +15942,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -15452,6 +16072,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -15577,6 +16202,11 @@
               "tp": 0,
               "fp": 3,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -15702,6 +16332,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -15827,6 +16462,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -15951,6 +16591,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 4,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
               "fn": 0
             }
           }
@@ -16077,6 +16722,11 @@
               "tp": 3,
               "fp": 2,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -16201,6 +16851,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 3,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -16327,6 +16982,11 @@
               "tp": 0,
               "fp": 5,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -16452,6 +17112,11 @@
               "tp": 2,
               "fp": 4,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -16577,6 +17242,11 @@
               "tp": 0,
               "fp": 2,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -16702,6 +17372,11 @@
               "tp": 0,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 5,
+              "fn": 0
             }
           }
         },
@@ -16827,6 +17502,11 @@
               "tp": 1,
               "fp": 4,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 2
             }
           }
         },
@@ -16952,6 +17632,11 @@
               "tp": 1,
               "fp": 0,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
             }
           }
         },
@@ -17074,6 +17759,11 @@
               "fn": 1
             },
             "greptile-v4-1": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
               "tp": 2,
               "fp": 2,
               "fn": 1
@@ -17202,6 +17892,11 @@
               "tp": 1,
               "fp": 3,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -17326,6 +18021,11 @@
             "greptile-v4-1": {
               "tp": 1,
               "fp": 2,
+              "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -17452,6 +18152,11 @@
               "tp": 0,
               "fp": 4,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -17577,6 +18282,11 @@
               "tp": 2,
               "fp": 3,
               "fn": 4
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 8,
+              "fn": 3
             }
           }
         },
@@ -17702,6 +18412,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -17827,6 +18542,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -17952,6 +18672,11 @@
               "tp": 0,
               "fp": 5,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
             }
           }
         },
@@ -18076,6 +18801,11 @@
             "greptile-v4-1": {
               "tp": 2,
               "fp": 2,
+              "fn": 0
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
               "fn": 0
             }
           }
@@ -18202,6 +18932,11 @@
               "tp": 1,
               "fp": 1,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 0
             }
           }
         },
@@ -18326,6 +19061,11 @@
             "greptile-v4-1": {
               "tp": 0,
               "fp": 3,
+              "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -18452,6 +19192,11 @@
               "tp": 4,
               "fp": 5,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 3,
+              "fp": 3,
+              "fn": 2
             }
           }
         },
@@ -18577,6 +19322,11 @@
               "tp": 1,
               "fp": 2,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 2,
+              "fp": 4,
+              "fn": 0
             }
           }
         },
@@ -18702,6 +19452,11 @@
               "tp": 3,
               "fp": 2,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -18827,6 +19582,11 @@
               "tp": 2,
               "fp": 1,
               "fn": 2
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 0
             }
           }
         },
@@ -18952,6 +19712,11 @@
               "tp": 2,
               "fp": 2,
               "fn": 3
+            },
+            "cloudaeye": {
+              "tp": 4,
+              "fp": 4,
+              "fn": 1
             }
           }
         },
@@ -19077,6 +19842,11 @@
               "tp": 1,
               "fp": 6,
               "fn": 1
+            },
+            "cloudaeye": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
             }
           }
         }
@@ -19087,6 +19857,7 @@
         "bugbot",
         "claude",
         "claude-code",
+        "cloudaeye",
         "codeant-v2",
         "coderabbit",
         "copilot",
@@ -19172,49 +19943,76 @@
         ]
       },
       "overall_metrics": {
-        "greptile-v4-1": {
-          "precision": 34.6,
-          "recall": 46.0,
-          "f1": 39.5,
-          "tp": 63,
-          "fp": 119,
-          "fn": 74,
+        "graphite": {
+          "precision": 80.0,
+          "recall": 8.8,
+          "f1": 15.8,
+          "tp": 12,
+          "fp": 3,
+          "fn": 125,
           "num_prs": 50
         },
-        "copilot": {
-          "precision": 24.7,
-          "recall": 52.6,
-          "f1": 33.6,
-          "tp": 72,
-          "fp": 220,
-          "fn": 65,
+        "devin": {
+          "precision": 46.4,
+          "recall": 37.2,
+          "f1": 41.3,
+          "tp": 51,
+          "fp": 59,
+          "fn": 86,
           "num_prs": 50
         },
-        "propel": {
-          "precision": 45.0,
-          "recall": 36.5,
-          "f1": 40.3,
-          "tp": 50,
-          "fp": 61,
-          "fn": 87,
+        "qodo-extended": {
+          "precision": 31.4,
+          "recall": 59.9,
+          "f1": 41.2,
+          "tp": 82,
+          "fp": 179,
+          "fn": 55,
           "num_prs": 50
         },
-        "kg": {
-          "precision": 51.1,
-          "recall": 16.8,
-          "f1": 25.3,
-          "tp": 23,
-          "fp": 22,
-          "fn": 114,
+        "sourcery": {
+          "precision": 29.8,
+          "recall": 53.3,
+          "f1": 38.2,
+          "tp": 73,
+          "fp": 172,
+          "fn": 64,
           "num_prs": 50
         },
-        "gemini": {
-          "precision": 26.3,
-          "recall": 33.6,
-          "f1": 29.5,
-          "tp": 46,
-          "fp": 129,
-          "fn": 91,
+        "kodus-v2": {
+          "precision": 35.9,
+          "recall": 34.3,
+          "f1": 35.1,
+          "tp": 47,
+          "fp": 84,
+          "fn": 90,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 39.5,
+          "recall": 34.3,
+          "f1": 36.7,
+          "tp": 47,
+          "fp": 72,
+          "fn": 90,
+          "num_prs": 50
+        },
+        "cubic-v2": {
+          "precision": 53.6,
+          "recall": 65.7,
+          "f1": 59.0,
+          "tp": 90,
+          "fp": 78,
+          "fn": 47,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 41.9,
+          "recall": 60.6,
+          "f1": 49.6,
+          "tp": 83,
+          "fp": 115,
+          "fn": 54,
           "num_prs": 50
         },
         "qodo-extended-v2": {
@@ -19226,6 +20024,33 @@
           "fn": 59,
           "num_prs": 50
         },
+        "propel": {
+          "precision": 45.0,
+          "recall": 36.5,
+          "f1": 40.3,
+          "tp": 50,
+          "fp": 61,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "bugbot": {
+          "precision": 43.2,
+          "recall": 43.8,
+          "f1": 43.5,
+          "tp": 60,
+          "fp": 79,
+          "fn": 77,
+          "num_prs": 50
+        },
+        "greptile-v4-1": {
+          "precision": 34.6,
+          "recall": 46.0,
+          "f1": 39.5,
+          "tp": 63,
+          "fp": 119,
+          "fn": 74,
+          "num_prs": 50
+        },
         "qodo-v2": {
           "precision": 36.2,
           "recall": 56.2,
@@ -19235,13 +20060,22 @@
           "fn": 60,
           "num_prs": 50
         },
-        "kodus-v2": {
-          "precision": 35.9,
-          "recall": 34.3,
-          "f1": 35.1,
-          "tp": 47,
-          "fp": 84,
-          "fn": 90,
+        "claude-code": {
+          "precision": 27.4,
+          "recall": 41.6,
+          "f1": 33.0,
+          "tp": 57,
+          "fp": 151,
+          "fn": 80,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 26.3,
+          "recall": 33.6,
+          "f1": 29.5,
+          "tp": 46,
+          "fp": 129,
+          "fn": 91,
           "num_prs": 50
         },
         "coderabbit": {
@@ -19262,51 +20096,6 @@
           "fn": 81,
           "num_prs": 50
         },
-        "sourcery": {
-          "precision": 29.8,
-          "recall": 53.3,
-          "f1": 38.2,
-          "tp": 73,
-          "fp": 172,
-          "fn": 64,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 41.9,
-          "recall": 60.6,
-          "f1": 49.6,
-          "tp": 83,
-          "fp": 115,
-          "fn": 54,
-          "num_prs": 50
-        },
-        "codeant-v2": {
-          "precision": 25.7,
-          "recall": 34.3,
-          "f1": 29.4,
-          "tp": 47,
-          "fp": 136,
-          "fn": 90,
-          "num_prs": 50
-        },
-        "qodo-extended": {
-          "precision": 31.4,
-          "recall": 59.9,
-          "f1": 41.2,
-          "tp": 82,
-          "fp": 179,
-          "fn": 55,
-          "num_prs": 50
-        },
-        "devin": {
-          "precision": 46.4,
-          "recall": 37.2,
-          "f1": 41.3,
-          "tp": 51,
-          "fp": 59,
-          "fn": 86,
-          "num_prs": 50
-        },
         "propel-v2": {
           "precision": 36.6,
           "recall": 46.0,
@@ -19325,49 +20114,40 @@
           "fn": 86,
           "num_prs": 50
         },
-        "bugbot": {
-          "precision": 43.2,
-          "recall": 43.8,
-          "f1": 43.5,
-          "tp": 60,
-          "fp": 79,
-          "fn": 77,
-          "num_prs": 50
-        },
-        "claude-code": {
-          "precision": 27.4,
-          "recall": 41.6,
-          "f1": 33.0,
-          "tp": 57,
-          "fp": 151,
-          "fn": 80,
-          "num_prs": 50
-        },
-        "graphite": {
-          "precision": 80.0,
-          "recall": 8.8,
-          "f1": 15.8,
-          "tp": 12,
-          "fp": 3,
-          "fn": 125,
-          "num_prs": 50
-        },
-        "cubic-v2": {
-          "precision": 53.6,
-          "recall": 65.7,
-          "f1": 59.0,
-          "tp": 90,
-          "fp": 78,
-          "fn": 47,
-          "num_prs": 50
-        },
-        "baz": {
-          "precision": 39.5,
-          "recall": 34.3,
-          "f1": 36.7,
-          "tp": 47,
+        "cloudaeye": {
+          "precision": 57.6,
+          "recall": 71.5,
+          "f1": 63.8,
+          "tp": 98,
           "fp": 72,
+          "fn": 39,
+          "num_prs": 50
+        },
+        "codeant-v2": {
+          "precision": 25.7,
+          "recall": 34.3,
+          "f1": 29.4,
+          "tp": 47,
+          "fp": 136,
           "fn": 90,
+          "num_prs": 50
+        },
+        "kg": {
+          "precision": 51.1,
+          "recall": 16.8,
+          "f1": 25.3,
+          "tp": 23,
+          "fp": 22,
+          "fn": 114,
+          "num_prs": 50
+        },
+        "copilot": {
+          "precision": 24.7,
+          "recall": 52.6,
+          "f1": 33.6,
+          "tp": 72,
+          "fp": 220,
+          "fn": 65,
           "num_prs": 50
         }
       }
@@ -19383,6 +20163,23 @@
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "graphite",
       "best_score": 100.0
+    },
+    {
+      "id": "tool_claude_language_python_risk_medium",
+      "label": "Python + Medium Risk (Precision)",
+      "filters": {
+        "language": [
+          "Python"
+        ],
+        "risk": [
+          "medium"
+        ]
+      },
+      "description": "Python codebases with dynamic typing. Moderate user impact.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "claude",
+      "best_score": 100.0,
+      "sort": "precision"
     },
     {
       "id": "tool_kodus-v2_domain_concurrency",
@@ -19430,6 +20227,36 @@
       "sort": "precision"
     },
     {
+      "id": "tool_coderabbit_language_typescript_domain_scheduling",
+      "label": "Typescript + Scheduling (Recall)",
+      "filters": {
+        "language": [
+          "TypeScript"
+        ],
+        "domain": [
+          "scheduling"
+        ]
+      },
+      "description": "TypeScript codebases with frontend patterns. Task scheduling.",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "coderabbit",
+      "best_score": 87.5,
+      "sort": "recall"
+    },
+    {
+      "id": "change_type_performance",
+      "label": "Best for Performance Optimization",
+      "filters": {
+        "change_type": [
+          "performance"
+        ]
+      },
+      "description": "Performance optimization changes",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 82.4
+    },
+    {
       "id": "tool_copilot_change_type_bug_fix",
       "label": "Best for Bug Fixes (Recall)",
       "filters": {
@@ -19444,17 +20271,20 @@
       "sort": "recall"
     },
     {
-      "id": "change_type_performance",
-      "label": "Best for Performance Optimization",
+      "id": "go_small",
+      "label": "Best for Small Go PRs",
       "filters": {
-        "change_type": [
-          "performance"
+        "language": [
+          "Go"
+        ],
+        "pr_size": [
+          "small"
         ]
       },
-      "description": "Performance optimization changes",
+      "description": "Go codebases with concurrency patterns. Small PRs with 1-2 files, easier to review thoroughly",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cubic-v2",
-      "best_score": 81.1
+      "best_score": 77.4
     },
     {
       "id": "tool_baz_language_java_domain_authentication",
@@ -19473,19 +20303,6 @@
       "best_score": 76.9
     },
     {
-      "id": "domain_caching",
-      "label": "Best for Caching",
-      "filters": {
-        "domain": [
-          "caching"
-        ]
-      },
-      "description": "Cache and memoization.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "qodo-extended-v2",
-      "best_score": 76.2
-    },
-    {
       "id": "tool_codeant-v2_pr_size_small_change_type_performance",
       "label": "Small PRs + Performance Optimization (Precision)",
       "filters": {
@@ -19497,7 +20314,7 @@
         ]
       },
       "description": "Small PRs with 1-2 files, easier to review thoroughly Performance optimization changes",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_model": "openai_gpt-5.2",
       "best_tool": "codeant-v2",
       "best_score": 75.0,
       "sort": "precision"
@@ -19519,6 +20336,19 @@
       "best_score": 72.7
     },
     {
+      "id": "change_type_bug_fix",
+      "label": "Best for Bug Fixes",
+      "filters": {
+        "change_type": [
+          "bug_fix"
+        ]
+      },
+      "description": "Bug fixes and issue resolution",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "qodo-extended-v2",
+      "best_score": 71.8
+    },
+    {
       "id": "tool_sourcery_language_typescript_concern_correctness",
       "label": "Typescript + Correctness",
       "filters": {
@@ -19535,6 +20365,23 @@
       "best_score": 71.8
     },
     {
+      "id": "tool_gemini_language_ruby_pr_size_medium",
+      "label": "Ruby + Medium PRs (Recall)",
+      "filters": {
+        "language": [
+          "Ruby"
+        ],
+        "pr_size": [
+          "medium"
+        ]
+      },
+      "description": "Ruby codebases with Rails patterns. Medium PRs with 3-5 files, typical feature development",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "gemini",
+      "best_score": 69.2,
+      "sort": "recall"
+    },
+    {
       "id": "domain_ui",
       "label": "Best for Ui",
       "filters": {
@@ -19545,22 +20392,6 @@
       "description": "User interface and frontend.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "bugbot",
-      "best_score": 66.7
-    },
-    {
-      "id": "tool_macroscope_context_file_concern_correctness",
-      "label": "File Context + Correctness",
-      "filters": {
-        "context": [
-          "file"
-        ],
-        "concern": [
-          "correctness"
-        ]
-      },
-      "description": "Requires full file understanding. Logical correctness and expected behavior",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "macroscope",
       "best_score": 66.7
     },
     {
@@ -19580,36 +20411,17 @@
       "best_score": 66.7
     },
     {
-      "id": "tool_qodo-v2_domain_authentication_concern_correctness",
-      "label": "Authentication + Correctness",
+      "id": "tool_qodo-v2_concern_reliability",
+      "label": "Best for Reliability",
       "filters": {
-        "domain": [
-          "authentication"
-        ],
         "concern": [
-          "correctness"
+          "reliability"
         ]
       },
-      "description": "Auth and access control. Logical correctness and expected behavior",
+      "description": "Error handling and system stability",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "qodo-v2",
-      "best_score": 62.3
-    },
-    {
-      "id": "tool_gemini_pr_size_medium_context_file",
-      "label": "Medium PRs + File Context",
-      "filters": {
-        "pr_size": [
-          "medium"
-        ],
-        "context": [
-          "file"
-        ]
-      },
-      "description": "Medium PRs with 3-5 files, typical feature development Requires full file understanding.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "gemini",
-      "best_score": 61.1
+      "best_score": 60.9
     },
     {
       "id": "tool_augment_domain_concurrency",
@@ -19623,22 +20435,6 @@
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "augment",
       "best_score": 60.6
-    },
-    {
-      "id": "tool_claude_difficulty_moderate_context_file",
-      "label": "Moderate Bugs + File Context",
-      "filters": {
-        "difficulty": [
-          "moderate"
-        ],
-        "context": [
-          "file"
-        ]
-      },
-      "description": "Requires careful reading. Requires full file understanding.",
-      "best_model": "anthropic_claude-sonnet-4-5-20250929",
-      "best_tool": "claude",
-      "best_score": 59.3
     },
     {
       "id": "tool_propel_language_ruby_concern_correctness",
@@ -19657,36 +20453,33 @@
       "best_score": 57.9
     },
     {
-      "id": "tool_coderabbit_difficulty_moderate_risk_medium",
-      "label": "Moderate Bugs + Medium Risk",
-      "filters": {
-        "difficulty": [
-          "moderate"
-        ],
-        "risk": [
-          "medium"
-        ]
-      },
-      "description": "Requires careful reading. Moderate user impact.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "coderabbit",
-      "best_score": 47.5
-    },
-    {
-      "id": "go_small",
-      "label": "Best for Small Go PRs",
+      "id": "tool_macroscope_language_ruby_concern_correctness",
+      "label": "Ruby + Correctness",
       "filters": {
         "language": [
-          "Go"
+          "Ruby"
         ],
-        "pr_size": [
-          "small"
+        "concern": [
+          "correctness"
         ]
       },
-      "description": "Go codebases with concurrency patterns. Small PRs with 1-2 files, easier to review thoroughly",
+      "description": "Ruby codebases with Rails patterns. Logical correctness and expected behavior",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 77.4
+      "best_tool": "macroscope",
+      "best_score": 57.9
+    },
+    {
+      "id": "domain_caching",
+      "label": "Best for Caching",
+      "filters": {
+        "domain": [
+          "caching"
+        ]
+      },
+      "description": "Cache and memoization.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 76.2
     },
     {
       "id": "language_go",
@@ -19698,8 +20491,21 @@
       },
       "description": "Go codebases with concurrency patterns.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 75.5
+      "best_tool": "cloudaeye",
+      "best_score": 76.0
+    },
+    {
+      "id": "context_file",
+      "label": "Best for File Context",
+      "filters": {
+        "context": [
+          "file"
+        ]
+      },
+      "description": "Requires full file understanding.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 75.4
     },
     {
       "id": "pr_size_small",
@@ -19715,17 +20521,83 @@
       "best_score": 75.3
     },
     {
-      "id": "change_type_bug_fix",
-      "label": "Best for Bug Fixes",
+      "id": "domain_scheduling",
+      "label": "Best for Scheduling",
       "filters": {
-        "change_type": [
-          "bug_fix"
+        "domain": [
+          "scheduling"
         ]
       },
-      "description": "Bug fixes and issue resolution",
+      "description": "Task scheduling.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "qodo-extended-v2",
-      "best_score": 71.8
+      "best_tool": "cloudaeye",
+      "best_score": 75.0
+    },
+    {
+      "id": "concern_security",
+      "label": "Best for Security",
+      "filters": {
+        "concern": [
+          "security"
+        ]
+      },
+      "description": "Security vulnerabilities and attack vectors",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 74.4
+    },
+    {
+      "id": "security_critical",
+      "label": "Security Critical",
+      "filters": {
+        "concern": [
+          "security"
+        ],
+        "risk": [
+          "high",
+          "critical"
+        ]
+      },
+      "description": "Security vulnerabilities and attack vectors Significant impact, potential data loss.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 74.4
+    },
+    {
+      "id": "risk_high",
+      "label": "Best for High Risk",
+      "filters": {
+        "risk": [
+          "high"
+        ]
+      },
+      "description": "Significant impact, potential data loss.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 72.9
+    },
+    {
+      "id": "language_python",
+      "label": "Best for Python",
+      "filters": {
+        "language": [
+          "Python"
+        ]
+      },
+      "description": "Python codebases with dynamic typing.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 72.7
+    },
+    {
+      "id": "high_recall",
+      "label": "Highest Recall",
+      "filters": {},
+      "sort": "recall",
+      "description": "Tools ranked by recall - catches more issues, may have more noise",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 72.3
     },
     {
       "id": "python_medium",
@@ -19740,34 +20612,51 @@
       },
       "description": "Python codebases with dynamic typing. Medium PRs with 3-5 files, typical feature development",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 71.0
+      "best_tool": "cloudaeye",
+      "best_score": 72.2
     },
     {
-      "id": "language_python",
-      "label": "Best for Python",
+      "id": "domain_authentication",
+      "label": "Best for Authentication",
       "filters": {
-        "language": [
-          "Python"
+        "domain": [
+          "authentication"
         ]
       },
-      "description": "Python codebases with dynamic typing.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 70.6
+      "description": "Auth and access control.",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "cloudaeye",
+      "best_score": 72.0
     },
     {
-      "id": "risk_high",
-      "label": "Best for High Risk",
+      "id": "difficulty_moderate",
+      "label": "Best for Moderate Bugs",
+      "filters": {
+        "difficulty": [
+          "moderate"
+        ]
+      },
+      "description": "Requires careful reading.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 72.0
+    },
+    {
+      "id": "high_risk_auth",
+      "label": "High Risk Auth",
       "filters": {
         "risk": [
-          "high"
+          "high",
+          "critical"
+        ],
+        "domain": [
+          "authentication"
         ]
       },
-      "description": "Significant impact, potential data loss.",
+      "description": "Significant impact, potential data loss. Auth and access control.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 70.2
+      "best_tool": "cloudaeye",
+      "best_score": 71.0
     },
     {
       "id": "risk_critical",
@@ -19783,27 +20672,46 @@
       "best_score": 69.8
     },
     {
-      "id": "high_recall",
-      "label": "Highest Recall",
-      "filters": {},
-      "sort": "recall",
-      "description": "Tools ranked by recall - catches more issues, may have more noise",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
+      "id": "java_medium",
+      "label": "Best for Medium Java PRs",
+      "filters": {
+        "language": [
+          "Java"
+        ],
+        "pr_size": [
+          "medium"
+        ]
+      },
+      "description": "Java codebases with OOP patterns. Medium PRs with 3-5 files, typical feature development",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "cloudaeye",
       "best_score": 68.6
     },
     {
-      "id": "domain_scheduling",
-      "label": "Best for Scheduling",
+      "id": "change_type_feature",
+      "label": "Best for Features",
       "filters": {
-        "domain": [
-          "scheduling"
+        "change_type": [
+          "feature"
         ]
       },
-      "description": "Task scheduling.",
+      "description": "New feature implementation",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 68.4
+      "best_tool": "cloudaeye",
+      "best_score": 68.3
+    },
+    {
+      "id": "complexity_moderate",
+      "label": "Best for Moderate Code",
+      "filters": {
+        "complexity": [
+          "moderate"
+        ]
+      },
+      "description": "Some abstraction.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 68.2
     },
     {
       "id": "complexity_complex",
@@ -19836,17 +20744,27 @@
       "best_score": 67.7
     },
     {
-      "id": "context_file",
-      "label": "Best for File Context",
+      "id": "concern_correctness",
+      "label": "Best for Correctness",
       "filters": {
-        "context": [
-          "file"
+        "concern": [
+          "correctness"
         ]
       },
-      "description": "Requires full file understanding.",
+      "description": "Logical correctness and expected behavior",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 67.6
+      "best_tool": "cloudaeye",
+      "best_score": 67.3
+    },
+    {
+      "id": "high_f1",
+      "label": "Highest F1",
+      "filters": {},
+      "sort": "f1",
+      "description": "Tools ranked by F1 score - balanced precision and recall",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 66.9
     },
     {
       "id": "language_java",
@@ -19857,9 +20775,35 @@
         ]
       },
       "description": "Java codebases with OOP patterns.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "qodo-extended-v2",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "cloudaeye",
       "best_score": 66.7
+    },
+    {
+      "id": "pr_size_large",
+      "label": "Best for Large PRs",
+      "filters": {
+        "pr_size": [
+          "large"
+        ]
+      },
+      "description": "Large PRs with 6+ files, complex changes requiring careful review",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 66.7
+    },
+    {
+      "id": "language_typescript",
+      "label": "Best for Typescript",
+      "filters": {
+        "language": [
+          "TypeScript"
+        ]
+      },
+      "description": "TypeScript codebases with frontend patterns.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 65.7
     },
     {
       "id": "difficulty_subtle",
@@ -19871,38 +20815,47 @@
       },
       "description": "Non-obvious, needs domain knowledge.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 64.1
+      "best_tool": "cloudaeye",
+      "best_score": 65.5
     },
     {
-      "id": "high_risk_auth",
-      "label": "High Risk Auth",
+      "id": "context_cross_file",
+      "label": "Best for Cross-File",
+      "filters": {
+        "context": [
+          "cross_file"
+        ]
+      },
+      "description": "Spans multiple files.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 64.0
+    },
+    {
+      "id": "pr_size_medium",
+      "label": "Best for Medium PRs",
+      "filters": {
+        "pr_size": [
+          "medium"
+        ]
+      },
+      "description": "Medium PRs with 3-5 files, typical feature development",
+      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_tool": "cloudaeye",
+      "best_score": 63.8
+    },
+    {
+      "id": "risk_medium",
+      "label": "Best for Medium Risk",
       "filters": {
         "risk": [
-          "high",
-          "critical"
-        ],
-        "domain": [
-          "authentication"
+          "medium"
         ]
       },
-      "description": "Significant impact, potential data loss. Auth and access control.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 63.2
-    },
-    {
-      "id": "concern_correctness",
-      "label": "Best for Correctness",
-      "filters": {
-        "concern": [
-          "correctness"
-        ]
-      },
-      "description": "Logical correctness and expected behavior",
+      "description": "Moderate user impact.",
       "best_model": "anthropic_claude-sonnet-4-5-20250929",
-      "best_tool": "cubic-v2",
-      "best_score": 62.8
+      "best_tool": "cloudaeye",
+      "best_score": 63.6
     },
     {
       "id": "concern_reliability",
@@ -19918,85 +20871,6 @@
       "best_score": 62.5
     },
     {
-      "id": "context_cross_file",
-      "label": "Best for Cross-File",
-      "filters": {
-        "context": [
-          "cross_file"
-        ]
-      },
-      "description": "Spans multiple files.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "qodo-extended-v2",
-      "best_score": 62.0
-    },
-    {
-      "id": "concern_security",
-      "label": "Best for Security",
-      "filters": {
-        "concern": [
-          "security"
-        ]
-      },
-      "description": "Security vulnerabilities and attack vectors",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 61.9
-    },
-    {
-      "id": "security_critical",
-      "label": "Security Critical",
-      "filters": {
-        "concern": [
-          "security"
-        ],
-        "risk": [
-          "high",
-          "critical"
-        ]
-      },
-      "description": "Security vulnerabilities and attack vectors Significant impact, potential data loss.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 61.9
-    },
-    {
-      "id": "complexity_moderate",
-      "label": "Best for Moderate Code",
-      "filters": {
-        "complexity": [
-          "moderate"
-        ]
-      },
-      "description": "Some abstraction.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 61.8
-    },
-    {
-      "id": "high_f1",
-      "label": "Highest F1",
-      "filters": {},
-      "sort": "f1",
-      "description": "Tools ranked by F1 score - balanced precision and recall",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 61.8
-    },
-    {
-      "id": "language_typescript",
-      "label": "Best for Typescript",
-      "filters": {
-        "language": [
-          "TypeScript"
-        ]
-      },
-      "description": "TypeScript codebases with frontend patterns.",
-      "best_model": "anthropic_claude-sonnet-4-5-20250929",
-      "best_tool": "devin",
-      "best_score": 61.8
-    },
-    {
       "id": "domain_concurrency",
       "label": "Best for Concurrency",
       "filters": {
@@ -20007,22 +20881,6 @@
       "description": "Threading and async operations.",
       "best_model": "openai_gpt-5.2",
       "best_tool": "cubic-v2",
-      "best_score": 61.1
-    },
-    {
-      "id": "java_medium",
-      "label": "Best for Medium Java PRs",
-      "filters": {
-        "language": [
-          "Java"
-        ],
-        "pr_size": [
-          "medium"
-        ]
-      },
-      "description": "Java codebases with OOP patterns. Medium PRs with 3-5 files, typical feature development",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "qodo-extended-v2",
       "best_score": 61.1
     },
     {
@@ -20037,84 +20895,6 @@
       "best_model": "anthropic_claude-sonnet-4-5-20250929",
       "best_tool": "cubic-v2",
       "best_score": 61.0
-    },
-    {
-      "id": "pr_size_medium",
-      "label": "Best for Medium PRs",
-      "filters": {
-        "pr_size": [
-          "medium"
-        ]
-      },
-      "description": "Medium PRs with 3-5 files, typical feature development",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "qodo-extended-v2",
-      "best_score": 60.4
-    },
-    {
-      "id": "domain_authentication",
-      "label": "Best for Authentication",
-      "filters": {
-        "domain": [
-          "authentication"
-        ]
-      },
-      "description": "Auth and access control.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 60.3
-    },
-    {
-      "id": "change_type_feature",
-      "label": "Best for Features",
-      "filters": {
-        "change_type": [
-          "feature"
-        ]
-      },
-      "description": "New feature implementation",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 59.9
-    },
-    {
-      "id": "risk_medium",
-      "label": "Best for Medium Risk",
-      "filters": {
-        "risk": [
-          "medium"
-        ]
-      },
-      "description": "Moderate user impact.",
-      "best_model": "anthropic_claude-sonnet-4-5-20250929",
-      "best_tool": "cubic-v2",
-      "best_score": 58.8
-    },
-    {
-      "id": "pr_size_large",
-      "label": "Best for Large PRs",
-      "filters": {
-        "pr_size": [
-          "large"
-        ]
-      },
-      "description": "Large PRs with 6+ files, complex changes requiring careful review",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 58.3
-    },
-    {
-      "id": "difficulty_moderate",
-      "label": "Best for Moderate Bugs",
-      "filters": {
-        "difficulty": [
-          "moderate"
-        ]
-      },
-      "description": "Requires careful reading.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cubic-v2",
-      "best_score": 52.8
     }
   ],
   "tool_display_names": {
@@ -20143,7 +20923,8 @@
     "qodo-v2": "Qodo v2",
     "qodo-extended-v2": "Qodo Extended",
     "macroscope": "Macroscope",
-    "cubic-v2": "Cubic v2"
+    "cubic-v2": "Cubic v2",
+    "cloudaeye": "CloudAEye"
   },
   "tool_colors": {
     "graphite": "#6366f1",
@@ -20172,7 +20953,8 @@
     "qodo-v2": "#7c3aed",
     "qodo-extended-v2": "#6d28d9",
     "macroscope": "#0891b2",
-    "cubic-v2": "#c026d3"
+    "cubic-v2": "#c026d3",
+    "cloudaeye": "#38bdf8"
   },
   "default_model": "anthropic_claude-opus-4-5-20251101",
   "min_prs_threshold": 5

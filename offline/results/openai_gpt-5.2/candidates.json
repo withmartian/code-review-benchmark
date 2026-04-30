@@ -1301,6 +1301,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Verification crashes with a RuntimeException when the derived English companion _en.properties file is missing because verifySafeHtml() wraps any IOException (including FileNotFound) and aborts verification instead of falling back",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Method name typo: private method is named santizeAnchors instead of sanitizeAnchors, making sanitize-related code harder to find and maintain",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -1935,6 +1949,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "AccessTokenContext constructor performs a null check on grantType twice and fails to validate rawTokenId (uses Objects.requireNonNull(grantType, \"Null rawTokenId not allowed\") instead of checking rawTokenId), allowing rawTokenId to be null and risking NullPointerException later",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OAuth2GrantTypeFactory.getShortcut Javadoc claims shortcuts are usually 3 letters, but existing implementations use 2-letter shortcuts (e.g., 'ac', 'cc', 'pg'), creating a documentation mismatch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DefaultTokenContextEncoderProviderTest.testIncorrectGrantType catches generic RuntimeException instead of the expected IllegalArgumentException, making the test pass for unrelated runtime failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -2397,6 +2431,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "RecoveryAuthnCodeInputLoginBean constructor calls Optional.get() on the result of RecoveryAuthnCodesUtils.getCredential(user) without checking presence, risking NoSuchElementException when the user has no recovery code credential and crashing login form rendering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BackwardsCompatibilityUserStorage.getCredentials reconstructs a RecoveryAuthnCodesCredentialModel via createFromValues without preserving the previously stored/generated credential id from updateCredential, causing a missing/different (potentially null) id that can break credential removal",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
@@ -2638,6 +2686,14 @@
       },
       {
         "text": "In `operator/src/test/java/org/keycloak/operator/testsuite/integration/UpgradeTest.java`, when `updateStrategy == null` the test setup returns before enabling the `ROLLING_UPDATES` feature flag, so the null-strategy parameterized test relies on rolling-update behavior without setting the required feature and may break if the operator adds a feature guard.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "UpdateCompatibilityCheck.run calls picocli.exit(CompatibilityResult.FEATURE_DISABLED) when rolling-updates is disabled, which triggers System.exit and terminates the entire JVM (breaking embedding)",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -3167,6 +3223,32 @@
       },
       {
         "text": "AdminPermissionsSchema.getResourceName lacks a CLIENTS branch, so it falls back to resource.getDisplayName() which is null for client resources, leading to null/UUID display names when rendering client permission resource names",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Permission cleanup listener in AdminPermissions is incorrectly gated by the V1 feature flag (ADMIN_FINE_GRAINED_AUTHZ), so when V2 is enabled without V1 the role/client/group removal cleanup path does not run",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2.hasPermission looks up per-client resources with resourceStore.findByName(..., client.getId(), server.getId()) using server.getId() as owner, causing the lookup to miss when the resource owner differs and forcing fallback to the type-level \"Clients\" resource, ignoring client-specific grants",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2 defines a private getEvaluationContext(...) helper that is never called because permission evaluation uses root.evaluatePermission(...) directly, leaving dead/unused code and making its custom evaluation attributes ineffective",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "PermissionClientTest.testManageOnlyOneClient assumes at least two default client scopes by indexing get(1) after only asserting the list is non-empty, risking IndexOutOfBoundsException when fewer than two scopes exist",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -3735,6 +3817,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "GroupPermissionsV2.hasPermission() looks up a resource by name using resourceStore.findByName(server, groupId) but callers pass a resource ID (e.g., getGroupIdsWithViewPermission passes groupResource.getId()), causing an id-vs-name mismatch and breaking group-specific permission checks when resource name differs from internal id",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupPermissions.canManage() was narrowed to only root.hasOneAdminRole(AdminRoles.MANAGE_USERS), dropping prior default/permission-based user-management semantics and breaking group management when defaults grant access without a direct MANAGE_USERS role",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupPermissionsV2 repeats the same narrowing for canManage (MANAGE_USERS role-only), propagating the regression into the V2 permissions path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RolePermissions role-mapping logic now gates mapping on root.hasOneAdminRole(AdminRoles.MANAGE_USERS) before checkAdminRoles(role), potentially breaking mapping when canManageDefault(RoleModel) grants access without a direct MANAGE_USERS role",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AdminPermissions uses ADMIN_FINE_GRAINED_AUTHZ_V2 to enable V2 management/evaluator paths but guards listener/cleanup registration with ADMIN_FINE_GRAINED_AUTHZ, so cleanup never runs when V2 is enabled without V1",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupResourceTypeEvaluationTest asserts subgroup creation returns 204 No Content, but GroupResource.addChild() returns 201 Created for new subgroup creation, making the test assertion incorrect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupPermissionsV2.getGroupIdsWithViewPermission() uses hasPermission(groupResource.getId(), ...) and adds groupResource.getId() to results, but hasPermission treats the argument as a resource name (findByName), causing group filtering to miss VIEW_MEMBERS/MANAGE_MEMBERS grants",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -4269,6 +4395,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "ASN1Decoder.readLength returns -1 for indefinite-length encoding, but callers pass this negative length to read(int), causing NegativeArraySizeException instead of an IOException",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ASN1Decoder.readLength validates decoded length against total input limit (and rejects length >= limit) rather than remaining bytes after consuming tag/length, incorrectly rejecting payloads that exactly consume the remaining bytes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AuthzClientCryptoProvider.concatenatedRSToASN1DER contains dead code: it creates ASN1Encoder instances and writes r/s to them but immediately discards them, so those writes have no effect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -4736,6 +4882,20 @@
       },
       {
         "text": "Incomplete NPE fix: three `getSubGroupsStream` overloads in `GroupAdapter` still dereference `modelSupplier.get()` without a null check, so they can still throw NPE under concurrent deletion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Background reader thread is started but never joined/waited for before asserting, creating a race condition and flaky test behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Assertion that caughtExceptions is empty can miss exceptions added by the reader thread after deletedAll is set because the thread may still be running",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -5228,6 +5388,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "UsernamePasswordForm.authenticate/challenge skips webauthnAuth.fillContextForm on the initial login page because isConditionalPasskeysEnabled(context.getUser()) requires a non-null user, disabling initial passkey setup when no user is selected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "UsernamePasswordForm.challenge error/retry path skips webauthnAuth.fillContextForm when login fails with an unknown user (context.getUser() is null), causing passkey retry/challenge UI options to disappear on subsequent attempts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/93824": {
@@ -5683,6 +5857,32 @@
       },
       {
         "text": "Method _create_process_for_shard is defined but never called (restart logic uses _create_process_for_shards directly), indicating dead/refactoring-leftover code that should be removed to avoid confusion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "SpanFlusher._ensure_processes_alive kills an unhealthy worker and immediately starts a replacement without waiting/joining for the old process to exit, allowing overlapping shard handlers and duplicate flushing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SpanFlusher.join breaks out of the process-join loop when the deadline is exceeded, skipping termination/cleanup for remaining processes and leaving child workers running",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent metric tag keys for the same shard dimension (using both \"shard\" and \"shards\") fragments metrics/dashboards",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test monkeypatches time.sleep to a no-op but later relies on time.sleep(0.1) to wait for flusher threads, so the sleep does not actually wait and the test becomes timing-racy/unreliable",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -6277,6 +6477,32 @@
     "greptile-v4-1": [
       {
         "text": "In fetch_error_details, zip(error_ids, events.values()) can pair the wrong error_id with the wrong event data because nodestore.backend.get_multi is keyed by node_id and events.values() order is not guaranteed when the cache partially hits (items.update(cache_items) appends cached entries after uncached ones).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Mutual-exclusion validation between \"age\" and \"timestamp\" is bypassed when either value is 0 because the checks use truthiness (self.initial_data.get(...)) instead of presence, allowing invalid mixed-spec reports to pass",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "fetch_error_details incorrectly pairs error_ids with nodestore get_multi results by zipping error_ids with events.values(), but get_multi returns a dict with no positional ordering guarantee, causing error details to be associated with the wrong IDs when entries are omitted or reordered",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BaseDetectorTypeValidator.update reads validated_data[\"detector_type\"] even though the serializer validates the field as \"type\", so updates using the provided type are ignored and instance.group_type is used instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics event preprod_artifact.api.assemble is recorded before the feature gate check, so requests denied by features.has(...) still emit telemetry and count as assemble events",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -7035,6 +7261,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "OrganizationAuditLogsEndpoint.get dereferences organization_context.member.has_global_access without a None check, causing AttributeError when auth context has no member (e.g., API key/org auth token)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OrganizationAuditLogsEndpoint.get uses OptimizedCursorPaginator with order_by='-datetime', but OptimizedCursorPaginator.get_item_key applies math.floor/ceil and int() to the key value, which will TypeError for datetime keys during cursor generation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BasePaginator.get_result allows negative start_offset for previous-page cursors (start_offset = offset when cursor.is_prev), leading to Django QuerySet negative slicing and AssertionError at runtime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_result explicitly allows negative cursor.offset when enable_advanced_features is true and slices queryset[start_offset:stop], which can trigger Django ORM AssertionError due to unsupported negative QuerySet slicing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_item_key assumes ordered field values are numeric by applying math.floor/ceil, so paginating on non-numeric ordered fields (e.g., datetime or string) will crash during cursor key computation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -7497,6 +7755,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Calling s.search.TotalDocs() during initialization can trigger a concurrent map read/write panic because bleveBackend.TotalDocs iterates b.cache without locking while BuildIndex writes to b.cache under b.cacheMu",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "server.History and server.Origin dereference s.search without a nil guard, causing a nil pointer panic when search is not configured (search is optional and only initialized when non-nil)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "bleveBackend.BuildIndex no longer holds the cache lock for the full function, allowing concurrent callers to build the same index key simultaneously before either caches it, leading to duplicate index builds and cache coherence issues",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "bleveBackend.TotalDocs iterates b.cache without locking, which is unsafe under concurrent access and increases correctness risk alongside the narrowed BuildIndex lock scope",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80168": {
@@ -7910,6 +8194,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "MetricAlertDetectorHandler inherits from StatefulDetectorHandler but is empty (pass) and does not implement required abstract methods (get_dedupe_value, get_group_key_values, build_occurrence_and_event_data), making it non-instantiable and causing a runtime TypeError when instantiated via Detector.detector_handler",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "StatefulDetectorHandler adds a new abstract method build_occurrence_and_event_data, but existing subclasses (e.g., MetricAlertDetectorHandler) were not updated to implement it, causing abstract-class instantiation failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A function in src/sentry/workflow_engine/processors/detector.py is annotated to return dict[DetectorGroupKey, DetectorEvaluationResult] but its docstring claims it returns a list of DetectorEvaluationResult, misleading callers about the return shape",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -8202,6 +8506,20 @@
       },
       {
         "text": "Docstring contains typos: \"humam readible\" should be \"human readable\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "In get_monitor_environment_context, the code copies and humanizes config['schedule_type'] but returns monitor_environment.monitor.config instead of the mutated local config, so the transformation is dropped and the displayed context remains unmodified",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "create_incident_occurrence propagates the untransformed schedule_type outward by inserting get_monitor_environment_context(monitor_env) into event_data['contexts']['monitor'] before producing the occurrence to Kafka",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -8503,6 +8821,44 @@
       },
       {
         "text": "The `assignment_source` parameter added to the `sync_status_outbound` abstract method is never passed by the `sync_status_outbound` task and is never used/checked in the status sync path, making it effectively dead code (needs removal or a clarifying TODO)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Dataclass field default `queued: datetime = timezone.now()` is evaluated at import/class-definition time, causing omitted `queued` values to reuse a frozen timestamp",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`AssignmentSource.from_integration()` constructs instances without passing `queued`, so new instances incorrectly inherit the frozen default timestamp",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`AssignmentSource.to_dict()` returns `asdict(self)` including a raw `datetime` (`queued`), which may not be JSON-serializable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Celery task enqueue passes `assignment_source.to_dict()` directly in `apply_async` kwargs, risking a TypeError/JSON serialization failure due to non-serializable `datetime` in `queued`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test name typo: `test_from_dict_inalid_data` is misspelled (`inalid` vs `invalid`), making failures misleading in test output",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test naming mismatch: `test_from_dict_empty_array` name implies an array but the test passes an empty dict `{}`, making intent unclear",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9000,6 +9356,38 @@
       },
       {
         "text": "tests/sentry/uptime/consumers/test_results_consumer.py: strategy_processing_mode Literal type annotation not updated to include the new \"thread-queue-parallel\" mode, causing type-checker errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "SimpleQueueProcessingStrategy.close stops the commit loop (sets shutdown_event and joins commit thread) before queue_pool.shutdown drains/joins workers, so offsets completed during shutdown may never be committed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TestFixedQueuePool.test_concurrent_processing_across_groups claims to verify concurrent processing but only asserts all items completed and that group IDs appeared, so it can pass even with fully serial processing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TestSimpleQueueProcessingStrategy.test_concurrent_processing_different_groups claims to verify concurrency but only asserts that four results were processed, with no concurrency-specific assertion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Background-thread tests in test_results_consumer.py use fixed sleep/poll timing windows (e.g., loops with time.sleep(0.1) and max_wait), making them flaky when async processing/commits take longer than expected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_thread_queue_parallel_error_handling docstring claims errors shouldn't block commits for other messages, but the test assertions expect no commits (or none for the partition), so the test intent/documentation is misleading",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9747,6 +10135,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Advanced pagination branch allows negative Django QuerySet slicing (queryset[start_offset:stop] with start_offset < 0), which can crash with AssertionError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_item_key applies math.floor/ceil and int() to non-numeric keys (e.g., datetime), causing TypeError at runtime when ordering by a datetime field",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Previous-page pagination preserves a negative cursor offset (start_offset = offset when cursor.is_prev), leading to negative QuerySet slicing and potential AssertionError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -10354,6 +10762,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Using Python's process-dependent hash(tuple(...)) in cache keys causes different workers to compute different keys, breaking cross-process cache reuse and invalidate_upsampling_cache invalidation in error_upsampling.py",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "_set_sample_rate_from_error_sampling uses a falsy guard `if client_sample_rate:` so valid zero values (0/0.0) are skipped and not propagated to normalized_data['sample_rate'] in factories.py",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -10825,6 +11247,20 @@
       },
       {
         "text": "Denial cache can become stale after a permission grant: a prior denial remains cached for up to `shortCacheTTL` (30s), preventing DB re-checks and temporarily blocking newly-authorized access (needs mitigation or documentation)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "In pkg/services/authz/rbac/service_test.go, the cache deny test setup contradicts its comment: it says the cache entry should allow dashboard access, but the fixture stores map[string]bool{\"dashboards:uid:dash1\": false}, creating a misleading/self-contradictory test",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In pkg/services/authz/rbac/service.go, authorization can be bypassed because cached permission grants are trusted without freshness/revalidation: the code returns Allowed based on cached permissions, and getCachedIdentityPermissions only checks cache presence, so revoked access may persist until TTL expiry",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -11310,6 +11746,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "GitHubInstallation.dispatch dereferences integration.metadata[\"sender\"][\"login\"] without guarding for missing keys, which can raise KeyError when integration metadata lacks sender/login",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OAuthLoginView.dispatch uses pipeline.signature as the OAuth state parameter, making state predictable/reusable and weakening CSRF/replay protection because pipeline.signature is deterministic rather than per-request randomized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -11630,6 +12080,20 @@
       },
       {
         "text": "removeAll() invalidates IDP count but does not invalidate login cache keys (IDP_LOGIN_SUFFIX / registerIDPLoginInvalidation), leaving stale login-cache entries in Infinispan until later cleanup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Test cleanup registers removal for identity provider alias \"alias\" instead of the actual created aliases (e.g., \"idp-alias-<i>\" and \"idp-alias-20\"), so teardown targets a non-existent IDP",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Because cleanup uses the wrong alias, identity providers created in OrganizationCacheTest.testCacheIDPForLogin are not removed, leaking created providers between test runs",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -12151,6 +12615,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "enableSqlExpressions in pkg/expr/reader.go always returns false on every path, unconditionally disabling SQL expressions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "QueryTypeSQL parsing/execution is rejected because the new gate in pkg/expr/reader.go blocks QueryTypeSQL whenever enableSqlExpressions returns false",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQLCommand.Execute in pkg/expr/sql_command.go calls db.QueryFramesInto on sql.NewInMemoryDB, but QueryFramesInto is unimplemented and returns \"not implemented\", causing deterministic runtime failure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -12450,6 +12934,20 @@
     "greptile-v4-1": [
       {
         "text": "Write-lock path in GetWebAssets does not re-check entryPointAssetsCache after acquiring the write lock, causing goroutines that all saw nil to redundantly reload assets from disk/CDN and overwrite the cache in turn",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "GetWebAssets uses incomplete double-checked locking: after the RLock fast-path sees an empty cache, it acquires the write lock but does not re-check entryPointAssetsCache, allowing concurrent callers to redundantly rebuild/fetch assets",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GetWebAssets can overwrite a previously valid entryPointAssetsCache with nil: it assigns entryPointAssetsCache = result even when asset loading fails and result is nil, causing cached assets to be lost after transient load errors",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -13027,6 +13525,20 @@
       },
       {
         "text": "Logging full ID slices (\"ids\", ids) can create extremely large log entries at scale, potentially overwhelming log pipelines; should be removed or limited to trace level",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "CleanAnnotations logs routine batch progress using r.log.Error after fetchIDs succeeds, causing normal control-flow messages to be treated as errors and flood error logs (pre-delete progress path)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CleanAnnotations logs routine batch progress using r.log.Error after fetchIDs succeeds, causing normal control-flow messages to be treated as errors and flood error logs (post-delete progress path)",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -13875,6 +14387,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "On Storage.Update error path, code records duration with recordLegacyDuration instead of recordStorageDuration, breaking storage failure metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In Delete, enriched logger with name/kind/method is created but plain d.Log is stored in context (klog.NewContext(ctx, d.Log)), dropping structured log fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "On Delete success, recordStorageDuration is called with name as the kind/label argument instead of options.Kind, misattributing metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In DeleteCollection async legacy goroutine, legacy DeleteCollection result is recorded with recordStorageDuration instead of recordLegacyDuration, breaking legacy latency/error metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -14535,6 +15073,20 @@
       },
       {
         "text": "In RuleDetails.test.tsx, test descriptions imply buttons are hidden despite users having permissions, which is misleading; the tests should be renamed to reflect that actions were moved/removed regardless of permissions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "useIsGrafanaPromRuleEditable references an undefined identifier `ctx`, causing a ReferenceError crash during editability checks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In FilterView.tsx, the Grafana branch of rules.map renders <GrafanaRuleListItem> without a React `key` prop, risking stale row reuse/state mismatch when list order changes",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -15490,6 +16042,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Race condition/TOCTOU in CreateOrUpdateDevice: CountDevices check is done separately from insert/update without a transaction or lock, allowing concurrent requests to exceed the device limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent time-window basis: updateDevice builds its BETWEEN window from device.UpdatedAt while the device-limit count uses time.Now().UTC(), so a device can be counted as active but fail the update WHERE clause if UpdatedAt lags",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Anonymous authentication can fail because ErrDeviceLimitReached is introduced/returned from device tagging and is treated as a hard failure during Authenticate instead of a best-effort tagging error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Misleading error mapping: updateDevice returns ErrDeviceLimitReached when RowsAffected()==0, but zero rows can also mean the device row is missing or outside the allowed update window, not that the limit was reached",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -15895,6 +16473,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "config/initializers/i18n.rb unconditionally calls SiteSetting.default_locale.to_sym, which can raise NoMethodError when SiteSetting.default_locale is nil and break boot/translation lookup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "lib/freedom_patches/translate_accelerator.rb uses unsynchronized lazy initialization and check-then-act logic for @loaded_locales, allowing concurrent threads to double-load locales or corrupt shared state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "lib/freedom_patches/translate_accelerator.rb caches loaded locales without normalizing String vs Symbol, so the same locale may be treated as different keys and loaded twice when callers mix forms",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -16150,6 +16748,56 @@
     "greptile-v4-1": [
       {
         "text": "TestLogger.FromContext returns a new/discarded TestLogger instance (via NewTestLogger) instead of returning the existing receiver, so log calls routed through FromContext are not recorded on the original TestLogger and future tests asserting on log call counts may incorrectly see 0.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "TestLogger.FromContext returns a fresh NewTestLogger() instead of preserving the receiver, causing captured logs/state to be lost and breaking tests that assert on logged output",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In pkg/plugins/log/logger.go, when FromContext(ctx) does not return *log.ConcreteLogger, the code falls back to d.New(), dropping the contextual logger returned by FromContext and losing context-derived fields/attributes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ContextualLoggerMiddleware.QueryData dereferences req.PluginContext without checking if req is nil, causing a nil-pointer panic on nil QueryDataRequest",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ContextualLoggerMiddleware.CallResource dereferences req.PluginContext without checking if req is nil, causing a nil-pointer panic on nil CallResourceRequest",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ContextualLoggerMiddleware.CheckHealth dereferences req.PluginContext without checking if req is nil, causing a nil-pointer panic on nil CheckHealthRequest",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ContextualLoggerMiddleware.CollectMetrics dereferences req.PluginContext without checking if req is nil, causing a nil-pointer panic on nil CollectMetricsRequest",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "LoggerMiddleware no longer appends traceID from context to log parameters, potentially regressing request correlation in plugin logs if the contextual logger does not automatically emit trace IDs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "pluginsintegration.go wires in ContextualLoggerMiddleware, which can introduce panics for nil requests because the middleware dereferences req.PluginContext without nil guards",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -17274,6 +17922,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "before_validation callback in app/models/embeddable_host.rb calls self.host.sub! unconditionally, causing NoMethodError when host is nil during validation/save",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin::EmbeddableHostsController#update uses EmbeddableHost.where(id: params[:id]).first without nil handling; save_host(host) can dereference nil when no record matches params[:id]",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin::EmbeddableHostsController#destroy uses EmbeddableHost.where(id: params[:id]).first without nil handling; host.destroy can raise when no record matches params[:id]",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Ember component embeddable-host.js.es6 calls host.destroyRecord().then(...) without a rejection handler, risking unhandled promise rejection / silent failure when the destroy request fails",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -17882,6 +18556,14 @@
     "greptile-v4-1": [
       {
         "text": "In app/assets/stylesheets/desktop/topic-post.scss (around line 291), the light-theme lightness value for .topic-meta-data h5 a was accidentally changed/swapped from 30% to 70%, making the link color washed out in light theme; primary should remain 30% and secondary (dark theme) should use 70% in dark-light-choose.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "In app/assets/stylesheets/mobile/topic-post.scss, the .topic-list-item h3 heading color logic changes light-theme lightness from 20% to 50%, causing unexpected contrast changes in the light theme",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -18735,6 +19417,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "add_members assumes params[:usernames] is a String and calls split(\",\") unconditionally, causing NoMethodError when usernames is an Array",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Pagination totalPages calculation uses Math.floor(user_count / limit) + 1, overcounting when user_count is an exact multiple of limit and allowing navigation to an empty extra page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "admin_group_route setupController calls model.findMembers() without returning/awaiting or handling errors, so AJAX failures become unhandled Promise rejections and fetch errors are hidden",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "group model triggers findMembers() after add/remove operations without sequencing/cancellation, allowing overlapping reloads to resolve out of order and overwrite newer member state with stale data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -19223,6 +19931,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Client-side rejectedEmails cache causes valid emails to remain blocked after a transient server-side rejection because rejectedEmails is never cleared on email edit/retry/success in create_account_controller.js",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-atomic match_count increment in blocked_email.rb (read/modify/write with save) can lose increments under concurrent requests due to missing locking or atomic counter update",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -19622,6 +20344,20 @@
       },
       {
         "text": "In `.small-action` (now a flex container), the child `button { float: right; }` is ignored because floats don\u2019t apply to flex items, causing the button to no longer be right-aligned; should use `margin-left: auto` instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "In app/assets/stylesheets/common/foundation/mixins.scss, the align-items mixin emits `-ms-align-items`, which is not a valid legacy IE/Edge flexbox property (should rely on `-ms-flex-align` instead), causing alignment to break in IE/legacy Edge.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/assets/stylesheets/common/foundation/mixins.scss, the order mixin incorrectly maps modern `order: $val` directly to `-webkit-box-ordinal-group` and `-moz-box-ordinal-group`, which have different semantics in the 2009 flexbox spec, causing item ordering to break in old WebKit/Firefox.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -20110,6 +20846,14 @@
       },
       {
         "text": "The sibling-subdomain `elsif` branch (case where both hosts have same segment count > 2) lacks test coverage; add specs for both matching-parent-domain and different-parent-domain variants",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "In app/serializers/user_serializer.rb, the include hook for website_name is defined as include_website_name instead of the expected include_website_name? predicate, so the guard may be ignored and website_name may be serialized unconditionally (logic error / potential NoMethodError depending on framework behavior).",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -21317,6 +22061,74 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "poll_feed crashes with NoMethodError when an RSS item has nil content because it calls i.content.scrub without a nil guard",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "poll_feed does not handle exceptions from network fetch or RSS parsing (SimpleRSS.parse open(...)), so unreachable or malformed feeds can crash the scheduled job",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TopicEmbed.import can crash when embed.post is nil (stale/missing associated post) because it passes nil into PostRevisor without checking",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TopicRetriever crashes if SiteSetting.embed_by_username is nil because it calls downcase on a nil setting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "embed.js can crash when #discourse-comments is missing because it calls appendChild on a null element",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "embed.js origin validation is insecure because it uses a substring check (discourseUrl.indexOf(e.origin)) instead of an exact origin comparison, allowing bypass with malicious origins",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "app/views/embed/best.html.erb contains invalid ERB/Ruby syntax (<%- end if %>) causing template parse/render failure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "spec/controllers/embed_controller_spec.rb test name claims it raises an error but the assertion only checks response not success, creating a name/body mismatch and potentially misattributing failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SSRF risk: poll_feed fetches SiteSetting.feed_polling_url via open-uri without scheme/host allowlisting or destination validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SSRF risk: TopicEmbed.import_remote fetches open(url).read on attacker-influenced URLs without sufficient URL sanitization/validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "XSS risk: TopicEmbed builds HTML with unescaped url interpolated into an <a> tag (href and link text), allowing injection if url contains quotes/HTML",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -22178,6 +22990,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Client-side upload size validation in app/assets/javascripts/discourse/lib/utilities.js uses a hardcoded 10MB (10 * 1024 KB) instead of per-type site settings (Discourse.SiteSettings['max_' + type + '_size_kb']), causing configured upload limits to be ignored",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "HTTP 413 error handler in app/assets/javascripts/discourse/lib/utilities.js uses a hardcoded 10MB max size instead of Discourse.SiteSettings.max_image_size_kb, causing the user-facing 'file too large' message to report the wrong limit when site/server settings differ",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "UploadsController#create_upload passes a percentage geometry string (\"80%\") into OptimizedImage.downsize, which may break the animated-image downsize/optimize path that expects WxH-style geometry (risk of ArgumentError or failed resize for animated GIFs)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In app/models/optimized_image.rb, defining self.downsize twice causes the later method to override the earlier one, effectively removing the width/height arity; existing callers using separate max_width and max_height arguments may now raise ArgumentError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -22850,6 +23688,20 @@
       },
       {
         "text": "List-Unsubscribe email header still omits the new per-topic unsubscribe URL, limiting support for email-client/RFC 8058 one-click unsubscribe flows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "TopicsController#unsubscribe dereferences tu.notification_level without guarding against TopicUser.find_by returning nil, causing NoMethodError when no topic_users row exists for the user/topic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Email notification template sets class='.previous-discussion' (includes a literal dot), so the intended previous-discussion class won\u2019t match styling/hooks",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -23593,6 +24445,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Script uses BSD/macOS-specific `sed -i '' -E` syntax, causing runtime failure on Linux hosts with GNU sed when updating the .env file",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hard-coded shared log file `/tmp/tmole.log` with no locking or per-process isolation creates a race condition where concurrent script runs can overwrite/read each other\u2019s tmole output and reuse the wrong webhook URL",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fixed startup polling timeout (~10 seconds) can be too short; if tmole initializes slower, the script incorrectly treats it as failure and exits",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -24229,6 +25101,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Comparing two newly created Dayjs objects with `===` in override-day detection always returns false (object identity comparison), breaking detection when start and end represent the same instant",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Working-hours availability check computes both `start` and `end` from `slotStartTime` and never uses `slotEndTime`, so slots that end after `workingHour.endTime` can be incorrectly marked available",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -24656,6 +25542,20 @@
       },
       {
         "text": "In the catch block, `prisma.workflowReminder.update` is not wrapped in its own try/catch, so if the update throws the error can escape the catch and abort the for-loop, leaving subsequent reminders unprocessed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Non-atomic update of retryCount using `reminder.retryCount + 1` based on a stale value from `findMany`, causing lost increments under concurrent schedulers (race condition)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`deleteMany` filter uses an `OR` branch with only `retryCount > 1` and no `method: WorkflowMethods.SMS` constraint, so it can delete non-SMS workflow reminders when retryCount exceeds 1",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -26434,6 +27334,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Non-transactional read-then-write in apps/web/pages/api/webhook/app-credential.ts can race: concurrent requests may both miss findFirst and both create duplicate Credential rows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Credential model lacks a unique constraint on (userId, appId), so the database does not prevent duplicate credentials for the same user/app pair",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "parseRefreshTokenResponse.ts fabricates a placeholder refresh_token when the provider omits it, causing incorrect token data to be returned and potentially persisted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "refreshOAuthTokens.ts returns a raw fetch Response in one branch while other branches return parsed token payloads, creating a return-shape mismatch that breaks callers expecting .data token fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "googlecalendar CalendarService reads res?.data from refreshOAuthTokens output even when it is a fetch Response, so token field access will fail at runtime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -27362,6 +28294,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "handleCancelBooking.ts calls async deleteScheduledEmailReminder/deleteScheduledSMSReminder inside a forEach without awaiting or including the promises in Promise.all, so reminder deletion failures can be unhandled and cleanup can silently fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "handleNewBooking.ts calls async reminder deletion helpers inside a forEach without await, so the surrounding try/catch cannot reliably catch later rejections and rescheduling may continue before cleanup completes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "scheduleEmailReminders.ts wraps all cancellation requests in a single try/catch while awaiting inside a loop, so one failed cancellation aborts the loop and leaves remaining reminders still scheduled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "emailReminderManager.ts only cancels SendGrid scheduled sends when immediateDelete is true; callers that omit immediateDelete now only mark DB rows cancelled and do not delete the external SendGrid batch as expected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "viewer/bookings.tsx triggers reminder deletions via async helpers without awaiting them (fire-and-forget in forEach), so cleanup may be skipped or finish after the mutation completes and promise rejections may go unhandled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "viewer/workflows.tsx uses deleteScheduledEmailReminder(..., true) paths where the helper cancels SendGrid but does not delete/update the WorkflowReminder DB row, leaving stale DB reminders that are not cleaned up by the cancelled=true cleanup job",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14740": {
@@ -28220,6 +29190,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "addGuestsHandler incorrectly requires a team user to be both team admin and team owner (uses &&) to pass the permission check, denying access to admins who are not owners",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "addGuestsHandler does not deduplicate duplicate emails within the submitted guests array, allowing duplicate attendee rows to be created via createMany",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AddGuestsDialog initializes/resets multiEmailValue to [\"\"] and only guards against length===0, causing validation to fail on untouched/reset state and blocking guest submission",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Blacklist email check is case-sensitive: blacklist entries are lowercased but submitted guest emails are compared without normalization, allowing mixed-case emails to bypass the blacklist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -28987,6 +29983,38 @@
       },
       {
         "text": "apps/web/components/settings/EnableTwoFactorModal.tsx resetState does not clear backupCodes or backupCodesUrl, leaving stale state and potentially not revoking a previous object URL when the modal is reopened",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "Disable TOTP endpoint logs an error message about 'backup code login', which mismatches the disable flow and misleads debugging when the encryption key is missing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code consumption in authorize() is not concurrency-safe (read/check/mutate/write without transaction/CAS), allowing the same one-time backup code to be reused under concurrent login requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code comparison does not normalize case, so mixed-case user input may fail to match stored lowercase hex backup codes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BackupCode.tsx default-exported component is named TwoFactor, causing a naming mismatch with the file/UI purpose and confusing stack traces/debugging",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "EnableTwoFactorModal calls body.backupCodes.map(...) without guarding for missing/null backupCodes, risking a runtime TypeError if the setup response omits or nulls that field",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -29978,6 +31006,56 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "cloudaeye": [
+      {
+        "text": "CalendarManager now calls createEvent(calEvent, credential.id) but some adapters/implementations (e.g., CalendarService) still implement createEvent(event) with one parameter, causing an interface/signature mismatch that can break integrations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "EventManager destructures the first element from evt.destinationCalendar ?? [] and then dereferences mainHostDestinationCalendar.integration without guarding/optional chaining, crashing when destinationCalendar is null or empty",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calendar.d.ts changes Calendar.createEvent to require (event, credentialId), but downstream implementations (e.g., packages/lib/CalendarService.ts) still declare createEvent(event) with one parameter, creating a concrete arity mismatch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "destinationCalendar contract changed to DestinationCalendar[] | null, but some consumers still treat it like a single object / assume a non-empty array, leading to runtime errors (e.g., EventManager accessing [0] then dereferencing without a guard)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GoogleCalendarService.updateEvent uses a fallback that searches destinationCalendar for cal.externalId === externalCalendarId when externalCalendarId is falsy, making the fallback impossible and potentially selecting the wrong calendarId for updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "handleNewBooking collects multiple destination calendars (including team member calendars) but persists only evt.destinationCalendar[0] when creating the booking, silently dropping additional calendars",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "handleCancelBooking recurring-delete path iterates only bookingToDelete.user.credentials and ignores the DB-fetched calendarCredential fallback, so recurring linked events may not be deleted when the credential exists only via the DB fetch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "editLocation.handler.ts uses redundant optional chaining inside branches that already truthy-check booking.destinationCalendar / booking.user.destinationCalendar, reducing clarity",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -30613,6 +31691,38 @@
       },
       {
         "text": "Because deletions are not awaited in the reschedule/booking flows, a booking can be marked cancelled/rescheduled even if calendar/video event deletion fails, leaving stale events behind",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cloudaeye": [
+      {
+        "text": "In packages/features/bookings/lib/handleCancelBooking.ts, using Array.forEach with an async callback means calendar update/delete promises are not awaited, so rejections escape the handler and failures go unhandled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/trpc/server/routers/viewer/bookings.tsx, using bookingRefsFiltered.forEach(async ...) makes external calendar deletions fire-and-forget, so cleanup may still be running after the handler returns (race condition)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/trpc/server/routers/viewer/bookings.tsx, errors from getCalendar/deleteEvent/deleteMeeting inside the async forEach callback are not caught/awaited, so promise rejections escape normal error handling while execution continues (e.g., to sendRequestRescheduleEmail)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/vital/lib/reschedule.ts, changing to bookingRefsFiltered.forEach(async ...) prevents the surrounding try/catch from catching rejections from getCalendar/deleteEvent/deleteMeeting, and the function proceeds/returns before per-reference cleanup completes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In packages/app-store/wipemycalother/lib/reschedule.ts, using bookingRefsFiltered.forEach(async ...) causes getCalendar/deleteEvent/deleteMeeting rejections to escape the surrounding try/catch because forEach does not await async callbacks",
         "path": null,
         "line": null,
         "source": "extracted"

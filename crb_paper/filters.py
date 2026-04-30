@@ -164,13 +164,22 @@ def apply_filters(
     """Apply `params` to `rows` and return the matching subset in input
     order. Aggregates (`repo_contributor_counts`, `author_repo_prs`) are
     computed over the input rows, matching `db.rs::build_snapshot`."""
+    # ---- 1. Build the bot-username vocabulary ---------------------------
+    # Used by `exclude_bot_authored` to decide whether the PR's *author*
+    # is itself a bot (dependabot etc.), separately from the bot that
+    # reviewed it.
     ignored_chatbots = ignored_chatbots or set()
     chatbot_usernames = {r["github_username"] for r in rows}
     known_bots = _build_known_bots(chatbot_usernames)
 
+    # ---- 2. Build aggregates --------------------------------------------
+    # `repo_contributors[repo]` = set of unique author logins, used by
+    # `min_repo_contributors`. `author_repo_prs[(repo, author, bot)]` =
+    # list of pr_ids, used by `max_author_repo_prs` capping.
     repo_contributors: dict[str, set[str]] = defaultdict(set)
     author_repo_prs: dict[tuple[str, str, str], list[int]] = defaultdict(list)
 
+    # ---- 3. Per-row enrichment (parse JSON columns once) ---------------
     enriched: list[dict] = []
     for r in rows:
         labels = _labels(r.get("pr_labels_json"))
@@ -201,6 +210,10 @@ def apply_filters(
             "_severity": _normalize_label(labels.get("severity")),
         })
 
+    # ---- 4. Pre-compute the max_author_repo_prs sample -----------------
+    # Cap = "no single (repo, author, bot) triple contributes more than N
+    # PRs." For triples over the cap, pick N at random with a seed
+    # derived from `params` so re-runs of the same spec are stable.
     capped_pr_ids: Optional[set[int]] = None
     if params.max_author_repo_prs is not None:
         rng = random.Random(_params_seed(params))
@@ -214,6 +227,7 @@ def apply_filters(
             else:
                 capped_pr_ids.update(prs)
 
+    # ---- 5. Apply per-row predicates -----------------------------------
     out: list[dict] = []
     for r in enriched:
         if not params.include_ignored and r["github_username"] in ignored_chatbots:

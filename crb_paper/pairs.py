@@ -131,11 +131,17 @@ class PairConfig:
 
 
 def _bookkeeping(row: dict) -> dict:
-    """Pull the fields every output row carries (for split/cutoff)."""
+    """Pull the fields every output row carries (for split/cutoff).
+
+    `bot_reviewed_at` is the canonical timestamp for the train/val split
+    (matches the Rust dashboard's by-date organisation). `pr_created_at`
+    is preserved alongside it but is NULL for ~74% of analyzed rows so
+    it can't drive the split alone."""
     return {
         "pr_id": row["pr_id"],
         "repo_name": row["repo_name"],
         "pr_created_at": _isoformat(row.get("pr_created_at")),
+        "bot_reviewed_at": _isoformat(row.get("bot_reviewed_at")),
         "chatbot": row["chatbot"],
     }
 

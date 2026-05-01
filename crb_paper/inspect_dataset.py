@@ -40,7 +40,10 @@ import pairs  # noqa: E402
 # ---------------------------------------------------------------------------
 
 DEFAULT_REPORT = Path(__file__).parent / "inspection_report.md"
-TRAIN_VAL_CUTOFF = date(2026, 4, 20)
+DEFAULT_CUTOFF = date(2026, 3, 31)
+"""Train/val cutoff on `bot_reviewed_at`. 2026-03-31 yields ~83/17
+given the current DB snapshot (44.9% of analyzed-merged rows had
+bot_reviewed_at by end-of-Feb 2026, 83.2% by end-of-March)."""
 EXCLUDE_CHATBOTS = {"coderabbitai[bot]"}
 
 
@@ -50,6 +53,9 @@ def parse_args() -> argparse.Namespace:
                    help="Max (PR × bot) rows to fetch. 0 = no limit (~660k).")
     p.add_argument("--max-pairs", type=int, default=5_000,
                    help="Max final DPO pairs after sampling. 0 = keep all.")
+    p.add_argument("--cutoff", type=lambda s: date.fromisoformat(s),
+                   default=DEFAULT_CUTOFF,
+                   help="Train/val cutoff on bot_reviewed_at (YYYY-MM-DD).")
     p.add_argument("--report-path", type=Path, default=DEFAULT_REPORT,
                    help="Output path for the markdown report.")
     p.add_argument("--seed", type=int, default=0xC0DECAFE,
@@ -94,10 +100,13 @@ def quantile_row(label: str, values: list[int]) -> str:
 # ---------------------------------------------------------------------------
 
 def split_train_val(rows: list[dict], cutoff: date) -> tuple[int, int]:
-    """Return (train_count, val_count) using `pr_created_at` <= cutoff."""
+    """Return (train_count, val_count). Splits on `bot_reviewed_at`
+    (canonical, ~always set). Falls back to `pr_created_at` for the
+    rare row where bot_reviewed_at is missing. Undated rows go to val
+    to avoid leaking into train."""
     train, val = 0, 0
     for r in rows:
-        ts = r.get("pr_created_at")
+        ts = r.get("bot_reviewed_at") or r.get("pr_created_at")
         if isinstance(ts, str):
             try:
                 d = datetime.fromisoformat(ts.replace("Z", "+00:00")).date()
@@ -126,6 +135,7 @@ def render_report(
     *,
     limit: int,
     max_pairs: int,
+    cutoff: date,
     raw_count: int,
     after_cr_drop: int,
     after_silver: int,
@@ -133,8 +143,8 @@ def render_report(
     dpo_pairs_full: list[dict],
     dpo_pairs_sampled: list[dict],
 ) -> str:
-    sft_train, sft_val = split_train_val(sft_rows, TRAIN_VAL_CUTOFF)
-    dpo_train, dpo_val = split_train_val(dpo_pairs_full, TRAIN_VAL_CUTOFF)
+    sft_train, sft_val = split_train_val(sft_rows, cutoff)
+    dpo_train, dpo_val = split_train_val(dpo_pairs_full, cutoff)
 
     bot_counts = Counter(p["chatbot"] for p in dpo_pairs_full)
     repo_counts = Counter(p["repo_name"] for p in dpo_pairs_full)
@@ -161,8 +171,8 @@ def render_report(
     out.append("")
 
     # ---- Train/val split --------------------------------------------------
-    out.append(f"## Train/val split at {TRAIN_VAL_CUTOFF.isoformat()}\n")
-    out.append("Split by `pr_created_at`. Undated rows go to val.\n")
+    out.append(f"## Train/val split at {cutoff.isoformat()}\n")
+    out.append("Split by `bot_reviewed_at` (falls back to `pr_created_at`). Undated rows go to val.\n")
     out.append("| Dataset | Train | Val |")
     out.append("|---|---|---|")
     out.append(f"| SFT | {sft_train:,} | {sft_val:,} |")
@@ -257,6 +267,7 @@ def main() -> None:
     report = render_report(
         limit=args.limit,
         max_pairs=args.max_pairs,
+        cutoff=args.cutoff,
         raw_count=raw_count,
         after_cr_drop=len(after_cr),
         after_silver=len(silver),

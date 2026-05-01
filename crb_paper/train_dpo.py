@@ -21,7 +21,18 @@ pre-training transformation pass over the dataset (see `apply_condition`):
 
 Dependencies (NOT yet installed):
 
-    pip install transformers peft trl accelerate datasets torch
+    pip install transformers peft trl accelerate datasets torch wandb
+
+Monitoring (W&B): training runs log to Weights & Biases by default.
+Set these env vars before running (or use `--report-to none` to disable):
+
+    export WANDB_API_KEY=...
+    export WANDB_PROJECT=crb-finetuning      # default if unset
+    export WANDB_ENTITY=<your-org-or-user>   # optional
+
+The auto-generated run name includes the ablation condition, e.g.
+`dpo-filtered-<timestamp>`, so the four ablation runs are easy to
+compare in the W&B UI.
 
 Usage:
 
@@ -117,7 +128,13 @@ class Hyperparameters:
 
     # --- Misc ------------------------------------------------------------
     seed: int = 42
-    report_to: str = "none"
+    report_to: str = "wandb"
+    """'wandb' (default — needs WANDB_API_KEY) / 'tensorboard' / 'none'.
+    See module docstring for the full env-var list."""
+    run_name: Optional[str] = None
+    """W&B run name. None → auto-generated as `dpo-<condition>-<timestamp>`."""
+    wandb_project: str = "crb-finetuning"
+    """W&B project. Overridden by WANDB_PROJECT env var if set."""
 
 
 # ---------------------------------------------------------------------------
@@ -215,6 +232,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=Hyperparameters.seed)
     p.add_argument("--report-to", default=Hyperparameters.report_to,
                    choices=["none", "wandb", "tensorboard"])
+    p.add_argument("--run-name", default=None,
+                   help="W&B run name. Auto-generated as dpo-<condition>-<ts> if omitted.")
+    p.add_argument("--wandb-project", default=Hyperparameters.wandb_project,
+                   help="W&B project (overridden by WANDB_PROJECT env if set).")
     p.add_argument("--dry-run", action="store_true",
                    help="Train 5 steps on 8 synthetic pairs; verify save/reload.")
     return p.parse_args()
@@ -231,7 +252,17 @@ def hyperparams_from_args(args: argparse.Namespace) -> Hyperparameters:
         max_length=args.max_length,
         seed=args.seed,
         report_to=args.report_to,
+        run_name=args.run_name,
+        wandb_project=args.wandb_project,
     )
+
+
+def _resolve_run_name(hp: Hyperparameters, condition: str) -> str:
+    """Auto-generate a W&B run name embedding the ablation condition."""
+    if hp.run_name:
+        return hp.run_name
+    from datetime import datetime
+    return f"dpo-{condition}-{datetime.now():%Y%m%d-%H%M%S}"
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +320,13 @@ def main() -> None:
         f"condition={args.condition} → {len(train_rows)} train rows, "
         f"{len(eval_rows) if eval_rows else 0} eval rows"
     )
+
+    # W&B env-var setup (only if reporting to wandb). Set BEFORE the heavy
+    # imports so the Trainer picks them up.
+    if hp.report_to == "wandb":
+        import os
+        os.environ.setdefault("WANDB_PROJECT", hp.wandb_project)
+        os.environ.setdefault("WANDB_RUN_NAME", _resolve_run_name(hp, args.condition))
 
     # 2. Heavy imports
     try:

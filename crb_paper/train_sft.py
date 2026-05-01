@@ -14,7 +14,14 @@ to format each example.
 
 Dependencies (NOT yet installed):
 
-    pip install transformers peft trl accelerate datasets torch
+    pip install transformers peft trl accelerate datasets torch wandb
+
+Monitoring (W&B): training runs log to Weights & Biases by default.
+Set these env vars before running (or use `--report-to none` to disable):
+
+    export WANDB_API_KEY=...
+    export WANDB_PROJECT=crb-finetuning      # default if unset
+    export WANDB_ENTITY=<your-org-or-user>   # optional
 
 Usage:
 
@@ -114,8 +121,13 @@ class Hyperparameters:
 
     # --- Misc ------------------------------------------------------------
     seed: int = 42
-    report_to: str = "none"
-    """'none' / 'wandb' / 'tensorboard'. wandb requires WANDB_API_KEY."""
+    report_to: str = "wandb"
+    """'wandb' (default — needs WANDB_API_KEY) / 'tensorboard' / 'none'.
+    See module docstring for the full env-var list."""
+    run_name: Optional[str] = None
+    """W&B run name. None → auto-generated as `sft-<timestamp>`."""
+    wandb_project: str = "crb-finetuning"
+    """W&B project. Overridden by WANDB_PROJECT env var if set."""
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +162,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=Hyperparameters.seed)
     p.add_argument("--report-to", default=Hyperparameters.report_to,
                    choices=["none", "wandb", "tensorboard"])
+    p.add_argument("--run-name", default=None,
+                   help="W&B run name. Auto-generated if omitted.")
+    p.add_argument("--wandb-project", default=Hyperparameters.wandb_project,
+                   help="W&B project (overridden by WANDB_PROJECT env if set).")
     p.add_argument("--dry-run", action="store_true",
                    help="Train 5 steps on 8 synthetic rows; verify save/reload.")
     return p.parse_args()
@@ -166,7 +182,17 @@ def hyperparams_from_args(args: argparse.Namespace) -> Hyperparameters:
         max_seq_length=args.max_seq_length,
         seed=args.seed,
         report_to=args.report_to,
+        run_name=args.run_name,
+        wandb_project=args.wandb_project,
     )
+
+
+def _resolve_run_name(hp: Hyperparameters) -> str:
+    """Auto-generate a W&B run name if not provided."""
+    if hp.run_name:
+        return hp.run_name
+    from datetime import datetime
+    return f"sft-{datetime.now():%Y%m%d-%H%M%S}"
 
 
 # ---------------------------------------------------------------------------
@@ -200,6 +226,14 @@ def _synthetic_sft_rows(n: int = 8) -> list[dict]:
 def main() -> None:
     args = parse_args()
     hp = hyperparams_from_args(args)
+
+    # W&B env-var setup (only if reporting to wandb). The Trainer reads
+    # WANDB_PROJECT / WANDB_RUN_NAME from env; we set them here if the
+    # user passed CLI flags or relied on our defaults.
+    if hp.report_to == "wandb":
+        import os
+        os.environ.setdefault("WANDB_PROJECT", hp.wandb_project)
+        os.environ.setdefault("WANDB_RUN_NAME", _resolve_run_name(hp))
 
     try:
         import torch  # noqa: F401

@@ -26,6 +26,8 @@ import sys
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
+import json
+
 import psycopg2
 import psycopg2.extras
 
@@ -126,7 +128,8 @@ _BASE_COLUMNS = """
     p.engagement_signals,
     la.bot_suggestions,
     la.matching_results,
-    p.assembled
+    p.assembled,
+    p.commit_details
 """
 
 _FROM_JOIN = """
@@ -174,7 +177,39 @@ def _normalize_row(row: dict) -> dict:
     of the raw column names. Keeps the original columns too so SQL
     callers can still see them."""
     row.setdefault("chatbot", row.get("github_username"))
+    row.setdefault("diff", build_unified_diff(row.get("commit_details")))
     return row
+
+
+def build_unified_diff(commit_details) -> str:
+    """Concatenate per-file patches from `prs.commit_details` into a
+    single unified-diff string. Each file gets a synthetic
+    `diff --git a/<file> b/<file>` header before its `@@`-prefixed hunks.
+
+    Multi-commit PRs may produce duplicate per-file sections (one per
+    commit that touched the file); that's intentional — the model sees
+    the actual revision history. The pairs.py long-prompt cutoff drops
+    any prompt that exceeds the configured token limit.
+    """
+    if not commit_details:
+        return ""
+    if isinstance(commit_details, str):
+        try:
+            commits = json.loads(commit_details)
+        except json.JSONDecodeError:
+            return ""
+    else:
+        commits = commit_details
+
+    parts: list[str] = []
+    for commit in commits or []:
+        for f in (commit.get("files") or []):
+            patch = f.get("patch")
+            if not patch:
+                continue
+            filename = f.get("filename") or "<unknown>"
+            parts.append(f"diff --git a/{filename} b/{filename}\n{patch}")
+    return "\n".join(parts)
 
 
 # ---------------------------------------------------------------------------

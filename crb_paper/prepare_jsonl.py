@@ -10,8 +10,9 @@ Pipeline (same as `inspect_dataset.py`, but writes data instead of a report):
      prompt cutoff).
   5. Optional cap on DPO pairs.
   6. Split each row by `bot_reviewed_at <= cutoff` into train/val.
-  7. Write four files into `--output-dir`:
-        sft_train.jsonl, sft_val.jsonl, dpo_train.jsonl, dpo_val.jsonl
+  7. Write five files into `--output-dir`:
+        sft_train.jsonl, sft_val.jsonl, dpo_train.jsonl, dpo_val.jsonl,
+        eval.jsonl     (held-out PRs with gold human_actions for evaluate.py)
 
 Run:
 
@@ -113,6 +114,51 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
             f.write("\n")
 
 
+def build_eval_rows(silver_rows: list[dict], cutoff: date) -> list[dict]:
+    """Build per-(PR, bot) eval rows from the post-cutoff silver-filtered
+    set. Each row carries the prompt + gold `human_actions` for
+    `crb_paper/evaluate.py` to score sampled suggestions against."""
+    out: list[dict] = []
+    for r in silver_rows:
+        d = _row_date(r)
+        if d is None or d <= cutoff:
+            continue  # train side; skip
+        # Parse human_actions JSON. The judge stores it as either a JSON
+        # list or a `{"actions": [...]}` envelope (see llm/schemas.py).
+        raw = r.get("human_actions")
+        if not raw:
+            continue
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            actions = parsed.get("actions") or []
+        elif isinstance(parsed, list):
+            actions = parsed
+        else:
+            actions = []
+        if not actions:
+            continue
+        out.append({
+            "pr_id": r["pr_id"],
+            "repo_name": r["repo_name"],
+            "chatbot": r["chatbot"],
+            "bot_reviewed_at": _isoformat(r.get("bot_reviewed_at")),
+            "prompt": pairs.build_prompt(r.get("pr_title", ""), r.get("diff", "")),
+            "gold_human_actions": actions,
+        })
+    return out
+
+
+def _isoformat(ts) -> Optional[str]:
+    if ts is None:
+        return None
+    if isinstance(ts, (date, datetime)):
+        return ts.isoformat()
+    return str(ts)
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -161,12 +207,17 @@ def main() -> None:
     print(f"  SFT  train={len(sft_train):,}  val={len(sft_val):,}")
     print(f"  DPO  train={len(dpo_train):,}  val={len(dpo_val):,}")
 
+    print("building eval rows (post-cutoff PRs with gold human_actions)...")
+    eval_rows = build_eval_rows(silver, args.cutoff)
+    print(f"  eval rows: {len(eval_rows):,}")
+
     out = args.output_dir
     write_jsonl(out / "sft_train.jsonl", sft_train)
     write_jsonl(out / "sft_val.jsonl", sft_val)
     write_jsonl(out / "dpo_train.jsonl", dpo_train)
     write_jsonl(out / "dpo_val.jsonl", dpo_val)
-    print(f"wrote 4 files to {out}/")
+    write_jsonl(out / "eval.jsonl", eval_rows)
+    print(f"wrote 5 files to {out}/")
 
 
 if __name__ == "__main__":

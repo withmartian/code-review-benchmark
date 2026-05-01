@@ -128,6 +128,7 @@ _BASE_COLUMNS = """
     (p.reviews IS NOT NULL AND p.reviews != '[]') AS has_reviews,
     p.engagement_signals,
     la.bot_suggestions,
+    la.human_actions,
     la.matching_results,
     p.assembled,
     p.commit_details

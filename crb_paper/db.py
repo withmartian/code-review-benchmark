@@ -36,9 +36,9 @@ import psycopg2.extras
 # Env loading
 # ---------------------------------------------------------------------------
 
-# Default fallback location — the latentqa workspace's .env, where this
-# project's credentials live for the user. If you've moved them, set the
-# CRB_ENV_FILE env var to point at the new location.
+# Default search order: repo-local `.env` (preferred), then the
+# latentqa-workspace fallback. Override with CRB_ENV_FILE.
+_REPO_ENV = Path(__file__).resolve().parent.parent / ".env"
 _LATENTQA_ENV = Path(
     "~/Documents/martian-projects/codereview-latentqa/latentqa/.env"
 ).expanduser()
@@ -55,6 +55,7 @@ def load_env(path: Optional[Path] = None) -> Optional[Path]:
         candidates.append(Path(path))
     if "CRB_ENV_FILE" in os.environ:
         candidates.append(Path(os.environ["CRB_ENV_FILE"]))
+    candidates.append(_REPO_ENV)
     candidates.append(_LATENTQA_ENV)
 
     try:

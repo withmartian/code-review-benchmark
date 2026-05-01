@@ -146,15 +146,25 @@ def fetch_pr_analyses(
     *,
     only_merged: bool = True,
     limit: Optional[int] = None,
+    random_sample: bool = False,
 ) -> list[dict]:
     """Fetch the (PR × bot) analyses join. Returns a list of dicts in
     the shape `filters.apply_filters` and `pairs.build_*` expect.
 
     When `only_merged=True` (the dashboard default) we exclude
     unmerged PRs to match leaderboard semantics.
+
+    When `random_sample=True` and `limit` is set, the rows are pulled
+    in a deterministic random order (`ORDER BY hashtext`) so the LIMIT
+    gives a date-diverse sample instead of the earliest-by-bot-review
+    rows. Use this for training-data sampling.
     """
     where = "WHERE p.pr_merged = TRUE" if only_merged else ""
-    sql = f"SELECT {_BASE_COLUMNS} {_FROM_JOIN} {where} ORDER BY p.bot_reviewed_at NULLS FIRST"
+    if random_sample:
+        order = "ORDER BY hashtext(la.id::text)"
+    else:
+        order = "ORDER BY p.bot_reviewed_at NULLS FIRST"
+    sql = f"SELECT {_BASE_COLUMNS} {_FROM_JOIN} {where} {order}"
     if limit is not None:
         sql += f" LIMIT {int(limit)}"
 

@@ -223,7 +223,7 @@ def main() -> None:
     try:
         limit = args.limit if args.limit > 0 else None
         print(f"fetching pr_analyses (limit={limit})...")
-        raw = db.fetch_pr_analyses(conn, limit=limit)
+        raw = db.fetch_pr_analyses(conn, limit=limit, random_sample=True)
         ignored = db.fetch_ignored_chatbots(conn)
     finally:
         conn.close()

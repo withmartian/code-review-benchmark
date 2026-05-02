@@ -416,7 +416,7 @@ def main() -> None:
         args=dpo_cfg,
         train_dataset=train_ds,
         eval_dataset=eval_ds,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         # ref_model=None → DPOTrainer disables adapters internally for the
         # reference forward pass, so the SFT-init case still has a valid
         # reference (the unmodified base).

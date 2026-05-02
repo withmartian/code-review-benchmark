@@ -268,14 +268,13 @@ def main() -> None:
         tokenizer.pad_token = tokenizer.eos_token
 
     def format_row(row: dict) -> dict:
-        # Two-turn chat: user = prompt, assistant = response. The chat
-        # template emits the role markers Qwen expects.
-        messages = [
+        # Emit the messages list directly — TRL's SFTTrainer detects this
+        # column and applies the model's chat template internally, also
+        # masking the prompt portion when computing loss.
+        return {"messages": [
             {"role": "user", "content": row["prompt"]},
             {"role": "assistant", "content": row["response"]},
-        ]
-        text = tokenizer.apply_chat_template(messages, tokenize=False)
-        return {"text": text}
+        ]}
 
     train_ds = Dataset.from_list(train_rows).map(format_row, remove_columns=list(train_rows[0].keys()))
     eval_ds = (Dataset.from_list(eval_rows).map(format_row, remove_columns=list(eval_rows[0].keys()))
@@ -312,7 +311,6 @@ def main() -> None:
         max_grad_norm=hp.max_grad_norm,
         lr_scheduler_type=hp.lr_scheduler_type,
         warmup_ratio=hp.warmup_ratio,
-        max_seq_length=hp.max_seq_length,
         logging_steps=hp.logging_steps,
         save_steps=hp.save_steps,
         save_total_limit=hp.save_total_limit,
@@ -332,7 +330,7 @@ def main() -> None:
         args=sft_cfg,
         train_dataset=train_ds,
         eval_dataset=eval_ds,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
     )
     trainer.train()
     trainer.save_model(str(args.output_dir))

@@ -1020,6 +1020,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Incorrect permission check in canManage() method - the method checks the wrong permission scope, allowing users who should not have manage access to pass the authorization check",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "In getGroupIdsWithViewPermission, hasPermission is called with groupResource.getId() for both the resource and scope arguments - the scope parameter should be different from the resource ID, causing incorrect permission evaluation",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "In getGroupIdsWithViewPermission, hasPermission is called with groupResource.getId() for both resource and scope parameters - scope should differ from resource ID, causing incorrect permission evaluation and potentially granting wrong access",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Authorization bypass in getGroupIdsWithViewPermission() - returns empty set when user has view permission, which may grant access to all groups instead of restricting access",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Incomplete constant name 'VIEW_MEMBE' in the GROUPS ResourceType definition - should be 'VIEW_MEMBERS'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -2019,6 +2051,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Method returns wrong provider - returns default keystore provider instead of BouncyCastle provider, causing callers to use incorrect cryptographic implementation",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Dead code: ASN1Encoder instances are created and written to but their results are immediately discarded - the actual encoding is performed elsewhere, making these encoder operations unnecessary and confusing",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "KeyPairGenerator.getInstance(\"EC\").genKeyPair() creates a key pair with default parameters, but ECDSA algorithms require specific curve parameters (P-256, P-384, P-521) that may not match the default curve",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "String concatenation creates trailing comma and space that are never removed, resulting in malformed output",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Method appears to call itself recursively instead of delegating to a wrapped or parent object, which can cause infinite recursion and StackOverflowError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -2847,6 +2911,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Returning null from getSubGroupsCount() violates the GroupModel contract - Javadoc declares the method never returns null but this implementation returns null, causing NullPointerException in callers that invoke methods on the result",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Reader thread is not awaited before assertion - flipping deletedAll to true and immediately asserting races with the reader thread adding exceptions, causing flaky test failures",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Method appears to call itself recursively instead of delegating to a wrapped or parent object, causing potential infinite recursion and StackOverflowError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Response.Status.Family.SUCCESSFUL includes status codes 200-299, but group creation should specifically check for 201 CREATED status code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Response object is used in try-with-resources but the groupUuid extraction happens inside the try block where response might be closed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1": {
@@ -3669,6 +3765,38 @@
       },
       {
         "text": "The challenge() method inverts the original condition - original guard was context.getUser() == null && webauthnAuth != null && webauthnAuth.isPasskeysEnabled(), but new guard isConditionalPasskeysEnabled(context.getUser()) is true only when user != null, so users who submit bad username will see error page without WebAuthn form",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "ConditionalPasskeysEnabled() is called without the required UserModel parameter - the method signature requires a user argument but is invoked without one, causing a compilation error or NullPointerException",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "With isConditionalPasskeysEnabled(UserModel user) requiring user != null, authenticate() will not call webauthnAuth.fillContextForm(context) on the correct branch when user is null, causing passkey authentication to silently fail",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "WebAuthn authenticators are exposed based solely on user existence without proper authentication state validation, potentially allowing enumeration of valid usernames and their associated WebAuthn credentials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Authentication bypass vulnerability - the authenticate method calls context.success() without verifying user credentials when user is already set and no linked brokers exist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Boolean.parseBoolean() returns false for null input, but the code should likely treat null as false explicitly or handle it differently since AUTH_NOTE values can be null",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -4546,6 +4674,32 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Breaking out of the loop when deadline is elapsed skips terminating remaining flusher processes, potentially leaking process handles and causing resource exhaustion",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "time.sleep in test_consumer.py won't actually wait because time.sleep was monkeypatched above - test timing assumptions are broken, making the test unreliable",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "flusher processes created via multiprocessing.get_context(spawn).Process are instances of SpawnProcess which on POSIX is not a subclass of multiprocessing.Process - isinstance checks will fail and process management may break",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Inconsistent metric tagging: some calls use tag 'shard' while others use 'shards' - metrics will be split across two different tag values, making aggregation and dashboards incorrect",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
       }
     ]
   },
@@ -7184,6 +7338,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "When requests are authenticated with API keys or org auth tokens, organization_context.member is None and accessing .has_global_access() on None will raise AttributeError",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Importing OptimizedCursorPaginator which does not exist in the sentry codebase - this import will fail at runtime with ImportError",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Negative offset passed to queryset slicing will cause runtime error - Python slice indices must be non-negative",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Math.floor/ceil applied to potentially non-numeric values without type checking will raise TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -7946,6 +8126,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Race condition in BuildIndex: multiple goroutines can concurrently build the same index for the same key without synchronization, wasting resources and potentially causing data corruption",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Race condition: s.search.TotalDocs() iterates the cache without synchronization while the event watcher goroutine concurrently modifies it - concurrent map read/write causes panic in Go",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Hard-coded port assignment may cause port conflicts in concurrent test execution",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete function checks for ResourceVersion < 0 but the error message says 'update must include the previous version' which is incorrect for a delete operation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80168": {
@@ -8689,6 +8895,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "MetricAlertDetectorHandler inherits from StatefulDetectorHandler but the class body only contains pass, failing to implement required abstract methods - will raise NotImplementedError at runtime",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Method docstring says it returns a list of DetectorEvaluationResult but the implementation now returns a dict keyed by DetectorGroupKey - documentation and return type are inconsistent",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -9204,6 +9424,20 @@
       },
       {
         "text": "Docstring contains typos: \"humam readible\" should be \"human readable\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Function modifies the config variable to include display values but then returns the original monitor.config instead of the modified config, discarding the changes",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Slice operation `previous_checkins[:failure_issue_threshold]` occurs before reverse operation, taking most recent N check-ins instead of oldest N check-ins, resulting in examining wrong subset for threshold evaluation",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9821,6 +10055,32 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Mutable default argument in dataclass field - using a mutable object as default value for timestamp field shares state across instances, causing subtle data corruption bugs",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "to_dict() returns a datetime object for the queued field - if this dict is passed as task kwargs to apply_async(), JSON serialization will fail since datetime is not JSON-serializable by default",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Method name typo: test_from_dict_inalid_data is missing a letter and should be test_from_dict_invalid_data - the test may not be discovered by test runners that filter by name pattern",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Method named 'empty_array' but tests an empty dict - test name does not match what is being tested, making the test suite misleading and harder to maintain",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
       }
     ]
   },
@@ -10642,6 +10902,14 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "queue.shutdown() with 'immediate=False' parameter may not exist in the standard Python queue.Queue module - calling a non-existent method will raise AttributeError at runtime",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
       }
     ]
   },
@@ -12012,6 +12280,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "OptimizedCursorPaginator negative-offset branch slices QuerySet with a negative start index - Django QuerySets do not support negative indexing and will raise AssertionError",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "BasePaginator negative-offset branch slices QuerySet with a negative start index - Django raises AssertionError when negative slice indices are used on QuerySets",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_item_key applies floor and ceil to a datetime key when order_by is -datetime - math.floor and math.ceil raise TypeError when given a datetime object instead of a number",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Span with span_id='b'*16 has parent_span_id=None but is_segment_span=True, while other spans reference 'b'*16 as their parent, creating inconsistent parent-child relationship",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dictionary comprehension uses span.payload as key, but span.payload is bytes which is not hashable and cannot be used as a Redis hash key",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -13169,6 +13469,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "sample_rate = 0.0 is falsy in Python - the condition if client_sample_rate evaluates to False for 0.0, silently skipping the zero sample rate case",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Python's built-in hash() is non-deterministic across processes due to PYTHONHASHSEED - cache keys built with hash() will not match across workers, causing cache misses in distributed environments",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Upsampling eligibility check passes the outer dataset instead of the scoped_dataset actually used by the query - when both datasets differ, the eligibility check is performed on wrong data and may incorrectly enable or disable upsampling",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "The condition `if client_sample_rate:` will evaluate to False for the valid sample rate of 0.0, preventing zero sample rates from being set",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -13996,6 +14322,32 @@
       },
       {
         "text": "Stale denial cache on permission grant: When a user's permissions are upgraded after a prior denial (e.g., an admin grants access to an existing resource), the `permDenialCache` entry for that `(name, parent)` will continue to block access for up to `shortCacheTTL` (30 s). The DB is never re-queried while the denial entry lives.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Asymmetric cache trust logic in Check operation: cached permission grants are returned immediately without re-verification, but cache misses always go to the source. An expired or revoked permission may continue to grant access until cache expiry",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "NoopCache implementation always returns cache miss, causing authorization checks to bypass caching entirely and potentially leading to performance degradation that could facilitate DoS attacks on authorization services",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "NoopCache.Get method takes a receiver pointer when it should be a value receiver since the struct has no fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cache key mismatch: setting cache with action 'dashboards:read' but checking with verb 'get' which likely maps to a different action",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -14854,6 +15206,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Potential null reference when github_authenticated_user state is not set - accessing state without checking existence can raise KeyError or AttributeError",
+        "path": "src/sentry/integrations/github/webhooks.py",
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "OAuth state uses static pipeline.signature instead of per-request random nonce, allowing CSRF attacks on the OAuth callback flow",
+        "path": "src/sentry/integrations/github/webhooks.py",
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Missing key existence check before accessing integration.metadata[sender][login] - accessing nested dict key 'sender' without guard will raise KeyError when sender is absent",
+        "path": "src/sentry/integrations/github/webhooks.py",
+        "line": null,
+        "source": "logicbug_added"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -15426,6 +15798,32 @@
       },
       {
         "text": "removeAll() skips login cache invalidation - does not call registerIDPLoginInvalidation or invalidate IDP_LOGIN_SUFFIX keys, leaving stale IdentityProviderListQuery entries in the cache pointing at IDP IDs that no longer exist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Recursive caching call uses session instead of delegate - the cache method calls session's method which re-enters caching, causing infinite recursion or incorrect cache behavior",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Cleanup reference uses incorrect alias - should be 'idp-alias-' + i but uses 'alias', resulting in cleanup targeting wrong identity provider configuration",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Stream.of(values()).map(LoginFilter::getFilter).reduce(Predicate::and).get() will throw NoSuchElementException if values() returns an empty array",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential null pointer exception when this.organization is null but this.organization.getId() is called",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -16115,6 +16513,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Dead code: NewInMemoryDB().RunCommands and db.QueryFramesInto always return \"not implemented\" - these exported methods are unusable; either implement them or remove them to avoid confusion",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Function always returns false regardless of feature flag state due to inverted logic and incorrect control flow",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing return statement after error assignment - execution continues after logging error and setting rsp.Error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -16557,6 +16975,32 @@
     "greptile-v4-1": [
       {
         "text": "Missing double-check under write lock: After acquiring the write lock, the code never re-reads entryPointAssetsCache before doing the expensive work. Goroutines that raced past the early-return check will each take the write lock in turn and redo the full file/CDN read, causing redundant work at startup.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Critical cache corruption: entryPointAssetsCache is unconditionally overwritten with the fetch result even when the fetch returns an error - a failed fetch will replace valid cached data with an error value",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Incomplete double-checked locking for caching: cache is checked without the lock, then locked to set, but no second check after acquiring lock - concurrent goroutines can both see nil and both fetch the assets",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Race condition: after releasing RLock and before acquiring Lock, another goroutine could modify entryPointAssetsCache, causing the cached value 'ret' to become stale or the cache state to change",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential null pointer dereference: 'ret' captures entryPointAssetsCache under RLock but could be nil, and is returned without validation when cfg.Env != setting.Dev",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -17509,6 +17953,20 @@
       },
       {
         "text": "Logging all IDs with 'ids', ids in every batch log call produces very large log entries at scale - with batch size up to 32,767, a single log entry could contain tens of thousands of int64 values",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Ticker is never stopped, causing a goroutine leak when the function returns",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using log.Error() instead of log.Debug() or log.Info() for normal operational logging during cleanup process",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -18953,6 +19411,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Bug: recordLegacyDuration is called when storage operation fails but the correct function to call for storage failures is recordStorageDuration - wrong metric is being recorded on error path",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Context created with d.Log instead of the log variable that was initialized with additional context values - log entries will be missing the name, kind, and method fields",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Inconsistency: metrics recorded using name instead of options.Kind - other methods in this file use options.Kind for metric dimensions, causing this method to emit metrics with a different label format",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Variable 'l' is declared as nil and never assigned a value, but is used to initialize legacyStoreMock",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Variable 's' is declared as nil and never assigned a value, but is used to initialize storageMock",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -20098,6 +20588,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "RuleActionsButtons is invoked with only promRule argument but SilenceGrafanaRuleDrawer inside requires a Grafana Ruler rule - passing only a Prometheus rule will cause missing prop error or incorrect drawer behavior",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "GrafanaRuleListItem rendered in a list is missing the required React key prop - missing key causes React reconciliation issues when list order changes, leading to incorrect DOM updates",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Redundant type check 'rule && rule.type === PromRuleType.Alerting' after prometheusRuleType.grafana.alertingRule(rule) already verified this condition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Function calls prometheusRuleType.grafana.rule() but uses result in boolean context without handling potential undefined/null return values",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -20681,6 +21197,20 @@
       },
       {
         "text": "Test asserts call count (toHaveBeenCalledTimes(5)) which encodes the multi-pass symptom rather than the intended behavior - any future optimization removing redundant calls will break the test even though behavior improves. Should assert what the query looks like after interpolation instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Expected expression includes regex pattern '20|10' but mock data returns string values that would be sorted as ['1', '10', '2', '20', '3'], making the first two values '1' and '10' instead of the expected '20' and '10'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Template variables are applied to filtered queries but the original query objects may be mutated, potentially affecting other parts of the application that reference the same query objects",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -21764,6 +22294,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Race condition: multiple concurrent requests can simultaneously pass the device count check and create devices beyond the limit - there is no atomic check-and-increment to prevent concurrent overwrites",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Type error: dbSession.Exec(args...) spreads a []interface{} where the first element is the query string, but Exec expects the query as a separate first argument - this will panic at runtime",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Anonymous authentication now fails entirely when ErrDeviceLimitReached - previously device tagging was asynchronous and non-blocking, now it blocks authentication for users over the device limit",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Error from TagDevice is returned directly when it's ErrDeviceLimitReached, but other errors are only logged as warnings and authentication continues, creating inconsistent error handling where some failures block authentication while others silently proceed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQL injection vulnerability in updateDevice function - query string is concatenated with user-controlled parameters and passed to Exec without proper parameter binding",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -22451,6 +23013,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Thread-safety issue with lazy @loaded_locales - multiple threads can simultaneously check and set the instance variable without synchronization, causing duplicate locale loading or data corruption",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Race condition in ensure_loaded! method - @loaded_locales is initialized and checked in separate operations without synchronization",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Object.send bypasses method visibility (private/protected) and can invoke any method including dangerous ones",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent locale loading logic - translate method duplicates the loaded check from ensure_loaded! but doesn't use ensure_loaded! method",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -23007,6 +23595,26 @@
     "greptile-v4-1": [
       {
         "text": "TestLogger.FromContext returns a new instance with zero counters instead of returning the existing instance (f), which means log calls routed through FromContext will never appear on the original TestLogger, causing future tests that check log call counts to silently fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "ContextualLoggerMiddleware methods (QueryData, CallResource, CheckHealth, CollectMetrics) will panic when passed a nil request - dereferencing nil pointer before nil check causes runtime panic",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "FromContext method creates a new TestLogger instance instead of returning the current instance, losing all accumulated test data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Type assertion to *log.ConcreteLogger without checking if the returned logger is nil, which could cause a panic when accessing methods on a nil pointer",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -24774,6 +25382,38 @@
       },
       {
         "text": "String#replace only replaces first underscore: using non-regex form of replace on type like 'my_embedded_host' results in 'my-embedded_host', missing ADMIN_MODELS lookup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "NoMethodError in EmbeddableHost before_validation callback - calling a method on a nil object before validation will raise NoMethodError and prevent record from being saved",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Migration uses raw SQL to insert embeddable_hosts rows - any existing values containing http:// or https:// scheme prefixes will be duplicated with different formats, creating data inconsistency",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "EmbeddableHostsController update and destroy methods do not validate record existence - EmbeddableHost.where(id: params[:id]).first returns nil when record not found, calling update or destroy on nil raises NoMethodError",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "record_for_host compares lower(host) = ? but does not normalize the parameter case - mixed-case referer hosts like Example.COM will fail to match even though they are equivalent",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Potential NoMethodError on nil - value may be nil from hash lookup or safe navigation, calling methods on nil will raise exception",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -27154,6 +27794,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "findMembers() is now asynchronous and its result is not awaited - the controller returns before member data is available, causing the response to contain empty or stale member information",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Capping next offset at user_count produces empty page when total equals limit - offset equals total, causing the next page to return 0 results when there should be a final page",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "HTTP method mismatch: remove_member test uses PUT but the remove_member controller action expects DELETE - test will always fail with 404 or 405",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "find_group method can return nil from Group.find_by, then guardian.ensure_can_see!(nil) will be called on a nil object",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential NoMethodError on nil - value may be nil from hash lookup or safe navigation, and calling methods on nil will raise an exception",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -28026,6 +28698,38 @@
       },
       {
         "text": "Missing newline at end of file which will cause noisy diffs and may trigger linter warnings",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "BlockedEmail.should_block_email? has side effects during a read operation - it updates statistics even when only checking whether an email should be blocked, causing unexpected DB writes on reads",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Password length validation uses incorrect condition that allows nil passwords to pass when @password_required is false",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition in should_block? method - multiple concurrent requests for the same email could create inconsistent match_count values due to read-modify-write operation without proper locking",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Method doesn't handle nil or empty email values, will cause NoMethodError when calling =~ on nil",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing assignment operator (=) for action_type attribute in Fabricator definition",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -29638,6 +30342,26 @@
       },
       {
         "text": "Sibling-subdomain case (Case 2 elsif branch) is untested - the branch handling hosts with same number of segments and more than two has no spec coverage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "include_website_name method is missing the required ? suffix - Rails serializers expect include_ conditional methods to end with ? otherwise the attribute is always serialized",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Logic error in subdomain comparison - when website domain is 'example.com' and current hostname is 'forums.example.com', the test expects 'example.com/user' but the logic should likely treat the subdomain as different from the parent domain",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "URI parsing is called twice on the same website string without caching, and the second call lacks error handling that could cause unhandled exceptions",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -31723,6 +32447,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "postMessage targetOrigin should be the origin (scheme+host+port), not the full referrer URL - using the full URL causes the message to be silently dropped by the browser",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "X-Frame-Options set to ALLOWALL completely disables clickjacking protection - referer header validation can be spoofed, leaving the endpoint vulnerable to iframe-based attacks",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "ERB block closes with \"end if\" which is invalid Ruby ERB syntax - this will raise a SyntaxError at render time; it should be \"end\" to close the if block",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Race condition in Redis throttling logic - another process can set key between setnx and expire calls, causing expire to be lost and key to persist indefinitely",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Transaction block does not handle the case where PostCreator.create fails but doesn't raise an exception",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -32970,6 +33726,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "The downsize method is defined twice - the second definition overrides the first, causing dead code and potentially breaking behavior that depended on the original two-argument signature",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Hardcoding maxSizeKB = 10 * 1024 ignores Discourse.SiteSettings max_type_size_kb - client-side limit can diverge from server-side configuration, allowing uploads that exceed the server limit",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Passing 80% as dimensions to gifsicle fails for animated GIFs - the animated path requires absolute pixel dimensions, not percentages, causing animated thumbnail generation to fail",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Image downsizing loop can run indefinitely if OptimizedImage.downsize fails to reduce file size, creating an infinite loop condition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "tempfile.size is called without checking if tempfile is nil, which will raise NoMethodError if file download failed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -34052,6 +34840,38 @@
       },
       {
         "text": "List-Unsubscribe header omits the new per-topic URL - The header still only advertises user_preferences_url instead of including the new per-topic unsubscribe URL",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Typo in property name: 'stopNotificiationsText' should be 'stopNotificationsText' (missing 'n' in Notifications) - the property will never be found causing silent undefined access",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Race condition: TopicUser.change is called without checking if the current post number is actually newer than the existing last_emailed_post_number",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logic assumes TopicUser record exists but find_by can return nil, leading to NoMethodError on nil object",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential variable name typo: code appears to reference 'topi' instead of 'topic_id' in MessageBus.publish call",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Route 't/:topic_id/summary' will never be reached because it's defined after 't/:slug/:topic_id/summary' route, and Rails matches routes in order",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -35252,6 +36072,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "updateManyByCredentialId called with empty data object {} - Prisma @updatedAt decorator only fires when the record has actual field changes, so the updatedAt timestamp will not be updated on cache invalidation",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "sed command uses macOS-specific syntax with empty string after -i flag, will fail on Linux systems",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition potential - if cache statuses are updated between the getCacheStatusByCredentialIds call and the map creation, the cacheStatusMap may contain stale data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "findUniqueOrThrow method uses SelectedCalendarWhereInput instead of SelectedCalendarWhereUniqueInput, which will cause a type error since findUniqueOrThrow requires unique identifiers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteCacheMutation is called with credentialId but the mutation expects a different parameter structure based on the trpc endpoint name 'deleteCache'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -36304,6 +37156,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Comparison using === instead of isSame() for Dayjs objects will always be false since they are different object instances",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Variable i is initialized to -1 but the code is incomplete - this suggests a loop that may have off-by-one errors when incrementing/accessing array elements",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Assertion expects results for plus2DateString but the time range query spans from plus1DateString to plus2DateString, potentially missing or incorrectly filtering results",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "startTime calculation duplicates the same dayjs computation twice instead of reusing the result, causing unnecessary work and potential inconsistency",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "endTime calculation duplicates the same dayjs computation twice instead of reusing the result, causing unnecessary work and potential inconsistency",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -37007,6 +37891,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "scheduleSMSReminders.ts deletion logic incorrectly deletes non-SMS workflow reminders (Email, WhatsApp) that share the same workflow - the filter condition is too broad and removes reminders of unintended types",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "retryCount reads a possibly stale value with reminder.retryCount + 1 - concurrent requests can both increment from the same base, losing increments; use atomic increment via Prisma update",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "OR condition deletes SMS reminders with retryCount > 1, conflicting with retry logic that increments retryCount on failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using lte (less than or equal) with current date will delete SMS reminders scheduled for exactly the current time, preventing them from being sent if the handler runs at the exact scheduled moment",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Duplicate retry count increment logic - retryCount is incremented both in the 'else' block for failed SMS and in the catch block for exceptions, potentially double-counting failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/22345": {
@@ -37626,6 +38542,32 @@
       },
       {
         "text": "Behavioral change when team has no members: buildTeamAuthorizationCondition now omits the isTeamBooking = false branch when userIdsFromTeam is empty, which is a silent change from the old implementation that always included both OR arms, and this edge case has no test coverage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Logic error: fetching userIdsFromOrg only when teamsFromOrg.length > 0 excludes org-level members for organizations without child teams - org members not in any team will be incorrectly excluded from results",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Logic flaw in condition combining - if both authConditions and filterConditions are falsy, returns NOTHING_CONDITION which will exclude all results",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Constructor accepts InsightsBookingServicePublicOptions but assigns to InsightsBookingServiceOptions type field, causing type mismatch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing await for async cleanup operation - test may complete before cleanup finishes, potentially causing interference with subsequent tests",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -39725,6 +40667,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "parseRefreshTokenResponse returns a Zod safeParse result object ({ success, data, error }) not the credential object - callers that persist this directly will store the wrapper object instead of the token data",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "When sync endpoint is used, res is a fetch Response object and res.data does not exist - accessing res?.data will return undefined and token.access_token will be undefined, silently breaking token refresh",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "refreshFunction helper returns a fetch Response object when the sync endpoint path is used, but callers expect a credential object with access_token - res.data does not exist on Response, returning undefined and breaking token refresh silently",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Invalid Zod schema syntax - `z.string().toString()` creates a string literal 'string' as a key, not a dynamic string key pattern",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Incorrect expiry date calculation - adding seconds to milliseconds timestamp",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -41029,6 +42003,38 @@
       },
       {
         "text": "Missing method filter in remindersToCancel query - fetches all cancelled WorkflowReminder rows regardless of method, which could cause SendGrid batch-cancel API to be called with Twilio SID if SMS path changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "deleteScheduledEmailReminder and deleteScheduledSMSReminder are async functions called without await inside forEach loops - reminder deletions fire-and-forget, errors are silently lost, and cleanup may be incomplete",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "forEach loop calls deleteScheduledEmailReminder and deleteScheduledSMSReminder without awaiting them, causing potential race conditions or silent failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition in onChange handler - form.getValues() may not reflect current input value due to asynchronous form updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Database delete operation is not awaited but function continues execution, potentially causing race conditions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteScheduledEmailReminder is called with a third parameter 'true' but deleteScheduledSMSReminder is called without it, suggesting inconsistent API usage",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -42457,6 +43463,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Case sensitivity bypass in email blacklist: comparison does not normalize email case, allowing BLOCKED@example.com to bypass a blacklist entry for blocked@example.com",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Email sender called with original guests list - existing attendees included in the input are treated as new invitees, sending duplicate invitations to guests who are already attending",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "uniqueGuests filters out existing attendees and blacklisted emails but does not deduplicate within the input itself - createMany can insert duplicate guest records if the same email appears multiple times",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Incorrect validation condition checks if array length is 0, but initial state contains an empty string [\"\"], so length will be 1, not 0",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logic error using AND (&&) instead of OR (||) to check if user is team admin OR owner - currently requires user to be BOTH admin AND owner, which is incorrect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -43747,6 +44785,38 @@
       },
       {
         "text": "resetState doesn't clear backupCodes or backupCodesUrl - if user cancels mid-flow, stale values remain in state and previous object URL isn't revoked",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Race condition in backup code validation: backup codes are decrypted and mutated in memory before being written back - two concurrent login requests can both read the same unused code and both succeed, allowing code reuse",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Backup code validation is case-sensitive due to indexOf() - users entering uppercase hex characters will fail validation even though backup codes should be case-insensitive",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Error message says 'backup code login' but this endpoint disables 2FA - the message incorrectly describes the action, confusing users about what operation is being performed",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Race condition: isDisabling state is not reset if the API call fails or throws an exception",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition: clicking download button and immediately awaiting the download event without ensuring the UI is ready for interaction",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -45465,6 +46535,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Logic inversion in organization creation: slug property is conditionally set when IS_TEAM_BILLING_ENABLED is true instead of false - organizations created without billing enabled will be missing the slug field",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Calendar interface now requires createEvent(event, credentialId) but implementations like Lark and Office365 still declare createEvent(event) without credentialId - TypeScript interface mismatch causes runtime errors",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "String.split() always returns an array, so the condition 'Array.isArray(calendar)' will always be true when mainHostDestinationCalendar exists, making the else branch unreachable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Array destructuring assumes evt.destinationCalendar has at least one element, but fallback array is empty which makes mainHostDestinationCalendar undefined",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Variable 'calendar' is assigned a string literal 'calendar' when mainHostDestinationCalendar is falsy, but then checked with Array.isArray(), creating a type inconsistency",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -46635,6 +47737,38 @@
       },
       {
         "text": "packages/trpc/server/routers/viewer/bookings.tsx uses forEach(async ...) for booking ref deletions - calendar and video event deletions are not awaited, errors are silently lost, and subsequent code runs before deletions complete",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Critical: forEach with async callbacks causes fire-and-forget execution - calendar and video event deletions run concurrently without coordination, errors are silently swallowed, and the function may return before operations complete",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Using async callback in forEach - the async functions will not be awaited and will execute concurrently without proper error handling or completion tracking",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "forEach with async callback creates fire-and-forget promises that are not awaited, potentially causing race conditions and unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "reduce function can concatenate undefined values into the array when getAvailability() returns undefined, creating an array with undefined elements",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Template literal displays [object Object] instead of meaningful app identifier when paymentApp is an object",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -47835,6 +48969,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Translation file messages_lt.properties contains Italian text instead of Lithuanian - the locale file has wrong language content, causing Lithuanian users to see Italian interface text",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Simplified Chinese locale file zh_CN uses Traditional Chinese terms in totpStep1 - incorrect character set for the locale, showing Traditional Chinese to Simplified Chinese users",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Method named 'santizeAnchors' should be 'sanitizeAnchors' - missing 'i' in the method name is a typo that may prevent callers from finding the method and cause runtime errors",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Regular expression in replaceAll uses unescaped backslashes that will be interpreted as escape sequences, causing incorrect pattern matching",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -48814,6 +49974,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Wrong parameter in null check: method checks grantType for null instead of rawTokenId, causing the null guard to be ineffective and allowing NullPointerException when rawTokenId is null",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "In isAccessTokenId method, the substring check and equality check for grant shortcut appear inverted - the logic always returns false for valid access tokens",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Catching generic RuntimeException is too broad - the implementation throws IllegalArgumentException specifically; catching only RuntimeException hides the specific exception type and makes error handling less precise",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Variable 'accessToken' is used but 'token' is the parameter name in scope - appears to be using an undefined variable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Map inversion creates duplicate values when multiple keys map to the same value, with 'UNKNOWN' constant creating circular mapping that overwrites other entries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -49721,6 +50913,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "codesheriff": [
+      {
+        "text": "Optional.get() called directly on Optional returned by RecoveryAuthnCodesUtils.getCredential() without calling isPresent() first - will throw NoSuchElementException when credential is absent",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Unsafe cast from AuthenticatorFactory to ConfigurableAuthenticatorFactory without type checking",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unsafe cast from FormActionFactory to ConfigurableAuthenticatorFactory without type checking",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Null pointer exception vulnerability - calling .get() on Optional without checking if present, could crash authentication flow when no recovery credential exists",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Type confusion vulnerability in getConfigurableAuthenticatorFactory method - unsafe casting of different factory types without proper validation could lead to ClassCastException or bypass of authentication checks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
@@ -50234,6 +51458,14 @@
       },
       {
         "text": "When updateStrategy is null, createInitialDeployment returns early before setting ROLLING_UPDATES on the FeatureSpec, but testCacheMaxCount(null) relies on rolling-update behavior - this will break if the operator adds a feature check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Using picocli.exit() instead of CommandLine.ExitCode or proper exit mechanism - calls static method on picocli class rather than intended exit functionality",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -51094,6 +52326,38 @@
       },
       {
         "text": "getResourceName doesn't handle the CLIENTS resource type - the method falls through to resource.getDisplayName() which is null for individually-created client resources, producing null/UUID display names",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "codesheriff": [
+      {
+        "text": "Feature flag inconsistency causes orphaned permissions: AdminPermissions event listener cleans up permissions when feature is disabled, but another code path creates permissions without checking the flag, leaving orphaned permissions",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "hasPermission uses findByName with wrong arguments - wrong resource name convention causes resource lookup to fail, making permission checks incorrectly return false for valid permissions",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Feature flag inconsistency causes orphaned permissions: AdminPermissions event listener cleans up permissions when feature is disabled but another code path creates permissions without checking the flag",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "In getClientsWithPermission, iterating CLIENTS_RESOURCE_TYPE resources and returning resource IDs returns the wrong set - should return client IDs associated with those resources, not the resource IDs themselves",
+        "path": null,
+        "line": null,
+        "source": "logicbug_added"
+      },
+      {
+        "text": "Race condition in lazy initialization where multiple threads can simultaneously check 'clientPermissions != null' and both create new instances, causing the first instance to be lost",
         "path": null,
         "line": null,
         "source": "extracted"

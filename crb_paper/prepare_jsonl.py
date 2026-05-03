@@ -58,17 +58,28 @@ EXCLUDE_CHATBOTS = {"coderabbitai[bot]"}
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--mode", choices=["pr-level", "hunk-level"], default="pr-level",
+                   help="Prompt shape. `pr-level` = whole-PR diff prompts (with "
+                        "tokenizer-aware long-prompt drop). `hunk-level` = "
+                        "per-(PR, bot, file) prompts scoped to the file's hunk.")
     p.add_argument("--limit", type=int, default=150_000,
                    help="Max (PR × bot) rows to fetch. 0 = no limit (~660k).")
     p.add_argument("--max-pairs", type=int, default=5_000,
                    help="Max DPO pairs (post-balance). 0 = keep all.")
+    p.add_argument("--max-prompt-tokens", type=int, default=28_000,
+                   help="Drop rows whose prompt exceeds this many BPE tokens. "
+                        "Default 28K leaves ~4K headroom under Qwen 2.5's 32K context.")
     p.add_argument("--cutoff", type=lambda s: date.fromisoformat(s),
                    default=DEFAULT_CUTOFF,
                    help="Train/val cutoff on bot_reviewed_at (YYYY-MM-DD).")
     p.add_argument("--output-dir", type=Path, required=True,
-                   help="Output directory for the 4 JSONL files.")
+                   help="Output directory for the 5 JSONL files.")
     p.add_argument("--seed", type=int, default=0xC0DECAFE,
                    help="Sampling seed (deterministic).")
+    p.add_argument("--len-fn", choices=["whitespace", "qwen"], default="qwen",
+                   help="Length function for the long-prompt filter. `qwen` uses "
+                        "the real Qwen BPE tokenizer (needs `transformers`). "
+                        "`whitespace` is a fallback that under-counts by 2-3×.")
     return p.parse_args()
 
 
@@ -114,30 +125,28 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
             f.write("\n")
 
 
-def build_eval_rows(silver_rows: list[dict], cutoff: date) -> list[dict]:
-    """Build per-(PR, bot) eval rows from the post-cutoff silver-filtered
-    set. Each row carries the prompt + gold `human_actions` for
-    `crb_paper/evaluate.py` to score sampled suggestions against."""
+def _parse_human_actions(raw) -> list[dict]:
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw) if isinstance(raw, str) else raw
+    except json.JSONDecodeError:
+        return []
+    if isinstance(parsed, dict):
+        return parsed.get("actions") or []
+    if isinstance(parsed, list):
+        return parsed
+    return []
+
+
+def build_eval_rows_pr_level(silver_rows: list[dict], cutoff: date) -> list[dict]:
+    """PR-level eval rows: per-(PR, bot), prompt = whole-PR diff."""
     out: list[dict] = []
     for r in silver_rows:
         d = _row_date(r)
         if d is None or d <= cutoff:
-            continue  # train side; skip
-        # Parse human_actions JSON. The judge stores it as either a JSON
-        # list or a `{"actions": [...]}` envelope (see llm/schemas.py).
-        raw = r.get("human_actions")
-        if not raw:
             continue
-        try:
-            parsed = json.loads(raw) if isinstance(raw, str) else raw
-        except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, dict):
-            actions = parsed.get("actions") or []
-        elif isinstance(parsed, list):
-            actions = parsed
-        else:
-            actions = []
+        actions = _parse_human_actions(r.get("human_actions"))
         if not actions:
             continue
         out.append({
@@ -148,6 +157,41 @@ def build_eval_rows(silver_rows: list[dict], cutoff: date) -> list[dict]:
             "prompt": pairs.build_prompt(r.get("pr_title", ""), r.get("diff", "")),
             "gold_human_actions": actions,
         })
+    return out
+
+
+def build_eval_rows_hunk_level(silver_rows: list[dict], cutoff: date) -> list[dict]:
+    """Hunk-level eval rows: per-(PR, bot, file), prompt = the file's hunk.
+
+    Gold actions are filtered to those that touch the same file. PRs/bots
+    where the hunk can't be resolved are skipped."""
+    out: list[dict] = []
+    for r in silver_rows:
+        d = _row_date(r)
+        if d is None or d <= cutoff:
+            continue
+        actions = _parse_human_actions(r.get("human_actions"))
+        if not actions:
+            continue
+        # Group actions by file_path so we can emit one eval row per file.
+        actions_by_file: dict[str, list[dict]] = {}
+        for a in actions:
+            fp = a.get("file_path")
+            if fp:
+                actions_by_file.setdefault(fp, []).append(a)
+        for file_path, file_actions in actions_by_file.items():
+            hunk = pairs.extract_hunk_around(r.get("commit_details"), file_path)
+            if not hunk:
+                continue
+            out.append({
+                "pr_id": r["pr_id"],
+                "repo_name": r["repo_name"],
+                "chatbot": r["chatbot"],
+                "file_path": file_path,
+                "bot_reviewed_at": _isoformat(r.get("bot_reviewed_at")),
+                "prompt": pairs.build_hunk_prompt(file_path, hunk),
+                "gold_human_actions": file_actions,
+            })
     return out
 
 
@@ -166,6 +210,17 @@ def _isoformat(ts) -> Optional[str]:
 def main() -> None:
     args = parse_args()
 
+    print(f"mode = {args.mode}, len_fn = {args.len_fn}, "
+          f"max_prompt_tokens = {args.max_prompt_tokens:,}")
+
+    # 1. Resolve the length function (real tokenizer or whitespace fallback).
+    if args.len_fn == "qwen":
+        print("loading Qwen tokenizer (one-time)...")
+        len_fn = pairs.make_qwen_len_fn()
+    else:
+        len_fn = pairs.whitespace_len
+
+    # 2. Fetch
     print("connecting to Cloud SQL...")
     conn = db.connect_readonly()
     try:
@@ -177,23 +232,39 @@ def main() -> None:
         conn.close()
     print(f"  fetched {len(raw):,} rows")
 
+    # 3. CodeRabbit drop + silver filter
     after_cr = [r for r in raw if r["github_username"] not in EXCLUDE_CHATBOTS]
     print(f"  after CodeRabbit drop: {len(after_cr):,}")
-
     print("applying silver-preset filters...")
     silver = filters.apply_filters(
         after_cr, filters.FilterParams.silver(), ignored_chatbots=ignored,
     )
     print(f"  after silver: {len(silver):,}")
 
-    print("building SFT rows...")
-    sft_all = pairs.build_sft_dataset(silver)
-    print(f"  SFT rows: {len(sft_all):,}")
+    # 4. Build SFT + DPO with the mode-appropriate functions.
+    config = pairs.PairConfig(max_prompt_tokens=args.max_prompt_tokens)
+    if args.mode == "pr-level":
+        print("building SFT rows (PR-level prompts)...")
+        sft_all = pairs.build_sft_dataset(
+            silver, max_prompt_tokens=args.max_prompt_tokens, len_fn=len_fn,
+        )
+        print(f"  SFT rows: {len(sft_all):,}")
+        print("building DPO pairs (PR-level prompts, within-bot pairing)...")
+        dpo_all = pairs.build_dpo_dataset(silver, config=config, len_fn=len_fn)
+        print(f"  DPO pairs: {len(dpo_all):,}")
+        eval_rows = build_eval_rows_pr_level(silver, args.cutoff)
+    else:  # hunk-level
+        print("building SFT rows (hunk-level prompts)...")
+        sft_all = pairs.build_hunk_sft_dataset(
+            silver, max_prompt_tokens=args.max_prompt_tokens, len_fn=len_fn,
+        )
+        print(f"  SFT rows: {len(sft_all):,}")
+        print("building DPO pairs (hunk-level prompts, within-(PR,bot,file) pairing)...")
+        dpo_all = pairs.build_hunk_dpo_dataset(silver, config=config, len_fn=len_fn)
+        print(f"  DPO pairs: {len(dpo_all):,}")
+        eval_rows = build_eval_rows_hunk_level(silver, args.cutoff)
 
-    print("building DPO pairs...")
-    dpo_all = pairs.build_dpo_dataset(silver)
-    print(f"  DPO pairs: {len(dpo_all):,}")
-
+    # 5. Optional cap on DPO pairs
     if args.max_pairs > 0 and len(dpo_all) > args.max_pairs:
         rng = random.Random(args.seed)
         dpo_all = list(dpo_all)
@@ -201,16 +272,15 @@ def main() -> None:
         dpo_all = dpo_all[: args.max_pairs]
         print(f"  DPO pairs after --max-pairs sample: {len(dpo_all):,}")
 
+    # 6. Train/val split
     sft_train, sft_val = split_rows(sft_all, args.cutoff)
     dpo_train, dpo_val = split_rows(dpo_all, args.cutoff)
     print(f"split at {args.cutoff.isoformat()}:")
     print(f"  SFT  train={len(sft_train):,}  val={len(sft_val):,}")
     print(f"  DPO  train={len(dpo_train):,}  val={len(dpo_val):,}")
-
-    print("building eval rows (post-cutoff PRs with gold human_actions)...")
-    eval_rows = build_eval_rows(silver, args.cutoff)
     print(f"  eval rows: {len(eval_rows):,}")
 
+    # 7. Write
     out = args.output_dir
     write_jsonl(out / "sft_train.jsonl", sft_train)
     write_jsonl(out / "sft_val.jsonl", sft_val)

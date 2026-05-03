@@ -7,17 +7,27 @@ title. The accepted/rejected status of each suggestion comes from
 `llm_analyses.matching_results` (the judge's decision on whether the
 human acted on it).
 
-Pair construction is **within-bot** — both sides of every DPO pair come
-from the same bot on the same PR. See `README.md` for the rationale.
+This module supports two prompt shapes (selected at dataset prep time
+via `prepare_jsonl.py --mode`):
 
-Pure functions only. The DB connection layer is separate (will be
-added when wiring step 3 to the live Cloud SQL).
+  * **PR-level**     — prompt = the whole PR's unified diff. Within-bot
+                       DPO pairs (chosen and rejected from the same
+                       PR×bot, possibly different files).
+  * **Hunk-level**   — prompt = just the changed hunk the suggestion
+                       anchors to (via `file_path` + `line_number`).
+                       Within-(PR, bot, file) DPO pairs.
+
+Both shapes share the same SFT/DPO trainers and eval harness. See
+`crb_paper/CHANGELOG.md` for why both exist.
+
+Pure functions only.
 """
 
 from __future__ import annotations
 
 import json
 import random
+import re
 import statistics
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -26,7 +36,7 @@ from typing import Callable, Iterable, Optional
 
 
 # ---------------------------------------------------------------------------
-# Prompt template (matches "I/O contract" section of README)
+# Prompt templates
 # ---------------------------------------------------------------------------
 
 PROMPT_TEMPLATE = (
@@ -38,23 +48,143 @@ PROMPT_TEMPLATE = (
     "{diff}\n"
 )
 
+HUNK_PROMPT_TEMPLATE = (
+    "You are reviewing a code change. Identify one specific issue with "
+    "the change below and describe it in 1–3 sentences.\n"
+    "\n"
+    "File: {file_path}\n"
+    "Diff:\n"
+    "{hunk}\n"
+)
+
 
 def build_prompt(pr_title: str, diff: str) -> str:
-    """Format the SFT/DPO prompt for one PR."""
+    """Format the PR-level SFT/DPO prompt for one PR."""
     return PROMPT_TEMPLATE.format(pr_title=pr_title or "", diff=diff or "")
 
 
+def build_hunk_prompt(file_path: str, hunk: str) -> str:
+    """Format the hunk-level SFT/DPO prompt — scoped to one file's
+    changed hunk(s) instead of the whole PR diff."""
+    return HUNK_PROMPT_TEMPLATE.format(
+        file_path=file_path or "<unknown>", hunk=hunk or "",
+    )
+
+
 # ---------------------------------------------------------------------------
-# Tokenization (pluggable — default = whitespace split, no deps)
+# Hunk extraction
+# ---------------------------------------------------------------------------
+
+# Matches one `@@ -a,b +c,d @@` header. Group 1 = new-file start line.
+_HUNK_HEADER_RE = re.compile(r"^@@\s*-\d+(?:,\d+)?\s+\+(\d+)(?:,(\d+))?\s*@@", re.MULTILINE)
+
+
+def _split_hunks(patch: str) -> list[tuple[int, int, str]]:
+    """Split a unified-diff patch (single file's `commit_details[i].files[j].patch`)
+    into individual hunks. Returns `[(new_start, new_length, hunk_text), ...]`
+    where `hunk_text` is the full `@@ ... @@` block including header and body."""
+    if not patch:
+        return []
+    headers = list(_HUNK_HEADER_RE.finditer(patch))
+    out: list[tuple[int, int, str]] = []
+    for i, m in enumerate(headers):
+        start = int(m.group(1))
+        length = int(m.group(2) or 1)
+        body_start = m.start()
+        body_end = headers[i + 1].start() if i + 1 < len(headers) else len(patch)
+        out.append((start, length, patch[body_start:body_end]))
+    return out
+
+
+def extract_hunk_around(
+    commit_details,
+    file_path: str,
+    line_number: Optional[int] = None,
+) -> Optional[str]:
+    """Find the unified-diff hunk in `commit_details` that anchors a
+    suggestion at (`file_path`, `line_number`).
+
+    Strategy:
+      1. Filter `commit_details` to entries touching `file_path`.
+      2. If `line_number` is provided, return the hunk whose new-file
+         line range contains it.
+      3. Otherwise (or if no hunk contains the line), return the
+         longest hunk for that file as a best-effort fallback.
+
+    Returns `None` if the file isn't present in `commit_details`.
+    """
+    if not commit_details:
+        return None
+    if isinstance(commit_details, str):
+        try:
+            commit_details = json.loads(commit_details)
+        except json.JSONDecodeError:
+            return None
+
+    file_patches: list[str] = []
+    for commit in commit_details or []:
+        for f in (commit.get("files") or []):
+            if f.get("filename") == file_path:
+                patch = f.get("patch")
+                if patch:
+                    file_patches.append(patch)
+
+    if not file_patches:
+        return None
+
+    all_hunks: list[tuple[int, int, str]] = []
+    for patch in file_patches:
+        all_hunks.extend(_split_hunks(patch))
+    if not all_hunks:
+        # No `@@` markers — return the raw patch text (rare; binary files etc.)
+        return file_patches[0]
+
+    if line_number is not None:
+        for start, length, body in all_hunks:
+            if start <= line_number < start + max(length, 1):
+                return body
+
+    # Fallback: longest hunk we found for that file.
+    return max(all_hunks, key=lambda h: len(h[2]))[2]
+
+
+# ---------------------------------------------------------------------------
+# Tokenization (pluggable; whitespace default + real-tokenizer factory)
 # ---------------------------------------------------------------------------
 
 LenFn = Callable[[str], int]
 
 
 def whitespace_len(text: str) -> int:
-    """Cheap default tokenizer for testing. Swap for the real Qwen
-    tokenizer (`AutoTokenizer.from_pretrained(...)`) before training."""
+    """Cheap default tokenizer for testing. Under-counts BPE by ~2-3×
+    for code-heavy text — use `make_qwen_len_fn()` for the real cap."""
     return len(text.split()) if text else 0
+
+
+def make_qwen_len_fn(
+    model_name: str = "Qwen/Qwen2.5-Coder-7B-Instruct",
+) -> LenFn:
+    """Return a `len_fn` that counts BPE tokens with the real Qwen
+    tokenizer. Loads once and caches; subsequent calls are fast.
+
+    Requires `transformers`. Imports lazily so callers that don't need
+    it (e.g. unit tests on the pure-Python parts) can skip the install.
+    """
+    try:
+        from transformers import AutoTokenizer  # type: ignore[import-not-found]
+    except ImportError as e:
+        raise RuntimeError(
+            "make_qwen_len_fn() needs `transformers` installed. "
+            "pip install transformers"
+        ) from e
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    def _qwen_len(text: str) -> int:
+        if not text:
+            return 0
+        return len(tokenizer(text, add_special_tokens=False)["input_ids"])
+
+    return _qwen_len
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +371,126 @@ def _pair_seed(base: int, row: dict) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Hunk-level per-row generation: SFT rows and DPO pairs
+# ---------------------------------------------------------------------------
+
+def _bucket_by_file(suggestions: list[dict]) -> dict[str, list[dict]]:
+    """Group suggestions by `file_path`. Suggestions without a file_path
+    are dropped (they can't be anchored to a hunk)."""
+    out: dict[str, list[dict]] = defaultdict(list)
+    for s in suggestions:
+        fp = s.get("file_path")
+        if fp:
+            out[fp].append(s)
+    return out
+
+
+def generate_hunk_sft_rows_for_row(
+    row: dict,
+    *,
+    len_fn: LenFn = whitespace_len,
+) -> list[dict]:
+    """One SFT row per (accepted suggestion, anchored hunk) pair.
+
+    Output shape mirrors `generate_sft_rows_for_row` plus a `file_path`
+    bookkeeping field so we can stratify eval by file later."""
+    accepted, _ = split_accepted_rejected(
+        row.get("bot_suggestions"), row.get("matching_results")
+    )
+    bookkeeping = _bookkeeping(row)
+    commit_details = row.get("commit_details")
+    out: list[dict] = []
+    for s in accepted:
+        description = (s.get("description") or "").strip()
+        file_path = s.get("file_path")
+        if not description or not file_path:
+            continue
+        hunk = extract_hunk_around(commit_details, file_path, s.get("line_number"))
+        if not hunk:
+            continue
+        prompt = build_hunk_prompt(file_path, hunk)
+        out.append({
+            **bookkeeping,
+            "file_path": file_path,
+            "prompt": prompt,
+            "response": description,
+            "response_tokens": len_fn(description),
+        })
+    return out
+
+
+def generate_hunk_pairs_for_row(
+    row: dict,
+    *,
+    config: PairConfig = PairConfig(),
+    len_fn: LenFn = whitespace_len,
+) -> list[dict]:
+    """Within-(PR, bot, file) DPO pairs.
+
+    For each file with at least one accepted AND one rejected suggestion
+    from this bot, build a single hunk prompt (the file's hunk) and
+    cross-product the accepted × rejected suggestions about that file.
+    Length-match and per-(PR, bot) cap apply as in PR-level pairing.
+
+    Suggestions without a `file_path` are dropped; suggestions whose
+    file isn't present in `commit_details` are skipped."""
+    accepted, rejected = split_accepted_rejected(
+        row.get("bot_suggestions"), row.get("matching_results")
+    )
+    if not accepted or not rejected:
+        return []
+
+    bookkeeping = _bookkeeping(row)
+    commit_details = row.get("commit_details")
+    accepted_by_file = _bucket_by_file(accepted)
+    rejected_by_file = _bucket_by_file(rejected)
+
+    pairs: list[dict] = []
+    for file_path in accepted_by_file.keys() & rejected_by_file.keys():
+        # Pick one representative line from accepted suggestions to anchor
+        # the hunk (same prompt for all pairs on this file).
+        anchor_line = next(
+            (s.get("line_number") for s in accepted_by_file[file_path]
+             if s.get("line_number") is not None),
+            None,
+        )
+        hunk = extract_hunk_around(commit_details, file_path, anchor_line)
+        if not hunk:
+            continue
+        prompt = build_hunk_prompt(file_path, hunk)
+
+        for a in accepted_by_file[file_path]:
+            a_text = (a.get("description") or "").strip()
+            if not a_text:
+                continue
+            a_tokens = len_fn(a_text)
+            for r in rejected_by_file[file_path]:
+                r_text = (r.get("description") or "").strip()
+                if not r_text:
+                    continue
+                r_tokens = len_fn(r_text)
+                denom = max(a_tokens, r_tokens) or 1
+                if abs(a_tokens - r_tokens) / denom > config.length_tolerance:
+                    continue
+                pairs.append({
+                    **bookkeeping,
+                    "file_path": file_path,
+                    "prompt": prompt,
+                    "chosen": a_text,
+                    "chosen_tokens": a_tokens,
+                    "rejected": r_text,
+                    "rejected_tokens": r_tokens,
+                    "condition": "filtered",
+                })
+
+    if config.max_per_pr_bot is not None and len(pairs) > config.max_per_pr_bot:
+        rng = random.Random(_pair_seed(config.seed, row))
+        rng.shuffle(pairs)
+        pairs = pairs[: config.max_per_pr_bot]
+    return pairs
+
+
+# ---------------------------------------------------------------------------
 # Dataset-level orchestration
 # ---------------------------------------------------------------------------
 
@@ -345,6 +595,47 @@ def build_sft_dataset(
     out: list[dict] = []
     for row in rows:
         out.extend(generate_sft_rows_for_row(row, len_fn=len_fn))
+    if max_prompt_tokens is not None:
+        out = filter_long_prompts(
+            out, max_prompt_tokens=max_prompt_tokens, len_fn=len_fn,
+        )
+    return out
+
+
+def build_hunk_dpo_dataset(
+    rows: list[dict],
+    *,
+    config: PairConfig = PairConfig(),
+    len_fn: LenFn = whitespace_len,
+) -> list[dict]:
+    """End-to-end hunk-level DPO dataset build.
+
+    Same shape as `build_dpo_dataset` but pairs within (PR, bot, file)
+    instead of (PR, bot). Each pair's prompt is the file's hunk
+    (resolved from `commit_details` via `extract_hunk_around`)."""
+    pairs: list[dict] = []
+    for row in rows:
+        pairs.extend(generate_hunk_pairs_for_row(row, config=config, len_fn=len_fn))
+    if config.max_prompt_tokens is not None:
+        pairs = filter_long_prompts(
+            pairs, max_prompt_tokens=config.max_prompt_tokens, len_fn=len_fn,
+        )
+    pairs = balance_by_bot(
+        pairs, quantile=config.bot_balance_quantile, seed=config.seed,
+    )
+    return pairs
+
+
+def build_hunk_sft_dataset(
+    rows: list[dict],
+    *,
+    max_prompt_tokens: Optional[int] = 12_000,
+    len_fn: LenFn = whitespace_len,
+) -> list[dict]:
+    """End-to-end hunk-level SFT dataset build."""
+    out: list[dict] = []
+    for row in rows:
+        out.extend(generate_hunk_sft_rows_for_row(row, len_fn=len_fn))
     if max_prompt_tokens is not None:
         out = filter_long_prompts(
             out, max_prompt_tokens=max_prompt_tokens, len_fn=len_fn,

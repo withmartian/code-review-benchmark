@@ -1,143 +1,138 @@
-# Fine-tuning experiment
+# CRB finetuning experiment
 
-## Goal
+## What this experiment tests
 
-Test whether revealed-preference labels carry real review-quality signal
-that a model can learn and generalize.
+The Code Review Benchmark (CRB) records, for each suggestion an automated
+review tool makes on a PR, whether a human actually acted on it. That
+gives every suggestion a binary label — *accepted* or *ignored* — based
+on what the human did, not on what someone thought the suggestion was
+worth.
 
-## Training data
+We want to know: **does that accepted/ignored label carry real
+information about review quality?** Or is it noise?
 
-- **Format:** within-PR preference pairs (accepted vs. rejected
-  suggestion, same PR, different tools when possible).
-- **Targets:** the judge's extracted suggestion abstractions, not raw
-  bot text.
-- **Hygiene:**
-  - Length-match pairs within ±20% tokens.
-  - Down-sample high-volume tools so no single tool dominates.
+The test is to finetune a small language model on those labels and see
+if it learns something useful. Critically, we also flip the labels and
+finetune again — if the labels carry signal, the flipped run should make
+the model *worse*, not better. That's the negative control that turns a
+vibe into a finding.
 
-## Dataset schemas
+## Setup
 
-Both datasets are emitted as JSONL. Bookkeeping fields (`pr_id`,
-`repo_name`, `pr_created_at`, `chatbot`) are kept on every row so the
-trainer can do the repo-held-out split, the 2026-04-20 date cutoff, and
-the per-tool sanity-check breakdown without re-joining to the DB.
+- **Base model:** `Qwen/Qwen2.5-Coder-7B-Instruct`, finetuned with LoRA
+  adapters (r=8, ~2.5 M trainable params, 0.03 % of total).
+- **Two training stages, in order:**
+  1. **SFT (warm-start)** — supervised finetuning on accepted
+     suggestions. Teaches the model what a "human-actionable" review
+     comment looks like at all.
+  2. **DPO** — preference optimization on (accepted, ignored) pairs.
+     Teaches the model to prefer the kind humans act on.
+- **Held-out split** by repository (not random rows). Trained on PRs
+  with `bot_reviewed_at` ≤ 2026-03-31; everything later is val/eval.
+- **CodeRabbit excluded** (separate compliance reason, not a research
+  choice).
 
-### I/O contract
+## The four ablations
 
-The model is a **single-suggestion generator**. Given a PR diff, it
-produces **one** suggestion in plain text (1–3 sentences). Multi-suggestion
-PR review at inference is built by sampling the model k times per PR
-(k≈5–10, high temperature), deduplicating near-duplicates, and feeding
-the resulting list through the existing CRB matcher for scoring.
+The whole experimental design hinges on running DPO four times with
+different label assignments and comparing.
 
-**Prompt template** (same shape for SFT and DPO; instruction-formatted
-for the chosen instruct base):
-
-    You are reviewing a pull request. Identify one specific issue with
-    the change below and describe it in 1–3 sentences.
-
-    PR title: <title>
-    Diff:
-    <unified diff>
-
-**Output:** plain `description` text only. No JSON. The eval matcher
-already takes plain description strings, so structured output
-(category, severity, file_path, line_number) buys nothing for v1 and
-adds a parsing failure mode.
-
-**Long-diff handling:** drop rows whose tokenized prompt exceeds 12 000
-tokens. Documented as known truncation; revisit if it removes too many
-rows in step 3.
-
-### SFT (warm-start)
-
-One row per accepted suggestion. The model learns "given this diff,
-produce a suggestion that a human would act on."
-
-| Field | Type | Notes |
+| Run | Labels used | Predicted outcome |
 |---|---|---|
-| `pr_id` | int | `prs.id` — for split bookkeeping |
-| `repo_name` | str | drives the repo-held-out split |
-| `pr_created_at` | timestamp | drives the 2026-04-20 train/val cutoff |
-| `chatbot` | str | bot the suggestion came from — for per-tool breakdown and Catapult/CR carveout |
-| `prompt` | str | unified diff (assembled from `prs.commits` patches) |
-| `response` | str | judge-extracted suggestion abstraction (from `llm_analyses.bot_suggestions`, filtered to ones marked accepted in `matching_results`) |
-| `response_tokens` | int | tokenizer length — used for length stratification |
+| **filtered** | Real labels, with the silver-tier quality filters from the CRB paper | Best — model improves over base |
+| **unfiltered** | Real labels, no quality filtering | Worse than `filtered` (validates the filters) |
+| **inverted** | **Flipped** — chosen=ignored, rejected=accepted | **Worse than the base model** — validates the signal |
+| **random** | Within-PR random reassignment | ≈ base model — validates structure |
 
-### DPO (preference pairs)
+If `inverted` makes the model meaningfully worse and `random` doesn't
+move it much, the labels carry signal. That's the headline claim.
 
-One row per within-PR pair. `prompt` is shared; `chosen` and `rejected`
-are two different suggestions on the same PR, one acted on by humans,
-one not. When possible they come from different tools.
+## What the model sees and produces
 
-| Field | Type | Notes |
-|---|---|---|
-| `pr_id` | int | shared by both sides of the pair |
-| `repo_name` | str | repo-held-out split |
-| `pr_created_at` | timestamp | 2026-04-20 cutoff |
-| `prompt` | str | unified diff (same for chosen and rejected) |
-| `chatbot` | str | bot both suggestions came from (within-bot pairs only) |
-| `chosen` | str | accepted suggestion (judge abstraction) |
-| `chosen_tokens` | int | tokenizer length |
-| `rejected` | str | ignored suggestion (judge abstraction) |
-| `rejected_tokens` | int | tokenizer length |
-| `condition` | enum | `filtered` / `unfiltered` / `inverted` / `random` — selects ablation. `inverted` swaps chosen↔rejected; `random` reassigns labels uniformly within-PR. Same row shape across all four. |
+**Input (same template at training and inference):**
 
-Pair construction guarantees:
+```
+You are reviewing a pull request. Identify one specific issue with the
+change below and describe it in 1–3 sentences.
 
-- `chosen` and `rejected` are from the **same** `pr_id` **and the
-  same bot** (within-bot pairs only). Two suggestions on the same
-  PR×bot — one acted on, one ignored.
-- `abs(chosen_tokens - rejected_tokens) / max(...) <= 0.20` (the ±20 %
-  length match).
-- **Bot-balanced at the dataset level:** cap each bot's contribution to
-  ~p75 of the per-bot pair counts so no single bot dominates.
-- A given PR contributes at most N pairs (TBD after step 3 inspection)
-  to keep the dataset diverse across PRs.
+PR title: <title>
+Diff:
+<unified diff>
+```
 
-Within-bot pairing is deliberate: it removes the bot-style confound
-(CodeRabbit prose vs Copilot bullets), so the inverted-labels-fail
-result proves "the suggestion's substance carries signal," not "tool
-identity carries signal." Tradeoff: PR×bot combos where all suggestions
-were accepted (or all ignored) yield zero pairs, so the yield is lower
-than a cross-bot pairing scheme would give. Confirm the yield hit is
-acceptable in step 3 inspection.
+**Output:** one suggestion in plain text, 1–3 sentences. No JSON. To
+produce a multi-suggestion review at inference, we sample the model
+*k* times per PR (k≈5, temperature 0.7) and dedup near-duplicates.
 
-## Method
+**Two prompt shapes** are evaluated in parallel:
 
-- SFT → DPO on a small open model (e.g. `Qwen2.5-Coder-7B`).
-- Split held-out by **repository**, not randomly.
+- **PR-level** — the prompt's `<unified diff>` is the whole PR's diff.
+  Higher-context, more compute, training/inference truncation
+  pressure.
+- **Hunk-level** — the prompt is just the file's hunk that the
+  suggestion anchors to (via the suggestion's `file_path` and
+  `line_number`). Way smaller prompts, cleaner train/inference match.
 
-## Conditions (critical ablations)
+Both are run end-to-end so we can compare which framing actually
+helps. See `CHANGELOG.md` for why both exist.
 
-| Condition | Expected result |
-|---|---|
-| Quality-filtered labels | Best |
-| Unfiltered | Worse → validates §4 filters |
-| Inverted labels | Worse than base → validates signal |
-| Random labels | ≈ base model |
+## Pair construction (for DPO)
 
-## Evaluation — three test sets
+Each preference pair has the form `(prompt, chosen, rejected)`:
+
+- **Same PR, same bot** — both suggestions come from the same review
+  tool on the same PR. This holds the writing style constant so the
+  signal we measure is about *substance*, not about which tool's
+  prose the model learns to imitate.
+- **Length-matched** — `|chosen| − |rejected|` within ±20 % tokens, so
+  the model can't cheat by always picking the longer (or shorter) one.
+- **Bot-balanced at the dataset level** — each bot's contribution
+  capped at ~p75 of per-bot counts, so no single tool dominates.
+
+For hunk-level pairing, "same PR, same bot" is tightened to "same PR,
+same bot, **same file**" so chosen and rejected literally share the
+hunk in the prompt. This makes the inverted-labels-fail test even
+cleaner: prompt is identical between the two sides, the only
+difference is the suggestion's substance.
+
+## Evaluation
+
+Three independent test sets, all evaluated by the same matching
+judge that scored the original CRB benchmark.
 
 | Test set | Question it answers |
 |---|---|
-| Held-out online PRs (new repos, later time window, different judge model) | Does it generalize in-distribution? |
-| Offline 50-PR gold set | Does it transfer across ground-truth definitions? (killer eval) |
-| Blind human pairwise, 3–5 reviewers | Does it actually feel better? |
+| Held-out online PRs (post-cutoff, different repos, fresh judge) | Does it generalize in-distribution? |
+| Offline 50-PR gold set | Does it transfer across ground-truth definitions? (the killer eval) |
+| Blind human pairwise, 3–5 reviewers | Does it actually *feel* better? |
 
-## Reporting (per condition)
+**Per-condition metrics reported:**
 
-- Online F1 with 95% bootstrap CIs.
-- Offline P / R / F1.
-- Human win rate vs. base.
+- Precision, recall, F1 with 95 % bootstrap CIs (1 000 resamples).
+- Per-bot breakdown — no single-tool mimicry should dominate.
+- Stratified by PR size and severity.
 - Reference points: base model, one frontier model.
 
-## Sanity checks
+For paper figures, the live W&B metrics also show:
 
-- Per-tool breakdown — no single-tool mimicry.
-- Stratified by PR size and severity.
+- `train/loss` and `eval/loss` per run.
+- `eval/rewards/accuracies` from DPO — the proportion of held-out
+  pairs where the model assigns higher logprob to `chosen` than
+  `rejected`. This is the live signal-validation curve.
 
-## Headline result
+## Files in this folder
 
-**Inverted labels failing across all three test sets** = cleanest
-evidence the signal is real.
+| File | What it does |
+|---|---|
+| `README.md` | This document. |
+| `CHANGELOG.md` | Dated record of every meaningful pipeline change, for paper traceability. |
+| `filters.py` | Silver-preset filter logic, ported from the dashboard's Rust source. |
+| `pairs.py` | Builds SFT rows and DPO pairs from PR analyses. Both PR-level and hunk-level shapes. |
+| `db.py` | Read-only Cloud SQL connector + unified-diff assembly from `commit_details`. |
+| `prepare_jsonl.py` | End-to-end dataset prep: connect, filter, build pairs, write JSONL. `--mode {pr-level, hunk-level}`. |
+| `inspect_dataset.py` | Sanity-check report — counts, length quantiles, per-bot/per-repo distribution. |
+| `train_sft.py` | SFT trainer (TRL `SFTTrainer` + LoRA). |
+| `train_dpo.py` | DPO trainer with the four-condition flag. |
+| `evaluate.py` | Matcher-based eval against gold human actions; bootstrap CIs; logs to W&B. |
+| `run_training.sh` | PR-level pipeline runner: SFT → 4 DPO ablations → 6 evals. |
+| `run_training_hunk.sh` | Hunk-level pipeline runner (same shape, `hunk-` W&B prefix). |

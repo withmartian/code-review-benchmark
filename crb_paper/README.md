@@ -21,6 +21,11 @@ vibe into a finding.
 
 - **Base model:** `Qwen/Qwen2.5-Coder-7B-Instruct`, finetuned with LoRA
   adapters (r=8, ~2.5 M trainable params, 0.03 % of total).
+- **Context window:** 32 768 tokens (Qwen's native). At 32K seqlen,
+  the cross-entropy logits alone take ~9.7 GB
+  (`32K × 152K_vocab × 2 bytes`). Hardware-driven prompt cap is
+  **28 000 BPE tokens for `prompt + response`**, leaving ~4K headroom
+  for the chat template + assistant turn.
 - **Two training stages, in order:**
   1. **SFT (warm-start)** — supervised finetuning on accepted
      suggestions. Teaches the model what a "human-actionable" review
@@ -31,6 +36,9 @@ vibe into a finding.
   with `bot_reviewed_at` ≤ 2026-03-31; everything later is val/eval.
 - **CodeRabbit excluded** (separate compliance reason, not a research
   choice).
+- **Hardware:** NVIDIA A100 40 GB (one VM per prompt shape, run in
+  parallel). L4 24 GB was insufficient — long-row cross-entropy logits
+  OOM'd at step ~250.
 
 ## The four ablations
 
@@ -119,6 +127,40 @@ For paper figures, the live W&B metrics also show:
 - `eval/rewards/accuracies` from DPO — the proportion of held-out
   pairs where the model assigns higher logprob to `chosen` than
   `rejected`. This is the live signal-validation curve.
+
+## Dataset sizes per run
+
+Generated from a 150 000-row random sample of CRB analyses, after
+CodeRabbit drop and silver-tier filtering. Train/val split at
+`bot_reviewed_at ≤ 2026-03-31`. Long-row drop uses the real Qwen BPE
+tokenizer at the cap above.
+
+### PR-level run (whole-PR diff in prompt)
+
+| Dataset | Train | Val |
+|---|---|---|
+| SFT rows (1 per accepted suggestion) | 12 731 | 1 946 |
+| DPO pairs (within-PR, within-bot) | 4 185 | 540 |
+| Eval rows (held-out PRs with gold human_actions) | — | 1 719 |
+
+Total ~770 MB JSONL on disk. Lives at
+`gs://martian-research-crb-finetune/v2/pr-level/data/`.
+
+### Hunk-level run (per-file hunk in prompt)
+
+| Dataset | Train | Val |
+|---|---|---|
+| SFT rows (1 per accepted suggestion, hunk-anchored) | 14 601 | 2 328 |
+| DPO pairs (within-PR, within-bot, within-file) | 2 001 | 201 |
+| Eval rows (per-(PR, bot, file) with gold actions for that file) | — | 6 670 |
+
+Total ~110 MB JSONL on disk. Lives at
+`gs://martian-research-crb-finetune/v2/hunk-level/data/`.
+
+DPO yields are smaller for hunk-level because the within-file
+constraint requires ≥1 accepted *and* ≥1 ignored suggestion on the
+same file from the same bot. Compensated for somewhat by faster
+training (smaller prompts ≈ 5× the throughput).
 
 ## Files in this folder
 

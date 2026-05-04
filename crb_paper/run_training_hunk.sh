@@ -15,9 +15,13 @@ mkdir -p "$RUN" "$RES"
 log() { printf "\n=== %s === %s\n" "$(date -u +%H:%M:%SZ)" "$*"; }
 
 log "1/3 SFT warm-start"
-python3 crb_paper/train_sft.py \
-    --train-file "$DATA/sft_train.jsonl" --eval-file "$DATA/sft_val.jsonl" \
-    --output-dir "$RUN/sft" --run-name "hunk-sft-$TS"
+if [ -f "$RUN/sft/adapter_model.safetensors" ] || [ -f "$RUN/sft/adapter_model.bin" ]; then
+    log "  SFT checkpoint already exists at $RUN/sft — skipping."
+else
+    python3 crb_paper/train_sft.py \
+        --train-file "$DATA/sft_train.jsonl" --eval-file "$DATA/sft_val.jsonl" \
+        --output-dir "$RUN/sft" --run-name "hunk-sft-$TS"
+fi
 
 log "2/3 DPO ablations"
 for cond in filtered unfiltered inverted random; do

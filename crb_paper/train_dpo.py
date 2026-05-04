@@ -385,7 +385,6 @@ def main() -> None:
         beta=hp.beta,
         loss_type=hp.loss_type,
         label_smoothing=hp.label_smoothing,
-        max_prompt_length=hp.max_prompt_length,
         max_length=hp.max_length,
         precompute_ref_log_probs=hp.precompute_ref_log_probs,
         num_train_epochs=hp.epochs,

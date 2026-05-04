@@ -110,6 +110,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=EvalConfig.sample_seed)
     p.add_argument("--dry-run", action="store_true",
                    help="Use stub generator + stub matcher; no model load, no API calls.")
+    # W&B logging — separate run per eval, linked by name to the training run.
+    p.add_argument("--wandb-project", default="crb-finetuning",
+                   help="W&B project. Set to '' or pass --no-wandb to disable.")
+    p.add_argument("--wandb-run-name", default=None,
+                   help="W&B run name. Defaults to `eval-<checkpoint-basename>`.")
+    p.add_argument("--no-wandb", action="store_true",
+                   help="Disable W&B logging (CSV is still written).")
     return p.parse_args()
 
 
@@ -480,6 +487,86 @@ def main() -> None:
     print(f"  precision: {p_mean:.4f}  95% CI [{p_ci[0]:.4f}, {p_ci[1]:.4f}]")
     print(f"  recall:    {r_mean:.4f}  95% CI [{r_ci[0]:.4f}, {r_ci[1]:.4f}]")
     print(f"  f1:        {f_mean:.4f}  95% CI [{f_ci[0]:.4f}, {f_ci[1]:.4f}]")
+
+    # 6. W&B logging (best-effort; CSV is the source of truth)
+    if not args.no_wandb and not args.dry_run and args.wandb_project:
+        _log_to_wandb(
+            project=args.wandb_project,
+            run_name=args.wandb_run_name,
+            checkpoint=args.checkpoint,
+            cfg=cfg,
+            results=results,
+            metrics={
+                "eval/precision_mean": p_mean,
+                "eval/precision_ci_low": p_ci[0],
+                "eval/precision_ci_high": p_ci[1],
+                "eval/recall_mean": r_mean,
+                "eval/recall_ci_low": r_ci[0],
+                "eval/recall_ci_high": r_ci[1],
+                "eval/f1_mean": f_mean,
+                "eval/f1_ci_low": f_ci[0],
+                "eval/f1_ci_high": f_ci[1],
+                "eval/num_prs": len(results),
+            },
+        )
+
+
+def _log_to_wandb(
+    *,
+    project: str,
+    run_name: Optional[str],
+    checkpoint: Optional[Path],
+    cfg: EvalConfig,
+    results: list[PRResult],
+    metrics: dict,
+) -> None:
+    """Open a fresh W&B run named to link with the training run, log
+    aggregate metrics + a per-PR table, and finish. Best-effort — if
+    wandb isn't installed or login fails, skip silently."""
+    try:
+        import wandb  # type: ignore[import-not-found]
+    except ImportError:
+        print("(wandb not installed; skipping W&B logging)", file=sys.stderr)
+        return
+
+    name = run_name
+    if name is None:
+        # Auto-derive: checkpoint dir's basename, prefixed with `eval-`.
+        # E.g. runs/dpo_filtered -> eval-dpo_filtered.
+        if checkpoint is not None:
+            name = f"eval-{Path(checkpoint).name}"
+        else:
+            from datetime import datetime
+            name = f"eval-base-{datetime.now():%Y%m%d-%H%M%S}"
+
+    config = {
+        "base_model": cfg.base_model,
+        "checkpoint": str(checkpoint) if checkpoint else None,
+        "k_samples": cfg.k_samples,
+        "temperature": cfg.temperature,
+        "top_p": cfg.top_p,
+        "matcher_model": cfg.matcher_model,
+        "bootstrap_resamples": cfg.bootstrap_resamples,
+        "num_prs": len(results),
+    }
+
+    try:
+        run = wandb.init(project=project, name=name, config=config,
+                         job_type="eval", reinit=True)
+        wandb.log(metrics)
+        # Per-PR table for inspection in the UI.
+        table = wandb.Table(columns=["pr_id", "repo_name", "num_sampled",
+                                     "num_gold", "num_matched",
+                                     "precision", "recall", "f1"])
+        for r in results:
+            table.add_data(r.pr_id, r.repo_name, r.num_sampled, r.num_gold,
+                           r.num_matched, r.precision, r.recall, r.f1)
+        wandb.log({"eval/per_pr": table})
+        wandb.summary.update(metrics)
+        run.finish()
+        print(f"(logged to W&B run `{name}` in project `{project}`)")
+    except Exception as e:
+        print(f"(W&B logging failed: {e}; CSV still written)", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -304,6 +304,8 @@ def main() -> None:
 
     # 4. Trainer config — every field maps to one Hyperparameters knob
     sft_cfg = SFTConfig(
+        gradient_checkpointing=hp.gradient_checkpointing,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         output_dir=str(args.output_dir),
         num_train_epochs=hp.epochs,
         per_device_train_batch_size=hp.per_device_batch_size,

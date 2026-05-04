@@ -119,6 +119,11 @@ class Hyperparameters:
     eval_steps: int = 250
     eval_strategy: str = "steps"
 
+    # --- Memory ----------------------------------------------------------
+    gradient_checkpointing: bool = True
+    """Trade ~30% compute for ~5x memory savings. Required on 24GB L4 for
+    Qwen 7B + LoRA + bf16 with sequences up to ~28K BPE."""
+
     # --- Misc ------------------------------------------------------------
     seed: int = 42
     report_to: str = "wandb"
@@ -334,6 +339,16 @@ def main() -> None:
     )
     trainer.train()
     trainer.save_model(str(args.output_dir))
+
+    # Persist the W&B run id so `evaluate.py` can resume the same run
+    # and log eval metrics alongside training curves.
+    if hp.report_to == "wandb":
+        try:
+            import wandb  # type: ignore[import-not-found]
+            if wandb.run is not None:
+                (args.output_dir / "wandb_run_id.txt").write_text(wandb.run.id)
+        except Exception:
+            pass
 
     # 6. Verify the adapter loads back
     if args.dry_run:

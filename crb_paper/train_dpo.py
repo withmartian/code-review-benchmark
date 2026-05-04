@@ -424,6 +424,15 @@ def main() -> None:
     trainer.train()
     trainer.save_model(str(args.output_dir))
 
+    # Persist the W&B run id so `evaluate.py` can resume this run.
+    if hp.report_to == "wandb":
+        try:
+            import wandb  # type: ignore[import-not-found]
+            if wandb.run is not None:
+                (args.output_dir / "wandb_run_id.txt").write_text(wandb.run.id)
+        except Exception:
+            pass
+
     if args.dry_run:
         print("dry-run: reloading adapter to verify checkpoint integrity...")
         reloaded_base = AutoModelForCausalLM.from_pretrained(

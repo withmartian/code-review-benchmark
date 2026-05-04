@@ -531,13 +531,23 @@ def _log_to_wandb(
 
     name = run_name
     if name is None:
-        # Auto-derive: checkpoint dir's basename, prefixed with `eval-`.
-        # E.g. runs/dpo_filtered -> eval-dpo_filtered.
         if checkpoint is not None:
             name = f"eval-{Path(checkpoint).name}"
         else:
             from datetime import datetime
             name = f"eval-base-{datetime.now():%Y%m%d-%H%M%S}"
+
+    # If the trainer left a `wandb_run_id.txt` next to the checkpoint,
+    # resume that run so eval metrics appear on the same W&B run as
+    # training curves. Otherwise fall back to a fresh `eval-*` run.
+    resume_run_id = None
+    if checkpoint is not None:
+        candidate = Path(checkpoint) / "wandb_run_id.txt"
+        if candidate.exists():
+            try:
+                resume_run_id = candidate.read_text().strip()
+            except OSError:
+                resume_run_id = None
 
     config = {
         "base_model": cfg.base_model,
@@ -551,8 +561,13 @@ def _log_to_wandb(
     }
 
     try:
-        run = wandb.init(project=project, name=name, config=config,
-                         job_type="eval", reinit=True)
+        if resume_run_id is not None:
+            run = wandb.init(project=project, id=resume_run_id,
+                             resume="allow", job_type="eval", reinit=True)
+            print(f"(resumed W&B run id={resume_run_id} for unified logging)")
+        else:
+            run = wandb.init(project=project, name=name, config=config,
+                             job_type="eval", reinit=True)
         wandb.log(metrics)
         # Per-PR table for inspection in the UI.
         table = wandb.Table(columns=["pr_id", "repo_name", "num_sampled",

@@ -117,6 +117,12 @@ class Hyperparameters:
     # --- Training loop ---------------------------------------------------
     epochs: int = 1
     per_device_batch_size: int = 1
+    per_device_eval_batch_size: int = 1
+    """Default in HF Trainer is 8 — that produces a logits tensor of
+    8 × max_length × vocab_size × 4 bytes (fp32 cast) ≈ 9.5 GB, then
+    DOUBLED for DPO's chosen + rejected concatenation = ~19 GB, which
+    OOMs on a 40 GB A100 even though training (batch=1) fits fine.
+    Setting eval batch to 1 cuts the logits tensor 8× to ~1.2 GB."""
     gradient_accumulation_steps: int = 8
 
     # --- Logging / checkpointing ----------------------------------------
@@ -409,6 +415,7 @@ def main() -> None:
         precompute_ref_log_probs=hp.precompute_ref_log_probs,
         num_train_epochs=hp.epochs,
         per_device_train_batch_size=hp.per_device_batch_size,
+        per_device_eval_batch_size=hp.per_device_eval_batch_size,
         gradient_accumulation_steps=hp.gradient_accumulation_steps,
         learning_rate=hp.learning_rate,
         weight_decay=hp.weight_decay,

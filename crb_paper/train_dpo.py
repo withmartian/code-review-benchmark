@@ -126,10 +126,15 @@ class Hyperparameters:
     gradient_accumulation_steps: int = 8
 
     # --- Logging / checkpointing ----------------------------------------
-    logging_steps: int = 25
+    logging_steps: int = 10
+    """Tighter logging cadence so train/loss curves have enough points
+    over our ~221-247 step ablations."""
     save_steps: int = 500
     save_total_limit: int = 3
-    eval_steps: int = 250
+    eval_steps: int = 50
+    """4-5 eval points per ablation (each ablation is 221-247 total
+    steps). Each eval is fast (~30 sec on filtered val set), so the
+    extra wallclock is ~2-3 min per ablation."""
     eval_strategy: str = "steps"
     eval_accumulation_steps: int = 1
     """Move eval predictions to CPU after each batch instead of

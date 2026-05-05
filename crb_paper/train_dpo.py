@@ -127,9 +127,14 @@ class Hyperparameters:
     eval_strategy: str = "steps"
     eval_accumulation_steps: int = 1
     """Move eval predictions to CPU after each batch instead of
-    accumulating the whole val set on GPU. Without this, eval OOMs
-    on a 40GB A100 with ~200+ val rows because the prediction tensor
-    grows per-batch and is only offloaded at end-of-eval."""
+    accumulating the whole val set on GPU."""
+
+    prediction_loss_only: bool = True
+    """Skip building full per-token prediction tensors during eval —
+    DPO metrics (eval/loss, eval/rewards/{accuracies, chosen, rejected,
+    margins}) are computed from sequence-level logprobs the trainer
+    tracks separately, so we don't need the dense logits. Without
+    this, eval OOMs at the bf16→fp32 conversion of an ~18GiB tensor."""
 
     # --- Memory ----------------------------------------------------------
     gradient_checkpointing: bool = True
@@ -416,6 +421,7 @@ def main() -> None:
         eval_steps=hp.eval_steps,
         eval_strategy=hp.eval_strategy if eval_ds is not None else "no",
         eval_accumulation_steps=hp.eval_accumulation_steps,
+        prediction_loss_only=hp.prediction_loss_only,
         bf16=hp.bf16,
         seed=hp.seed,
         report_to=hp.report_to,

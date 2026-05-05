@@ -126,6 +126,11 @@ class Hyperparameters:
     eval_steps: int = 250
     eval_strategy: str = "steps"
 
+    # --- Memory ----------------------------------------------------------
+    gradient_checkpointing: bool = True
+    """DPO does two forward passes per step (chosen + rejected) so
+    activation memory is ~2× SFT. Required to fit on a 40GB A100."""
+
     # --- Misc ------------------------------------------------------------
     seed: int = 42
     report_to: str = "wandb"
@@ -381,6 +386,8 @@ def main() -> None:
 
     # 5. DPO config — every field maps to one Hyperparameters knob
     dpo_cfg = DPOConfig(
+        gradient_checkpointing=hp.gradient_checkpointing,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         output_dir=str(args.output_dir),
         beta=hp.beta,
         loss_type=hp.loss_type,

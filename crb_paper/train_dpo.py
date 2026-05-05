@@ -130,11 +130,13 @@ class Hyperparameters:
     accumulating the whole val set on GPU."""
 
     prediction_loss_only: bool = True
-    """Skip building full per-token prediction tensors during eval —
-    DPO metrics (eval/loss, eval/rewards/{accuracies, chosen, rejected,
-    margins}) are computed from sequence-level logprobs the trainer
-    tracks separately, so we don't need the dense logits. Without
-    this, eval OOMs at the bf16→fp32 conversion of an ~18GiB tensor."""
+    """Skip building full per-token prediction tensors during eval."""
+
+    bf16_full_eval: bool = True
+    """Keep eval forward pass in bf16 instead of converting to fp32.
+    Without this, accelerate's `convert_to_fp32` wrapper doubles eval
+    memory (logits tensor goes from ~9 GiB bf16 to ~18 GiB fp32),
+    OOM-ing on a 40 GB A100 even with prediction_loss_only=True."""
 
     # --- Memory ----------------------------------------------------------
     gradient_checkpointing: bool = True
@@ -422,6 +424,7 @@ def main() -> None:
         eval_strategy=hp.eval_strategy if eval_ds is not None else "no",
         eval_accumulation_steps=hp.eval_accumulation_steps,
         prediction_loss_only=hp.prediction_loss_only,
+        bf16_full_eval=hp.bf16_full_eval,
         bf16=hp.bf16,
         seed=hp.seed,
         report_to=hp.report_to,

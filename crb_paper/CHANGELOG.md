@@ -9,6 +9,99 @@ change itself.
 
 ---
 
+## 2026-05-05 — DPO eval-time OOM fix via length-aware data filter
+
+DPO crashed at periodic-eval step (`eval_steps=250`) on both VMs with
+an 18.56 GiB single-tensor allocation. Cause: outlier rows with very
+long `prompt + chosen + rejected` concatenations whose attention /
+logit memory exceeded what 40 GB A100 can hold even with gradient
+checkpointing enabled.
+
+- Considered disabling periodic eval; rejected because the live
+  `eval/rewards/accuracies` curve is the headline DPO metric for the
+  inverted-labels-fail story in the paper.
+- **Wrote `/tmp/filter_dpo_lengths.py`** — uses real Qwen tokenizer to
+  drop rows where `tokenize(prompt) + tokenize(chosen) +
+  tokenize(rejected) > 8000` (well below the empirical 18K-token
+  failure threshold). Applied in-place to `data/dpo_train.jsonl` and
+  `data/dpo_val.jsonl` on each VM.
+- Yields:
+    - PR-level: train 1764/4185 (42 %), val 224/540 (42 %). Heavy
+      prr-level pruning because whole-PR prompts run long.
+    - Hunk-level: train 1976/2001 (99 %), val 190/201 (94 %). Hunk
+      prompts are short by construction; only a few outliers dropped.
+- Commit `5a7c908` re-enables `eval_strategy="steps"` after the data
+  filter is in place.
+
+## 2026-05-04 — DPO trainer fixes (TRL 1.x API drift + 2× memory)
+
+- **`max_prompt_length` removed from `DPOConfig`** in TRL 1.x. Dropped
+  the kwarg in `train_dpo.py` (commit `358df4c`).
+- **`gradient_checkpointing` enabled** in DPOConfig (commit `fd8b745`).
+  DPO does two forward passes per step (chosen + rejected), so
+  activation memory is ~2× SFT.
+- **Idempotent runner**: `run_training.sh` and `run_training_hunk.sh`
+  now skip SFT if `runs/sft/adapter_model.safetensors` exists, so
+  restarts from a DPO failure don't waste 90 minutes redoing SFT
+  (commit `2c53300`).
+
+## 2026-05-04 — switch from L4 (24 GB) to A100 (40 GB)
+
+L4's 24 GB couldn't hold cross-entropy logits at full Qwen 2.5 vocab
+(152 K) for sequences much over 12 K BPE — even after enabling
+gradient checkpointing, the logits live in the forward pass and aren't
+helped by activation checkpointing. After ~5 hours of OOM iteration
+(28 K cap → 10 K cap → checkpointing → still OOM at eval step 250),
+moved to A100 40 GB.
+
+- **Two A100s in parallel** in `us-central1-b` (other zones stocked
+  out): `crb-finetune-a100-pr` (pr-level) and `crb-finetune-a100-hunk`
+  (hunk-level).
+- L4 instances deleted to stop the meter.
+- Cost: ~$3.50/hr × 2 VMs × ~8 h ≈ $56 for the full pipeline (vs
+  $18 estimated on L4 if the L4 had worked).
+- Data unchanged — both A100s pull from the existing GCS objects.
+
+## 2026-05-04 — unified W&B logging (eval metrics on training run)
+
+- **Trainers write `<output_dir>/wandb_run_id.txt`** when training
+  finishes (commit `2270a7c`).
+- **`evaluate.py` reads that file** and resumes the same W&B run via
+  `wandb.init(id=..., resume="allow")`. Eval P/R/F1 + bootstrap CIs
+  + per-PR table land on the same run as training curves.
+- Caveat: the v1 SFT runs that already finished pre-deploy don't have
+  the run-id file, so their eval metrics will appear on sibling
+  `eval-runs/sft` runs. New SFT/DPO runs are unified.
+
+## 2026-05-04 — `gradient_checkpointing=True` default in SFT trainer
+
+- Added a `gradient_checkpointing` field to `train_sft.py`'s
+  `Hyperparameters`; defaults to True and feeds into `SFTConfig`
+  (commit `3880764`). Required for L4-fit; benign on A100.
+
+## 2026-05-04 — autonomous run, partially blocked
+
+Authorised to run autonomously while user away ~5 hrs. Got partway
+through v2/pr-level data prep before both `gcloud` CLI auth and ADC
+expired (RAPT cycle ~1 hr for sensitive APIs).
+
+- **Re-filtered v1 data** with the real Qwen 2.5 BPE tokenizer (cap
+  28K tokens for prompt+response) instead of the old whitespace
+  heuristic. Produces v2/pr-level by post-filtering — no DB pull
+  needed. Yields:
+    - SFT train 12,731 / val 1,946 (96.4 % / 95.8 % of v1)
+    - DPO train 4,185 / val 540 (94.5 % / 94.7 %)
+    - eval 1,719 (84.6 %)
+- **Local artifact** at `/tmp/v2_pr/` with `manifest.json`. Not yet
+  uploaded to GCS — auth needed.
+- **Hunk-level path: deferred.** Needs fresh DB pull for
+  `commit_details` (existing JSONL is post-pairs, no anchors).
+- VM `crb-finetune-l4` left running idle, ~$0.70/hr.
+
+Resume path: refresh BOTH `gcloud auth login` (CLI) AND
+`gcloud auth application-default login` (ADC). Then upload v2/pr-level
+to GCS, VM pulls, restart.
+
 ## 2026-05-02 — context-length fix v2: hunk-level prompts + tokenizer filter
 
 Two parallel branches of the pipeline to compare head-to-head. Both share

@@ -124,7 +124,10 @@ class Hyperparameters:
     save_steps: int = 500
     save_total_limit: int = 3
     eval_steps: int = 250
-    eval_strategy: str = "steps"
+    eval_strategy: str = "no"
+    """Disabled by default — DPO's periodic eval forward pass on long
+    prompts OOMs on a 40GB A100 (chosen + rejected concatenated).
+    Final downstream eval still runs via evaluate.py at end of pipeline."""
 
     # --- Memory ----------------------------------------------------------
     gradient_checkpointing: bool = True

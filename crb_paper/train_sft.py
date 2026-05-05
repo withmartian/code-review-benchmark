@@ -290,6 +290,7 @@ def main() -> None:
         hp.base_model,
         torch_dtype="bfloat16" if hp.bf16 else "float16",
         device_map="auto",
+        attn_implementation="sdpa",
     )
     lora_cfg = LoraConfig(
         r=hp.lora_r,

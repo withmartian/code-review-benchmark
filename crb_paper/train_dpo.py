@@ -380,6 +380,7 @@ def main() -> None:
         hp.base_model,
         torch_dtype="bfloat16" if hp.bf16 else "float16",
         device_map="auto",
+        attn_implementation="sdpa",
     )
     if args.sft_checkpoint is not None:
         # Continue training from an SFT-warm-started LoRA adapter.

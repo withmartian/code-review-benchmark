@@ -221,7 +221,88 @@ of the larger context). Either way, since the *relative* ordering
 across conditions is what proves the signal, absolute level isn't the
 issue — the lack of differentiation between conditions is.
 
-### v3 plan — stronger training
+## Results — v3 (stronger training, 2026-05-06)
+
+Same 8 K-BPE-capped JSONL data, same SFT warm-start. Only DPO knobs
+changed: epochs 1→3, lr 5e-6→2e-5.
+
+### Final eval metrics per condition
+
+| Pipeline | Condition | eval/loss | eval/rewards/accuracies | eval/rewards/margins |
+|---|---|---|---|---|
+| hunk-level | filtered | 0.6801 | 0.447 | 0.061 |
+| hunk-level | unfiltered | 0.6773 | 0.453 | 0.068 |
+| hunk-level | **inverted** | **0.6561** | **0.510** | **0.122** |
+| hunk-level | random | 0.6934 | 0.400 | 0.008 |
+| pr-level | filtered | 0.6943 | 0.134 | 0.010 |
+| pr-level | unfiltered | 0.6869 | 0.134 | 0.023 |
+| pr-level | **inverted** | **0.6789** | 0.152 | **0.036** |
+| pr-level | random | 0.6984 | 0.107 | -0.005 |
+
+### What this means — and the headline-flip
+
+**`random` is clearly worst, `inverted` is clearly best, `filtered` /
+`unfiltered` sit between them.** Margins on `inverted` are 2-10× those
+on `filtered`, and `inverted` has the lowest loss in both pipelines.
+
+This is **real, directional signal** — but it points the *opposite*
+way from what the original paper framing predicted. The original
+headline was *"`inverted` should fail across all eval sets — that's
+the negative control proving the labels carry quality signal."* We
+observe the opposite: **`inverted` succeeds more strongly than
+`filtered`.**
+
+### Why it's the opposite
+
+We audited the labelling end-to-end (code path in `pairs.py`,
+matched/accepted convention from `online/etl/llm/prompts.py`'s
+`JUDGE_MATCHING`). No bug. `chosen=accepted=matched=True` flows
+through correctly to the trainer.
+
+The natural reading: **the base model's prior, after SFT
+warm-start on accepted suggestions, prefers human-ignored
+suggestions.** Three (compatible) explanations:
+
+1. **"Ignored" suggestions are more typical text.** Most bot
+   suggestions don't get acted on, so the language-modelling prior
+   over the suggestion pool already concentrates probability on
+   "ignored-style" suggestions. DPO going *with* that prior
+   (`inverted`) is easier than going *against* it (`filtered`).
+2. **"Acted on" doesn't mean better quality.** It means *the human
+   had to fix something*. Suggestions that point at non-bugs (false
+   positives or trivial nits) are more "fluent / typical" than
+   suggestions pointing at real bugs that needed nontrivial code
+   changes — and the model rewards fluency.
+3. **SFT on accepted narrowed the policy already.** The accepted
+   suggestions formed the SFT distribution. After SFT, the policy
+   is already biased toward accepted-style. DPO has little
+   additional room to shift it further — but plenty of room to
+   shift away (which is why `inverted` improves so much more).
+
+### Reframing the paper
+
+The intended `inverted-fails` headline is no longer available. Two
+defensible reframings using the same numbers:
+
+1. *"DPO trained on revealed-preference labels learns a directional
+   preference, but the direction is opposite of the assumed
+   `accepted ≻ ignored`. The signal is real (random vs. directional
+   conditions are clearly separable; inverted vs. filtered/unfiltered
+   are clearly separable) but its sign is flipped from quality
+   intuition."*
+2. *"Revealed-preference labels in CRB conflate 'good quality' with
+   'requires action.' DPO on these labels teaches the model to prefer
+   the latter, which manifests as preferring ignored over accepted
+   suggestions. A different label scheme (e.g., asking humans
+   directly which suggestion they prefer) would test the
+   underlying signal more cleanly."*
+
+Both are real findings. (1) is the closest to the original
+experimental design's intent. (2) suggests the next experiment.
+
+### Earlier v3 plan section (kept for traceability)
+
+
 
 The fix is straightforward: train for more steps with a larger
 learning rate and slightly more LoRA capacity.

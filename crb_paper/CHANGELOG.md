@@ -9,6 +9,34 @@ change itself.
 
 ---
 
+## 2026-05-06 — v3 results: signal is real but in the opposite direction
+
+Ran v3 with stronger DPO settings (epochs=3, lr=2e-5). All 4
+ablations × 2 pipelines completed cleanly on A100 40 GB.
+
+- **Random < Filtered/Unfiltered < Inverted** by every metric
+  (eval/loss, eval/rewards/accuracies, eval/rewards/margins).
+  Hunk-level inverted margin = 0.122 vs filtered = 0.061
+  (~2× larger, lowest loss).
+- The original `inverted-labels-fail` headline is dead. The signal
+  is real (random clearly worst, conditions clearly separable),
+  but its direction is reversed.
+- Audited `pairs.py` end-to-end: no label-swap bug. The
+  `matched=True → accepted → chosen` path is correct.
+- Hypothesis: the SFT-warm-started policy already prefers
+  "typical-suggestion" style (= mostly ignored ones), so DPO going
+  with that prior (inverted) is easier than against (filtered).
+- README updated with the reframing options for the paper.
+
+## 2026-05-06 — v3 launched (stronger training)
+
+- DPO epochs 1→3, lr 5e-6→2e-5. Reused v2 SFT checkpoint via
+  idempotent skip in run_training scripts (commit `6a2124c`).
+- Updated `run_training*.sh` to copy adapter from latest
+  `checkpoint-N/` up to `runs/sft/` so the skip-check finds it.
+- Fixed `evaluate.py` `BatchEncoding`-from-`apply_chat_template`
+  bug that silently failed all v2 evals (commit `fe294ef`).
+
 ## 2026-05-05 — DPO eval-time OOM fix via length-aware data filter
 
 DPO crashed at periodic-eval step (`eval_steps=250`) on both VMs with

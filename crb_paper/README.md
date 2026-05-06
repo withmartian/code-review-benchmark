@@ -179,7 +179,21 @@ the held-out post-cutoff set (224 PR-level / 190 hunk-level pairs).
 | pr-level | filtered | 0.6920 | 0.138 | 0.0023 |
 | pr-level | unfiltered | 0.6918 | 0.121 | 0.0028 |
 | pr-level | inverted | 0.6911 | 0.143 | 0.0043 |
-| pr-level | random | 0.6951 | 0.085 | -0.0036 |
+| pr-level | random | 0.6940 | 0.089 | -0.0014 |
+
+### Eval phase: silent failure
+
+The downstream eval phase (`evaluate.py` × 6 runs per pipeline) ran
+in ~70 seconds total per pipeline — far too fast for real model
+generation + OpenAI matcher API calls. The `results/` directory is
+empty on both VMs. The runner shell scripts mask eval errors with
+`|| echo`, so the failures didn't propagate. We have **no downstream
+P/R/F1 numbers from this round**, only the trainer's built-in DPO
+val metrics shown in the table above.
+
+This needs investigation before v3 — likely a missing OPENAI_API_KEY
+env propagation or a TRL-version-related signature change in the
+trainer-saved adapter that `evaluate.py` doesn't load correctly.
 
 ### What this means
 

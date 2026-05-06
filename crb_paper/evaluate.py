@@ -358,6 +358,7 @@ def real_generator_factory(
                 cfg.base_model,
                 torch_dtype="bfloat16" if cfg.bf16 else "float16",
                 device_map="auto",
+                attn_implementation="sdpa",
             )
             if no_lora or checkpoint is None:
                 state["model"] = base
@@ -378,17 +379,29 @@ def real_generator_factory(
         else:
             input_ids = encoded
         input_ids = input_ids.to(model.device)
-        outputs = model.generate(
-            input_ids=input_ids,
-            do_sample=True,
-            temperature=cfg.temperature,
-            top_p=cfg.top_p,
-            max_new_tokens=cfg.max_new_tokens,
-            num_return_sequences=cfg.k_samples,
-            pad_token_id=tok.pad_token_id,
-        )
-        decoded = tok.batch_decode(outputs[:, input_ids.shape[-1]:], skip_special_tokens=True)
-        return [d.strip() for d in decoded]
+        # Loop k times with num_return_sequences=1 instead of one batched
+        # call. The batched form expands the KV cache linearly with k —
+        # a long PR-level prompt × k=5 needs ~16 GB just for the cache.
+        # Looping keeps each call's KV cache to 1× and frees between.
+        import torch
+        all_decoded = []
+        prompt_len = input_ids.shape[-1]
+        for _ in range(cfg.k_samples):
+            with torch.inference_mode():
+                output = model.generate(
+                    input_ids=input_ids,
+                    do_sample=True,
+                    temperature=cfg.temperature,
+                    top_p=cfg.top_p,
+                    max_new_tokens=cfg.max_new_tokens,
+                    num_return_sequences=1,
+                    pad_token_id=tok.pad_token_id,
+                )
+            decoded = tok.batch_decode(output[:, prompt_len:], skip_special_tokens=True)
+            all_decoded.extend(d.strip() for d in decoded)
+            del output
+            torch.cuda.empty_cache()
+        return all_decoded
 
     return generate
 

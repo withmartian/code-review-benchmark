@@ -162,6 +162,70 @@ constraint requires ≥1 accepted *and* ≥1 ignored suggestion on the
 same file from the same bot. Compensated for somewhat by faster
 training (smaller prompts ≈ 5× the throughput).
 
+## Results — v2 (first round, 2026-05-05)
+
+First end-to-end run on A100 40 GB. All four ablations completed for
+both prompt shapes. Evaluation uses TRL's built-in DPO val metrics on
+the held-out post-cutoff set (224 PR-level / 190 hunk-level pairs).
+
+### Final eval metrics per condition
+
+| Pipeline | Condition | eval/loss | eval/rewards/accuracies | eval/rewards/margins |
+|---|---|---|---|---|
+| hunk-level | filtered | 0.6906 | 0.437 | 0.0062 |
+| hunk-level | unfiltered | 0.6899 | 0.447 | 0.0075 |
+| hunk-level | inverted | 0.6911 | 0.442 | 0.0051 |
+| hunk-level | random | 0.6905 | 0.500 | 0.0059 |
+| pr-level | filtered | 0.6920 | 0.138 | 0.0023 |
+| pr-level | unfiltered | 0.6918 | 0.121 | 0.0028 |
+| pr-level | inverted | 0.6911 | 0.143 | 0.0043 |
+| pr-level | random | 0.6951 | 0.085 | -0.0036 |
+
+### What this means
+
+- **eval/loss is ~0.69 ≈ ln(2) on every run.** That's the loss value
+  at random-init reward, meaning DPO has barely moved the policy from
+  its starting point.
+- **`eval/rewards/margins` are essentially zero** (|·| < 0.008 across
+  the board).
+- **No conditions are statistically distinguishable from each other**
+  (95 % CI on a 190–224-row val set is ±0.07; all spread is within
+  that).
+- The headline `inverted-labels-fail` test is **inconclusive** — we
+  can't yet claim the labels carry signal from this round.
+
+This is **not** a pipeline bug or a label-swap (verified by inspecting
+the JSONL data and reading sample chosen/rejected pairs). The model is
+simply undertrained at our v2 settings — 1 epoch on 1.8 K–2 K pairs
+with LR 5e-6 produces too small a policy update.
+
+The pr-level absolute accuracy (~0.13) is lower than hunk-level (~0.44)
+across all conditions including `random`. We attribute this to the
+base model having a slight prior that disagrees with our `chosen`
+labels on whole-PR-diff prompts (perhaps reacting to surface features
+of the larger context). Either way, since the *relative* ordering
+across conditions is what proves the signal, absolute level isn't the
+issue — the lack of differentiation between conditions is.
+
+### v3 plan — stronger training
+
+The fix is straightforward: train for more steps with a larger
+learning rate and slightly more LoRA capacity.
+
+| Hyperparameter | v2 | v3 (planned) | Rationale |
+|---|---|---|---|
+| epochs | 1 | 3 | 3× the gradient updates without re-pulling data |
+| learning_rate | 5e-6 | 2e-5 | 4× larger updates per step (still in DPO-safe range) |
+| lora_r | 8 | 16 | 2× adapter capacity |
+
+Estimated wallclock: ~3× v2's per-ablation time → ~5-6 hrs total in
+parallel on 2 × A100 40 GB. Cost ~$50 GPU + ~$2 OpenAI matcher
+≈ ~$50 added.
+
+The v2 dataset and infrastructure (CodeRabbit-dropped, silver-filtered,
+8K-BPE-capped JSONL on GCS) are reused for v3 — only training
+hyperparameters change.
+
 ## Files in this folder
 
 | File | What it does |

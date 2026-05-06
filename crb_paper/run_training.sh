@@ -16,8 +16,21 @@ mkdir -p "$RUN" "$RES"
 log() { printf "\n=== %s === %s\n" "$(date -u +%H:%M:%SZ)" "$*"; }
 
 log "1/3 SFT warm-start"
-if [ -f "$RUN/sft/adapter_model.safetensors" ] || [ -f "$RUN/sft/adapter_model.bin" ]; then
-    log "  SFT checkpoint already exists at $RUN/sft — skipping."
+# Idempotent skip: top-level adapter or any saved checkpoint adapter counts.
+if [ -f "$RUN/sft/adapter_model.safetensors" ] || [ -f "$RUN/sft/adapter_model.bin" ] \
+   || ls "$RUN"/sft/checkpoint-*/adapter_model.safetensors >/dev/null 2>&1; then
+    log "  SFT checkpoint exists — skipping."
+    # If the adapter only lives in checkpoint-*/, copy it to top-level so
+    # downstream tooling (train_dpo.py --sft-checkpoint, evaluate.py) finds
+    # it where they look.
+    if [ ! -f "$RUN/sft/adapter_model.safetensors" ] && [ ! -f "$RUN/sft/adapter_model.bin" ]; then
+        latest=$(ls -d "$RUN"/sft/checkpoint-*/ 2>/dev/null | sort -V | tail -1)
+        if [ -n "$latest" ]; then
+            cp "$latest"/adapter_*.safetensors "$RUN/sft/" 2>/dev/null || true
+            cp "$latest"/adapter_config.json "$RUN/sft/" 2>/dev/null || true
+            log "  copied adapter from $latest to $RUN/sft/"
+        fi
+    fi
 else
     python3 crb_paper/train_sft.py \
         --train-file "$DATA/sft_train.jsonl" --eval-file "$DATA/sft_val.jsonl" \

@@ -101,9 +101,10 @@ class Hyperparameters:
     train time but doubles dataset prep time."""
 
     # --- Optimizer (AdamW) ----------------------------------------------
-    learning_rate: float = 5e-6
-    """DPO is more sensitive than SFT — typical DPO LR is 1e-7 to 5e-6,
-    much lower than SFT's 2e-5."""
+    learning_rate: float = 2e-5
+    """v3: bumped from 5e-6 to 2e-5 after v2 came in flat (eval/loss ≈
+    ln(2) on every condition, no inverted-vs-filtered differentiation).
+    DPO papers typically use 5e-6 to 5e-5; 2e-5 sits in the middle."""
     weight_decay: float = 0.0
     adam_beta1: float = 0.9
     adam_beta2: float = 0.999
@@ -115,7 +116,9 @@ class Hyperparameters:
     warmup_ratio: float = 0.03
 
     # --- Training loop ---------------------------------------------------
-    epochs: int = 1
+    epochs: int = 3
+    """v3: bumped from 1 to 3. v2 single-epoch was ~250 gradient steps
+    on 2K pairs which is barely past initialization."""
     per_device_batch_size: int = 1
     per_device_eval_batch_size: int = 1
     """Default in HF Trainer is 8 — that produces a logits tensor of

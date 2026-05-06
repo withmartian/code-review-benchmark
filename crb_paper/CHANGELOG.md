@@ -9,6 +9,32 @@ change itself.
 
 ---
 
+## 2026-05-06 — gcloud auth expired mid-night; further triage paused
+
+After v3 DPO completed, the post-training `evaluate.py` phase OOM'd on
+the PR-level VM (4.36 GiB allocation in a fully-utilised 40 GB GPU).
+This is downstream eval, not training — all 8 DPO runs were already
+saved and visible in W&B (state=finished). The training-side
+`eval/rewards/*` numbers in this changelog and the README ARE valid;
+only the gold-actions-matched P/R/F1 from `evaluate.py` is missing.
+
+gcloud auth (CLI + ADC) expired at the same time. Without auth I
+can't SSH to fix the eval-OOM or run further triage rounds. State
+saved here; user can resume with:
+
+```
+! gcloud auth login
+! gcloud auth application-default login
+```
+
+Both VMs are still running (idle / ~$1.40/hr meter ticking). Stop
+them on resume if not iterating immediately:
+
+```
+! gcloud compute instances stop crb-finetune-a100-pr crb-finetune-a100-hunk \
+    --zone=us-central1-b --project=martian-research
+```
+
 ## 2026-05-06 — v3 results: signal is real but in the opposite direction
 
 Ran v3 with stronger DPO settings (epochs=3, lr=2e-5). All 4

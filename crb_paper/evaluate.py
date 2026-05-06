@@ -368,11 +368,18 @@ def real_generator_factory(
         tok = state["tokenizer"]
         model = state["model"]
         messages = [{"role": "user", "content": prompt}]
-        inputs = tok.apply_chat_template(
+        encoded = tok.apply_chat_template(
             messages, return_tensors="pt", add_generation_prompt=True,
-        ).to(model.device)
+        )
+        # transformers 5.x returns a BatchEncoding here, not a Tensor — extract
+        # input_ids so model.generate() can read .shape[0].
+        if hasattr(encoded, "input_ids"):
+            input_ids = encoded["input_ids"]
+        else:
+            input_ids = encoded
+        input_ids = input_ids.to(model.device)
         outputs = model.generate(
-            inputs,
+            input_ids=input_ids,
             do_sample=True,
             temperature=cfg.temperature,
             top_p=cfg.top_p,
@@ -380,7 +387,7 @@ def real_generator_factory(
             num_return_sequences=cfg.k_samples,
             pad_token_id=tok.pad_token_id,
         )
-        decoded = tok.batch_decode(outputs[:, inputs.shape[-1]:], skip_special_tokens=True)
+        decoded = tok.batch_decode(outputs[:, input_ids.shape[-1]:], skip_special_tokens=True)
         return [d.strip() for d in decoded]
 
     return generate

@@ -188,9 +188,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_ana.add_argument(
         "--sort",
-        choices=["reviewed", "assembled"],
+        choices=["reviewed", "sweep"],
         default="reviewed",
-        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'assembled' (assembled_at DESC, for catching late-discovered PRs).",
+        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'sweep' (assembled_at DESC, for catching late-discovered PRs).",
     )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
@@ -214,9 +214,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_lbl.add_argument(
         "--sort",
-        choices=["reviewed", "assembled"],
+        choices=["reviewed", "sweep"],
         default="reviewed",
-        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'assembled' (assembled_at DESC).",
+        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'sweep' (analyzed_at DESC, for catching stragglers).",
     )
     p_lbl.add_argument("--database-url")
     p_lbl.add_argument("--verbose", action="store_true")
@@ -471,8 +471,8 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
         logger.info(f"Filtering PRs reviewed since {since}")
     if until:
         logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
-    if sort_by == "assembled":
-        logger.info("Sorting by assembled_at DESC (sweep mode)")
+    if sort_by == "sweep":
+        logger.info("Sweep mode: sorting by assembled_at DESC")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -524,8 +524,8 @@ async def cmd_label(args: argparse.Namespace) -> None:
         logger.info(f"Filtering PRs reviewed since {since}")
     if until:
         logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
-    if sort_by == "assembled":
-        logger.info("Sorting by assembled_at DESC (sweep mode)")
+    if sort_by == "sweep":
+        logger.info("Sweep mode: sorting by analyzed_at DESC")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()

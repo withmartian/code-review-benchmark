@@ -153,8 +153,8 @@ class PRRepository:
         # `until` is exclusive: --since 2026-04-18 --until 2026-04-19 yields just 4/18.
         # When `until` is set we use the bounded variant (which also handles since=None);
         # otherwise we keep the existing fast paths to preserve query plans.
-        # `sort_by` == "assembled" uses assembled_at DESC (for sweep/catch-up mode).
-        if sort_by == "assembled":
+        # `sort_by` == "sweep" uses assembled_at DESC (for catching late-discovered PRs).
+        if sort_by == "sweep":
             if chatbot_id is not None:
                 return await self.db.fetchall(
                     q.GET_ASSEMBLED_PRS_NOT_ANALYZED_BY_ASSEMBLED, (chatbot_id, limit)
@@ -322,8 +322,8 @@ class PRRepository:
         sort_by: str = "reviewed",
     ) -> list[dict[str, Any]]:
         # See note on get_assembled_not_analyzed: `until` is exclusive.
-        # `sort_by` == "assembled" uses assembled_at DESC (sweep mode).
-        if sort_by == "assembled":
+        # `sort_by` == "sweep" uses analyzed_at DESC (for catching stragglers).
+        if sort_by == "sweep":
             if chatbot_id is not None:
                 return await self.db.fetchall(
                     q.GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED, (chatbot_id, limit)

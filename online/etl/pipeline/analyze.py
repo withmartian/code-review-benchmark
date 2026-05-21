@@ -428,7 +428,7 @@ async def analyze_prs(
 
     `since` is an inclusive lower bound on bot_reviewed_at; `until` is an exclusive
     upper bound. `sort_by` controls priority: "reviewed" (bot_reviewed_at DESC) or
-    "assembled" (assembled_at DESC, for catching late-discovered PRs).
+    "sweep" (assembled_at DESC, for catching late-discovered PRs).
     Returns the number of PRs analyzed.
     """
     repo = PRRepository(db)

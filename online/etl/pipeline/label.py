@@ -117,7 +117,7 @@ async def label_prs(
     """Label all analyzed, unlabeled PRs for a chatbot. Returns count labeled.
 
     `since` is an inclusive lower bound on bot_reviewed_at; `until` is an exclusive
-    upper bound. `sort_by` controls priority: "reviewed" or "assembled".
+    upper bound. `sort_by` controls priority: "reviewed" or "sweep".
     """
     repo = PRRepository(db)
     prs = await repo.get_analyzed_not_labeled(

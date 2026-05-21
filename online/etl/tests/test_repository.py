@@ -392,10 +392,10 @@ class TestSqliteIntegration:
         assert {r["pr_number"] for r in rows} == {201}
 
     @pytest.mark.asyncio
-    async def test_get_assembled_not_analyzed_sort_by_assembled(
+    async def test_get_assembled_not_analyzed_sort_by_sweep(
         self, db: DBAdapter, repo: PRRepository
     ) -> None:
-        """sort_by='assembled' orders by assembled_at DESC, catching late-discovered PRs."""
+        """sort_by='sweep' orders by assembled_at DESC, catching late-discovered PRs."""
         cid = await repo.upsert_chatbot("sorttest[bot]")
 
         # PR 300: reviewed long ago, assembled recently (late-discovered)
@@ -432,9 +432,9 @@ class TestSqliteIntegration:
         rows = await repo.get_assembled_not_analyzed(chatbot_id=cid, limit=10)
         assert rows[0]["pr_number"] == 301
 
-        # Assembled sort: PR 300 first (assembled more recently)
+        # Sweep sort: PR 300 first (assembled more recently)
         rows = await repo.get_assembled_not_analyzed(
-            chatbot_id=cid, limit=10, sort_by="assembled"
+            chatbot_id=cid, limit=10, sort_by="sweep"
         )
         assert rows[0]["pr_number"] == 300
 

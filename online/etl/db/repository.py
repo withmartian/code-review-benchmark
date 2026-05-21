@@ -319,8 +319,18 @@ class PRRepository:
         limit: int = 100,
         since: str | None = None,
         until: str | None = None,
+        sort_by: str = "reviewed",
     ) -> list[dict[str, Any]]:
         # See note on get_assembled_not_analyzed: `until` is exclusive.
+        # `sort_by` == "assembled" uses assembled_at DESC (sweep mode).
+        if sort_by == "assembled":
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED, (chatbot_id, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ANALYZED_NOT_LABELED_BY_ASSEMBLED, (limit,)
+            )
         if until is not None:
             if chatbot_id is not None:
                 return await self.db.fetchall(

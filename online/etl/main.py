@@ -186,6 +186,12 @@ def build_parser() -> argparse.ArgumentParser:
             "With --since 2026-04-18 --until 2026-04-19 you get just 2026-04-18."
         ),
     )
+    p_ana.add_argument(
+        "--sort",
+        choices=["reviewed", "assembled"],
+        default="reviewed",
+        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'assembled' (assembled_at DESC, for catching late-discovered PRs).",
+    )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
 
@@ -454,10 +460,13 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
 
     since = _parse_time_bound(args.since)
     until = _parse_time_bound(args.until)
+    sort_by = args.sort
     if since:
         logger.info(f"Filtering PRs reviewed since {since}")
     if until:
         logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
+    if sort_by == "assembled":
+        logger.info("Sorting by assembled_at DESC (sweep mode)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -471,6 +480,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
                 await analyze_prs(
                     cfg, db, bot["id"], bot["github_username"],
                     limit=args.limit, since=since, until=until,
+                    sort_by=sort_by,
                 )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
@@ -480,6 +490,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
             await analyze_prs(
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
+                sort_by=sort_by,
             )
         else:
             logger.error("Specify --chatbot or --all")

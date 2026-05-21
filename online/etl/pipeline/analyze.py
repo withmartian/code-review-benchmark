@@ -422,15 +422,19 @@ async def analyze_prs(
     limit: int = 100,
     since: str | None = None,
     until: str | None = None,
+    sort_by: str = "reviewed",
 ) -> int:
     """Run LLM analysis on all assembled, unanalyzed PRs for a chatbot.
 
     `since` is an inclusive lower bound on bot_reviewed_at; `until` is an exclusive
-    upper bound. Returns the number of PRs analyzed.
+    upper bound. `sort_by` controls priority: "reviewed" (bot_reviewed_at DESC) or
+    "assembled" (assembled_at DESC, for catching late-discovered PRs).
+    Returns the number of PRs analyzed.
     """
     repo = PRRepository(db)
     prs = await repo.get_assembled_not_analyzed(
-        chatbot_id=chatbot_id, limit=limit, since=since, until=until
+        chatbot_id=chatbot_id, limit=limit, since=since, until=until,
+        sort_by=sort_by,
     )
 
     if not prs:

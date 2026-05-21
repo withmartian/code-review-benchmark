@@ -392,6 +392,53 @@ class TestSqliteIntegration:
         assert {r["pr_number"] for r in rows} == {201}
 
     @pytest.mark.asyncio
+    async def test_get_assembled_not_analyzed_sort_by_assembled(
+        self, db: DBAdapter, repo: PRRepository
+    ) -> None:
+        """sort_by='assembled' orders by assembled_at DESC, catching late-discovered PRs."""
+        cid = await repo.upsert_chatbot("sorttest[bot]")
+
+        # PR 300: reviewed long ago, assembled recently (late-discovered)
+        # PR 301: reviewed recently, assembled earlier
+        await repo.insert_pr(
+            chatbot_id=cid, repo_name="org/repo", pr_number=300,
+            pr_url="https://x/300", pr_merged=True,
+            bot_reviewed_at="2026-03-01T10:00:00+00:00",
+            bq_events=[{"event_id": "300", "type": "PullRequestReviewEvent",
+                        "actor": "sorttest[bot]", "created_at": "2026-03-01T10:00:00+00:00",
+                        "payload": {"pull_request": {"title": "t", "user": {"login": "a"}}}}],
+        )
+        await repo.insert_pr(
+            chatbot_id=cid, repo_name="org/repo", pr_number=301,
+            pr_url="https://x/301", pr_merged=True,
+            bot_reviewed_at="2026-04-20T10:00:00+00:00",
+            bq_events=[{"event_id": "301", "type": "PullRequestReviewEvent",
+                        "actor": "sorttest[bot]", "created_at": "2026-04-20T10:00:00+00:00",
+                        "payload": {"pull_request": {"title": "t", "user": {"login": "a"}}}}],
+        )
+
+        # Assemble PR 301 first (earlier assembled_at), then PR 300 (later assembled_at)
+        pr301 = await repo.get_pr(cid, "org/repo", 301)
+        await repo.mark_assembled(pr301["id"], {"pr_merged": True})
+
+        # Small delay to ensure distinct assembled_at timestamps
+        import asyncio
+        await asyncio.sleep(0.05)
+
+        pr300 = await repo.get_pr(cid, "org/repo", 300)
+        await repo.mark_assembled(pr300["id"], {"pr_merged": True})
+
+        # Default sort (bot_reviewed_at DESC): PR 301 first (reviewed 2026-04-20)
+        rows = await repo.get_assembled_not_analyzed(chatbot_id=cid, limit=10)
+        assert rows[0]["pr_number"] == 301
+
+        # Assembled sort: PR 300 first (assembled more recently)
+        rows = await repo.get_assembled_not_analyzed(
+            chatbot_id=cid, limit=10, sort_by="assembled"
+        )
+        assert rows[0]["pr_number"] == 300
+
+    @pytest.mark.asyncio
     async def test_mark_skipped(self, repo: PRRepository) -> None:
         cid = await repo.upsert_chatbot("testbot[bot]")
         await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=81, pr_url="https://x", bq_events=[

@@ -316,7 +316,8 @@ GET_ALL_ANALYZED_NOT_LABELED_SINCE = """
     LIMIT $2
 """
 
-# Assembled-sorted variants for the labeling stage.
+# Analyzed-sorted variants for the labeling stage: sort by analyzed_at DESC
+# to prioritize PRs that most recently became ready for labeling.
 GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED = """
     SELECT p.*, la.bot_suggestions, la.matching_results
     FROM prs p
@@ -325,7 +326,7 @@ GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED = """
     WHERE p.chatbot_id = $1
       AND p.status = 'analyzed'
       AND pl.id IS NULL
-    ORDER BY p.assembled_at DESC NULLS LAST
+    ORDER BY p.analyzed_at DESC NULLS LAST
     LIMIT $2
 """
 
@@ -336,7 +337,7 @@ GET_ALL_ANALYZED_NOT_LABELED_BY_ASSEMBLED = """
     LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
     WHERE p.status = 'analyzed'
       AND pl.id IS NULL
-    ORDER BY p.assembled_at DESC NULLS LAST
+    ORDER BY p.analyzed_at DESC NULLS LAST
     LIMIT $1
 """
 

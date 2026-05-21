@@ -99,6 +99,30 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_SINCE = """
     LIMIT $2
 """
 
+# Assembled-sorted variants: same filter as the default queries but ordered by
+# assembled_at DESC. Used by --sort assembled (sweep mode) to prioritize PRs that
+# recently became ready, catching late-discovered PRs that bot_reviewed_at ordering misses.
+GET_ASSEMBLED_PRS_NOT_ANALYZED_BY_ASSEMBLED = """
+    SELECT p.* FROM prs p
+    LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'assembled'
+      AND la.id IS NULL
+      AND p.pr_merged = TRUE
+    ORDER BY p.assembled_at DESC NULLS LAST
+    LIMIT $2
+"""
+
+GET_ALL_ASSEMBLED_NOT_ANALYZED_BY_ASSEMBLED = """
+    SELECT p.* FROM prs p
+    LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    WHERE p.status = 'assembled'
+      AND la.id IS NULL
+      AND p.pr_merged = TRUE
+    ORDER BY p.assembled_at DESC NULLS LAST
+    LIMIT $1
+"""
+
 # Bounded variants accept both `since` (inclusive lower bound) and `until` (exclusive
 # upper bound). Either may be NULL — the WHERE clauses become no-ops, which Postgres'
 # planner folds away. Use these whenever `until` is specified; the *_SINCE variants

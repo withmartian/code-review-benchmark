@@ -1365,6 +1365,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Lithuanian locale file contains Italian replacement text instead of a Lithuanian translation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "verifySafeHtml() can throw an unchecked RuntimeException when the English counterpart file is missing, which propagates past the catch(IOException) in verify() and fails the Maven build with an unhandled exception/stack trace instead of a clear validation message",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "POLICY_SOME_HTML, POLICY_NO_HTML, and HTML_TAGS are instance fields despite being constants, causing HtmlPolicyBuilder creation and Pattern.compile(...) to run for every processed file instead of once (should be private static final)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -2051,6 +2071,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "`rawTokenId` is never null-checked because line 73 mistakenly validates `grantType` again instead of `rawTokenId`, allowing null to be stored and causing a later `NullPointerException` when `getRawTokenId()` is used (e.g., in `encodeTokenId`)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc implies shortcuts are typically 3 letters, but `DefaultTokenContextEncoderProvider` encoding/decoding hardcodes 2-character shortcuts (6-character total prefix), so a custom shortcut length != 2 will cause `getTokenContextFromTokenId` to throw `IllegalArgumentException`; the contract should require exactly 2 characters",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`GRANT_SHORTCUT = \"rt\"` collides with `AccessTokenContext.TokenType.REGULAR` shortcut \"rt\", making encoded token IDs ambiguous/harder to read and debug; use a distinct shortcut (e.g., \"rf\")",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -2540,7 +2580,57 @@
         "source": "extracted"
       }
     ],
-    "gitar": []
+    "gitar": [],
+    "gitlab": [
+      {
+        "text": "Provider ID is hardcoded as \"keycloak-recovery-authn-codes\" instead of using RecoveryAuthnCodesCredentialProviderFactory.PROVIDER_ID, risking silent mismatch if the constant changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Raw (unhashed) recovery codes from form submission are serialized and stored via UserCredentialModel.getChallengeResponse(), persisting usable codes in user storage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Recovery codes are not hashed before being stored in the user storage path; should store hashed codes (e.g., pass credentialModel with SecretData or hash via RecoveryAuthnCodesUtils.hashRawCode)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When updateCredential succeeds in the user storage path, used-code tracking/removal does not occur, allowing the same recovery code to be reused for federated-storage users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BackwardsCompatibilityUserStorage.isValid() only checks for code existence and does not remove/mark used codes, enabling multiple uses of the same recovery code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "credentialModelOpt.get() is called without checking isPresent(), which can throw NoSuchElementException if the credential is missing and cause an unhandled server error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "List generatedKeys uses a raw type instead of List<String>, causing unchecked warnings and losing type safety",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Config alias string has a typo: \"delayed-suthenticator-config\" should be \"delayed-authenticator-config\", which could cause lookup/test failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
     "claude": [],
@@ -2812,7 +2902,21 @@
         "source": "extracted"
       }
     ],
-    "gitar": []
+    "gitar": [],
+    "gitlab": [
+      {
+        "text": "The testFeatureNotEnabled test only covers the metadata subcommand and does not verify the check subcommand\u2019s feature gate behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "setEnabledFeatures replaces the entire enabled-features list, potentially dropping previously enabled features when featureSpec is non-null; it should add ROLLING_UPDATES to the existing list instead of overwriting it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/keycloak/keycloak/pull/36880": {
     "claude": [
@@ -3417,6 +3521,68 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Event listener is guarded only by ADMIN_FINE_GRAINED_AUTHZ (V1), so cleanup events (RoleRemovedEvent/ClientRemovedEvent/GroupRemovedEvent) will not fire in V2-only (ADMIN_FINE_GRAINED_AUTHZ_V2) deployments, causing cleanup to be skipped",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Role permission cleanup via roles().setPermissionsEnabled(role, false) is silently skipped when only V2 is enabled due to the feature guard",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If V2 requires cleanup for these events, the guard should also check ADMIN_FINE_GRAINED_AUTHZ_V2 (otherwise behavior must be documented)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getEvaluationContext() is defined but never called in the class (dead/unused code)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using Arrays.asList(scope).contains(s) to test a single value is unnecessarily allocating a list and is less clear than a direct equality check; pattern repeated elsewhere (line 250)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getResourceName() only has special handling for USERS; with CLIENTS added, client resources fall through to resource.getDisplayName(), which may be just the client UUID and not meaningful",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup lambda calls findByName(name).getId() without a null check; if findByName returns null (policy already removed), this can cause a NullPointerException during realm cleanup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "createClientPolicy similarly calls findByName(name).getId() without a null check (line 144), risking NullPointerException",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test code assumes clientResource.getDefaultClientScopes().get(1) exists; if fewer than two default scopes are present, this will throw IndexOutOfBoundsException",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same unsafe default client scopes indexing assumption is repeated on line 174, risking IndexOutOfBoundsException",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37038": {
@@ -4015,6 +4181,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "getGroupIdsWithViewPermission() calls hasPermission(groupResource.getId(), ...) even though hasPermission ultimately looks up resources by name, so passing the resource UUID causes findByName to return null and per-group permission checks to incorrectly fall back to the type-level resource",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getGroupIdsWithViewPermission() adds groupResource.getId() to the granted set, but callers treat the set as group model IDs (e.g., session.setAttribute(UserModel.GROUPS, groupIds)), so it stores the wrong identifier type",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc for requireManageMembers incorrectly references canManageMembership(GroupModel) instead of canManageMembers(GroupModel)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -4589,6 +4775,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Lines 114\u2013115 contain dead code: two ASN1Encoder instances are created, written to, and immediately discarded; their results are never used and should be removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "logger.debugf(builder.toString()) incorrectly treats the message as a format string; a '%' in the provider class name can trigger MissingFormatArgumentException\u2014use logger.debug(...) or logger.debugf(\"%s\", ...)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tests for ES384/ES512 generate an EC keypair on the JVM default curve (typically P-256), so R/S sizes don't match the expected signLength for ES384/ES512; tests should generate keys on the correct curves (P-384 for ES384, P-521 for ES512)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -5078,6 +5284,26 @@
     "gitar": [
       {
         "text": "Test race condition in createMultiDeleteMultiReadMulti: main thread asserts caughtExceptions is empty immediately after setting deletedAll=true without joining the reader thread, making the test flaky and potentially missing exceptions from the reader thread",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Background reader thread is not joined before asserting `caughtExceptions` is empty, so the assertion can run while the thread is still executing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Exceptions thrown in the background thread\u2019s final `groups()` call may be added to `caughtExceptions` after the assertion, causing the test to miss failures silently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Thread reference is not saved, preventing a `join()` call to ensure the background thread has fully exited before assertions",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -5628,6 +5854,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "isConditionalPasskeysEnabled() is invoked with no arguments, but only a isConditionalPasskeysEnabled(UserModel user) method exists in this MR, so the call will not compile due to missing no-arg overload",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test code uses MatcherAssert.assertThat(driver.findElement(...), nullValue()) followed by fail(...), but driver.findElement() throws NoSuchElementException before the assertion, making those lines dead/unreachable in the expected path (also occurs again at line 312)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test should use Assert.assertThrows(NoSuchElementException.class, () -> driver.findElement(...)) instead of the current findElement+nullValue+fail pattern to be clear and consistent with the rest of the suite",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/93824": {
@@ -6117,6 +6363,20 @@
       },
       {
         "text": "In `test_basic`, `time.sleep` is monkeypatched to a no-op, so the added `time.sleep(0.1)` does not actually wait for flusher threads, undermining the intended synchronization and potentially causing flaky tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "_create_process_for_shard is defined but never called; _ensure_processes_alive calls _create_process_for_shards instead, leaving dead code that should be removed or wired up for single-shard restarts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `max_processes or len(buffer.assigned_shards)` treats `max_processes=0` as falsy and silently falls back to full shard count, causing unexpected behavior for `--flusher-processes 0`; should use an explicit None check",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -6751,6 +7011,26 @@
       },
       {
         "text": "Test coverage is insufficient because the existing test only uses a single error event, so it fails to catch the ordering/mismatched pairing bug",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "events.values() does not preserve the order of error_ids, so zipping error_ids with events.values() can pair IDs with the wrong event data and produce incorrect ErrorEvent objects",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Both age and timestamp are required=False, allowing reports with neither field to pass validation even though timestamp was required in the original BrowserReport dataclass",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "analytics.record(...) is executed before the feature flag check, causing analytics events to be emitted even when the feature is disabled for the organization",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -7591,6 +7871,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "OptimizedCursorPaginator.get_item_key() applies math.floor/math.ceil directly to a datetime attribute when ordering by -datetime, causing TypeError because datetime is not a real number",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_item_key() fails to convert datetime values to a numeric timestamp (e.g., float milliseconds) before flooring/ceiling, unlike DateTimePaginator, so it cannot paginate datetime fields correctly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "value_from_cursor() returns a raw integer timestamp instead of converting it back to a datetime, so build_queryset() may compare a datetime column to an integer, yielding incorrect results or a database error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Code path using queryset[negative_start:stop] relies on negative slicing, but Django querysets do not support negative indexing and will raise AssertionError at runtime when cursor.offset < 0 and enable_advanced_features is True",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "organization_context.member can be None for non-member users, so accessing organization_context.member.has_global_access can raise AttributeError without a guard",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -8074,7 +8386,21 @@
         "source": "extracted"
       }
     ],
-    "gitar": []
+    "gitar": [],
+    "gitlab": [
+      {
+        "text": "Narrowing the lock scope to only protect the cache write allows two concurrent BuildIndex calls for the same key to run the full build concurrently (duplicate work/regression)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Concurrent BuildIndex calls for the same key can result in the second write to b.cache[key] silently overwriting the first completed index due to lack of serialization/guarding",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/getsentry/sentry/pull/80168": {
     "gemini": [
@@ -8521,6 +8847,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "MetricAlertDetectorHandler extends StatefulDetectorHandler but does not implement required abstract methods (counter_names, get_dedupe_value, get_group_key_values, build_occurrence_and_event_data), so instantiation will raise a TypeError at runtime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "MetricAlertDetectorHandler is currently instantiable despite being an incomplete stub; it should either provide stub implementations for all abstract methods or be explicitly marked abstract (inherit from abc.ABC) to prevent accidental instantiation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -8863,6 +9203,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Modified copy of `config` (with human-readable `schedule_type` substituted) is never used in the returned dict",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`monitor_environment.monitor.config` returns the original unmodified config, so the `schedule_type` transformation has no effect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/77754": {
@@ -9194,6 +9548,26 @@
     "gitar": [
       {
         "text": "Dataclass field `queued: datetime = timezone.now()` is evaluated at class definition/import time, causing all `AssignmentSource` instances using the default to share a stale timestamp instead of getting the current time at instantiation (should use `field(default_factory=timezone.now)`).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Using `timezone.now()` as a dataclass field default evaluates at import/class-definition time, causing all instances without an explicit `queued` to share the same stale timestamp",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`from_dict` does not convert `queued` back to a `datetime` when it arrives as an ISO string after Celery JSON serialization, so `queued` may be stored as a `str` and violate the type annotation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test method name has a typo: `test_from_dict_inalid_data` should be `test_from_dict_invalid_data`",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9797,6 +10171,44 @@
       },
       {
         "text": "terminate() sets shutdown_event and shuts down the queue pool but never joins/stops the commit thread, leaking it and potentially causing commits/logging against a shut-down pool",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Using `assert` for runtime type/argument validation is unsafe because assertions are skipped with Python `-O`, allowing invalid `message.value` to pass and causing a later `AttributeError` instead of a clear error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `queue.ShutDown` is incompatible with Python versions prior to 3.13, causing `AttributeError` at runtime if the project targets 3.11/3.12",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calling `q.shutdown(immediate=False)` is incompatible with Python versions prior to 3.13, causing `AttributeError` at runtime if the project targets 3.11/3.12",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`join()` delegating to `close()` causes shutdown side effects during a wait operation, including double-shutting down the queue pool and re-joining the commit thread; `join()` should only wait for in-flight work to complete",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The test\u2019s docstring claim (errors don\u2019t block commits for other messages) contradicts its assertion that no commits happened for `test_partition`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Given `OrderedQueueWorker.run` always calls `complete_offset` in a `finally` block, the test expectation is wrong: offsets will be marked complete and the commit loop will commit the later offset; the test should assert commits do occur for the subsequent successful message",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -10626,6 +11038,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "organization_context.member can be None (e.g., superusers), so accessing member.has_global_access without a None-guard can raise AttributeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Code uses negative slice indices on a Django queryset (queryset[negative:stop]), which Django ORM does not support and will raise AssertionError at runtime when a negative cursor offset is provided",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_item_key applies math.floor/math.ceil directly to attribute values; when ordering by a datetime field, this calls math.floor on a datetime object and raises TypeError, so it needs datetime-to-float conversion like DateTimePaginator",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "_load_segment_data no longer enforces the max_segment_spans guard, allowing oversized segments to be read without span-count enforcement and leaving max_segment_spans and its metric potentially dead/unused code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -11291,6 +11729,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "A newly added `upsampled_count` SnQLFunction is dead code because an existing `upsampled_count` is defined later and silently overwrites it in `function_converter` (dict comprehension keyed by `function.name`)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The new `upsampled_count` definition removes the null-safe `ifNull(sample_weight, 1)` fallback, making it less safe for events where `sample_weight` is NULL",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `hash(tuple(sorted(snuba_params.project_ids)))` in an external cache key is non-deterministic across processes due to Python hash randomization (`PYTHONHASHSEED`), causing cache misses between workers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The same non-deterministic `hash()` usage affects `invalidate_upsampling_cache`, so it may generate different keys than writers in other processes and cache invalidation can silently fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`if client_sample_rate:` incorrectly treats `0`/`0.0` as falsy and skips assigning `sample_rate` for valid zero sample-rate events; should explicitly check for `None`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A test expects upsampling (`count == 10`) when only one of two queried projects is allowlisted, but `_are_all_projects_error_upsampled` uses `all()` so upsampling won\u2019t apply unless all projects are allowlisted; expected count should be `1` or the test intent/implementation should be reconciled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The test comment claims behavior is 'any project is allowlisted' but this contradicts the documented/implemented behavior that requires all projects to pass the allowlist condition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -11808,6 +12290,26 @@
       },
       {
         "text": "There is no explicit invalidation mechanism for denial cache entries when permissions change; denial entries expire only via TTL, leading to stale authorization decisions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Cache miss metric is recorded when permissions are found in cache but access is denied (cache hit + allowed=false), which mislabels the outcome as a cache miss",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cache miss metric should only be recorded when getCachedIdentityPermissions returns an error (no cached entry), but current control flow records misses outside the err != nil branch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Denial cache key concatenates components with '_' without escaping, so if name or parent contain '_' the key can collide and map different inputs to the same cache entry",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -12363,6 +12865,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Accessing integration.metadata[\"sender\"] can raise a KeyError when sender metadata is missing (e.g., older or webhook-less installations) because build_integration() only sets sender conditionally",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A broad `except Exception` swallows all errors during token exchange without logging, making production failures hard to diagnose",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -12711,6 +13227,38 @@
       },
       {
         "text": "Test cleanup for the separately created \"idp-alias-20\" also references the literal string \"alias\" instead of \"idp-alias-20\", so cleanup fails and leaks that IDP between runs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "idpDelegate.getByAlias(alias) is called unconditionally in remove(), causing an unnecessary database round-trip even when the cache is valid (else branch)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In the else branch of remove(), the code ignores the already-cached IdentityProviderModel (cached.getIdentityProvider()) and instead fetches via delegate for registerIDPLoginInvalidation, which could use the cached model",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test cleanup registration uses the literal string \"alias\" instead of the actual IDP alias (e.g., \"idp-alias-\" + i), so created IDPs may not be cleaned up and can pollute subsequent test runs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Another cleanup registration uses an incorrect hardcoded alias on line 425 (\"idp-alias-20\"), indicating the cleanup alias does not match the created IDP alias",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same cleanup alias bug as line 381: uses \"alias\" instead of \"idp-alias-20\", preventing proper cleanup",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -13278,6 +13826,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Negation operator in enableSqlExpressions inverts the feature-flag check, causing incorrect logic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Both branches of the if statement in enableSqlExpressions return false, making the function always return false",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQL expressions are always rejected with \"sqlExpressions is not implemented\" regardless of the feature flag state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -13605,6 +14173,20 @@
       },
       {
         "text": "In non-Dev mode, the missing re-check causes a thundering herd of redundant I/O on first access because multiple goroutines perform the same cache population work unnecessarily.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "After acquiring the write lock, the code does not re-check `entryPointAssetsCache`, making the double-checked locking pattern incomplete",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Multiple goroutines that observed `ret == nil` under the read lock can each recompute the assets (potentially triggering redundant file/HTTP I/O) and then overwrite the cache sequentially",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -14258,6 +14840,38 @@
       },
       {
         "text": "In deleteByIDs (SQLite fallback), building the IN-list via repeated fmt.Sprintf string concatenation in a loop causes O(n^2) allocations and severe performance/memory overhead for large batches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Ticker interval was reduced to 1 minute while clean() has a 9-minute timeout, so a new cleanup run can start before the previous one finishes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The 1-minute ticker interval change appears to be a debug/development artifact and should be reverted to a 10-minute interval",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logging uses r.log.Error(...) for routine informational cleanup messages (IDs being cleaned, counts affected), which can pollute error logs and trigger false alerts; should use Debug or Info instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Additional occurrences of inappropriate r.log.Error(...) usage for routine messages exist at lines 537, 554, 557, 576, and 579",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQLite inline-ID path builds a comma-separated ID string via repeated fmt.Sprintf in a loop, causing O(n^2) behavior for large batches; should use strings.Builder or strings.Join for linear performance",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -15194,6 +15808,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "On d.Storage.Create failure, code calls d.recordLegacyDuration instead of d.recordStorageDuration, mislabeling the metric as legacy",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Context is populated with d.Log (base logger) instead of the enriched log variable containing name/kind/method, so klog.FromContext(ctx) downstream misses structured fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "recordStorageDuration is called with name (resource name string) as the third argument instead of options.Kind, causing inconsistent/incorrect metric labels",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "On d.Storage.Update failure, code calls d.recordLegacyDuration instead of d.recordStorageDuration, mislabeling the metric as legacy",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In the goroutine calling d.Legacy.DeleteCollection, metric is recorded with recordStorageDuration instead of recordLegacyDuration, misattributing legacy latency to storage metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -15892,6 +16538,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "GrafanaRuleListItem is missing a React `key` prop (should use the `key` from `KeyedRuleWithOrigin`), which can cause React missing-key warnings and incorrect list rendering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In prom-only mode when `rule` is undefined, `SilenceGrafanaRuleDrawer` never renders but `handleSilence` can still set `showSilenceDrawer(true)` and the silence action may remain enabled, so clicking silence does nothing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The silence flow does not properly handle the prom-only case (needs a drawer that accepts `GrafanaPromRuleDTO` or the silence action should be suppressed when no `rulerRule` is available)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A leftover `// duplicate` development comment remains in the code and should be removed because it is ambiguous",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -16287,6 +16959,20 @@
       },
       {
         "text": "Unit test applyTemplateVariables mocks mutate the input query object (modifying query.expr in place) instead of returning a new copied object like the real implementation, making tests inaccurate and potentially masking bugs that depend on targets remaining unmodified after interpolation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Queries/targets are interpolated with applyTemplateVariables before splitQueriesByStreamShard/runSplitQuery, and then runSplitQuery applies applyTemplateVariables again, causing double interpolation of the same targets",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Double interpolation can incorrectly expand values that contain a '$' character (e.g., a label value like '$production'), leading to wrong query substitution/results",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -16931,6 +17617,26 @@
       },
       {
         "text": "AnonymousDeviceLimit is exposed in the publicly accessible /api/frontend/settings/ response, leaking the exact device limit threshold and enabling targeted resource-exhaustion/DoS attacks by filling the device table to the limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "When the device limit is reached, updateDevice is attempted for expired devices (updated_at older than 30 days); because the BETWEEN clause excludes them, rowsAffected==0 triggers ErrDeviceLimitReached even though the device is not counted by CountDevices, preventing expired devices from reconnecting at capacity",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AnonymousDeviceLimit is a non-pointer int64 without omitempty, so it always serializes in JSON (including 0) even when no limit is configured, conflicting with the TypeScript type number | undefined which implies the field may be absent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TagDevice is now called synchronously in Authenticate, so slow/unavailable store calls can block authentication; the previous goroutine approach used a timeout to avoid blocking and a similar timeout/context deadline may be needed",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -17645,6 +18351,44 @@
     "gitar": [
       {
         "text": "NewMetricsMiddleware reuses a single MetricsMiddleware instance and mutates its shared next field inside the returned closure, causing concurrent goroutines to write/read MetricsMiddleware.next during requests (data race/undefined behavior detectable with -race).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "ContextualLoggerMiddleware lacks a nil-request guard; if req is nil, accessing req.PluginContext will panic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CallResource lacks a nil-request guard; if req is nil, accessing req.PluginContext will panic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CheckHealth lacks a nil-request guard; if req is nil, accessing req.PluginContext will panic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CollectMetrics lacks a nil-request guard; if req is nil, accessing req.PluginContext will panic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "FromContext returns a new TestLogger instance instead of returning the existing logger (f), so LoggerMiddleware.logRequest logs to a throwaway instance and tests won\u2019t capture/increment f.InfoLogs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "traceID is no longer included in the \"Plugin Request Completed\" log line (dropped after changes); ContextualLoggerMiddleware.instrumentContext doesn\u2019t add it, causing an observability regression",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -18863,6 +19607,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "before_validation calls sub! on self.host without guarding against nil, causing NoMethodError when host is nil",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "update and destroy use .first to look up a record and don\u2019t handle the nil-not-found case, leading to NoMethodError (save_host(nil) or nil.destroy) and a 500 instead of a 404",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "String.replace with a string argument only replaces the first '_' so model types with multiple underscores are converted incorrectly, breaking ADMIN_MODELS lookup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "obj[k].map(...) is called without verifying obj[k] is an array, so null/undefined _ids fields can throw a TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "destroyRecord() lacks a .catch() handler, so server errors are swallowed and the UI isn\u2019t updated or surfaced to the user",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -19517,6 +20293,20 @@
       },
       {
         "text": "desktop/topic-post.scss:291 `.topic-meta-data h5 a` uses `dark-light-choose` with the light-theme argument changed from `scale-color($primary, $lightness: 30%)` to `$lightness: 70%`, making the link too light/washed out on light themes (regression), likely due to swapped lightness values",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Light-mode $lightness value was accidentally changed from 30% to 70%, making the username link in embedded/expanded posts too washed out in light mode",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dark-mode lightness value is inconsistent with the MR\u2019s complementary pattern (light% + dark% = 100%); if light is 30%, dark should be 70%",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -20416,6 +21206,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "`group.users.delete(user_id)` passes an integer ID to an ActiveRecord association `delete` method that expects model instances, so the user is not removed (silently no-op)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`Math.floor(user_count / limit) + 1` miscalculates `totalPages` when `user_count` is exactly divisible by `limit` (should use `Math.ceil`)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The incorrect `totalPages` calculation in `admin-group.js.es6` (line 13) prevents `showingLast` from becoming `true` on the final page when the count is a multiple of the limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`Math.floor(this.get(\"user_count\") / this.get(\"limit\")) + 1` overcounts pages when `user_count` is an exact multiple of `limit`, leaving `showingLast` false and the \"next\" pagination link incorrectly enabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Route `remove_member` is defined with HTTP DELETE (`delete \"members\"`), but the test uses `xhr :put`, so the request won\u2019t route to `remove_member` and the test doesn\u2019t exercise the intended endpoint",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "An early return now returns `undefined` instead of a resolved promise (`Ember.RSVP.resolve(...)`), which can cause callers expecting a promise (e.g., `removeMember`/`addMembers` calling `findMembers`) to silently fail when the group name is empty",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -20962,6 +21790,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "`record.save` failures are silently swallowed, so a failed save (e.g., DB error) can drop the statistics update without any indication/logging",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Spec stubs `BlockedEmail.should_block?` but does not stub `SiteSetting.email_domains_whitelist`/`email_domains_blacklist`, so non-blank settings can trigger whitelist/blacklist validation first and make the \"doesn't add an error\" test pass for the wrong reason (false positive)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -21431,6 +22273,26 @@
       },
       {
         "text": "align-items mixin includes invalid CSS property -ms-align-items (does not exist); should be removed and rely on the correct IE10 prefixed property -ms-flex-align",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "`-ms-align-items` is not a valid vendor-prefixed CSS property and will be ignored by browsers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Redundant/incorrect `-ms-align-items` declaration should be removed because the correct IE10 property `-ms-flex-align` is already declared above",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`@mixin align-items` uses 4-space indentation, inconsistent with the 2-space indentation used elsewhere in the file and other new mixins in the diff",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -21983,6 +22845,20 @@
       },
       {
         "text": "`website_name` domain matching logic does not handle the case where the website host is a subdomain of the Discourse host (e.g., `www.example.com` vs `example.com`), leading to incorrect output (returns only host instead of full path)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Guard method `include_website_name` is missing the `?` suffix, so ActiveModel::Serializers will not recognize/call it and `website_name` will always be serialized when `website` is present (dead code)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` is in the main `attributes` list but not in `untrusted_attributes`, so it can leak website information to anonymous viewers for TL0 users even when `website` is suppressed; it should be added to `untrusted_attributes`",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -23278,6 +24154,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Origin validation uses `indexOf` (substring match) instead of an exact origin comparison, allowing acceptance of messages from attacker-controlled lookalike origins",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`X-Frame-Options` is set to an invalid value `ALLOWALL`, which is not defined by the spec and may cause browsers to block framing unexpectedly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`request.referer` is inserted into a JavaScript string using ERB HTML-escaping (`<%= %>`) rather than JavaScript-escaping, so characters like single quotes can break the generated JS and the `postMessage` call",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`i.content` may be `nil` for RSS items without a `<content>` element, so calling `.scrub` can raise `NoMethodError` and abort feed processing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`url` is interpolated into HTML without escaping; even with an `https?://` check, query parameters can include `'` or `<` leading to broken attributes or HTML injection",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -24227,6 +25135,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "A new 3-argument self.downsize(from, to, dimensions, opts={}) method is added without removing the existing 4-argument version, so the second definition silently overrides the first and leaves the 4-argument method as dead code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Existing callers that pass max_width and max_height to downsize will now raise ArgumentError due to the overridden method expecting 3 arguments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Upload size limiting was changed from using Discourse.SiteSettings['max_' + type + '_size_kb'] to a hardcoded 10 * 1024, removing separate configured limits for images vs attachments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Because attachments are not downsized server-side, applying the same hardcoded limit to attachments bypasses the site's configured attachment size limit; the attachment path should still read from SiteSettings (only bypass for images)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -24945,6 +25879,32 @@
       },
       {
         "text": "The unsubscribe action is implemented as a GET route but mutates database state (changes notification_level and saves) on every request, causing side effects such as auto-unsubscribing on page load, state changes on reloads, and unintended triggers from link previews/prefetching",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "TopicUser.find_by can return nil; calling tu.notification_level without a nil guard can raise NoMethodError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "stopNotificiationsText is misspelled (Notificiations vs Notifications), making future renaming/breakage likely even though the template currently matches the typo",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "PostStream.loadTopicView promise lacks a .catch() handler; failures (e.g., topic not found/request error) will be swallowed and the route can stall without user feedback",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "List-Unsubscribe header still only includes the user preferences URL and ignores the available topic-specific unsubscribe_url, so one-click unsubscribe clients may bypass the per-topic unsubscribe page",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -25746,6 +26706,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "deleteCacheMutation does not invalidate the connectedCalendars query on success, leaving cacheUpdatedAt stale until manual refresh",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Date formatting uses a hardcoded \"en-US\" locale instead of the user's locale available via useLocale",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A div wrapper is unconditionally rendered even when CredentialActionsDropdown returns null (!canDisconnect && !hasCache), leaving an empty w-32 element that occupies layout space",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The error/alert case also unconditionally renders the div wrapper when CredentialActionsDropdown returns null, leaving an empty w-32 element in the DOM",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Script uses macOS-specific sed syntax (sed -i '' -E) and will fail on Linux where sed expects sed -i -E; needs a portable approach or platform check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -26434,6 +27426,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "UTC offset is incorrectly negated with `* -1`, shifting timestamps in the wrong direction when converting UTC to organizer local time for day comparison",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dayjs objects are compared with `===`, which compares references and will always be false; should use `.isSame()` to compare timestamps",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`end` time is computed from `slotStartTime` instead of `slotEndTime`, making `end` identical to `start` and breaking detection of slots extending past working hours",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`override.timeZone` can be `undefined`, so calling `dayjs(...).tz(undefined)` falls back to the system timezone instead of the organizer timezone; needs a guard or fallback timezone",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -26901,6 +27919,20 @@
     "gitar": [
       {
         "text": "deleteMany query in SMS reminder cron uses an OR branch `retryCount > 1` without filtering by `method`, causing deletion of non-SMS WorkflowReminders (e.g., email/WhatsApp) when they have retryCount > 1",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Second OR branch `{ retryCount: { gt: 1 } }` in `deleteMany` lacks a `method` constraint, causing deletion of `WorkflowReminder` records for all methods (not just SMS) when `retryCount > 1`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unconstrained deletion in `deleteMany` can lead to unintended data loss for non-SMS reminder types (e.g., email, WhatsApp)",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -27381,7 +28413,33 @@
         "source": "extracted"
       }
     ],
-    "gitar": []
+    "gitar": [],
+    "gitlab": [
+      {
+        "text": "TypeScript type `InsightsBookingServicePublicOptions` makes `teamId` optional for all scopes, so `{ scope: \"team\", userId, orgId }` can compile even though `teamId` is required for team scope",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mismatch between `InsightsBookingServicePublicOptions` and the zod schema causes missing `teamId` errors to surface only at runtime via zod validation (returning `NOTHING_CONDITION`) instead of being caught at compile time",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`else if (filterConditions)` and `else` branches in `getBaseConditions` are unreachable dead code because `getAuthorizationConditions()` always returns a truthy `Prisma.Sql` object",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Caching tests were removed but caching implementation (`cachedAuthConditions`, `cachedFilterConditions`) remains, leaving caching behavior untested and allowing stale/incorrect cached values to go unnoticed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   },
   "https://github.com/calcom/cal.com/pull/11059": {
     "gemini": [
@@ -28800,6 +29858,74 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "Webhook authentication guard can be bypassed when CALCOM_WEBHOOK_SECRET is unset because undefined secret compares equal to missing header, allowing unauthenticated access",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Endpoint does not explicitly reject requests when CALCOM_WEBHOOK_SECRET is not configured",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using schema.parse() causes ZodError to throw on invalid input, leading to an unhandled 500 instead of a 400 validation response",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CALCOM_APP_CREDENTIAL_ENCRYPTION_KEY missing results in symmetricDecrypt being called with an empty key, causing garbage output or cryptographic errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Endpoint should fail explicitly when CALCOM_APP_CREDENTIAL_ENCRYPTION_KEY is missing instead of proceeding",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "parseRefreshTokenResponse returns a SafeParseReturnType object, but code stores it directly as the credential key, corrupting stored credentials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Code fails to extract .data from the safeParse result, unlike the previous parse() behavior that returned parsed data directly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When APP_CREDENTIAL_SHARING_ENABLED and CALCOM_CREDENTIAL_SYNC_ENDPOINT are set, refreshOAuthTokens returns a fetch Response, but code reads res?.data, producing undefined token and causing a TypeError when accessing token.access_token",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Sync-endpoint fetch Response is not parsed (e.g., via await res.json()) before accessing token fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "For HubSpot, refreshOAuthTokens returns a fetch Response instead of a HubspotToken, so accessing expiryDate/expiresIn/accessToken yields undefined and silently corrupts stored credentials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When refresh_token is absent, code sets it to the literal string \"refresh_token\", which can propagate as a fake token and trigger incorrect downstream behavior or API calls",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -29786,6 +30912,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "`originalRescheduledBooking.workflowReminders` is accessed even though `workflowReminders` is not included in the Prisma query in `getOriginalRescheduledBooking`, so it will be `undefined` and can cause a runtime `TypeError`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The reminders query filters only by `cancelled: true` and does not also require `scheduled: true` and `referenceId` to be non-null, so it can return unscheduled reminders with `referenceId: null`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The loop calls `client.request` with `batch_id: null` when an unscheduled cancelled reminder is returned, causing an invalid SendGrid API request that aborts processing of subsequent reminders in the batch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14740": {
@@ -30708,6 +31854,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "`isTeamAdminOrOwner` uses `&&` requiring a user to be both team admin and owner, incorrectly denying access to admins who aren\u2019t owners; should use `||`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`sendAddGuestsEmails` is passed raw `guests` instead of `uniqueGuests`, causing existing attendees included in the input to be treated as new and receive the wrong (\"scheduled\") email",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Blacklist check lowercases stored blacklisted emails but does not lowercase the incoming guest email, allowing case-variant blacklisted emails to bypass the check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Caught error is not properly logged (only a static string is printed), making debugging difficult; should log the actual `err`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`this.calEvent.attendees[0].name` is accessed without checking that `attendees` is non-empty, risking a runtime error when the array is empty",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When `err.data?.code` is undefined, the constructed template-literal message is still non-empty (e.g., \"undefined: ...\"), preventing the `|| t(\"unable_to_add_guests\")` fallback and showing a confusing message",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tooltip text \"Remove email\" is hardcoded in English instead of using `t()` for i18n consistency",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -31527,6 +32717,32 @@
       },
       {
         "text": "The backup codes blob URL created with URL.createObjectURL is not revoked on component unmount or when resetState() runs, causing a memory leak across modal openings",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "TypeScript infers `useState([])` as `never[]`, causing strict-mode type errors when setting `backupCodes` and mapping over it; the state type should be declared explicitly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`backupCodesUrl` created with `URL.createObjectURL` is never revoked on unmount, causing a memory leak; add cleanup to call `URL.revokeObjectURL`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "An exported function named `TwoFactor` conflicts with the `TwoFactor` component exported from `TwoFactor.tsx`, causing naming confusion in tooling and code; rename it to match the file",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code verification lacks rate limiting (unlike the login flow using `checkRateLimitAndThrowError`), enabling brute-force attempts; add consistent rate limiting",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -32588,6 +33804,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gitlab": [
+      {
+        "text": "mainHostDestinationCalendar can be undefined when evt.destinationCalendar is null/undefined/empty, so accessing .integration without optional chaining can throw a TypeError (original used ?.integration)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When externalCalendarId is falsy, find((cal) => cal.externalId === externalCalendarId) compares against the same falsy value and never matches, always returning undefined; fallback should use the first destination calendar externalId (event.destinationCalendar?.externalId) or otherwise correct the matching condition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same falsy externalCalendarId find() bug as updateEvent: it returns undefined and then defaultCalendarId fallback is used, which may delete from the wrong calendar",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If credential remains undefined after DB fallback (credentialFromDB null or missing app?.slug), updateEvent is called with undefined credential, violating CredentialWithAppName and potentially causing a runtime error; call should be guarded",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "evt.destinationCalendar can be null; optional chaining on null?.push(...) is a no-op so team member destination calendars are never added for collective events when no primary destination calendar is set; destinationCalendar array should be initialized before pushing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Condition for setting slug is inverted: original set slug when IS_TEAM_BILLING_ENABLED is false, but new code sets slug when IS_TEAM_BILLING_ENABLED is true",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -33275,6 +34529,26 @@
       },
       {
         "text": "Type annotations for the calendar field in getCalendarCredentials were not updated after getCalendar became async (Calendar|null vs Promise<Calendar|null>), risking downstream type confusion if consumers access .calendar without awaiting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitlab": [
+      {
+        "text": "Using async inside Array.forEach causes returned Promises to be ignored, so async operations in the callback are not awaited",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Surrounding try/catch will not catch errors thrown inside the forEach async callback (e.g., from getCalendar or deleteEvent), leading to unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Email sending code may run before calendar/video deletions complete because the deletions inside forEach are not awaited",
         "path": null,
         "line": null,
         "source": "extracted"

@@ -296,7 +296,7 @@ async def main() -> None:
     failed = 0
     fallback = 0
 
-    for (golden_url, tool, texts), result in zip(work_items, results):
+    for (golden_url, tool, texts), result in zip(work_items, results, strict=True):
         if isinstance(result, Exception):
             print(f"  Exception for {tool} @ {golden_url}: {result}")
             result = None
@@ -322,7 +322,7 @@ async def main() -> None:
     with open(output_file, "w") as f:
         json.dump(all_groups, f, indent=2)
 
-    print(f"\nDone!")
+    print("\nDone!")
     print(f"  Succeeded : {success}")
     print(f"  Fallbacks : {fallback}  (all-singletons, no dedup applied)")
     print(f"  Errors    : {failed}")

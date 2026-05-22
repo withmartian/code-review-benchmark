@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
-from hypothesis import given, settings
+from hypothesis import given
+from hypothesis import settings
 from hypothesis import strategies as st
+import pytest
 
-from pipeline.discover import _date_to_suffix, _extract_pr_metadata
-
+from pipeline.discover import _date_to_suffix
+from pipeline.discover import _extract_pr_metadata
 
 # -- _date_to_suffix ----------------------------------------------------------
 

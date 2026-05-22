@@ -605,7 +605,7 @@ async def enrich_loop(
                             await enrich_single_pr(gh, repo_obj, pr_row, cfg)
                             enriched_count += 1
                             break
-                        except TokenInvalidError as e:
+                        except TokenInvalidError:
                             pool.mark_invalid(gh)
                             gh = None
                             logger.warning(f"Worker {worker_id}: token invalid, rotating ({pool.status_summary()})")

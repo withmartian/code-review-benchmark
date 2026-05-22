@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
-from hypothesis import given, settings
+from hypothesis import given
+from hypothesis import settings
 from hypothesis import strategies as st
+import pytest
 
-from pipeline.volumes import _date_to_suffix, _suffix_to_date
-
+from pipeline.volumes import _date_to_suffix
+from pipeline.volumes import _suffix_to_date
 
 # -- _date_to_suffix ----------------------------------------------------------
 

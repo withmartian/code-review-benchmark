@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
-from pipeline.label import _extract_file_list, _extract_suggestion_summary
-
+from pipeline.label import _extract_file_list
+from pipeline.label import _extract_suggestion_summary
 
 # -- _extract_file_list -------------------------------------------------------
 

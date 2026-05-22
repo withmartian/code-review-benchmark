@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -33,8 +34,11 @@ import time
 from config import DBConfig
 from db.connection import DBAdapter
 from db.schema import create_tables
-from pipeline.assemble import _determine_roles, _extract_pr_metadata, TimelineEvent
-from pipeline.enrich import GitHubEnrichClient, RateLimitExhaustedError, TokenPool
+from pipeline.assemble import TimelineEvent
+from pipeline.assemble import _determine_roles
+from pipeline.assemble import _extract_pr_metadata
+from pipeline.enrich import RateLimitExhaustedError
+from pipeline.enrich import TokenPool
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +113,6 @@ async def _update_pr_and_roles(
     Returns True if roles were updated.
     """
     pr_id = row["id"]
-    repo_name = row["repo_name"]
-    pr_number = row["pr_number"]
 
     if not dry_run:
         if pr_api_raw is not None:
@@ -373,10 +375,8 @@ async def _backfill_from_api(
     stop_event.set()
     await asyncio.gather(*workers)
     progress_task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await progress_task
-    except asyncio.CancelledError:
-        pass
 
     await pool.close()
 

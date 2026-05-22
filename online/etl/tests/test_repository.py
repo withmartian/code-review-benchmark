@@ -316,7 +316,7 @@ class TestSqliteIntegration:
 
     @pytest.mark.asyncio
     async def test_get_assembled_not_analyzed_with_until(
-        self, db: DBAdapter, repo: PRRepository
+        self, db: DBAdapter, repo: PRRepository  # noqa: ARG002
     ) -> None:
         """`until` is exclusive: --since 4/18 --until 4/19 yields just 4/18."""
         cid = await repo.upsert_chatbot("rangetest[bot]")
@@ -364,7 +364,7 @@ class TestSqliteIntegration:
 
     @pytest.mark.asyncio
     async def test_get_assembled_not_analyzed_until_all_chatbots(
-        self, db: DBAdapter, repo: PRRepository
+        self, db: DBAdapter, repo: PRRepository  # noqa: ARG002
     ) -> None:
         """until param works for the all-chatbots variant too."""
         c1 = await repo.upsert_chatbot("rangetest1[bot]")
@@ -393,7 +393,7 @@ class TestSqliteIntegration:
 
     @pytest.mark.asyncio
     async def test_get_assembled_not_analyzed_sort_by_sweep(
-        self, db: DBAdapter, repo: PRRepository
+        self, db: DBAdapter, repo: PRRepository  # noqa: ARG002
     ) -> None:
         """sort_by='sweep' orders by assembled_at DESC, catching late-discovered PRs."""
         cid = await repo.upsert_chatbot("sorttest[bot]")

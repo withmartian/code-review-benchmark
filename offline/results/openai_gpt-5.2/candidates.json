@@ -1301,6 +1301,70 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Lithuanian translation key `totpStep1` contains Italian text (copy-paste error) instead of Lithuanian",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Lithuanian translation key `loginTotpStep1` contains Italian text instead of Lithuanian",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`PolicyFactory` instances are recreated per `VerifyMessageProperties` instance; they should be `private static final` since they are thread-safe and immutable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "English message bundle is loaded from the filesystem for every translation file verification; should be loaded once and cached for the task duration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Path resolution for the English properties file is fragile because it relies on string manipulation of the absolute path and assumes a fixed directory structure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Regex `\\\\{[0-9]+,choice,[^}]*}` fails for `choice` patterns containing nested placeholders because `[^}]*` stops at the first closing brace",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`Pattern` for HTML tags is recompiled repeatedly; it should be `private static final`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Method name typo: `santizeAnchors` should be `sanitizeAnchors`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Error diff prefix/suffix stripping logic can compute overlapping start/end indices (start + end > sanitized.length()), causing sanitized.substring(start, sanitized.length() - end) to throw StringIndexOutOfBoundsException (beginIndex > endIndex) when sanitizer output is very short",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "verifySafeHtml() catches IOException and rethrows as RuntimeException, which bypasses verify()'s IOException handler that would wrap errors as MojoExecutionException, leading to uncaught RuntimeException stack traces (e.g., when the English reference properties file is missing or path resolution fails)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -1935,6 +1999,58 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Null check is incorrectly validating `grantType` again instead of `rawTokenId`, contradicting the error message",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "IllegalArgumentException message about `encodedTokenId` length is misleading; it should state that the prefix (context before the colon) must be 6 characters",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Grant shortcut validation uses incorrect substring indices; the shortcut is at prefix indices 4\u20135 (substring(4,6))",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Grant shortcut validation logic is inverted/incorrect; it should return false when the extracted shortcut does not match the expected shortcut",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "AccessTokenContext constructor fails to null-check rawTokenId due to a copy-paste error (checks grantType twice), allowing null rawTokenId and causing a later NullPointerException during token ID encoding",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId test matcher uses incorrect substring indices for extracting the grant type shortcut (uses substring(3,5) instead of substring(4,6) for SSTTGG:uuid format)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId test matcher has inverted comparison logic (returns false when the extracted shortcut matches expected, instead of when it does not), so it doesn\u2019t actually validate the grant type and lets invalid prefixes pass",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OAuth2GrantTypeFactory.getShortcut() Javadoc incorrectly states shortcuts are usually 3 letters while the implementation/decoder contract expects 2 characters (encodedContext length 6), risking decoding failures if a 3-character shortcut is implemented",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -2397,7 +2513,34 @@
         "line": null,
         "source": "extracted"
       }
-    ]
+    ],
+    "gemini-v2": [
+      {
+        "text": "session.getProvider() can return null; accessing recoveryCodeCredentialProvider without a null check may cause a NullPointerException",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calling Optional.get() without checking presence can throw NoSuchElementException; use orElseThrow() with a descriptive message instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Use of raw List type when deserializing recovery keys reduces type safety; specify a generic type (e.g., List<String>) via casting/TypeReference",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isValid checks recovery code match but does not consume/remove the used code; recovery codes should be single-use and removed after validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": []
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
     "claude": [],
@@ -2642,7 +2785,34 @@
         "line": null,
         "source": "extracted"
       }
-    ]
+    ],
+    "gemini-v2": [
+      {
+        "text": "Code calls `picocli.exit()` even though `picocli` is only a package name and `CommandLine` has no `exit(int)` method, likely causing a compilation error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Exit code should be set using the Keycloak CLI framework mechanism (e.g., throwing `PropertyException` or calling `spec.commandLine().setExitCode()`) instead of `picocli.exit()`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Changing `RECREATE_UPGRADE_EXIT_CODE` from 4 to 3 is a breaking change for users/scripts relying on the existing exit code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If `RECREATE_UPGRADE_EXIT_CODE` is changed, the documentation in `docs/guides/server/update-compatibility.adoc` must be updated accordingly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": []
   },
   "https://github.com/keycloak/keycloak/pull/36880": {
     "claude": [
@@ -3167,6 +3337,82 @@
       },
       {
         "text": "AdminPermissionsSchema.getResourceName lacks a CLIENTS branch, so it falls back to resource.getDisplayName() which is null for client resources, leading to null/UUID display names when rendering client permission resource names",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "getClientsWithPermission iterates over all CLIENTS_RESOURCE_TYPE resources including the resource-type resource itself (named \"Clients\"), which can be incorrectly added to the granted set when user has global permissions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The resource-type resource (named \"Clients\") should be filtered out in getClientsWithPermission because it is not a valid client ID and may break calling code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The logger field is defined but never used in the class and should be removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Permission evaluation logic for checking a specific scope is duplicated and should be simplified by reusing hasGrantedPermission",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The private method getEvaluationContext is defined but never used within the class and should be removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The nested loop that checks whether a scope is present in permissions can be simplified by using Collection.contains() on permission scopes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "ClientRemovedEvent listener is incorrectly guarded by the V1 feature flag (ADMIN_FINE_GRAINED_AUTHZ), causing wrong behavior when V2 is enabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When both V1 and V2 are enabled, ClientRemovedEvent handling calls V2 permissions where setPermissionsEnabled() throws UnsupportedOperationException, crashing client removal",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When only V2 is enabled, the V1-guarded ClientRemovedEvent handler is skipped, so V2 client authorization resources created via AdminPermissionsSchema.getOrCreateResource are never cleaned up, leading to orphaned resources",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "V2 ClientRemovedEvent handling should remove the corresponding authorization resource (e.g., via AdminPermissionsSchema.removeResource) instead of using the V1-style setPermissionsEnabled approach",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2 contains an unused private method getEvaluationContext(ClientModel, AccessToken), indicating dead/leftover code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2 has unused imports (ClientModelIdentity, DefaultEvaluationContext, EvaluationContext, AccessToken) introduced/kept due to the unused getEvaluationContext method",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -3735,6 +3981,40 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "GroupPermissionsV2.canManage() incorrectly returns true when the caller has the VIEW scope; it should require only the MANAGE scope, otherwise view-only users can pass the global management check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Group permission evaluation iterates over all Group resources and calls hasPermission for each, causing an O(N) full authorization-engine evaluation that can become a performance bottleneck in realms with many groups; should use a more efficient query or caching",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "GroupPermissionsV2.canManage() (no-arg) incorrectly checks both VIEW and MANAGE scopes, making it equivalent to canView() and allowing users with only VIEW permission to pass requireManage() authorization checks (privilege escalation for creating/deleting top-level groups)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupPermissionsV2.getGroupIdsWithViewPermission() uses authorization Resource.getId() (internal UUID) when calling hasPermission(), causing resourceStore.findByName() lookups to fail and preventing evaluation of individual group-level permissions (falls back to type-level permissions)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupPermissionsV2.getGroupIdsWithViewPermission() adds authorization resource UUIDs (Resource.getId()) to the returned group ID set instead of actual group model IDs (resource name), causing downstream user searches filtered by group membership to return no users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -4269,6 +4549,46 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Method getBouncyCastleProvider returns the default system provider when BouncyCastle is not used, which is misleading and inconsistent with other implementations; it should return null to avoid callers assuming BC-specific behavior or provider name",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Redundant calls/lines where ASN1Encoder.create() results are not used or assigned, making the instantiation unnecessary since encoding happens in the subsequent return statement",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ASN.1 indefinite-length encoding (length marker 0x80) is not supported but currently not explicitly rejected (e.g., readSequence skips loop when length == -1); should throw an IOException to avoid silent failures/unexpected behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logging of ignored crypto providers uses manual string concatenation and can be simplified (and made less error-prone regarding trailing commas) by using streams with Collectors.joining",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Dead code in concatenatedRSToASN1DER: two ASN1Encoder instances are created, write() is called, and results are discarded (lines 114-115), while encoding is done by new encoders later",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Breaking change in public CryptoProvider interface: order() added as abstract method without a default implementation, causing third-party implementations to fail to compile; should provide a default (e.g., return 0)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -4736,6 +5056,28 @@
       },
       {
         "text": "Incomplete NPE fix: three `getSubGroupsStream` overloads in `GroupAdapter` still dereference `modelSupplier.get()` without a null check, so they can still throw NPE under concurrent deletion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Reader thread is started but never joined, creating a race condition where assertions may run before the thread finishes or before exceptions are recorded in caughtExceptions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Method returns null when underlying model is missing, which can cause a NullPointerException if the caller unboxes the result into a primitive long; should return 0L instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Test race condition in createMultiDeleteMultiReadMulti: main thread asserts caughtExceptions is empty immediately after setting deletedAll=true without joining the reader thread, making the test flaky and potentially missing exceptions from the reader thread",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -5228,6 +5570,64 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "`isConditionalPasskeysEnabled` includes a `user != null` check that regresses logic by disabling Conditional UI Passkeys on the initial/anonymous login page when `context.getUser()` is null",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Discoverable credentials (Conditional UI Passkeys) are not available for anonymous login and re-authentication due to the new null-user restriction",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`isConditionalPasskeysEnabled` should be changed to a no-argument method to match its intended usage and avoid passing a redundant null user",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Call sites should be updated to invoke the no-argument `isConditionalPasskeysEnabled()` so Passkeys initialize correctly when the user is not yet identified",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The new `user != null` restriction breaks Passkey support during the challenge phase for anonymous users where the previous logic allowed `context.getUser() == null`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "There is a compilation error caused by a signature mismatch: a call uses `isConditionalPasskeysEnabled()` with no args while `UsernamePasswordForm.java` defines it with one argument",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`UsernameForm` may not have access to `isConditionalPasskeysEnabled` and required dependencies (e.g., `webauthnAuth`); the helper may need to be moved to `AbstractUsernameFormAuthenticator`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "`UsernameForm.java` calls `isConditionalPasskeysEnabled()` with no arguments even though the only available method signature requires a `UserModel` parameter, causing a compilation error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`webauthnAuth.fillContextForm(context)` is no longer invoked during initial login (`user == null`) due to inverted/incorrect conditional logic, so WebAuthn/passkeys challenge data (e.g., CHALLENGE, RP_ID) is not populated and conditional UI cannot work on the initial login page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/93824": {
@@ -5683,6 +6083,40 @@
       },
       {
         "text": "Method _create_process_for_shard is defined but never called (restart logic uses _create_process_for_shards directly), indicating dead/refactoring-leftover code that should be removed to avoid confusion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Calling buffer.get_memory_info() for every buffer is redundant and inefficient because all SpansBuffer instances share the same Redis client/cluster configuration, causing multiple expensive cluster memory usage fetches per batch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A break statement in the shutdown/wait loop exits early when the deadline is reached, preventing termination of subsequent processes and potentially leaving orphaned processes alive",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Metrics tag key is inconsistent: uses \"shards\" in one place but \"shard\" elsewhere, making observability/queries inconsistent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Inconsistent metrics tag key for flusher metrics: `spans.buffer.flusher.wait_produce` uses tag key `\"shards\"` while other flusher metrics use `\"shard\"`, causing the timer to be tracked under a different tag name and breaking correlation in dashboards/alerts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In `test_basic`, `time.sleep` is monkeypatched to a no-op, so the added `time.sleep(0.1)` does not actually wait for flusher threads, undermining the intended synchronization and potentially causing flaky tests",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -6277,6 +6711,46 @@
     "greptile-v4-1": [
       {
         "text": "In fetch_error_details, zip(error_ids, events.values()) can pair the wrong error_id with the wrong event data because nodestore.backend.get_multi is keyed by node_id and events.values() order is not guaranteed when the cache partially hits (items.update(cache_items) appends cached entries after uncached ones).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Using zip(error_ids, events.values()) is unsafe because nodestore.backend.get_multi returns a dict that may not preserve input order and omits missing nodes, causing misalignment between error_ids and event data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Timestamp comparison mixes units: Sentry ErrorEvent timestamps are in seconds while RRWeb event timestamps are in milliseconds, leading to incorrect chronological interleaving unless normalized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Validation uses .get(\"age\"), which treats 0 as falsy; this can fail to detect that age was provided when it is 0, breaking mutual-exclusion validation with timestamp",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Validation uses .get(\"timestamp\"), which treats 0 as falsy; this can fail to detect that timestamp was provided when it is 0, breaking mutual-exclusion validation with age",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "fetch_error_details incorrectly uses zip(error_ids, events.values()), assuming nodestore.get_multi returns values in the same order as the input IDs, which can mismatch event data to event_ids",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test coverage is insufficient because the existing test only uses a single error event, so it fails to catch the ordering/mismatched pairing bug",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -7035,6 +7509,88 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Django QuerySets do not support negative slicing; when cursor.is_prev is True and offset is negative, queryset[start_offset:stop] raises ValueError: Negative indexing is not supported",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The comment/assumption that Django automatically handles negative slicing for standard QuerySets is incorrect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The negative-slicing block in the paginator is redundant because the else logic (lines 884-886) performs the same slicing when cursor.is_prev is True",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "get_item_key is incompatible with datetime fields: getattr(item, self.key) can return a datetime, which math.floor/math.ceil do not support, causing a TypeError at runtime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "organization_context.member can be None for non-member users; accessing organization_context.member.has_global_access can raise AttributeError without an explicit None check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_result is largely duplicated from BasePaginator.get_result, increasing maintenance burden and risk of bugs; it should be refactored to avoid repeating pagination logic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "BasePaginator.get_result allows negative start_offset when cursor.is_prev is True (removes max(0, offset) clamping), leading to negative queryset slicing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Django QuerySets do not support negative indexing; crafted cursors with is_prev=True and negative offset will raise AssertionError(\"Negative indexing is not supported.\"), crashing endpoints using Paginator/DateTimePaginator/OptimizedCursorPaginator",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The code comment claiming negative offsets are safe because the queryset will handle boundary conditions is incorrect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "organization_auditlogs.py accesses organization_context.member.has_global_access without guarding for member being None, causing AttributeError for non-superusers when member is missing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "User-controlled optimized_pagination=true query parameter can enable the advanced/optimized paginator code path, allowing crafted cursor strings to trigger negative-offset behavior on a security-sensitive endpoint",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cursor offset parsed from the user-controlled cursor query parameter is not validated to be non-negative anywhere in the cursor/pagination chain",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If negative offsets were made to work, they could bypass normal pagination bounds (\"access to data beyond normal pagination bounds\"), creating a potential security/data exposure risk",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -7497,7 +8053,28 @@
         "line": null,
         "source": "extracted"
       }
-    ]
+    ],
+    "gemini-v2": [
+      {
+        "text": "Removing the global lock from BuildIndex allows concurrent index builds for the same NamespacedResource/directory, creating a race condition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Concurrent calls to bleve.New(dir, mapper) for the same directory can cause file lock errors or index corruption",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "NewResourceServer returns on s.Init(ctx) failure without calling the associated cancel function, leaking the context/resources",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": []
   },
   "https://github.com/getsentry/sentry/pull/80168": {
     "gemini": [
@@ -7910,6 +8487,40 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "MetricAlertDetectorHandler inherits from abstract StatefulDetectorHandler but does not implement required abstract methods (counter_names, get_dedupe_value, get_group_key_values, build_occurrence_and_event_data), leaving the class abstract and non-instantiable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "MetricAlertFire will raise a TypeError at runtime when it attempts to instantiate/use MetricAlertDetectorHandler because the handler remains abstract due to missing method implementations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "MetricAlertDetectorHandler now extends StatefulDetectorHandler but implements none of the required abstract members (counter_names, get_dedupe_value, get_group_key_values, build_occurrence_and_event_data), leaving the class body as pass",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "MetricAlertDetectorHandler cannot be instantiated and will raise a TypeError at runtime because required abstract methods are unimplemented; this is reachable in production via Detector.detector_handler for metric_alert_fire detectors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_state_results_multi_group uses an incorrect expected value for group_2 (passes 6) while the data packet sets group_2 to 10, making the test misleading and potentially masking future bugs since the value argument is currently unused",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -8202,6 +8813,52 @@
       },
       {
         "text": "Docstring contains typos: \"humam readible\" should be \"human readable\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Fetching checkins without select_related causes an N+1 query pattern when accessing failed_checkin.monitor_environment and monitor_environment.monitor inside the loop in create_incident_occurrence",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calling monitor_env.get_last_successful_checkin() inside a loop in try_incident_threshold causes an N+1 query pattern; last successful check-in should be fetched once and passed in",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A modified copy of the config dict is created (to include human-readable schedule type) but the return context uses monitor_environment.monitor.config instead, so the modifications are ignored",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using a list comprehension inside any() is inefficient because it builds a full list; should use a generator expression to allow short-circuiting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "get_failure_reason is missing a return type hint",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "get_failure_reason docstring contains a typo: \"humam readible\" instead of \"human readable\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "get_monitor_environment_context returns monitor_environment.monitor.config instead of the locally modified config copy, so the schedule_type display-value transformation is discarded and the event context contains the raw DB value",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -8503,6 +9160,40 @@
       },
       {
         "text": "The `assignment_source` parameter added to the `sync_status_outbound` abstract method is never passed by the `sync_status_outbound` task and is never used/checked in the status sync path, making it effectively dead code (needs removal or a clarifying TODO)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "`queued` default value is evaluated at module load time, causing all `AssignmentSource` instances without an explicit `queued` to share the same timestamp; should use `field(default_factory=timezone.now)`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing import of `field` from `dataclasses`, required to use `default_factory` for the `queued` field",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`should_sync` method lacks type hints for the `attribute` parameter and return type, reducing consistency and type safety",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`sync_status_outbound` abstract method lacks type hints for parameters and return type, reducing clarity and limiting static analysis",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Dataclass field `queued: datetime = timezone.now()` is evaluated at class definition/import time, causing all `AssignmentSource` instances using the default to share a stale timestamp instead of getting the current time at instantiation (should use `field(default_factory=timezone.now)`).",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9000,6 +9691,112 @@
       },
       {
         "text": "tests/sentry/uptime/consumers/test_results_consumer.py: strategy_processing_mode Literal type annotation not updated to include the new \"thread-queue-parallel\" mode, causing type-checker errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Offset commit calculation iterates with a range from last committed to max seen offset, so any gap in received offsets can stall commits indefinitely",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Committable offset logic should iterate over the sorted recorded offsets in all_offsets rather than assuming contiguous offsets",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Code uses Python 3.13-only queue.ShutDown exception, which will fail (NameError/AttributeError) on older Python versions (e.g., 3.11)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Code uses Python 3.13-only queue.Queue.shutdown method, which will fail on older Python versions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Worker threads block on work_queue.get() and won\u2019t exit when shutdown flag is set unless a new item is enqueued",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Shutdown mechanism should use a sentinel value (e.g., None) consumed by workers to break out of the get() loop",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "q.shutdown is referenced but not available prior to Python 3.13, so worker queues won\u2019t shut down gracefully",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Need to enqueue a sentinel (e.g., None) into each worker queue to trigger worker termination",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Starting a new Sentry transaction per message is too expensive for high-throughput consumers and can cause performance degradation or rate limiting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Including worker_id in the Sentry transaction name creates high-cardinality transaction names, reducing usefulness of Sentry data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "WorkItem dataclass has a message field that is unused, adding unnecessary memory overhead per queued item",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "SimpleQueueProcessingStrategy.close() stops/join the commit thread before draining queue pool workers, so offsets completed during worker drain are never committed and will be reprocessed on restart",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SimpleQueueProcessingStrategy.close() lacks a final commit after the queue pool is fully drained, leaving newly completed offsets uncommitted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_thread_queue_parallel_error_handling asserts that no offsets are committed on processing errors, but OrderedQueueWorker.run() always calls complete_offset() in a finally block, so offsets are marked completed even when processing raises",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_thread_queue_parallel_error_handling is flaky because it relies on the commit loop being delayed (shutdown_event.wait(1.0)); on slower systems the commit loop may run before the assertion, changing committed_offsets",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_thread_queue_parallel_error_handling docstring claims errors shouldn't block commits for other messages, but the assertion checks that no commits happen at all, contradicting the stated intent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "terminate() sets shutdown_event and shuts down the queue pool but never joins/stops the commit thread, leaking it and potentially causing commits/logging against a shut-down pool",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -9747,6 +10544,88 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "OptimizedCursorPaginator is incompatible with ordering by a datetime field because its get_item_key calls math.floor() on datetime objects, causing a TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Django QuerySets do not support negative slicing; queryset[start_offset:stop] will raise an AssertionError when start_offset is negative, so the current cursor offset logic can crash",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The comment/documentation claiming Django ORM handles negative offsets automatically for QuerySets is incorrect and may mislead future changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The 'advanced' pagination logic (lines 880-882) relies on negative QuerySet slicing and will raise an AssertionError at runtime; negative offsets require a different fetching strategy",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Changing Redis storage for existing keys from Set (SADD) to Sorted Set (ZADD) will cause Redis WRONGTYPE errors for pre-existing keys, leading to errors/data loss until expiration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Redis key migration should use a new key prefix to avoid collisions between old Set keys and new Sorted Set keys during rollout",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator duplicates get_item_key and value_from_cursor logic from Paginator; it should inherit from Paginator instead of BasePaginator to avoid duplication and improve maintainability",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The Lua script hardcodes an eviction limit of 1000, causing the max_segment_spans configuration in SpansBuffer to be ignored/redundant; the limit should be passed as an argument for configurability",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "OptimizedCursorPaginator.get_result can pass a negative start_offset into Django QuerySet slicing when enable_advanced_features is enabled and cursor.offset < 0, causing Django ORM AssertionError due to unsupported negative indexing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The code comment claiming Django ORM properly handles negative slicing automatically is incorrect/misleading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BasePaginator.get_result clamps offset to 0 only for non-prev cursors; when cursor.is_prev is True a negative offset can reach queryset[offset:stop] and crash with Django AssertionError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cursor.from_string does not validate offset values, allowing clients to inject negative offsets via crafted cursors and crash endpoints using BasePaginator and its subclasses",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "factory.py directly indexes val[\"end_timestamp_precise\"] instead of using .get(), which can raise KeyError and crash the Kafka consumer when processing older-schema messages during rolling deployments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -10354,6 +11233,64 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Using Python built-in hash() in Redis/shared cache keys is unstable across processes/restarts due to hash randomization, causing cache misses and inconsistencies; use a stable string identifier (e.g., sorted project IDs) instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "String-based detection of `event.type:error` is brittle (fails with spaces/quotes and can create false positives inside quoted text); use the existing search parser for robust detection",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Upsampling column transformation is applied redundantly multiple times later in the function; compute transformed `final_columns` once and reuse it throughout to avoid repeated conditional transformations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Conditional `if client_sample_rate:` incorrectly treats 0/0.0 as false and skips handling a valid zero sample rate; check `if client_sample_rate is not None:` instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Cache key uses Python built-in hash(), which is randomized per process, making cache keys non-deterministic across worker processes and breaking shared-cache hit rates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "invalidate_upsampling_cache() cannot reliably invalidate cache entries created by other processes because it recomputes a different per-process hash-based cache key",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "_is_error_focused_query uses a substring check for \"event.type:error\" that also matches negated queries (e.g., !event.type:error or NOT event.type:error), causing upsampling to be applied when errors are explicitly excluded",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Upsampling may incorrectly transform count() to upsampled_count() for non-error event queries (e.g., transactions/default) where sample_weight may be invalid, producing incorrect results",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "invalidate_upsampling_cache is dead code (defined but never called), so cache invalidation relies only on TTL and the unused function should be wired to an allowlist/option-change hook or removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -10825,6 +11762,52 @@
       },
       {
         "text": "Denial cache can become stale after a permission grant: a prior denial remains cached for up to `shortCacheTTL` (30s), preventing DB re-checks and temporarily blocking newly-authorized access (needs mitigation or documentation)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "List method may return cached permissions even when incomplete/stale, causing newly created resources (e.g., a dashboard created seconds ago) to be missing from list results",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "List method lacks a database fallback/bypass mechanism when cache results are stale or incomplete (unlike Check\u2019s fallback on Allowed:false), leading to a 'creator can\u2019t see what they just created' consistency problem",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Relying solely on a 30-second cache TTL does not fully address list-view staleness/consistency requirements and may be unacceptable depending on expected freshness",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Denial cache key construction uses '_' as a separator for action/name/parent, allowing cache key collisions when name or parent contain underscores, which can cause a denial for one resource to incorrectly deny access to a different resource",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "permCache and permDenialCache share the same underlying cache but use insufficiently distinct key formats, creating a risk of cross-cache type confusion during JSON deserialization",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Denial cache lookup short-circuits all downstream permission-check logic (including DB fallback), so a previously cached denial can incorrectly block access for up to 30s after permissions are newly granted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "There is no explicit invalidation mechanism for denial cache entries when permissions change; denial entries expire only via TTL, leading to stale authorization decisions",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -11310,6 +12293,76 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Directly accessing integration.metadata[\"sender\"][\"login\"] can raise KeyError when sender/login is missing (e.g., older integrations or incomplete installation data), causing a 500 instead of a graceful error page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GitHub API network calls (safe_urlopen/get_user_info) are not fully wrapped in exception handling, so connection/API errors can bubble up and cause a 500 instead of showing the custom error page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "`redirect_uri` and `state` are appended to the OAuth authorize URL without URL-encoding, so special characters can break or alter the query string",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A bare `except Exception` swallows errors during the token exchange/response parsing path, making failures unobservable and returning only a generic error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`safe_urlopen` is outside the intended try/except, so network/timeouts/RestrictedIPAddress errors can propagate as unhandled 500s instead of showing a friendly error page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`get_user_info` can raise unhandled exceptions (e.g., `resp.raise_for_status()` -> `HTTPError` on 4xx/5xx), leading to 500s during GitHub outages/rate limiting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Accessing `integration.metadata[\"sender\"][\"login\"]` without guarding for missing keys can raise `KeyError` for integrations/events without `sender`, crashing the flow",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The OAuth access token is used briefly and then discarded without being revoked, leaving a live GitHub user token behind",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The module-level function name `error` is overly generic and may shadow future imports; it should be renamed to something more descriptive",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`installation_id` is only bound to pipeline state when present on the initial GET; if missing (e.g., refresh/direct navigation), the flow can proceed without storing it and later redirect unexpectedly instead of failing gracefully",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tests use a hardcoded magic `state` value without explaining its origin (e.g., derived from `pipeline.signature`), reducing test clarity",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -11630,6 +12683,34 @@
       },
       {
         "text": "removeAll() invalidates IDP count but does not invalidate login cache keys (IDP_LOGIN_SUFFIX / registerIDPLoginInvalidation), leaving stale login-cache entries in Infinispan until later cleanup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "`remove` method unconditionally calls `idpDelegate.getByAlias(alias)` (database hit) even when the identity provider may already be in the cache; should check cache first and only fall back to the delegate when needed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent revision values are used when adding a query to the revisioned cache (one place uses `startupRevision`, another uses `cache.getCurrentCounter()`); should use a consistent current revision source such as `cache.getCurrentCounter()` or `cache.getCurrentRevision(cacheKey)` to ensure correct cache validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Test cleanup lambda references the literal string \"alias\" instead of the actual IDP alias in the loop creating idp-alias-0 through idp-alias-19, so cleanup fails and leaks those IDPs between runs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test cleanup for the separately created \"idp-alias-20\" also references the literal string \"alias\" instead of \"idp-alias-20\", so cleanup fails and leaks that IDP between runs",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -12151,6 +13232,52 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "enableSqlExpressions contains redundant and confusing logic: it performs a feature-flag check but returns false on all code paths",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In enableSqlExpressions, the variable enabled is assigned the negation of the feature flag state, which is counter-intuitive and misleading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "enableSqlExpressions should be simplified to a direct `return false` to match the intent of fully disabling SQL expressions for security mitigation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Missing enableSqlExpressions guard in nodes.go buildCMDNode path: UnmarshalSQLCommand can be called without an explicit SQL-expressions-disabled check when FlagExpressionParser is off",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent error behavior when SQL expressions are disabled: nodes.go path returns a generic \"error reading SQL command\" instead of an explicit \"sqlExpressions is not implemented\" message",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential security regression risk: if a real sql.DB implementation is reintroduced in db.go, the unguarded nodes.go path could allow SQL expression creation via the old parser path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "enableSqlExpressions function is dead/misleading: it checks FlagSqlExpressions but returns false in all branches, so the feature flag logic is ineffective and confusing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -12450,6 +13577,34 @@
     "greptile-v4-1": [
       {
         "text": "Write-lock path in GetWebAssets does not re-check entryPointAssetsCache after acquiring the write lock, causing goroutines that all saw nil to redundantly reload assets from disk/CDN and overwrite the cache in turn",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Double-checked locking is incomplete: cache is not re-checked after acquiring the write lock, so multiple goroutines can redundantly perform the expensive I/O sequentially even after the cache is populated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Write lock is held for the entire I/O operation, blocking all readers during the initial load; lock hold time should be minimized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "After releasing the read lock on a cache miss, the code acquires the write lock but does not re-check entryPointAssetsCache, so subsequent goroutines redo the expensive fetch/I/O and overwrite an already-populated cache (missing double-checked locking).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In non-Dev mode, the missing re-check causes a thundering herd of redundant I/O on first access because multiple goroutines perform the same cache population work unnecessarily.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -13027,6 +14182,82 @@
       },
       {
         "text": "Logging full ID slices (\"ids\", ids) can create extremely large log entries at scale, potentially overwhelming log pipelines; should be removed or limited to trace level",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Cleanup ticker interval was reduced from 10 minutes to 1 minute, increasing frequency of all background cleanup jobs without being mentioned in the PR description and potentially impacting system performance",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Change to 1-minute cleanup ticker interval may have been intended only for testing and should be reverted if so; otherwise it needs explicit justification due to performance impact",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Informational cleanup-process messages are logged with r.log.Error instead of an appropriate level (Debug/Info), which can trigger false-positive monitoring alerts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Multiple similar log calls in the file (e.g., around lines 537, 554, 557, 576, 579) use Error level for non-error cleanup information and should be updated consistently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comma-separated ID list is built via repeated fmt.Sprintf string concatenation, causing O(N^2) behavior and potential performance bottlenecks for large batches (e.g., 32k)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQLite parameter-limit workaround should build the ID list using strings.Builder with strconv.FormatInt for efficiency instead of repeated fmt.Sprintf",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Condition for applying the SQLite parameter-limit workaround should check len(ids) rather than the configured batch size for correctness",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Routine cleanup progress in CleanAnnotations and CleanOrphanedAnnotationTags is logged using r.log.Error(...) instead of a debug/info level, causing error-log flooding in production",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup logs include the full annotation ID slice (\"ids\", ids), potentially tens of thousands of integers per batch, creating excessive log volume and noise",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup service ticker interval was changed from 10 minutes to 1 minute for all cleanup jobs without documentation, causing all cleanup tasks to run 10x more frequently and increasing background DB load",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "With a 1-minute ticker and a 9-minute clean() timeout, ticks can buffer and cleanup cycles can run back-to-back with no idle gap, further amplifying load",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In deleteByIDs (SQLite fallback), building the IN-list via repeated fmt.Sprintf string concatenation in a loop causes O(n^2) allocations and severe performance/memory overhead for large batches",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -13875,6 +15106,94 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Background goroutine uses the HTTP request context `ctx`, which is canceled when the request finishes, causing the asynchronous legacy create write to fail prematurely; use `context.WithoutCancel(ctx)` (with timeout) for the background task",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Background goroutine uses the HTTP request context `ctx`, which is canceled when the request finishes, causing the asynchronous legacy delete operation to fail prematurely; use `context.WithoutCancel(ctx)` (with timeout) for the background task",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Background goroutine uses the HTTP request context `ctx`, which is canceled when the request finishes, causing the asynchronous legacy update operation to fail prematurely; use `context.WithoutCancel(ctx)` (with timeout) for the background task",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Background goroutine uses the HTTP request context `ctx`, which is canceled when the request finishes, causing the asynchronous legacy delete-collection operation to fail prematurely; use `context.WithoutCancel(ctx)` (with timeout) for the background task",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unified storage failure metric is recorded with `recordLegacyDuration` instead of `recordStorageDuration`, producing inaccurate metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logger context is updated with base logger `d.Log` instead of the enriched `log` variable, losing metadata (e.g., `name`, `kind`) in storage logs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Metric label uses object `name` as the `kind` label instead of `options.Kind`, causing inconsistency and high Prometheus label cardinality",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unified storage failure metric is incorrectly recorded using the legacy duration metric function instead of `recordStorageDuration`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Legacy operation result metric is incorrectly recorded using `recordStorageDuration` instead of `recordLegacyDuration`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Create (dualwriter_mode3.go:45) records storage error duration using recordLegacyDuration instead of recordStorageDuration, mislabeling backend metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Update (dualwriter_mode3.go:129) records storage error duration using recordLegacyDuration instead of recordStorageDuration, mislabeling backend metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DeleteCollection async legacy goroutine (dualwriter_mode3.go:166) records legacy operation duration using recordStorageDuration instead of recordLegacyDuration, mislabeling backend metrics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete success-path metric (dualwriter_mode3.go:106) passes object name as the label instead of options.Kind, causing Prometheus label cardinality explosion and polluted dashboards",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete (dualwriter_mode3.go:96-97) sets logger in context using base d.Log instead of the enriched log with name/kind/method, reducing downstream log traceability",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -14539,6 +15858,40 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Variable `ctx` is not defined in the current scope, causing a runtime error when checking folder permissions; it should likely use `context` from `useGrafanaContext()`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Rule view URL is missing the `returnTo` parameter, regressing from `GrafanaRuleLoader.tsx` and breaking Back button behavior when navigating from the filtered list; should use `createReturnTo` when building the URL",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Leftover `// duplicate` comment should be removed to keep the code clean",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "In FilterView.tsx, the destructured `key` from `ruleWithOrigin` is not passed as `key={key}` to `<GrafanaRuleListItem>`, leading to unstable/missing React list keys and potential incorrect UI state and extra re-renders when the filtered list changes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In `useAllGrafanaPromRuleAbilities`, using `prometheusRuleType.grafana.alertingRule(rule)` as the `supported` flag for ModifyExport/Pause/Restore/DeletePermanently restricts these actions to alerting rules only, causing Grafana recording rules to lose pause/export/restore/permanent delete capabilities (functional regression)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -14882,6 +16235,58 @@
       },
       {
         "text": "The test assertion toHaveBeenCalledTimes(5) encodes the current redundant multi-pass behavior rather than intended output, making the test brittle and likely to fail if redundant calls are optimized away",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Interpolating the query before calling querySupportsSplitting replaces the $__range variable with a static value, causing isQueryWithRangeVariable(query.expr) to fail and incorrectly allowing splitting for queries that should not be split",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Incorrect splitting caused by the lost $__range detection can lead to wrong backend data aggregation results",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "querySupportsSplitting should evaluate splitting support using the original (non-interpolated) query expression, while later logic (e.g., isLogsQuery) can use the interpolated expression",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "datasource.applyTemplateVariables may mutate the passed query object, potentially modifying request.targets and causing side effects if the request is reused (e.g., retries or other plugins); the query should be cloned before interpolation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Passing request.filters as a third argument to applyTemplateVariables deviates from the standard DataSourceApi signature and may be ignored unless LokiDatasource explicitly supports it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Interpolation is performed redundantly in multiple places (runShardSplitQuery and again in runSplitQuery via splitQueriesByStreamShard), causing applyTemplateVariables to be called multiple times for the same targets",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Queries going through the shard\u2192time combined splitting path have template variables applied twice (runShardSplitQuery and again in runSplitQuery), causing addAdHocFilters to append duplicate ad-hoc filters and produce incorrect query expressions with repeated filter clauses",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unit test applyTemplateVariables mocks mutate the input query object (modifying query.expr in place) instead of returning a new copied object like the real implementation, making tests inaccurate and potentially masking bugs that depend on targets remaining unmodified after interpolation",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -15490,6 +16895,46 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Calling Exec by prepending the query into the arguments slice is brittle and less readable; should use dbSession.SQL(query, args...).Exec() to follow the standard pattern",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Multiple calls to time.Now() within the same method can cause slight timestamp inconsistencies and make testing harder; should use device.UpdatedAt set by the caller instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using the magic value time.Minute for database precision should be replaced with a named constant",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The anonymousDeviceExpiration constant is duplicated in pkg/services/anonymous/anonimpl/api/api.go and should be moved to a shared location or provided via configuration to avoid inconsistencies",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "TagDevice is now called synchronously in the Authenticate hot path, causing every anonymous auth request to block on one or more DB round-trips (performance regression), even when device_limit=0 (default no-limit case)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AnonymousDeviceLimit is exposed in the publicly accessible /api/frontend/settings/ response, leaking the exact device limit threshold and enabling targeted resource-exhaustion/DoS attacks by filling the device table to the limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -15895,6 +17340,28 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Fallback locale list does not normalize `locale` to a symbol, so `uniq` won\u2019t deduplicate string vs symbol locales (e.g., `[\"en\", :en]`), causing redundant locale loading and performance impact",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`ensure_loaded!` does not normalize `locale` to a symbol before checking `@loaded_locales`, so the cache can miss when the same locale is provided as String vs Symbol, triggering redundant expensive translation loading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "No unit or integration tests cover the new localization fallback logic introduced by `FallbackLocaleList` and `I18n.ensure_loaded!`, risking regressions in fallback ordering or locale loading behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -16150,6 +17617,34 @@
     "greptile-v4-1": [
       {
         "text": "TestLogger.FromContext returns a new/discarded TestLogger instance (via NewTestLogger) instead of returning the existing receiver, so log calls routed through FromContext are not recorded on the original TestLogger and future tests asserting on log call counts may incorrectly see 0.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "TestLogger.FromContext returns a new TestLogger instance instead of the receiver, so LoggerMiddleware logs to an unreferenced logger and tests that inject a TestLogger fail to capture recorded logs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The FromContext method comment/documentation is inaccurate because the implementation retrieves the logger directly from context rather than merging with the current logger\u2019s context",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logger name \"plugin.instrumentation\" is inconsistent after renaming InstrumentationMiddleware to MetricsMiddleware and decoupling logging; it should be renamed to match the new naming scheme (e.g., \"plugin.logger\" or \"plugin.client\")",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "NewMetricsMiddleware reuses a single MetricsMiddleware instance and mutates its shared next field inside the returned closure, causing concurrent goroutines to write/read MetricsMiddleware.next during requests (data race/undefined behavior detectable with -race).",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -17274,6 +18769,100 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Directly interpolating variable `h` into an SQL string creates an SQL injection vulnerability; use parameterized queries/ActiveRecord methods instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fabricator file contents appear accidentally swapped: this file now contains the `embeddable_host` fabricator and the original category fabricators were moved to `embeddable_host_fabricator.rb`, breaking tests relying on the `:category` fabricator",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `where(...).first` may return `nil` when a record is missing, causing `save_host` to crash; use `find(params[:id])` (or otherwise handle missing records)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If the host is not found, `host` can be `nil` and calling `host.destroy` will raise `NoMethodError`; use `find` or explicitly handle the nil case",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Controller method accesses `params` directly instead of using strong parameters, risking mass-assignment vulnerabilities; use `params.require(...).permit(...)`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Serializer defines redundant attribute methods that simply return fields already declared via `attributes`; remove the redundant methods and rely on ActiveModel::Serializer mapping",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Accessing `[0]` on the result of `execute` can raise `NoMethodError` when the query returns no rows; check for empty results before indexing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Migration crashes when `embed_category` site setting is absent or points to a non-existent category because it unconditionally does `execute(...)[0]['id']` on a zero-row result (nil dereference)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration fallback crashes if `uncategorized_category_id` is missing from `site_settings` because it again assumes `execute(...)[0]` exists (nil dereference)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin EmbeddableHostsController `update` action can crash with `NoMethodError` when the requested host ID does not exist because it doesn't nil-check the `EmbeddableHost.where(...).first` result before calling `save_host(host)`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin EmbeddableHostsController `destroy` action can crash with `NoMethodError` when the requested host ID does not exist because it doesn't nil-check before calling `host.destroy`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`EmbeddableHost` `before_validation` callback can crash when `host` is nil because it calls `self.host.sub!` unconditionally before validations run",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`record_for_host` performs a case-sensitive comparison due to lowercasing only the DB column (`lower(host)`) but not the input parameter, causing mismatches for mixed-case hosts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration is vulnerable to SQL injection because it interpolates host values directly into an INSERT statement (`VALUES ('#{h}', ...)`) instead of using quoting/parameters",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test 'find embedded' is incorrect/misleading because it requests `store.find('fruit', 2)` but the mock endpoint always returns `fruits[0]`, so assertions pass against the wrong fixture data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -17882,6 +19471,52 @@
     "greptile-v4-1": [
       {
         "text": "In app/assets/stylesheets/desktop/topic-post.scss (around line 291), the light-theme lightness value for .topic-meta-data h5 a was accidentally changed/swapped from 30% to 70%, making the link color washed out in light theme; primary should remain 30% and secondary (dark theme) should use 70% in dark-light-choose.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "A light theme lightness value was incorrectly changed from 30% to 70%, altering the light theme appearance; it should preserve 30% for the light theme and use dark-light-choose(scale-color($primary, $lightness: 30%), scale-color($secondary, $lightness: 70%)).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A light theme lightness value was incorrectly changed from 30% to 50%, altering the light theme appearance; it should preserve 30% for the light theme and use dark-light-choose(scale-color($primary, $lightness: 30%), scale-color($secondary, $lightness: 70%)).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A light theme lightness value was incorrectly changed from 70% to 30%, altering the light theme appearance; it should preserve 70% for the light theme and use dark-light-choose(scale-color($primary, $lightness: 70%), scale-color($secondary, $lightness: 30%)).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A light theme lightness value was incorrectly changed from 20% to 50%, altering the light theme appearance; it should preserve 20% for the light theme and use dark-light-choose(scale-color($primary, $lightness: 20%), scale-color($secondary, $lightness: 80%)).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Another instance where a light theme lightness value was incorrectly changed from 30% to 50%, altering the light theme appearance; it should preserve 30% for the light theme and use dark-light-choose(scale-color($primary, $lightness: 30%), scale-color($secondary, $lightness: 70%)).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "mobile/modal.scss:102 `.custom-message-length` uses `dark-light-choose` with the light-theme argument changed from `scale-color($primary, $lightness: 70%)` to `$lightness: 30%`, making text too dark on light themes (regression), likely due to swapped lightness values",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "desktop/topic-post.scss:291 `.topic-meta-data h5 a` uses `dark-light-choose` with the light-theme argument changed from `scale-color($primary, $lightness: 30%)` to `$lightness: 70%`, making the link too light/washed out on light themes (regression), likely due to swapped lightness values",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -18735,6 +20370,52 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Incorrect totalPages calculation using Math.floor(count / limit) + 1 adds an extra page when user_count is an exact multiple of limit; should use Math.ceil(user_count / limit)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ActiveRecord association collection delete may not accept a raw ID reliably; should pass an object (e.g., User.find(user_id)) or use destroy depending on desired behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "findMembers returns undefined when group name is empty; should return a resolved promise (e.g., Ember.RSVP.resolve([])) to keep API consistent for callers chaining .then()",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calling User.find_by_username inside a loop causes an N+1 query pattern; should fetch all users in a single query (e.g., User.where(username: ...))",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Controller test for \"cannot remove members from automatic groups\" uses PUT (xhr :put, :remove_member) even though the route for remove_member is defined as DELETE, so it documents/tests the wrong HTTP method and would fail in integration routing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Because the test uses PUT, the automatic-group guard is not exercised via the correct HTTP verb; a real PUT to /members would route to add_members instead of remove_member",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "totalPages computed property uses Math.floor(user_count / limit) + 1, causing an off-by-one error when user_count is exactly divisible by limit and producing an extra phantom page (pagination/next button state incorrect)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -19223,6 +20904,64 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Database updates are performed inside a validation check (side effect), which can be invoked multiple times or in non-persistent contexts and may lead to inconsistent data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Statistics updates are triggered during validation instead of after a successful action, risking incorrect stats when validation runs without a committed change",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Email domain regular expression is not anchored to the end of the string, allowing bypasses such as `user@gmail.com.attacker.com` matching a whitelisted `gmail.com`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Use of `where(email: email).first` is non-idiomatic; should use `find_by(email: email)` for readability",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Ruby boolean logic uses `and` instead of `&&`, which can cause precedence-related bugs in control flow",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Client-side logic adds emails to `rejectedEmails` for any server-side error (including 'email already taken'), causing generic 'invalid' messages and masking the real error; should only add when the error indicates blocked/restricted email",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "`BlockedEmail.should_block?` performs a case-sensitive email lookup on PostgreSQL, allowing blocked emails to bypass blocking by changing email casing (no lowercase normalization in model or user creation flow)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`BlockedEmail.should_block?` updates `match_count` and `last_match_at` during ActiveRecord validation, causing DB writes and inflated stats even when the record fails to save for other reasons or when `valid?` runs multiple times",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`email_in_restriction_setting?` builds a domain-matching regex without an end-of-string anchor, allowing whitelist bypass where `user@company.com.evil.org` incorrectly matches a whitelisted `company.com`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -19622,6 +21361,76 @@
       },
       {
         "text": "In `.small-action` (now a flex container), the child `button { float: right; }` is ignored because floats don\u2019t apply to flex items, causing the button to no longer be right-aligned; should use `margin-left: auto` instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "The align-items mixin uses a non-standard property -ms-align-items; IE10 expects -ms-flex-align",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The align-items mixin has inconsistent indentation (4 spaces instead of 2)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The align-items mixin has a missing space in the standard align-items property declaration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "There is trailing whitespace on line 120",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Legacy flexbox alignment properties (-webkit-box-align, -ms-flex-align) use different value keywords (start/end vs flex-start/flex-end), so passing modern values may break compatibility",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The order mixin assigns the same value to legacy 1-based properties (-webkit-box-ordinal-group, -moz-box-ordinal-group) as the modern 0-based order, causing inconsistent ordering in older browsers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Legacy order properties (-webkit-box-ordinal-group, -moz-box-ordinal-group) do not support negative values, so negative order values won\u2019t work in older browsers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using a percentage gutter (1.5%) between avatar and text scales with container width and can lead to insufficient spacing on mobile; a fixed unit is preferred",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Vertical padding (0.5em) was removed compared to the previous implementation, potentially harming vertical spacing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "order() mixin passes $val directly to legacy -webkit-box-ordinal-group/-moz-box-ordinal-group even though those properties are 1-based (default 1) while modern order is 0-based (default 0), causing inconsistent element ordering in older browsers; legacy values should be offset by +1",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "align-items mixin includes invalid CSS property -ms-align-items (does not exist); should be removed and rely on the correct IE10 prefixed property -ms-flex-align",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -20110,6 +21919,70 @@
       },
       {
         "text": "The sibling-subdomain `elsif` branch (case where both hosts have same segment count > 2) lacks test coverage; add specs for both matching-parent-domain and different-parent-domain variants",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "`website_name` is derived from the untrusted/hidden `website` field but is not included in `untrusted_attributes`, potentially leaking information to users who shouldn't see it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` repeatedly parses the URL; the `URI` object should be memoized to avoid multiple parsing operations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The base-domain comparison logic in `website_name` is overly complex and should be simplified",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` should normalize/handle a trailing slash in the path for better UX (e.g., treat `example.com/` and `example.com` consistently)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The conditional inclusion method for the serializer does not follow the expected `include_<attr>?` naming convention (e.g., should be `include_website_name?`)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If `website_name` is added to `untrusted_attributes`, the manual conditional inclusion check becomes redundant because the macro already handles visibility",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "`include_website_name` is missing the `?` suffix required by active_model_serializers conditional inclusion, so the condition is never invoked and `website_name` is always serialized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When `website` is nil/blank, `website_name` returns nil and the JSON includes `website_name: null` instead of omitting the key, contradicting the intended guard/conditional behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tests only cover cases where a website is present, so they fail to catch the broken conditional inclusion / nil-website serialization behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` domain matching logic does not handle the case where the website host is a subdomain of the Discourse host (e.g., `www.example.com` vs `example.com`), leading to incorrect output (returns only host instead of full path)",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -21317,6 +23190,94 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Bypassing the normal rendering pipeline for raw_html posts skips sanitization filters, creating an XSS risk; imported content must still be sanitized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Origin validation using indexOf is insecure and can be bypassed by attacker-controlled subdomains; should use an exact origin match",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ERB template uses invalid Ruby syntax `<%- end if %>`, which will cause a template compilation error; should be `<%- end %>`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Injecting `request.referer` directly into a JavaScript string without escaping can lead to XSS; should use `escape_javascript`/`j` when embedding it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fetching remote URLs using `open`/open-uri is dangerous (SSRF/security concerns); prefer a dedicated HTTP client like Excon or Net::HTTP",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Appending to the `contents` parameter in-place can misbehave if the string is frozen or reused; should build a new string instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `open(url).read` without explicitly requiring `open-uri` may fail if not loaded; also prefer a proper HTTP client for security/performance",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hardcoding ports 80 and 443 is less robust; should use `URI#default_port` when deciding whether to include the port",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "URL check incorrectly matches protocol-relative URLs starting with `//`, producing malformed absolute URLs; should only treat single-leading-slash paths as relative",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using the variable name `a` when iterating over `img` tags is confusing; use a descriptive name like `img`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Invalid ERB/Ruby syntax in app/views/embed/best.html.erb:6: `<%- end if %>` has no condition, causing a SyntaxError and preventing the template from rendering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "XSS vulnerability in app/models/topic_embed.rb:13: unescaped `url` is interpolated into an `<a href='...'>` attribute, allowing quote-breaking and HTML/JS injection despite only checking `^https?://`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Insecure postMessage origin validation in app/assets/javascripts/embed.js:17: uses substring check (`discourseUrl.indexOf(e.origin)`) instead of exact origin match, allowing bypass by attacker-controlled prefix domains",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Potential crash in app/jobs/scheduled/poll_feed.rb:35: calling `i.content.scrub` when `i.content` is nil (feeds using `<description>`), raising NoMethodError and aborting feed import",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -22178,6 +24139,94 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Ruby does not support method overloading; defining `self.downsize` twice causes the second definition to overwrite the first",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Existing callers of `downsize` that pass 5 arguments (width and height) will break because arguments will be mis-mapped to `dimensions` and `opts` after the overwrite",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Maximum file size is hardcoded to 10MB (10240 KB), removing the ability to configure the limit via site settings (regression in flexibility)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Another code path also hardcodes the 10MB limit; limits should be consistent with upload validation logic and respect site settings",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Download size limit is hardcoded to 10MB, bypassing `SiteSetting.max_image_size_kb`, potentially causing unexpected resource usage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Passing a percentage string like \"80%\" to `OptimizedImage.downsize` breaks animated GIF processing because `gifsicle --resize-fit` requires `widthxheight` and does not support percentage strings",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Client-side upload size validation in utilities.js is hardcoded to 10MB (10 * 1024 KB) instead of using Discourse.SiteSettings['max_' + type + '_size_kb'], allowing all upload types to bypass configured limits",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-image uploads can pass client-side validation up to 10MB even when max_attachment_size_kb is lower, leading to server-side rejection after upload attempt",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Admin-configured upload size limits (e.g., lowering max_image_size_kb to 1MB) are ignored by the client due to the hardcoded 10MB limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Upload size error message always reports 10240 KB as the maximum, regardless of actual site settings, confusing users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "uploads_controller.rb hardcodes API URL download limit to 10.megabytes instead of respecting SiteSetting max limits, affecting all API URL uploads (not just images)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-image files uploaded via API URL path may be downloaded up to 10MB regardless of max_attachment_size_kb, wasting bandwidth/disk before later rejection by Upload.create_for",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedImage.downsize is invoked with the same source and destination path (in-place overwrite), risking tempfile corruption if ImageMagick fails mid-write",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A potentially corrupted tempfile from in-place downsizing may be passed to Upload.create_for, creating broken upload records",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -22850,6 +24899,52 @@
       },
       {
         "text": "List-Unsubscribe email header still omits the new per-topic unsubscribe URL, limiting support for email-client/RFC 8058 one-click unsubscribe flows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Controller code may raise NoMethodError when `tu` is nil (e.g., user has not previously interacted with the topic) because it assumes `tu.notification_level` is available",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "State-changing action (updating notification levels/unsubscribe) is performed via a GET request, which is insecure and CSRF-prone and can be triggered unintentionally by link prefetching (e.g., email clients)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Frontend property name typo: `stopNotificiationsText` should be `stopNotificationsText` in the JS property definition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Template/controller mismatch due to the same typo: template references should use `stopNotificationsText` (not `stopNotificiationsText`) to match the controller",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `createRecord` with an explicit `id` can error if a record with that ID already exists in the Ember store identity map; should check for an existing record first (e.g., via `getById`)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "TopicUser.find_by(user_id: current_user.id, topic_id: params[:topic_id]) can return nil, and the subsequent call to tu.notification_level will raise NoMethodError when no TopicUser record exists",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The unsubscribe action is implemented as a GET route but mutates database state (changes notification_level and saves) on every request, causing side effects such as auto-unsubscribing on page load, state changes on reloads, and unintended triggers from link previews/prefetching",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -23593,6 +25688,64 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Prisma updateMany is called with an empty data object {}, which will throw a runtime error because at least one field must be provided",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If the goal is to refresh updatedAt, updatedAt is not explicitly set in the updateMany call (should set updatedAt: new Date())",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If no update is needed, the updateMany line should be removed to avoid unnecessary/invalid operation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Date formatting hardcodes locale to \"en-US\" instead of using the user's/runtime locale, reducing localization correctness",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TRPC handler throws a generic Error, which becomes a 500; should throw TRPCError with an appropriate code (e.g., NOT_FOUND/FORBIDDEN) for consistent client-facing errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Shell script uses BSD-specific `sed -i ''` which breaks on GNU sed (Linux), making the script non-portable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "SelectedCalendarRepository.updateManyByCredentialId is called with empty update data ({}), so it generates no SQL SET clause and becomes a no-op",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Prisma updateMany does not auto-apply @updatedAt, so the intended SelectedCalendar.updatedAt timestamp update will never occur",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteCacheHandler throws a plain Error instead of a TRPCError, causing tRPC to return INTERNAL_SERVER_ERROR (500) rather than an appropriate NOT_FOUND/FORBIDDEN-style response",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -24229,6 +26382,58 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Using `dateOverrides.find` fails when multiple overrides exist on the same day; it can return an override where the slot is outside and incorrectly mark the slot unavailable even if another override contains the slot",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using strict equality `===` to compare Dayjs objects compares references rather than date values, so the condition will always be false; should use `.isSame()`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `workingHours.find` with logic that returns true when a slot is outside a range fails for multiple working-hour ranges on the same day (split shifts), incorrectly rejecting slots that fit within a later range",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The `end` time is incorrectly computed from `slotStartTime` instead of `slotEndTime`, so the slot duration may be validated against the wrong end time",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calling `.find()` on `userAvailability` inside a loop over `availableTimeSlots` causes O(N\u00d7M) performance; should pre-index availability by user ID (e.g., Map)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Dayjs values are compared with `===` (object reference comparison) in `dayjs(date.start).add(... ) === dayjs(date.end).add(...)`, which will always be false and prevents detecting zero-duration (start==end) date overrides (full-day unavailability) so those overrides are not respected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`end` minutes value is incorrectly computed from `slotStartTime` instead of `slotEndTime`, making `end` equal to `start` and causing the working-hours boundary check to miss slots that extend past the end of working hours",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`dayjs(...).tz(override.timeZone)` is called with an optional `override.timeZone` that may be `undefined`, causing fallback to a default/local timezone and potentially producing an incorrect UTC offset that shifts override windows to the wrong time",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -24656,6 +26861,46 @@
       },
       {
         "text": "In the catch block, `prisma.workflowReminder.update` is not wrapped in its own try/catch, so if the update throws the error can escape the catch and abort the for-loop, leaving subsequent reminders unprocessed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "The OR condition in the deleteMany filter is too broad and can delete non-SMS workflow reminders (e.g., Email/WhatsApp) when retryCount > 1",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The deleteMany cleanup logic should be scoped to WorkflowMethods.SMS for both OR branches/conditions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The query unnecessarily selects retryCount and requires an intersection type cast; using Prisma atomic increment later would allow removing retryCount from the select and simplifying the typing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Retry count updates should use Prisma's atomic increment operator to avoid race conditions instead of relying on the current retryCount value in application code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Retry count updates should consistently use Prisma's atomic increment operator in all relevant update locations (both occurrences)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "deleteMany query in SMS reminder cron uses an OR branch `retryCount > 1` without filtering by `method`, causing deletion of non-SMS WorkflowReminders (e.g., email/WhatsApp) when they have retryCount > 1",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -25121,7 +27366,22 @@
         "line": null,
         "source": "extracted"
       }
-    ]
+    ],
+    "gemini-v2": [
+      {
+        "text": "Unreachable code in getBaseConditions: authConditions is always truthy because getAuthorizationConditions always returns a Prisma.Sql object, so the else-if (filterConditions) and else branches can never execute",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getBaseConditions conditional logic is unnecessarily complex given authConditions is always present; it should be simplified to improve readability and maintainability",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": []
   },
   "https://github.com/calcom/cal.com/pull/11059": {
     "gemini": [
@@ -26434,6 +28694,112 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "`minimumTokenResponseSchema` Zod schema is invalid because computed property names like `[z.string().toString()]` create a static key (e.g., \"ZodString\") rather than allowing arbitrary/dynamic keys; should use `.catchall()` or `z.record()` for arbitrary keys with constrained value types",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OAuth utility returns a raw `fetch` `Response` from the sync endpoint path but returns `refreshFunction()` result in the other path, creating a type inconsistency that breaks callers expecting parsed data/object structure (e.g., accessing `.data`)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When `APP_CREDENTIAL_SHARING_ENABLED` is true, `refreshOAuthTokens` returns a `Response` without a `.data` property; code must `await res.json()` or `token` becomes `undefined` and subsequent lines crash",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook header lookup can fail because Node/Next lowercases incoming header keys; `CALCOM_WEBHOOK_HEADER_NAME` with mixed casing won\u2019t match `req.headers` unless lowercased before lookup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`JSON.parse` on decrypted content can throw if the string is not valid JSON (e.g., decryption failure/malformed input); should be wrapped in try/catch to return 400 instead of crashing with 500",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `response.statusText !== \"OK\"` to detect success is unreliable (e.g., 201 Created); should use `!response.ok` instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "parseRefreshTokenResponse returns the full Zod SafeParseReturnType wrapper ({ success, data, ... }) instead of the parsed credential data object",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GoogleCalendarService assigns the SafeParseReturnType wrapper to credential.key and persists it via prisma.credential.update, storing {success,data} in the DB instead of the expected flat credential shape",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "With APP_CREDENTIAL_SHARING_ENABLED=true, refreshOAuthTokens returns a raw fetch Response object instead of the expected parsed token payload type from the callback",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Google Calendar token refresh code expects res.data from refreshOAuthTokens, but receives a fetch Response (no .data), causing token to be undefined and breaking access_token/expiry_date updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "HubSpot token refresh code expects HubspotToken fields (expiryDate/expiresIn) from refreshOAuthTokens, but receives a fetch Response, causing NaN expiry computation and broken credential storage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "minimumTokenResponseSchema incorrectly uses z.string().toString() as computed property keys, creating literal nonsensical keys rather than validating arbitrary expiry-related fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "minimumTokenResponseSchema therefore fails to properly validate presence/shape of expiry fields, potentially bypassing validation or rejecting valid token responses",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Salesforce CalendarService creates a jsforce.Connection using stale pre-refresh credentialKey.access_token/instance_url instead of the newly refreshed token values, leading to API calls using an expired token",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Salesforce refresh logic checks response.statusText !== \"OK\" to detect failure, but statusText may be empty under HTTP/2 even on 200 responses, causing successful refreshes to be treated as errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "parseRefreshTokenResponse injects the literal string \"refresh_token\" when refresh_token is missing, resulting in an invalid refresh token being stored and later sent to OAuth providers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The app-credential webhook handler does not validate req.method and will process non-POST requests, allowing unintended credential creation/update via GET/other methods",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -27362,6 +29728,64 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "The `remindersToCancel` query is missing a `method: WorkflowMethods.EMAIL` filter, so SMS reminders may be included and cause failed SendGrid API calls for Twilio-managed reference IDs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using `async` callbacks inside `forEach` causes the cancellation operations not to be awaited, so reminders may not be cancelled before the function continues/returns",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Network requests are executed sequentially in a loop, making processing inefficient and causing later reminders to be skipped if one request fails",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "There is no check/guard for missing `reminder.referenceId` before calling SendGrid, which can trigger 400 errors for reminders without a batch ID",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When `immediateDelete` is true, the reminder is cancelled in SendGrid but not removed from the database, leaving orphaned/redundant records",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "CRON job in scheduleEmailReminders.ts queries cancelled reminders without filtering out records where referenceId is null, leading to SendGrid requests with batch_id: null that fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error handling in scheduleEmailReminders.ts wraps the entire cancellation for-loop, so one SendGrid failure aborts processing of all remaining reminders (leaving cancellations unprocessed and emails still sent)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteScheduledEmailReminder with immediateDelete=true cancels the SendGrid scheduled send but returns without deleting or marking the workflowReminder DB record, leaving an orphaned/incorrectly uncancelled record",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using forEach with an async callback (e.g., remindersToUpdate.forEach(async ...)) drops/does not await deletion promises, swallowing errors and allowing subsequent logic to run before deletions complete (race condition risk)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14740": {
@@ -28220,6 +30644,70 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Permission check for team admins/owners incorrectly uses logical AND (&&), requiring user to be both admin and owner and denying access to admins who aren\u2019t owners; should use OR (||)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "sendAddGuestsEmails is called with raw guests instead of uniqueGuests, causing existing attendees to be treated as new guests and receive the wrong email notification",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Database query uses findFirst for bookingId even though bookingId is a primary key; should use findUnique for efficiency/idiomatic Prisma usage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getTranslation is executed inside a map loop, potentially causing redundant I/O/heavy work per attendee; should batch/fetch once per unique locale",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ZAddGuestsInputSchema is defined inside the component, causing it to be recreated on every render; should be moved outside the component",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calendar event updates use the current user\u2019s credentials instead of the organizer\u2019s credentials, which can fail when a team admin (not organizer) lacks permission; should use organizer identity/credentials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Guests array schema lacks a uniqueness refinement for emails, risking duplicates and potential createMany unique-constraint errors; should enforce unique emails in Zod schema",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "`isTeamAdminOrOwner` authorization logic incorrectly uses `&&` instead of `||`, so team admins (non-owners) are denied permission to add guests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Guest email blacklist comparison is case-sensitive because input guest emails are not lowercased, allowing blacklist bypass via case mismatch (e.g., `BAD@Example.com`)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`addGuestsHandler` does not validate booking status server-side, allowing guests to be added to cancelled/rejected/pending bookings and triggering invalid calendar/email updates",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -28987,6 +31475,58 @@
       },
       {
         "text": "apps/web/components/settings/EnableTwoFactorModal.tsx resetState does not clear backupCodes or backupCodesUrl, leaving stale state and potentially not revoking a previous object URL when the modal is reopened",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "In Next.js API routes, throwing an error does not automatically return a JSON response; the handler should return a response with an appropriate status code and error message instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Component is named `TwoFactor`, which is confusing and conflicts with the existing `TwoFactor` component in `TwoFactor.tsx`; it should be renamed to `BackupCode` to match the filename and purpose",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Used backup code is being set to `null` instead of being removed from the `backupCodes` array; it should be removed (e.g., via `splice`) to avoid `null` entries in stored JSON",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`backupCodes` React state is initialized with `[]` without an explicit type, which can be inferred as `never[]`; it should be typed explicitly as `string[]`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A nested ternary operator in the JSX is hard to read; it should be refactored to a clearer conditional rendering structure (e.g., logical AND plus a simpler ternary)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`formatBackupCode` is a pure utility function but is defined inside the component, causing it to be recreated on every render; it should be moved outside the component definition",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "When the modal is dismissed (X button or overlay click) during the DisplayBackupCodes step, onEnable() is not called, so the parent UI is not notified that 2FA was enabled and can remain in a stale disabled state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The backup codes blob URL created with URL.createObjectURL is not revoked on component unmount or when resetState() runs, causing a memory leak across modal openings",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -29978,6 +32518,76 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Fallback calendar selection logic is circular/incorrect: when externalCalendarId is falsy, code searches destinationCalendar for cal.externalId === externalCalendarId (falsy), so it won\u2019t pick a valid fallback; should default to the first calendar in the array",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same circular fallback logic bug in the other location (noted as similar to updateEvent): if externalCalendarId is not provided, the search predicate fails and no valid fallback calendar is found; should default to destinationCalendar[0].externalId",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "destinationCalendar is initialized to null, causing subsequent push (via optional chaining) to be skipped and preventing teamDestinationCalendars entries from being added; should initialize to an empty array",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Organization slug assignment logic appears inverted: slug used to be set only when IS_TEAM_BILLING_ENABLED is false, but new code sets it when true; needs verification/correction because it changes org creation behavior under billing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Database query executed inside loop over event.destinationCalendar causes N+1 sequential DB calls for collective events with multiple hosts; should batch credentialId lookups in a single query",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Database query executed inside loop over calendarReference causes N+1 DB calls when processing multiple calendar references; should batch credential lookups",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Database query executed inside loop over bookingCalendarReference causes multiple DB roundtrips for bookings with multiple calendar references; should prefetch/batch credentials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Possible null/undefined dereference: when evt.destinationCalendar is null/undefined/empty, mainHostDestinationCalendar becomes undefined and accessing mainHostDestinationCalendar.integration throws a TypeError, crashing bookings (e.g., Google Meet location with no destination calendar).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Organization creation slug logic is inverted: refactor sets slug/requestedSlug when IS_TEAM_BILLING_ENABLED is true, whereas previously slug was set only when billing was disabled; this results in wrong fields being set (both set when enabled, neither when disabled) and breaks org creation.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dead fallback in updateEvent/deleteEvent: in the else branch where externalCalendarId is falsy, code searches destinationCalendar for cal.externalId === externalCalendarId (falsy), so find() always returns undefined; updates/deletes without explicit externalCalendarId fail to select the correct calendar.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateAllCalendarEvents may call updateEvent with an undefined credential when credentialId is present but credential is missing from cache and DB lookup fails; updateEvent then calls getCalendar(undefined) and can throw.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -30613,6 +33223,58 @@
       },
       {
         "text": "Because deletions are not awaited in the reschedule/booking flows, a booking can be marked cancelled/rescheduled even if calendar/video event deletion fails, leaving stale events behind",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gemini-v2": [
+      {
+        "text": "Using Array.forEach with an async callback in reschedule.ts causes promises not to be awaited (floating/unhandled promises), so the function may return before deletions complete",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The async forEach pattern can introduce race conditions during deletion operations because completion is not synchronized/awaited",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "gitar": [
+      {
+        "text": "Async callbacks passed to Array.prototype.forEach in vital/lib/reschedule.ts and wipemycalother/lib/reschedule.ts are never awaited, so calendar/video deletions may not complete before the function continues/returns",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Errors thrown inside the async forEach deletion callbacks in vital/lib/reschedule.ts and wipemycalother/lib/reschedule.ts are not caught by the surrounding try/catch, causing silent deletion failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In handleCancelBooking.ts, using forEach(async ...) means the outer code doesn\u2019t wait for callbacks, so apiDeletes may be empty or incomplete when later code uses it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In CalendarManager.getCalendarCredentials, getCalendar() (now async) is called synchronously and its Promise is stored in the returned object\u2019s calendar field",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In CalendarManager.getCachedResults, calendars are resolved by calling getCalendar() again via Promise.all instead of reusing the cached promise from getCalendarCredentials, causing duplicate async imports/work per credential",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Type annotations for the calendar field in getCalendarCredentials were not updated after getCalendar became async (Calendar|null vs Promise<Calendar|null>), risking downstream type confusion if consumers access .calendar without awaiting",
         "path": null,
         "line": null,
         "source": "extracted"

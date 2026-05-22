@@ -4,23 +4,20 @@ from __future__ import annotations
 
 import json
 
-import pytest
-from hypothesis import given, settings
+from hypothesis import given
+from hypothesis import settings
 from hypothesis import strategies as st
 
-from pipeline.assemble import (
-    _build_review_threads,
-    _build_timeline_events,
-    _compute_stats,
-    _determine_roles,
-    _enrich_timeline_with_threads,
-    _extract_pr_metadata,
-    _json_load,
-    _parse_timestamp,
-    TimelineEvent,
-    assemble_pr_from_row,
-)
-
+from pipeline.assemble import TimelineEvent
+from pipeline.assemble import _build_review_threads
+from pipeline.assemble import _build_timeline_events
+from pipeline.assemble import _compute_stats
+from pipeline.assemble import _determine_roles
+from pipeline.assemble import _enrich_timeline_with_threads
+from pipeline.assemble import _extract_pr_metadata
+from pipeline.assemble import _json_load
+from pipeline.assemble import _parse_timestamp
+from pipeline.assemble import assemble_pr_from_row
 
 # -- _parse_timestamp ---------------------------------------------------------
 
@@ -61,7 +58,7 @@ class TestJsonLoad:
         assert _json_load(None) is None
 
     def test_string_list(self) -> None:
-        result = _json_load('[1, 2, 3]')
+        result = _json_load("[1, 2, 3]")
         assert result == [1, 2, 3]
 
     def test_string_dict(self) -> None:

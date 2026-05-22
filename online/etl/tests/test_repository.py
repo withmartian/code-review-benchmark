@@ -9,9 +9,9 @@ import pytest
 import pytest_asyncio
 
 from db.connection import DBAdapter
-from db.repository import PRRepository, _merge_bq_events
+from db.repository import PRRepository
+from db.repository import _merge_bq_events
 from db.schema import create_tables
-
 
 # -- _merge_bq_events (pure function) -----------------------------------------
 

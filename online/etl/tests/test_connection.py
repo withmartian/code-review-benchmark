@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC
+from datetime import datetime
 
-import pytest
-from hypothesis import given, settings
+from hypothesis import given
+from hypothesis import settings
 from hypothesis import strategies as st
 
 from db.connection import DBAdapter
-
 
 # -- _translate_params (SQLite mode) ------------------------------------------
 
@@ -47,7 +47,7 @@ class TestTranslateParamsSqlite:
 
     def test_out_of_order_placeholders(self) -> None:
         db = _sqlite_adapter()
-        sql, args = db._translate_params("UPDATE t SET a = $2 WHERE id = $1", (1, "new"))
+        _sql, args = db._translate_params("UPDATE t SET a = $2 WHERE id = $1", (1, "new"))
         assert args == ("new", 1)
 
     def test_empty_args(self) -> None:
@@ -61,7 +61,7 @@ class TestTranslateParamsPostgres:
     def test_no_translation(self) -> None:
         """Postgres should pass SQL through without translation."""
         db = _pg_adapter()
-        sql, args = db._translate_params("SELECT * FROM t WHERE a = $1", (10,))
+        sql, _args = db._translate_params("SELECT * FROM t WHERE a = $1", (10,))
         assert "$1" in sql
         assert "?" not in sql
 

@@ -7,16 +7,14 @@ from __future__ import annotations
 
 import json
 
-import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
-from pipeline.discover import _extract_pr_metadata as discover_extract
 from pipeline.assemble import _extract_pr_metadata as assemble_extract
-from pipeline.backfill_pr_author import (
-    _extract_author_from_bq_events,
-    _extract_author_from_commits,
-    _recompute_target_user_roles,
-)
+from pipeline.backfill_pr_author import _extract_author_from_bq_events
+from pipeline.backfill_pr_author import _extract_author_from_commits
+from pipeline.backfill_pr_author import _recompute_target_user_roles
+from pipeline.discover import _extract_pr_metadata as discover_extract
 
 
 def _make_pr_event(author: str = "alice", title: str = "Fix bug", action: str = "opened") -> dict:

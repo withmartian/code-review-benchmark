@@ -15,11 +15,12 @@ Usage:
 """
 
 import argparse
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from dataclasses import dataclass
+from datetime import UTC
 from datetime import datetime
-from datetime import timezone
 import json
 import os
 from pathlib import Path
@@ -27,7 +28,6 @@ import re
 import subprocess
 import sys
 import time
-from typing import Callable
 
 from tqdm import tqdm
 
@@ -131,7 +131,11 @@ def _run_gh(args: list[str]) -> subprocess.CompletedProcess:
         if result.returncode == 0:
             return result
         # Retry on rate limit; give up immediately on other errors
-        is_rate_limit = "rate limit" in result.stderr.lower() or '"status":"403"' in result.stdout or '"status":"429"' in result.stdout
+        is_rate_limit = (
+            "rate limit" in result.stderr.lower()
+            or '"status":"403"' in result.stdout
+            or '"status":"429"' in result.stdout
+        )
         if not is_rate_limit or attempt == _MAX_RETRIES - 1:
             raise subprocess.CalledProcessError(result.returncode, args, result.stdout, result.stderr)
         sleep = _RETRY_BASE_SLEEP * (2**attempt)
@@ -171,7 +175,7 @@ def _parse_dt(s: str | None) -> datetime | None:
         return None
     for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S+00:00", "%Y-%m-%dT%H:%M:%S.%fZ"):
         try:
-            return datetime.strptime(s, fmt).replace(tzinfo=timezone.utc)
+            return datetime.strptime(s, fmt).replace(tzinfo=UTC)
         except ValueError:
             continue
     return None
@@ -248,17 +252,17 @@ def fetch_pr_data(org: str, repo: str, tool: str = "") -> PRData:
 
 def _fetch_body_edits(org: str, repo: str) -> list[dict]:
     """Return PR body edit history via GraphQL userContentEdits."""
-    query = """
-    {
-      repository(owner: "%s", name: "%s") {
-        pullRequest(number: 1) {
-          userContentEdits(first: 20) {
-            nodes { createdAt editor { login } }
-          }
-        }
-      }
-    }
-    """ % (org, repo)
+    query = f"""
+    {{
+      repository(owner: "{org}", name: "{repo}") {{
+        pullRequest(number: 1) {{
+          userContentEdits(first: 20) {{
+            nodes {{ createdAt editor {{ login }} }}
+          }}
+        }}
+      }}
+    }}
+    """
     try:
         data = _gh_graphql(query)
         nodes = (
@@ -280,7 +284,9 @@ def _fetch_body_edits(org: str, repo: str) -> list[dict]:
 TimingStrategy = Callable[[PRData], tuple[datetime | None, datetime | None, str]]
 
 
-def _trigger_comment_timing(pr_data: PRData, fallback_to_pr_creation: bool = False) -> tuple[datetime | None, datetime | None, str]:
+def _trigger_comment_timing(
+    pr_data: PRData, fallback_to_pr_creation: bool = False,
+) -> tuple[datetime | None, datetime | None, str]:
     """Trigger-comment strategy: used by most native code-review bots.
 
     Start: the last non-bot comment that precedes the bot's review (i.e. the
@@ -455,7 +461,7 @@ def _devin_timing(pr_data: PRData) -> tuple[datetime | None, datetime | None, st
 
 # Map tool slug → timing strategy function
 _STRATEGY: dict[str, TimingStrategy] = {
-    **{tool: _trigger_comment_timing for tool in TRIGGER_COMMENT_TOOLS},
+    **dict.fromkeys(TRIGGER_COMMENT_TOOLS, _trigger_comment_timing),
     # Override entelligence — it auto-triggers on PR open, no human comment needed
     "entelligence": _entelligence_timing,
     "devin": _devin_timing,
@@ -496,7 +502,10 @@ def _process_repo(org: str, repo_name: str, tool: str) -> TimingResult:
     try:
         pr_data = fetch_pr_data(org, repo_name, tool)
     except Exception as exc:
-        return TimingResult(repo=repo_name, pr_url="", start=None, end=None, duration_seconds=None, notes=f"fetch error: {exc}")
+        return TimingResult(
+            repo=repo_name, pr_url="", start=None, end=None,
+            duration_seconds=None, notes=f"fetch error: {exc}",
+        )
 
     strategy = _STRATEGY.get(tool)
     if strategy is None:
@@ -654,7 +663,10 @@ def main() -> None:
                 try:
                     result = future.result()
                 except Exception as exc:
-                    result = TimingResult(repo=repo, pr_url="", start=None, end=None, duration_seconds=None, notes=f"unexpected: {exc}")
+                    result = TimingResult(
+                        repo=repo, pr_url="", start=None, end=None,
+                        duration_seconds=None, notes=f"unexpected: {exc}",
+                    )
                 results_by_tool.setdefault(tool, []).append(result)
                 pbar.update(1)
 
@@ -721,7 +733,9 @@ def main() -> None:
     for tool, data in output.items():
         s = data["stats"]
         if s:
-            print(f"  {tool:<30}  {s['count']:>4}  {s['median_seconds']/60:>9.1f}m  {s['mean_seconds']/60:>9.1f}m  {data['failed_count']:>6}")
+            med = s["median_seconds"] / 60
+            avg = s["mean_seconds"] / 60
+            print(f"  {tool:<30}  {s['count']:>4}  {med:>9.1f}m  {avg:>9.1f}m  {data['failed_count']:>6}")
         else:
             print(f"  {tool:<30}  {'—':>4}  {'—':>10}  {'—':>10}  {data['failed_count']:>6}")
 

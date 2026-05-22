@@ -159,6 +159,7 @@ def test_process_pr_happy_path(monkeypatch, tmp_path):
         return {"html_url": expected_pr_url}
 
     forker.create_pull_request = fake_create_pr  # type: ignore[assignment]
+    forker.make_repo_public = lambda _name: None  # type: ignore[assignment]
 
     result = step0.GitHubPRForker.process_pr(
         forker,

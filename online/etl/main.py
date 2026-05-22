@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 from datetime import UTC
 import logging
 import sys
@@ -675,6 +676,7 @@ async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
 async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
     """Backfill pr_merged from pr_api_raw, repo_id from pr_api_raw, and fix assembled.pr_merged."""
     import json as json_mod
+
     from db.connection import DBAdapter
     from db.schema import create_tables
 
@@ -736,7 +738,7 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
 
         # Phase 2: fix assembled.pr_merged to match prs.pr_merged (patch assembled JSON)
         # Process in batches to avoid OOM on large datasets
-        BATCH_SIZE = 5_000
+        batch_size = 5_000
         phase2_total = 0
         last_id = 0
         count_row = await db.fetchone(
@@ -744,7 +746,7 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
         )
         logger.info(f"Phase 2: ~{count_row['cnt']} assembled PRs to check assembled.pr_merged consistency")
         while True:
-            batch_limit = f"LIMIT {min(BATCH_SIZE, args.limit - phase2_total)}" if args.limit else f"LIMIT {BATCH_SIZE}"
+            batch_limit = f"LIMIT {min(batch_size, args.limit - phase2_total)}" if args.limit else f"LIMIT {batch_size}"
             rows = await db.fetchall(f"""
                 SELECT id, repo_name, pr_number, pr_merged, assembled
                 FROM prs
@@ -783,7 +785,7 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
         )
         logger.info(f"Phase 3: {count_row['cnt']} PRs with pr_api_raw but no repo_id")
         while True:
-            batch_limit = f"LIMIT {min(BATCH_SIZE, args.limit - phase3_total)}" if args.limit else f"LIMIT {BATCH_SIZE}"
+            batch_limit = f"LIMIT {min(batch_size, args.limit - phase3_total)}" if args.limit else f"LIMIT {batch_size}"
             rows = await db.fetchall(f"""
                 SELECT id, repo_name, pr_number, pr_api_raw
                 FROM prs
@@ -834,9 +836,11 @@ async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
     """Fetch pr_api_raw from GitHub API for PRs missing it. Sets pr_merged + repo_id."""
     import json as json_mod
     import time as time_mod
+
     from db.connection import DBAdapter
     from db.schema import create_tables
-    from pipeline.enrich import GitHubEnrichClient, RateLimitExhaustedError, TokenPool
+    from pipeline.enrich import RateLimitExhaustedError
+    from pipeline.enrich import TokenPool
 
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
@@ -959,10 +963,8 @@ async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
         stop_event.set()
         await asyncio.gather(*workers)
         progress_task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await progress_task
-        except asyncio.CancelledError:
-            pass
 
         await pool.close()
         logger.info(f"DONE — backfill-api-raw: updated={updated}, skipped={skipped}")

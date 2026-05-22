@@ -4,16 +4,14 @@ from __future__ import annotations
 
 import json
 
-import pytest
-from hypothesis import given, settings
+from hypothesis import given
+from hypothesis import settings
 from hypothesis import strategies as st
+import pytest
 
-from pipeline.quality import (
-    is_bot_username,
-    compute_engagement_signals,
-    serialize_engagement_signals,
-)
-
+from pipeline.quality import compute_engagement_signals
+from pipeline.quality import is_bot_username
+from pipeline.quality import serialize_engagement_signals
 
 # -- is_bot_username ----------------------------------------------------------
 

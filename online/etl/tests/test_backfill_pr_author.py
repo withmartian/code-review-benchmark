@@ -14,13 +14,10 @@ import pytest_asyncio
 from db.connection import DBAdapter
 from db.repository import PRRepository
 from db.schema import create_tables
-from pipeline.backfill_pr_author import (
-    _extract_author_from_bq_events,
-    _extract_author_from_commits,
-    _recompute_target_user_roles,
-    _update_pr_and_roles,
-)
-
+from pipeline.backfill_pr_author import _extract_author_from_bq_events
+from pipeline.backfill_pr_author import _extract_author_from_commits
+from pipeline.backfill_pr_author import _recompute_target_user_roles
+from pipeline.backfill_pr_author import _update_pr_and_roles
 
 # -- _extract_author_from_bq_events ------------------------------------------
 

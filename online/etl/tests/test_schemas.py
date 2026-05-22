@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-import pytest
-from hypothesis import given, settings
+from hypothesis import given
+from hypothesis import settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
+import pytest
 
-from llm.schemas import (
-    BotSuggestion,
-    BotSuggestionsResponse,
-    HumanAction,
-    HumanActionsResponse,
-    MatchResult,
-    MatchingResponse,
-    PRLabels,
-    PRLabelsResponse,
-)
-
+from llm.schemas import BotSuggestion
+from llm.schemas import BotSuggestionsResponse
+from llm.schemas import HumanAction
+from llm.schemas import HumanActionsResponse
+from llm.schemas import MatchingResponse
+from llm.schemas import MatchResult
+from llm.schemas import PRLabels
+from llm.schemas import PRLabelsResponse
 
 # -- BotSuggestion -----------------------------------------------------------
 

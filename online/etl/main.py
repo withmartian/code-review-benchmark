@@ -190,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--sort",
         choices=["reviewed", "sweep"],
         default="reviewed",
-        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'sweep' (assembled_at DESC, for catching late-discovered PRs).",
+        help="Sort order: 'reviewed' (default, bot_reviewed_at DESC) or 'sweep' (assembled_at DESC, catches late-merged PRs).",
     )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
@@ -467,12 +467,15 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     since = _parse_time_bound(args.since)
     until = _parse_time_bound(args.until)
     sort_by = args.sort
-    if since:
-        logger.info(f"Filtering PRs reviewed since {since}")
-    if until:
-        logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
     if sort_by == "sweep":
+        if since or until:
+            logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
         logger.info("Sweep mode: sorting by assembled_at DESC")
+    else:
+        if since:
+            logger.info(f"Filtering PRs reviewed since {since}")
+        if until:
+            logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -520,12 +523,15 @@ async def cmd_label(args: argparse.Namespace) -> None:
     since = _parse_time_bound(args.since)
     until = _parse_time_bound(args.until)
     sort_by = args.sort
-    if since:
-        logger.info(f"Filtering PRs reviewed since {since}")
-    if until:
-        logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
     if sort_by == "sweep":
+        if since or until:
+            logger.warning("--since/--until are ignored in sweep mode (sweep processes all unlabeled PRs by analyzed_at)")
         logger.info("Sweep mode: sorting by analyzed_at DESC")
+    else:
+        if since:
+            logger.info(f"Filtering PRs reviewed since {since}")
+        if until:
+            logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()

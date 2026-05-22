@@ -157,10 +157,10 @@ class PRRepository:
         if sort_by == "sweep":
             if chatbot_id is not None:
                 return await self.db.fetchall(
-                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_BY_ASSEMBLED, (chatbot_id, limit)
+                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_SWEEP, (chatbot_id, limit)
                 )
             return await self.db.fetchall(
-                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_BY_ASSEMBLED, (limit,)
+                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_SWEEP, (limit,)
             )
         if until is not None:
             if chatbot_id is not None:
@@ -326,10 +326,10 @@ class PRRepository:
         if sort_by == "sweep":
             if chatbot_id is not None:
                 return await self.db.fetchall(
-                    q.GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED, (chatbot_id, limit)
+                    q.GET_ANALYZED_NOT_LABELED_SWEEP, (chatbot_id, limit)
                 )
             return await self.db.fetchall(
-                q.GET_ALL_ANALYZED_NOT_LABELED_BY_ASSEMBLED, (limit,)
+                q.GET_ALL_ANALYZED_NOT_LABELED_SWEEP, (limit,)
             )
         if until is not None:
             if chatbot_id is not None:

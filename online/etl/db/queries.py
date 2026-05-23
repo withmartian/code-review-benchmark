@@ -99,6 +99,59 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_SINCE = """
     LIMIT $2
 """
 
+# Sweep-mode variants: same filter as the default queries but ordered by
+# assembled_at DESC. Used by --sort sweep to prioritize PRs that recently became
+# ready, catching late-discovered PRs that bot_reviewed_at ordering misses.
+GET_ASSEMBLED_PRS_NOT_ANALYZED_SWEEP = """
+    SELECT p.* FROM prs p
+    LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'assembled'
+      AND la.id IS NULL
+      AND p.pr_merged = TRUE
+    ORDER BY p.assembled_at DESC NULLS LAST
+    LIMIT $2
+"""
+
+GET_ALL_ASSEMBLED_NOT_ANALYZED_SWEEP = """
+    SELECT p.* FROM prs p
+    LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    WHERE p.status = 'assembled'
+      AND la.id IS NULL
+      AND p.pr_merged = TRUE
+    ORDER BY p.assembled_at DESC NULLS LAST
+    LIMIT $1
+"""
+
+# Bounded variants accept both `since` (inclusive lower bound) and `until` (exclusive
+# upper bound). Either may be NULL — the WHERE clauses become no-ops, which Postgres'
+# planner folds away. Use these whenever `until` is specified; the *_SINCE variants
+# above remain the fast path for the common since-only / no-bound case.
+GET_ASSEMBLED_PRS_NOT_ANALYZED_BOUNDED = """
+    SELECT p.* FROM prs p
+    LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'assembled'
+      AND la.id IS NULL
+      AND p.pr_merged = TRUE
+      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at >= $2)
+      AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $4
+"""
+
+GET_ALL_ASSEMBLED_NOT_ANALYZED_BOUNDED = """
+    SELECT p.* FROM prs p
+    LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    WHERE p.status = 'assembled'
+      AND la.id IS NULL
+      AND p.pr_merged = TRUE
+      AND ($1::timestamptz IS NULL OR p.bot_reviewed_at >= $1)
+      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $3
+"""
+
 # -- PR locking ----------------------------------------------------------------
 
 LOCK_PR = """
@@ -261,6 +314,59 @@ GET_ALL_ANALYZED_NOT_LABELED_SINCE = """
       AND p.bot_reviewed_at >= $1
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
     LIMIT $2
+"""
+
+# Analyzed-sorted variants for the labeling stage: sort by analyzed_at DESC
+# to prioritize PRs that most recently became ready for labeling.
+GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'analyzed'
+      AND pl.id IS NULL
+    ORDER BY p.analyzed_at DESC NULLS LAST
+    LIMIT $2
+"""
+
+GET_ALL_ANALYZED_NOT_LABELED_SWEEP = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.status = 'analyzed'
+      AND pl.id IS NULL
+    ORDER BY p.analyzed_at DESC NULLS LAST
+    LIMIT $1
+"""
+
+# See note above on bounded queries — same pattern, applied to the labeling stage.
+GET_ANALYZED_NOT_LABELED_BOUNDED = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'analyzed'
+      AND pl.id IS NULL
+      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at >= $2)
+      AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $4
+"""
+
+GET_ALL_ANALYZED_NOT_LABELED_BOUNDED = """
+    SELECT p.*, la.bot_suggestions, la.matching_results
+    FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+    WHERE p.status = 'analyzed'
+      AND pl.id IS NULL
+      AND ($1::timestamptz IS NULL OR p.bot_reviewed_at >= $1)
+      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $3
 """
 
 # -- PR volumes ----------------------------------------------------------------

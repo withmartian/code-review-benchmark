@@ -143,8 +143,33 @@ class PRRepository:
         return await self.db.fetchall(query, (chatbot_id, limit))
 
     async def get_assembled_not_analyzed(
-        self, chatbot_id: int | None = None, limit: int = 100, since: str | None = None
+        self,
+        chatbot_id: int | None = None,
+        limit: int = 100,
+        since: str | None = None,
+        until: str | None = None,
+        sort_by: str = "reviewed",
     ) -> list[dict[str, Any]]:
+        # `until` is exclusive: --since 2026-04-18 --until 2026-04-19 yields just 4/18.
+        # When `until` is set we use the bounded variant (which also handles since=None);
+        # otherwise we keep the existing fast paths to preserve query plans.
+        # `sort_by` == "sweep" uses assembled_at DESC (for catching late-discovered PRs).
+        if sort_by == "sweep":
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_SWEEP, (chatbot_id, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_SWEEP, (limit,)
+            )
+        if until is not None:
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_BOUNDED, (chatbot_id, since, until, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_BOUNDED, (since, until, limit)
+            )
         if since:
             if chatbot_id is not None:
                 return await self.db.fetchall(q.GET_ASSEMBLED_PRS_NOT_ANALYZED_SINCE, (chatbot_id, since, limit))
@@ -289,8 +314,31 @@ class PRRepository:
         )
 
     async def get_analyzed_not_labeled(
-        self, chatbot_id: int | None = None, limit: int = 100, since: str | None = None
+        self,
+        chatbot_id: int | None = None,
+        limit: int = 100,
+        since: str | None = None,
+        until: str | None = None,
+        sort_by: str = "reviewed",
     ) -> list[dict[str, Any]]:
+        # See note on get_assembled_not_analyzed: `until` is exclusive.
+        # `sort_by` == "sweep" uses analyzed_at DESC (for catching stragglers).
+        if sort_by == "sweep":
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ANALYZED_NOT_LABELED_SWEEP, (chatbot_id, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ANALYZED_NOT_LABELED_SWEEP, (limit,)
+            )
+        if until is not None:
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ANALYZED_NOT_LABELED_BOUNDED, (chatbot_id, since, until, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ANALYZED_NOT_LABELED_BOUNDED, (since, until, limit)
+            )
         if since:
             if chatbot_id is not None:
                 return await self.db.fetchall(q.GET_ANALYZED_NOT_LABELED_SINCE, (chatbot_id, since, limit))

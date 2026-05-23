@@ -179,7 +179,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_ana.add_argument("--chatbot", help="Specific chatbot, or use --all")
     p_ana.add_argument("--all", action="store_true", dest="all_chatbots")
     p_ana.add_argument("--limit", type=int, default=100)
-    p_ana.add_argument("--since", help="Only analyze PRs reviewed since this date (e.g. '7d', '2026-02-05')")
+    p_ana.add_argument("--since", help="Inclusive lower bound on bot_reviewed_at (e.g. '7d', '2026-02-05')")
+    p_ana.add_argument(
+        "--until",
+        help=(
+            "Exclusive upper bound on bot_reviewed_at (e.g. '2d', '2026-04-19'). "
+            "With --since 2026-04-18 --until 2026-04-19 you get just 2026-04-18."
+        ),
+    )
+    p_ana.add_argument(
+        "--sort",
+        choices=["reviewed", "sweep"],
+        default="reviewed",
+        help="Sort order: 'reviewed' (default, bot_reviewed_at DESC) or 'sweep' (assembled_at DESC, catches late-merged PRs).",
+    )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
 
@@ -195,7 +208,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_lbl.add_argument("--chatbot", help="Specific chatbot, or use --all")
     p_lbl.add_argument("--all", action="store_true", dest="all_chatbots")
     p_lbl.add_argument("--limit", type=int, default=100)
-    p_lbl.add_argument("--since", help="Only label PRs reviewed since this date (e.g. '7d', '2026-02-05')")
+    p_lbl.add_argument("--since", help="Inclusive lower bound on bot_reviewed_at (e.g. '7d', '2026-02-05')")
+    p_lbl.add_argument(
+        "--until",
+        help="Exclusive upper bound on bot_reviewed_at (e.g. '2d', '2026-04-19')",
+    )
+    p_lbl.add_argument(
+        "--sort",
+        choices=["reviewed", "sweep"],
+        default="reviewed",
+        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'sweep' (analyzed_at DESC, for catching stragglers).",
+    )
     p_lbl.add_argument("--database-url")
     p_lbl.add_argument("--verbose", action="store_true")
 
@@ -407,6 +430,28 @@ async def cmd_enrich(args: argparse.Namespace) -> None:
         await db.close()
 
 
+def _parse_time_bound(value: str | None) -> str | None:
+    """Parse a CLI time bound: relative ("7d") or absolute ("2026-02-05") -> ISO timestamp.
+
+    Returns None when value is falsy. Relative values are anchored to "now" (UTC).
+    Bare dates ("YYYY-MM-DD") are normalized to midnight UTC so asyncpg can bind
+    them to a timestamptz column — without this the bare-date form is forwarded
+    as a raw string and asyncpg raises DataError.
+    """
+    if not value:
+        return None
+    from datetime import datetime
+    from datetime import timedelta
+    import re
+
+    m = re.match(r"^(\d+)d$", value)
+    if m:
+        return (datetime.now(UTC) - timedelta(days=int(m.group(1)))).isoformat()
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        return f"{value}T00:00:00+00:00"
+    return value
+
+
 async def cmd_analyze(args: argparse.Namespace) -> None:
     from db.connection import DBAdapter
     from db.repository import PRRepository
@@ -420,16 +465,18 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
         logger.error("MARTIAN_API_KEY required")
         return
 
-    # Parse --since: supports relative ("7d") or absolute ("2026-02-05")
-    since = None
-    if args.since:
-        from datetime import datetime
-        from datetime import timedelta
-        import re
-
-        m = re.match(r"^(\d+)d$", args.since)
-        since = (datetime.now(UTC) - timedelta(days=int(m.group(1)))).isoformat() if m else args.since
-        logger.info(f"Filtering PRs reviewed since {since}")
+    since = _parse_time_bound(args.since)
+    until = _parse_time_bound(args.until)
+    sort_by = args.sort
+    if sort_by == "sweep":
+        if since or until:
+            logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
+        logger.info("Sweep mode: sorting by assembled_at DESC")
+    else:
+        if since:
+            logger.info(f"Filtering PRs reviewed since {since}")
+        if until:
+            logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -440,13 +487,21 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
         if args.all_chatbots:
             chatbots = await repo.get_all_chatbots()
             for bot in chatbots:
-                await analyze_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+                await analyze_prs(
+                    cfg, db, bot["id"], bot["github_username"],
+                    limit=args.limit, since=since, until=until,
+                    sort_by=sort_by,
+                )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
             if not bot:
                 logger.error(f"Chatbot '{args.chatbot}' not found.")
                 return
-            await analyze_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+            await analyze_prs(
+                cfg, db, bot["id"], bot["github_username"],
+                limit=args.limit, since=since, until=until,
+                sort_by=sort_by,
+            )
         else:
             logger.error("Specify --chatbot or --all")
     finally:
@@ -466,16 +521,18 @@ async def cmd_label(args: argparse.Namespace) -> None:
         logger.error("MARTIAN_API_KEY required")
         return
 
-    # Parse --since
-    since = None
-    if args.since:
-        from datetime import datetime
-        from datetime import timedelta
-        import re
-
-        m = re.match(r"^(\d+)d$", args.since)
-        since = (datetime.now(UTC) - timedelta(days=int(m.group(1)))).isoformat() if m else args.since
-        logger.info(f"Filtering PRs reviewed since {since}")
+    since = _parse_time_bound(args.since)
+    until = _parse_time_bound(args.until)
+    sort_by = args.sort
+    if sort_by == "sweep":
+        if since or until:
+            logger.warning("--since/--until are ignored in sweep mode (sweep processes all unlabeled PRs by analyzed_at)")
+        logger.info("Sweep mode: sorting by analyzed_at DESC")
+    else:
+        if since:
+            logger.info(f"Filtering PRs reviewed since {since}")
+        if until:
+            logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -486,13 +543,21 @@ async def cmd_label(args: argparse.Namespace) -> None:
         if args.all_chatbots:
             chatbots = await repo.get_all_chatbots()
             for bot in chatbots:
-                await label_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+                await label_prs(
+                    cfg, db, bot["id"], bot["github_username"],
+                    limit=args.limit, since=since, until=until,
+                    sort_by=sort_by,
+                )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
             if not bot:
                 logger.error(f"Chatbot '{args.chatbot}' not found.")
                 return
-            await label_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+            await label_prs(
+                cfg, db, bot["id"], bot["github_username"],
+                limit=args.limit, since=since, until=until,
+                sort_by=sort_by,
+            )
         else:
             logger.error("Specify --chatbot or --all")
     finally:

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import date
+from datetime import timedelta
 import enum
 import logging
-from datetime import date, timedelta
 
 from google.cloud import bigquery
 import httpx

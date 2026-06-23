@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import enum
 import logging
 import time
 from urllib.parse import quote
@@ -126,20 +127,30 @@ async def fetch_pr_volumes(
     return upserted
 
 
+class SearchError(enum.Enum):
+    """Non-count outcomes from _search_api_count."""
+    UNSEARCHABLE = "unsearchable"  # 422: username not recognized by Search API
+    TRANSIENT = "transient"        # request failed after retries
+
+
+SearchResult = int | SearchError
+
+
 async def _search_api_count(
     client: httpx.AsyncClient,
     bot_username: str,
     start_date: str,
     end_date: str | None = None,
-) -> int | None:
-    """Query GitHub Search API for PRs reviewed by a bot in a date range.
+    qualifier: str = "reviewed-by",
+) -> SearchResult:
+    """Query GitHub Search API for PRs involving a bot in a date range.
 
-    Returns the total_count, or None if the request fails.
-    Uses `reviewed-by:<bot> type:pr created:<start>..<end>`.
+    Returns the total_count on success, or a SearchError variant on failure.
+    Uses `<qualifier>:<bot> type:pr created:<start>..<end>`.
     If end_date is None, queries a single day.
     """
     end = end_date or start_date
-    query = f"type:pr reviewed-by:{bot_username} created:{start_date}..{end}"
+    query = f"type:pr {qualifier}:{bot_username} created:{start_date}..{end}"
     for attempt in range(3):
         try:
             resp = await client.get(
@@ -147,9 +158,10 @@ async def _search_api_count(
                 params={"q": query, "per_page": "1"},
             )
             if resp.status_code == 422:
-                # "Validation Failed" — bot username not searchable (e.g. non-[bot] accounts)
-                logger.warning(f"Search API 422 for {bot_username} — username not searchable")
-                return None
+                logger.warning(
+                    f"Search API 422 for {bot_username} ({qualifier}:) — username not searchable"
+                )
+                return SearchError.UNSEARCHABLE
             if resp.status_code == 403:
                 retry_after = resp.headers.get("Retry-After")
                 wait = int(retry_after) if retry_after else 60
@@ -166,8 +178,8 @@ async def _search_api_count(
                 await asyncio.sleep(2 ** (attempt + 1))
             else:
                 logger.error(f"Search API failed for {bot_username} on {start_date}..{end}: {e}")
-                return None
-    return None
+                return SearchError.TRANSIENT
+    return SearchError.TRANSIENT
 
 
 def _date_range(start_date: str, end_date: str) -> list[str]:
@@ -250,6 +262,7 @@ async def fetch_pr_volumes_search_api(
         )
 
     upserted = 0
+    skipped_bots: list[str] = []
     async with httpx.AsyncClient(
         headers={
             "Authorization": f"Bearer {token}",
@@ -260,20 +273,24 @@ async def fetch_pr_volumes_search_api(
     ) as client:
         for username in chatbot_usernames:
             chatbot_id = username_to_id[username]
+            bot_skipped = False
 
             if weekly:
                 for chunk_start, chunk_end in chunks:
-                    count = await _search_api_count(client, username, chunk_start, chunk_end)
-                    if count is None:
-                        logger.debug(f"Skipping {username} for {chunk_start}..{chunk_end} (no result)")
+                    result = await _search_api_count(client, username, chunk_start, chunk_end)
+                    if result is SearchError.UNSEARCHABLE:
+                        skipped_bots.append(username)
+                        bot_skipped = True
+                        break
+                    if isinstance(result, SearchError):
                         await asyncio.sleep(SEARCH_API_SLEEP)
                         continue
+                    assert isinstance(result, int)
 
                     chunk_days = _date_range(chunk_start, chunk_end)
                     num_days = len(chunk_days)
-                    # Distribute evenly; put remainder on the last day
-                    base = count // num_days
-                    remainder = count % num_days
+                    base = result // num_days
+                    remainder = result % num_days
 
                     async with db.transaction():
                         for i, day in enumerate(chunk_days):
@@ -284,19 +301,32 @@ async def fetch_pr_volumes_search_api(
                     await asyncio.sleep(SEARCH_API_SLEEP)
             else:
                 for day in dates:
-                    count = await _search_api_count(client, username, day)
-                    if count is None:
-                        logger.debug(f"Skipping {username} on {day} (no result)")
+                    result = await _search_api_count(client, username, day)
+                    if result is SearchError.UNSEARCHABLE:
+                        skipped_bots.append(username)
+                        bot_skipped = True
+                        break
+                    if isinstance(result, SearchError):
                         await asyncio.sleep(SEARCH_API_SLEEP)
                         continue
+                    assert isinstance(result, int)
 
                     async with db.transaction():
-                        await repo.upsert_pr_volume(chatbot_id, day, count)
+                        await repo.upsert_pr_volume(chatbot_id, day, result)
                     upserted += 1
 
                     await asyncio.sleep(SEARCH_API_SLEEP)
 
-            logger.info(f"  {username}: upserted so far: {upserted}")
+            if bot_skipped:
+                logger.info(f"  {username}: skipped (unsearchable)")
+            else:
+                logger.info(f"  {username}: upserted so far: {upserted}")
+
+    if skipped_bots:
+        logger.warning(
+            f"Skipped {len(skipped_bots)} unsearchable bot(s) (use --source bq for these): "
+            f"{', '.join(skipped_bots)}"
+        )
 
     logger.info(f"Search API volumes: upserted {upserted} rows for {len(chatbot_usernames)} bots")
     return upserted

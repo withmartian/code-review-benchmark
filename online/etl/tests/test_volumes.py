@@ -11,6 +11,7 @@ from hypothesis import strategies as st
 import httpx
 import pytest
 
+from pipeline.volumes import SearchError
 from pipeline.volumes import _date_range
 from pipeline.volumes import _date_to_suffix
 from pipeline.volumes import _search_api_count
@@ -166,7 +167,7 @@ async def test_search_api_count_date_range() -> None:
 
 
 @pytest.mark.asyncio
-async def test_search_api_count_422_returns_none() -> None:
+async def test_search_api_count_422_returns_unsearchable() -> None:
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.status_code = 422
 
@@ -174,7 +175,7 @@ async def test_search_api_count_422_returns_none() -> None:
     mock_client.get.return_value = mock_response
 
     result = await _search_api_count(mock_client, "Copilot", "2026-06-15")
-    assert result is None
+    assert result is SearchError.UNSEARCHABLE
 
 
 @pytest.mark.asyncio

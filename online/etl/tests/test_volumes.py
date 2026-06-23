@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import asyncio
+from datetime import date, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 import httpx
 import pytest
@@ -97,8 +96,6 @@ def test_date_range_empty_when_start_after_end() -> None:
 )
 @settings(max_examples=100)
 def test_date_range_length(year: int, month: int, day: int, span: int) -> None:
-    from datetime import date, timedelta
-
     start = date(year, month, day)
     end = start + timedelta(days=span)
     result = _date_range(start.isoformat(), end.isoformat())

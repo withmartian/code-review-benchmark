@@ -5,12 +5,10 @@ from __future__ import annotations
 import asyncio
 import enum
 import logging
-import time
-from urllib.parse import quote
-
-import httpx
+from datetime import date, timedelta
 
 from google.cloud import bigquery
+import httpx
 
 from config import DBConfig
 from db.connection import DBAdapter
@@ -188,8 +186,6 @@ async def _search_api_count(
 
 def _date_range(start_date: str, end_date: str) -> list[str]:
     """Generate YYYY-MM-DD strings for each day in [start_date, end_date]."""
-    from datetime import date, timedelta
-
     start = date.fromisoformat(start_date)
     end = date.fromisoformat(end_date)
     dates: list[str] = []
@@ -206,8 +202,6 @@ def _weekly_chunks(start_date: str, end_date: str) -> list[tuple[str, str]]:
     Returns list of (chunk_start, chunk_end) pairs covering the full range.
     The last chunk may be shorter than 7 days.
     """
-    from datetime import date, timedelta
-
     start = date.fromisoformat(start_date)
     end = date.fromisoformat(end_date)
     chunks: list[tuple[str, str]] = []

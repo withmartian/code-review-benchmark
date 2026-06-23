@@ -179,10 +179,13 @@ async def test_search_api_count_422_returns_unsearchable() -> None:
 
 
 @pytest.mark.asyncio
-async def test_search_api_count_retries_on_rate_limit() -> None:
+async def test_search_api_count_retries_on_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    mock_sleep = AsyncMock()
+    monkeypatch.setattr("pipeline.volumes.asyncio.sleep", mock_sleep)
+
     rate_limited = MagicMock(spec=httpx.Response)
     rate_limited.status_code = 403
-    rate_limited.headers = {"Retry-After": "1"}
+    rate_limited.headers = {"Retry-After": "60"}
 
     success = MagicMock(spec=httpx.Response)
     success.status_code = 200
@@ -194,3 +197,4 @@ async def test_search_api_count_retries_on_rate_limit() -> None:
     result = await _search_api_count(mock_client, "test[bot]", "2026-06-15")
     assert result == 42
     assert mock_client.get.call_count == 2
+    mock_sleep.assert_awaited_once_with(60)

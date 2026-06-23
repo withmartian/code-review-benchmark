@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 GITHUB_SEARCH_URL = "https://api.github.com/search/issues"
 # Seconds to sleep between Search API requests to avoid secondary rate limits
 SEARCH_API_SLEEP = 6
+# Bots whose GH Archive username differs from their Search API username
+SEARCH_API_USERNAME_MAP: dict[str, str] = {
+    "Copilot": "copilot-pull-request-reviewer[bot]",
+}
 
 # Count unique PRs a bot interacted with, assigned to first-seen day.
 # Each PR is counted exactly once (on the earliest day the bot touched it),
@@ -273,11 +277,12 @@ async def fetch_pr_volumes_search_api(
     ) as client:
         for username in chatbot_usernames:
             chatbot_id = username_to_id[username]
+            search_username = SEARCH_API_USERNAME_MAP.get(username, username)
             bot_skipped = False
 
             if weekly:
                 for chunk_start, chunk_end in chunks:
-                    result = await _search_api_count(client, username, chunk_start, chunk_end)
+                    result = await _search_api_count(client, search_username, chunk_start, chunk_end)
                     if result is SearchError.UNSEARCHABLE:
                         skipped_bots.append(username)
                         bot_skipped = True
@@ -301,7 +306,7 @@ async def fetch_pr_volumes_search_api(
                     await asyncio.sleep(SEARCH_API_SLEEP)
             else:
                 for day in dates:
-                    result = await _search_api_count(client, username, day)
+                    result = await _search_api_count(client, search_username, day)
                     if result is SearchError.UNSEARCHABLE:
                         skipped_bots.append(username)
                         bot_skipped = True

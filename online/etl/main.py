@@ -223,10 +223,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_lbl.add_argument("--verbose", action="store_true")
 
     # volumes
-    p_vol = sub.add_parser("volumes", help="Fetch PR volume counts from BigQuery")
+    p_vol = sub.add_parser("volumes", help="Fetch PR volume counts from BigQuery or GitHub Search API")
     p_vol.add_argument("--chatbot", help="GitHub username of the chatbot")
     p_vol.add_argument(
         "--all", action="store_true", dest="all_chatbots", help="Fetch volumes for all registered chatbots"
+    )
+    p_vol.add_argument(
+        "--source", choices=["bq", "search-api"], default="search-api",
+        help="Data source: 'bq' for BigQuery/GH Archive (legacy), 'search-api' for GitHub Search API (default)",
+    )
+    p_vol.add_argument(
+        "--weekly", action="store_true",
+        help="(search-api only) Query in weekly chunks instead of daily. ~7x fewer API calls, less accurate per-day.",
     )
     p_vol.add_argument("--days-back", type=int, default=7)
     p_vol.add_argument("--start-date", help="YYYY-MM-DD")
@@ -571,7 +579,6 @@ async def cmd_volumes(args: argparse.Namespace) -> None:
     from db.connection import DBAdapter
     from db.repository import PRRepository
     from db.schema import create_tables
-    from pipeline.volumes import fetch_pr_volumes
 
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
@@ -598,8 +605,18 @@ async def cmd_volumes(args: argparse.Namespace) -> None:
         else:
             usernames = [args.chatbot]
 
-        logger.info(f"Fetching PR volumes for {len(usernames)} chatbot(s): {start_date} to {end_date}")
-        count = await fetch_pr_volumes(cfg, db, usernames, start_date, end_date)
+        source = args.source
+        logger.info(f"Fetching PR volumes ({source}) for {len(usernames)} chatbot(s): {start_date} to {end_date}")
+
+        if source == "search-api":
+            from pipeline.volumes import fetch_pr_volumes_search_api
+            count = await fetch_pr_volumes_search_api(
+                cfg, db, usernames, start_date, end_date, weekly=args.weekly,
+            )
+        else:
+            from pipeline.volumes import fetch_pr_volumes
+            count = await fetch_pr_volumes(cfg, db, usernames, start_date, end_date)
+
         logger.info(f"Done: {count} volume rows upserted")
     finally:
         await db.close()

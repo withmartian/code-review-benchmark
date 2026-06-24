@@ -315,6 +315,130 @@ class TestSqliteIntegration:
         assert row["error_message"] == "Something broke"
 
     @pytest.mark.asyncio
+    async def test_get_assembled_not_analyzed_with_until(
+        self, db: DBAdapter, repo: PRRepository  # noqa: ARG002
+    ) -> None:
+        """`until` is exclusive: --since 4/18 --until 4/19 yields just 4/18."""
+        cid = await repo.upsert_chatbot("rangetest[bot]")
+
+        # Three PRs at distinct timestamps, all assembled+merged
+        timestamps = {
+            100: "2026-04-17T10:00:00+00:00",
+            101: "2026-04-18T12:00:00+00:00",
+            102: "2026-04-19T08:00:00+00:00",
+        }
+        for pr_num, ts in timestamps.items():
+            await repo.insert_pr(
+                chatbot_id=cid, repo_name="org/repo", pr_number=pr_num,
+                pr_url=f"https://x/{pr_num}", pr_merged=True, bot_reviewed_at=ts,
+                bq_events=[{"event_id": str(pr_num), "type": "PullRequestReviewEvent",
+                            "actor": "rangetest[bot]", "created_at": ts,
+                            "payload": {"pull_request": {"title": "t", "user": {"login": "a"}}}}],
+            )
+            pr = await repo.get_pr(cid, "org/repo", pr_num)
+            await repo.mark_assembled(pr["id"], {"pr_merged": True})
+
+        # since-only: includes 4/18 and 4/19
+        rows = await repo.get_assembled_not_analyzed(
+            chatbot_id=cid, limit=10, since="2026-04-18T00:00:00+00:00",
+        )
+        assert {r["pr_number"] for r in rows} == {101, 102}
+
+        # since + until: just 4/18 (until is exclusive)
+        rows = await repo.get_assembled_not_analyzed(
+            chatbot_id=cid, limit=10,
+            since="2026-04-18T00:00:00+00:00",
+            until="2026-04-19T00:00:00+00:00",
+        )
+        assert {r["pr_number"] for r in rows} == {101}
+
+        # until-only: everything strictly before 4/19
+        rows = await repo.get_assembled_not_analyzed(
+            chatbot_id=cid, limit=10, until="2026-04-19T00:00:00+00:00",
+        )
+        assert {r["pr_number"] for r in rows} == {100, 101}
+
+        # No bounds: all three
+        rows = await repo.get_assembled_not_analyzed(chatbot_id=cid, limit=10)
+        assert {r["pr_number"] for r in rows} == {100, 101, 102}
+
+    @pytest.mark.asyncio
+    async def test_get_assembled_not_analyzed_until_all_chatbots(
+        self, db: DBAdapter, repo: PRRepository  # noqa: ARG002
+    ) -> None:
+        """until param works for the all-chatbots variant too."""
+        c1 = await repo.upsert_chatbot("rangetest1[bot]")
+        c2 = await repo.upsert_chatbot("rangetest2[bot]")
+        for cid, pr_num, ts in [
+            (c1, 200, "2026-04-17T10:00:00+00:00"),
+            (c2, 201, "2026-04-18T12:00:00+00:00"),
+            (c2, 202, "2026-04-19T08:00:00+00:00"),
+        ]:
+            await repo.insert_pr(
+                chatbot_id=cid, repo_name="org/repo", pr_number=pr_num,
+                pr_url=f"https://x/{pr_num}", pr_merged=True, bot_reviewed_at=ts,
+                bq_events=[{"event_id": str(pr_num), "type": "PullRequestReviewEvent",
+                            "actor": "x", "created_at": ts,
+                            "payload": {"pull_request": {"title": "t", "user": {"login": "a"}}}}],
+            )
+            pr = await repo.get_pr(cid, "org/repo", pr_num)
+            await repo.mark_assembled(pr["id"], {"pr_merged": True})
+
+        rows = await repo.get_assembled_not_analyzed(
+            chatbot_id=None, limit=10,
+            since="2026-04-18T00:00:00+00:00",
+            until="2026-04-19T00:00:00+00:00",
+        )
+        assert {r["pr_number"] for r in rows} == {201}
+
+    @pytest.mark.asyncio
+    async def test_get_assembled_not_analyzed_sort_by_sweep(
+        self, db: DBAdapter, repo: PRRepository  # noqa: ARG002
+    ) -> None:
+        """sort_by='sweep' orders by assembled_at DESC, catching late-discovered PRs."""
+        cid = await repo.upsert_chatbot("sorttest[bot]")
+
+        # PR 300: reviewed long ago, assembled recently (late-discovered)
+        # PR 301: reviewed recently, assembled earlier
+        await repo.insert_pr(
+            chatbot_id=cid, repo_name="org/repo", pr_number=300,
+            pr_url="https://x/300", pr_merged=True,
+            bot_reviewed_at="2026-03-01T10:00:00+00:00",
+            bq_events=[{"event_id": "300", "type": "PullRequestReviewEvent",
+                        "actor": "sorttest[bot]", "created_at": "2026-03-01T10:00:00+00:00",
+                        "payload": {"pull_request": {"title": "t", "user": {"login": "a"}}}}],
+        )
+        await repo.insert_pr(
+            chatbot_id=cid, repo_name="org/repo", pr_number=301,
+            pr_url="https://x/301", pr_merged=True,
+            bot_reviewed_at="2026-04-20T10:00:00+00:00",
+            bq_events=[{"event_id": "301", "type": "PullRequestReviewEvent",
+                        "actor": "sorttest[bot]", "created_at": "2026-04-20T10:00:00+00:00",
+                        "payload": {"pull_request": {"title": "t", "user": {"login": "a"}}}}],
+        )
+
+        # Assemble PR 301 first (earlier assembled_at), then PR 300 (later assembled_at)
+        pr301 = await repo.get_pr(cid, "org/repo", 301)
+        await repo.mark_assembled(pr301["id"], {"pr_merged": True})
+
+        # Small delay to ensure distinct assembled_at timestamps
+        import asyncio
+        await asyncio.sleep(0.05)
+
+        pr300 = await repo.get_pr(cid, "org/repo", 300)
+        await repo.mark_assembled(pr300["id"], {"pr_merged": True})
+
+        # Default sort (bot_reviewed_at DESC): PR 301 first (reviewed 2026-04-20)
+        rows = await repo.get_assembled_not_analyzed(chatbot_id=cid, limit=10)
+        assert rows[0]["pr_number"] == 301
+
+        # Sweep sort: PR 300 first (assembled more recently)
+        rows = await repo.get_assembled_not_analyzed(
+            chatbot_id=cid, limit=10, sort_by="sweep"
+        )
+        assert rows[0]["pr_number"] == 300
+
+    @pytest.mark.asyncio
     async def test_mark_skipped(self, repo: PRRepository) -> None:
         cid = await repo.upsert_chatbot("testbot[bot]")
         await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=81, pr_url="https://x", bq_events=[

@@ -1224,6 +1224,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "canManage() treats the view scope as sufficient for manage access (hasPermission(..., VIEW, MANAGE)), which would allow callers with only view permissions to manage groups - this is a privilege escalation risk; manage checks should require the manage scope only",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getGroupIdsWithViewPermission() returns authorization resource IDs (groupResource.getId()) rather than Keycloak group IDs, causing user search/count to incorrectly return 0 users or mis-filter since these IDs are used by JpaUserProvider to filter memberships by groupId - should use the resource name (which is the groupId per AdminPermissionsSchema.getOrCreateResource) instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc says method returns a 'Stream' but the signature returns a Set<String>, which is misleading for API consumers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Extra trailing semicolon after field initialization that can trigger style/checkstyle violations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Typo in comment: 'initializaed' should be 'initialized'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -2445,6 +2477,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Adding a new abstract method to a widely implemented interface is binary-incompatible for already-compiled CryptoProvider implementations (they will fail with AbstractMethodError at runtime). To preserve compatibility, make this a default method and let built-in providers override it as needed.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Provider selection can be non-deterministic when multiple CryptoProvider implementations return the same order(), because ServiceLoader iteration order is not guaranteed. Add a deterministic tie-breaker so the chosen provider is stable across environments.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "logger.debugf(builder.toString()) treats the message as a format string; if any provider class name ever contained '%' it could misformat/throw. Also the current StringBuilder loop leaves a trailing ', '. Build the list with joining and pass it as a debugf parameter.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getBouncyCastleProvider() is documented to return the BouncyCastle (or BCFIPS) Provider, but this implementation returns the provider backing the default KeyStore type (often SUN). This breaks the interface contract and makes it harder for callers to reason about whether BC is available. Prefer returning the actual BC/BCFIPS provider by name (or null if not installed).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ASN1Encoder.create().write(...) calls are dead code (their results are discarded) and the method also creates multiple redundant encoder instances. This makes the intent harder to follow and does extra work.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The exception message is grammatically awkward and doesn't include the actual size encountered, which makes debugging malformed signatures harder.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Throwing UnsupportedOperationException(\"Not supported yet.\") is not very actionable when it bubbles up from CryptoIntegration. Include the provider/method name in the message so failures are diagnosable.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -3423,6 +3499,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "GroupModel#getSubGroupsCount() is documented to never return null, but returning null here can lead to NPEs in callers like GroupUtils.populateSubGroupCount. Should return a non-null default (e.g., 0L) when the underlying model is missing during concurrent deletion.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Background reader thread is started but never joined, and deletedAll is only set after deletions succeed. If deletion/assertion throws, the non-daemon thread can keep running and hang the test suite.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Assertion can race with the thread adding exceptions. Thread should be always stopped (finally), marked daemon, and joined (with a timeout) before asserting.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1": {
@@ -4395,6 +4491,32 @@
       },
       {
         "text": "Should use Assert.assertThrows(NoSuchElementException.class, () -> driver.findElement(...)) instead for consistency with the rest of the test suite",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "UsernameForm calls isConditionalPasskeysEnabled() with no arguments, but the only available method is isConditionalPasskeysEnabled(UserModel). This won't compile.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isConditionalPasskeysEnabled(UserModel) currently requires user != null, which prevents UsernamePasswordForm from setting enableWebAuthnConditionalUI on the initial login screen (where context.getUser() is null) and on error challenges before the user is set, so themes/base/login/passkeys.ftl won't render the conditional passkeys form.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unused import: PasswordCredentialModel is imported but never referenced in this test class, which will fail Java compilation.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unused import: NoSuchElementException is no longer referenced in this test (the previous Assert.assertThrows usages were removed), so the import will cause a compilation error.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -5419,6 +5541,44 @@
       },
       {
         "text": "max_processes=0 is treated as falsy due to 'max_processes or len(buffer.assigned_shards)', causing silent fallback to full shard count instead of expected behavior when user passes --flusher-processes 0 - should use explicit None check instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "time.sleep is monkeypatched to a no-op at the start of the test, so the later time.sleep(0.1) does not actually wait and can make the test flaky. Prefer a deterministic wait or call an unpatched sleep function.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The docstring claims this creates 'one process per shard', but the implementation can share shards across processes when max_processes is lower than the shard count. Adjust the wording to reflect the configurable upper bound.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "self.num_processes can become 0 (e.g. empty buffer.assigned_shards, or max_processes=0 since 'max_processes or ...' treats 0 as falsy). That leads to 'i % self.num_processes' raising ZeroDivisionError during shard mapping. Add validation and avoid using 'or' for the defaulting behavior.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The metrics tag key is inconsistent between spans.buffer.flusher.produce (uses 'shard') and spans.buffer.flusher.wait_produce (uses 'shards'). This makes it harder to correlate timings for the same shard set.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Creating a separate SpansBuffer per process means each process will independently apply spans.buffer.max-flush-segments (default 500) per cycle. In aggregate this can increase the total flushed segments per wall-clock cycle by ~num_processes\u00d7 compared to the previous single-flusher behavior, which may have significant Kafka/Redis load implications. Consider splitting the configured flush budget across processes, or updating the option/documentation to reflect the new semantics.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "With default=1, the new --flusher-processes option forces single-process flushing unless explicitly overridden, which conflicts with the stated goal of spawning per-shard processes. Also, type=int allows 0/negative values that can break flusher initialization. Consider defaulting to None (meaning 'one per shard') and enforcing a minimum of 1 when provided.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -7088,6 +7248,62 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "TableWidgetVisualization renders an empty table (columns=[], data/meta empty) when feature flag is enabled, hiding real table widget results - should be wired to result.data and result.meta like SimpleTableChart path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "validate_timestamp uses truthiness check on self.initial_data.get('age') which incorrectly allows age=0 to coexist with timestamp - should check key presence or is not None",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "validate_age uses truthiness check on self.initial_data.get('timestamp') which incorrectly allows timestamp=0 to coexist with age - should use key presence or is not None",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "fetch_error_details pairs error_ids with events.values() from nodestore.backend.get_multi() but if returned dict order differs, error IDs can be matched with wrong event payload - should look up by node_id",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Custom head-cell override only respected when returning truthy value - returning valid React nodes like 0, empty string, or null incorrectly falls back to default renderer - should check cell !== undefined",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Body-cell overrides ignored unless returning truthy value, making it impossible to intentionally render 0, empty string, or null - should use undefined check instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Assertion indexing into data[message]['data'][0] but response shape is list of [time, attrs] pairs - checking membership against first pair will fail, should check attrs across all buckets",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same response-shape issue for 'Other' series: other['data'] is list of [time, attrs] pairs, assertion should check attrs across buckets rather than indexing [0]",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "PR title/description reference 'Replays Self-Serve Bulk Delete' but PR contains large Explore visualizes refactor and other unrelated changes - should split into separate PRs or update title/description",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1": {
@@ -8510,6 +8726,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "BasePaginator.get_result clamps negative offsets to 0 for non-prev cursors but allows them through for prev cursors, which is inconsistent with other paginator implementations that explicitly reject negative offsets via BadPaginationError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Allowing negative offsets through leaves a client-controlled path that can hit Django QuerySet slicing with a negative start index and raise at runtime, causing 500 errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_item_key assumes self.key is numeric and calls math.floor/ceil directly, which will raise TypeError for DateTimeField keys like datetime used in audit logs endpoint",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The advanced negative-offset branch slices the queryset with a negative start index where Django QuerySet slicing does not support negative indices, causing runtime errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The added comment claims 'Allow negative offsets' but Cursor itself doesn't implement/validate that behavior and the rest of the pagination code treats negative offsets as invalid input, making the comment misleading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -9433,6 +9681,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "init() launches goroutines that mutate and read outer-scope err and totalBatchesIndexed variables, introducing a data race and potentially returning incorrect errors. Use per-goroutine locals and synchronize the counter.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Watch goroutine reads events with v := <-events inside infinite loop, but WatchWriteEvents implementations can close the channel, causing nil receives that may panic in handleEvent or spin. Use for v := range events instead.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "bleveBackend.TotalDocs() iterates over b.cache without holding cacheMu, which can panic with concurrent map iteration and map write when BuildIndex() writes to b.cache concurrently. Guard TotalDocs() with cacheMu.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Integration test is skipped entirely for Postgres, reducing DB-matrix coverage and potentially hiding regressions. Consider linking skip to a tracking issue and using t.Skipf with a more specific message.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80168": {
@@ -10320,6 +10594,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "MetricAlertDetectorHandler subclasses StatefulDetectorHandler but doesn't implement required abstract members (counter_names, get_dedupe_value, get_group_key_values, build_occurrence_and_event_data), which will cause TypeError when instantiated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Docstring for evaluate method is inaccurate - states it returns a list but now returns a dict keyed by group key",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -10961,6 +11249,26 @@
     "gitlab": [
       {
         "text": "The config copy with human-readable schedule_type substituted on line 162 is never used in the returned dict - monitor_environment.monitor.config returns the original unmodified config instead, making the schedule_type transformation have no effect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "get_monitor_environment_context builds a copied/mutated config (including replacing schedule_type with the display value) but then returns monitor_environment.monitor.config, so the mutation is ignored and the local config variable is effectively unused",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Docstring contains typos: 'humam readible' should be 'human readable'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "any([ ... ]) builds an intermediate list; any(...) over a generator is equivalent and avoids the allocation",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -11743,6 +12051,26 @@
       },
       {
         "text": "Typo in test method name: `test_from_dict_inalid_data` should be `test_from_dict_invalid_data`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "`queued` is set with `timezone.now()` at class definition time, so every `AssignmentSource` instance will share the same timestamp. Use a dataclass `field(default_factory=timezone.now)` so the timestamp is evaluated per instance.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`sync_status_outbound` is now declared with an `assignment_source` parameter, but status syncing doesn't pass/use this and many implementations (e.g., `ExampleIntegration.sync_status_outbound`) don't accept it. This increases the chance of a future runtime `TypeError` if callers start passing `assignment_source`. Consider removing this parameter here (or switching to `**kwargs: Any` only, as other abstract methods do).",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Typo in test name: `inalid` -> `invalid`.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -12756,6 +13084,26 @@
       },
       {
         "text": "Test docstring contradicts the assertion - docstring states errors don't block offset commits for other messages, but assertion checks that no commits happened, when actually both offsets should be committed due to the finally block always calling complete_offset",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "complete_offset is called unconditionally in the finally block, even when result_processor raises, making failed work items appear successfully processed and allowing the commit loop to advance offsets, potentially skipping/losing messages. Only mark the offset completed after the work item was processed successfully and avoid completing on shutdown paths.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "get_committable_offsets can incorrectly commit past missing offsets after a prior commit. After mark_committed prunes offsets \u2264 committed, min_offset may jump forward over a gap, and start = max(last_committed + 1, min_offset) will skip the missing offset and allow committing later ones. Add an explicit gap check so we never advance commits past last_committed + 1 unless that offset has been observed and completed.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The thread-queue-parallel strategy starts a background commit thread; the test only calls factory.shutdown() which stops the queue workers but never closes the returned consumer, so the commit thread can keep running and mutate state after assertions and leak into other tests. Close the strategy before shutting down the factory and apply similarly in the other new thread-queue-parallel tests.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -14345,6 +14693,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Reducing the redirect traversal limit from 10k to 1k can cause incomplete segment joins for deep redirect chains - consider keeping the previous limit or adding explicit error handling/metrics when the cap is hit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ZUNIONSTORE defaults to SUM aggregation which will corrupt timestamp scores if a member exists in both source ZSETs - should use MAX or MIN aggregation instead of SUM since scores represent end_timestamp_precise for eviction ordering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Second ZUNIONSTORE also needs a non-SUM aggregation (e.g. MAX) to keep timestamp scores meaningful for eviction",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Eviction threshold is hard-coded to 1000 but SpansBuffer exposes max_segment_spans=1001 - should wire this threshold from Python configuration for consistency",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Switching per-parent Redis key from Set to Sorted Set without migration/versioned keying will cause WRONGTYPE runtime failures for existing keys - consider using versioned key prefix or adding migration/compat path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "_load_segment_data no longer enforces max_segment_spans so a single oversized segment can be fully scanned into memory if Redis already contains an over-limit key - should reintroduce span-count guard as safety backstop",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator allows negative QuerySet slicing (cursor.offset < 0) but Django QuerySets do not support negative indexing and will raise an error - should validate and raise BadPaginationError or clamp to 0",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comments claim negative offsets are a safe performance optimization but implementation clamps negative offsets to 0 for forward pagination while still allowing them for prev pagination which Django doesn't support - comments are misleading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Adding comments that negative Cursor.offset is a deliberate performance optimization is misleading since several paginator implementations explicitly reject negative offsets - consider removing these comments or adding validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OrganizationAuditLogsEndpoint uses OptimizedCursorPaginator with order_by=-datetime but OptimizedCursorPaginator.get_item_key assumes numeric key field and calls math.floor/ceil - AuditLogEntry.datetime is a datetime so this will raise TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "PR includes audit log pagination changes that are unrelated to span buffer insertion/eviction changes mentioned in title/description - consider splitting into separate PR or expanding PR description",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No tests asserting that segments are capped and oldest spans are evicted based on end_timestamp_precise - should add unit test for eviction behavior to prevent regressions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -15724,6 +16146,68 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Cache key uses Python's built-in hash() of project IDs which is randomized per process, causing inconsistent cache hits/misses across workers and restarts - should use stable serialization instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "invalidate_upsampling_cache builds the same unstable hash()-based key as the read path, which can fail to delete entries written by other workers due to Python's process-randomized hashes - should use the same stable key format as the getter",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "_set_sample_rate_from_error_sampling accepts any truthy value and silently ignores conversion errors, which can set invalid sample rates (e.g., >1, negative, NaN) and produce incorrect/inconsistent weighting behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "upsampled_count is an internal aggregation but not marked private=True like other internal helpers (e.g. rounded_timestamp, column_hash), and the declared default_result_type should be 'integer' since the aggregation explicitly casts to Int64",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Line contains only indentation whitespace which triggers lint (e.g., W293) and creates noisy diffs - should be a truly blank line",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Line contains only indentation whitespace which triggers lint (e.g., W293) and creates noisy diffs - should be a truly blank line",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Line contains only indentation whitespace which triggers lint (e.g., W293) and creates noisy diffs - should be a truly blank line",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "setUp overwrites self.user (which APITestCase uses as the logged-in user) after calling login_as, making the test harder to follow and potentially causing future helpers relying on self.user to behave unexpectedly - should use separate attributes for event tag users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tag should use the dedicated event user created in setUp (e.g. self.event_user) instead of self.user to avoid confusion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If self.user2 is renamed to a dedicated event user (e.g. self.event_user2), the tag reference should be updated to match the setUp attributes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -16677,6 +17161,20 @@
       },
       {
         "text": "The denial cache key uses underscore as a delimiter without escaping, causing potential key collisions when name or parent contain underscores (e.g., name='dash_1' with parent='fold' produces the same key as name='dash' with parent='1_fold')",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "The denial-cache key uses the same `.perm_` prefix as the positive permission cache key, which makes it harder to reason about key spaces and increases risk of future collisions/type confusion. Should use a dedicated prefix like `.perm_deny_` for denial entries.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The test that intends to verify denial-cache entry overrides a cached allow decision is flawed - the permCache is populated with `false` for the dashboard scope, and since `checkPermission` only treats `true` values as grants, the test would deny even without checking the denial cache, so it doesn't validate the intended behavior.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -17703,6 +18201,98 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "OAuth state parameter is derived from pipeline.signature which is predictable (md5 of pipeline view class names) and doesn't provide CSRF protection - should generate cryptographically-random state, store it in pipeline state, and validate against stored value",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Authorize URL is built via string interpolation rather than proper URL encoding - should use urlencode to ensure correct escaping",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "integration.metadata[\"sender\"][\"login\"] will raise KeyError if older/partial integrations exist without sender metadata or if webhook payload shape changes - should safely handle missing metadata to avoid 500 during setup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Brand spelling error: uses \"Github\" instead of \"GitHub\" in error text",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test assertion hard-codes full query string including parameter order and specific state value - should parse query string and assert individual parameters, then reuse parsed state for callback request",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test indexes responses.calls[2] which depends on call ordering and breaks when adding new requests - should locate relevant call by URL instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Brand spelling in asserted payload uses \"Github\" instead of \"GitHub\" - should match corrected server-side message",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test hard-codes specific OAuth state value into self.setup_path_2 making it fragile to pipeline changes and incompatible with randomized state - should derive state from redirect returned by init request",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Second install attempt test still uses self.setup_path_2 with hard-coded OAuth state - should derive state from init redirect for consistency",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test constructs setup_path_2 with hard-coded OAuth state - should parse state from init redirect to avoid coupling to specific signature/value",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Pending-deletion test hard-codes OAuth state making it brittle and incompatible with randomized state - should derive state from init redirect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Second attempt in test hard-codes OAuth state - should parse from init redirect to keep test stable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test doesn't exercise \"installation not found\" path correctly: first GET hits OAuth redirect (no GitHub installation lookup yet), second GET uses mismatched state failing in OAuth step instead - makes /app/installations/{installation_id} 404 stub ineffective and asserts wrong behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "get_user_info calls resp.raise_for_status() which will raise on non-2xx response (invalid/expired code, GitHub outage) - exception would bubble up and 500 the setup endpoint instead of returning intended error page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "safe_urlopen(...) can raise on network/timeout/SSL errors but isn't inside try/except - would cause 500 during installation instead of showing intended failure page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -18407,6 +18997,38 @@
       },
       {
         "text": "Cleanup registration on line 425 uses literal string 'alias' instead of 'idp-alias-20', same incorrect cleanup alias issue as line 381",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Cleanup is removing the literal alias 'alias' instead of the IDP that was just created, so created IDPs are not cleaned up and cleanup may fail if no IDP with alias 'alias' exists",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup is removing the literal alias 'alias' instead of the newly created provider (idp-alias-20), so the test can leak state into subsequent tests and/or fail during cleanup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "remove(alias) only invalidates the IDP's internalId cache when the alias cache entry exists or is marked invalid - if alias entry isn't cached, CachedIdentityProvider is null and no invalidation occurs, leaving potentially-stale internalId cache entry",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In remove(alias), if the alias doesn't exist and the alias key is invalidated, registerIDPInvalidation(storedIdp) can throw NPE",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Login cache stores results for each distinct organizationId inside a single IdentityProviderListQuery keyed only by (realm, fetchMode), which can grow the searchKeys map without bound in realms with many organizations, increasing memory pressure and replication costs",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -19240,6 +19862,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "QueryTypeSQL gate returns misleading 'not implemented' error message instead of clearly stating SQL expressions are disabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing unit test coverage for the new SQL-disablement behavior in ExpressionQueryReader",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Placeholder implementation returns generic 'not implemented' error instead of explicit 'SQL expressions are disabled' message",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Variable still named 'duckDB' but DuckDB dependency has been removed - should be renamed to avoid confusion",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "enableSqlExpressions function computes a boolean but always returns false, making the feature-flag check dead code - should be simplified to single 'return false'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -19754,6 +20408,38 @@
     "gitlab": [
       {
         "text": "Double-checked locking pattern is incomplete - after acquiring the write lock, the code doesn't re-check entryPointAssetsCache, causing multiple goroutines that observed ret == nil under the read lock to each recompute the assets (potentially making file or HTTP I/O calls) and overwrite the cache sequentially",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Write lock is taken before doing network/file I/O, which can cause serialized and repeated manifest reads under concurrent requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cached value isn't re-checked after acquiring the write lock, causing each waiter to re-read after the first goroutine releases the lock",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In dev mode, the current implementation unnecessarily serializes every call",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Should only use the mutex to coordinate cache reads/writes and re-check the cache under the exclusive lock, while doing expensive I/O without holding the lock",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing concurrency-focused test (run under go test -race) that calls GetWebAssets from multiple goroutines to prevent regressions of the data race and verify caching behavior under contention",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -20868,6 +21554,32 @@
       },
       {
         "text": "SQLite inline-ID path builds comma-separated string using repeated fmt.Sprintf calls in a loop, resulting in O(n\u00b2) performance for large batches - should use strings.Builder or strings.Join with pre-converted slice for linear performance",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Cleanup service ticker was reduced from 10 minutes to 1 minute, which will increase DB/file cleanup load and can cause the cleanup loop to run almost continuously if a cycle takes >1m - this change appears unrelated to the MySQL deadlock fix and should be restored to previous cadence",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup batches log at Error level on the success path and include the full list of IDs, which can flood logs and potentially expose internal record IDs - should use Debug/Info level and avoid logging the IDs, reserving Error for actual failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Building the SQLite inline ID list with repeated fmt.Sprintf in a loop is O(n\u00b2) in allocations and can become expensive for large batches - should use strings.Builder with strconv.FormatInt to build the IN list efficiently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test case inserts ~40k annotations and uses a 32k batch size, which can make CI slow/flaky without adding much coverage beyond exercising the batch size > SQLite parameter limit path - should reduce dataset while still exceeding 999 parameters (e.g., ~3003 annotations with batch size 1000) and update the test name which incorrectly mentions a specific SQLite version",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -22498,6 +23210,68 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "In the storage Create error path, this records a legacy duration metric even though only the unified storage call was attempted, which will skew metrics and make failures hard to interpret",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The legacy Create is invoked in a goroutine using the request object directly, which can cause data races or writing inconsistent data to the legacy store since the apiserver/caller may reuse or mutate that object after the function returns - other modes pass a DeepCopy into async writes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "This sets the klog context to d.Log instead of the request-scoped logger with name/kind/method values, so downstream storage calls won't inherit the structured fields",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "recordStorageDuration labels are defined as {kind,method} but passing the object name here inflates cardinality and mislabels the metric",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "On unified-storage Update failure, this records a legacy duration metric even though only the unified storage call ran - this should be recorded as a storage duration error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In the async legacy DeleteCollection path, this records a storage duration metric instead of a legacy duration metric, so the metrics don't reflect which backend was being exercised",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The mode-3 tests don't assert that the asynchronous legacy writes actually happen - the test can pass even if the goroutine never runs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Both the legacy and unified store mocks share the same underlying mock.Mock, so expectations for Create/Update can be matched by either store, making the tests ambiguous - consider using separate mock instances per store",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing synchronization on the async call (channel/WaitGroup) before asserting expectations in mode-3 tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "go.work.sum contains a duplicate entry for github.com/grafana/grafana/pkg/apimachinery v0.0.0-20240701135906-559738ce6ae1/go.mod - consider re-running `go work sync` or removing the duplicate line to keep the sum file stable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -23847,6 +24621,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "GrafanaRuleListItem is missing a React 'key' prop in the rules.map() render, which will trigger React warnings and cause inefficient re-renders",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GrafanaRuleListItem should preserve navigation context by including a returnTo parameter, which requires importing createReturnTo",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GrafanaRuleListItem builds the rule link without a returnTo parameter, breaking the 'return to list' navigation context that other rule list items preserve",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "canSilence is enabled via promRule abilities even when rulerRule is undefined, but SilenceGrafanaRuleDrawer requires a Ruler rule, so the menu item risks becoming a no-op - consider gating Silence on rulerRule being present or refactoring the drawer/handler to work with a Grafana prom rule UID",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -24580,6 +25380,20 @@
       },
       {
         "text": "Consider either skipping interpolation in the first location and letting runSplitQuery handle it, or passing already-interpolated targets to runSplitQuery in a way that bypasses the second interpolation step",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "The expr filter is applied before template interpolation. If a target has a non-empty expr that interpolates to an empty string, it will still be included and later executed, causing potential parse/backend errors. Filter should be applied after applyTemplateVariables instead.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "runSplitQuery now applies applyTemplateVariables unconditionally, but in the shard-splitting flow targets may already have had applyTemplateVariables applied once, resulting in multiple passes per request. This causes extra work and can re-apply ad hoc filters (like pipeline label-filters that are not de-duplicated), growing the query string across shard iterations. Consider adding an option to skip interpolation when callers already provided interpolated targets, or ensure this is only applied once per end-user query.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -25831,6 +26645,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "device_limit is read from [auth.anonymous] but is not present in conf/defaults.ini's [auth.anonymous] section, making the new setting undiscoverable for users and won't appear in the default config shipped with Grafana",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Device-limit enforcement is non-atomic: CountDevices(...) is executed and then INSERT ... ON CONFLICT is performed, allowing concurrent requests to observe count < limit and insert/update concurrently, temporarily exceeding the configured limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Device-limit enforcement adds an extra COUNT query to every tagged request when the limit is enabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The new test only asserts that inserting a new device fails once the limit is reached, but doesn't verify that an existing device can still be updated when the limit is reached (the updateDevice path)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ErrDeviceLimitReached is a plain error, so when it bubbles up through auth middleware it gets turned into a generic 401 Unauthorized response, losing the real reason. It should be an errutil error (e.g., 429) with a public message so API clients can distinguish it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -26642,6 +27488,20 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Background-job contexts (e.g. app/jobs/base.rb sets I18n.locale = SiteSetting.default_locale) can hit missing translations when the backend falls back to :en/site default locales that haven't been loaded by the translate accelerator yet - the 'ensure fallbacks locales are loaded' behavior should be moved to a shared entry point for jobs/mailers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No specs assert that server-side fallbacks actually resolve (e.g. missing key in user locale falls back to site default and then :en) - adding a focused spec would help prevent regressions in fallback ordering/loading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -27342,6 +28202,20 @@
       },
       {
         "text": "traceID field is no longer included in 'Plugin Request Completed' log line - it was previously added via tracing.TraceIDFromContext but is not added by ContextualLoggerMiddleware.instrumentContext, causing observability regression for correlating logs with distributed traces",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "The logger name still uses 'plugin.instrumentation' even though the instrumentation middleware has been renamed to metrics, making filtering/grep'ing logs inconsistent with the new naming",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ContextualLoggerMiddleware lacks dedicated unit tests unlike most other middlewares in the package, which would help prevent regressions such as missing attributes or wrong endpoint labels",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -29383,6 +30257,74 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "before_validation calls sub! on host unconditionally, which will raise NoMethodError when host is nil (e.g. missing params / blank input)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If a user enters a host with a port (allowed by the regex), the port is currently retained, but record_for_host compares against URI(host).host (no port), so the record will never match - need to guard against nil and normalize ports consistently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration assumes the embed_category site_setting row exists and the join returns at least one row; if it doesn't, ...[0]['id'] will raise and the migration will fail - should handle an empty result set and only index into the PG result when rows exist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration inserts embeddable_hosts.host via raw string interpolation which is SQL-injection prone and bypasses the model's normalization (scheme/path/port stripping), causing EmbeddableHost.host_allowed? lookups to fail after the migration - should quote and normalize the host string before inserting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In update action, if params[:id] doesn't match an existing record, host will be nil and save_host(host) will raise when it tries to assign attributes - should raise Discourse::NotFound when the record can't be found",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In destroy action, if params[:id] doesn't match an existing record, host will be nil and host.destroy will raise - should return a 404 by raising Discourse::NotFound when the record can't be found",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Pretender handler ignores the requested :id and always returns fruits[0], making store.find('fruit', <id>) tests misleading - should select the fruit by request.params.id with a fallback if not found",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "After making the Pretender /fruits/:id handler respect :id, the test should request the fruit that matches the expected color_ids assertions (currently those expectations match fruits[0], id 1)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "type.replace('_', '-') only replaces the first underscore - if an admin model type contains multiple underscores, it won't match ADMIN_MODELS and will incorrectly use the non-admin base path - should use a global replacement to normalize all underscores",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "spec/fabricators/category_fabricator.rb now defines the :embeddable_host fabricator while category fabricators live in spec/fabricators/embeddable_host_fabricator.rb - this inversion makes it hard to locate fabricators by filename - should swap these definitions so files match their primary fabricator",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Typo in the describe block title: 'emeddable' should be 'embeddable'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -30586,6 +31528,38 @@
       },
       {
         "text": "The dark-mode value is inconsistent with the complementary pattern used throughout this MR (light% + dark% = 100%): if light is 30%, dark should be 70%",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Light-theme color changed from 70% lightness to 30% - dark-light-choose expects (light, dark) order, so light-theme value should remain equivalent to previous scale-color($primary, $lightness: 70%)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme .name color changed from scale-color($primary, $lightness: 30%) to 50% - if goal is only to use $secondary for dark themes, keep original light-theme lightness (30%) and use complementary dark-theme lightness (70%)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme .name color changed from scale-color($primary, $lightness: 30%) to 50% - to swap to $secondary for dark themes only, preserve original light-theme lightness (30%) and use complementary value (70%) for dark theme",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme h3 color changed from scale-color($primary, $lightness: 20%) to 50% - appears to be accidental copy/paste, should use 20% for $primary and complementary 80% for $secondary to keep light-theme appearance the same",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Light-theme link color changed from scale-color($primary, $lightness: 30%) to 70% - dark-light-choose takes (light, dark), so to preserve previous light-theme styling should keep 30% for $primary and use 70% for $secondary in dark themes",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -32233,6 +33207,98 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "group.visible is always overwritten based on params, so requests that omit visible will unintentionally set it to false",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "name isn't stripped on update (unlike create), allowing leading/trailing whitespace through",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Splitting usernames without stripping/deduping can fail to add users when there are spaces (e.g. 'bob, sam')",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Splitting usernames without deduping can raise a unique constraint error when adding existing members (group_users has a unique index on [group_id,user_id])",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "group.add persists via the association, so the later group.save is redundant and can report failure after members were already added",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using group.users.delete(user_id) removes the join row without destroy callbacks, so the GroupUser counter cache (groups.user_count) won't be updated and membership side-effects can be skipped",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The subsequent group.save isn't needed for join-table removal",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "limit/offset are taken directly from params with no clamping - large limits or negative values can create expensive queries and weird paging behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "offset should be clamped so the last page doesn't render empty results",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "totalPages uses Math.floor(user_count / limit) + 1, which creates an extra page whenever user_count is an exact multiple of limit (e.g. 100/50 => 3), making pagination UI incorrect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The 'next' pagination action allows offset to become exactly user_count, which will request an empty page of members - offset should be capped to the start of the last page (max(user_count - limit, 0))",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "findMembers returns 'return ;' when the group has no name, which returns undefined and can break call sites that expect a promise",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "findMembers offset clamp allows offset === user_count, which will request an empty page - cap offset to the start of the last page instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The group_member template references member and automatic, but the corresponding view doesn't define those bindings - in Ember list item views the item is typically available as content/context, so this will render blanks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The group_member template will always show the remove link for automatic groups since automatic will be undefined",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -33313,6 +34379,56 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "validate_each calls email_in_restriction_setting? and BlockedEmail.should_block? even when value is blank/nil, which can raise errors (e.g., nil =~ regexp). Should guard early with return if value.blank?",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The model sets a default action_type in a callback, but the DB column has no default. Adding a database default would make manual/bulk inserts safer and align with the model's behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rejectedEmails: Em.A([]) creates a mutable array on the controller prototype that can unintentionally persist across controller reuse. Should initialize it per-instance in init",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The computed property depends on rejectedEmails contents but uses rejectedEmails.@each which is for observing property changes on array items. Should use rejectedEmails.[] to reliably recompute when items are added/removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The create endpoint now returns errors and values keys on failure, but there are no controller specs asserting this new response shape, so regressions could slip in",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "should_block? does a non-atomic read-modify-write (match_count += 1 then save) which can lose increments under concurrent calls, and ignores failed saves so stats updates can silently be dropped",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Email comparisons in should_block? use exact lookup, but email comparisons elsewhere normalize via Email.downcase/strip, so case/whitespace variations can bypass a blocked entry. Should normalize the input",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Should use atomic UPDATE ... match_count = match_count + 1 (e.g., update_all) for the stats update instead of read-modify-write",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -34279,6 +35395,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "@mixin order sets -webkit-box-ordinal-group/-moz-box-ordinal-group to the same value as the modern order, but in the legacy flexbox spec box-ordinal-group is 1-based (default 1), so it should be order + 1; otherwise items will be mis-ordered in browsers that still honor the prefixed properties",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "-ms-align-items is not a valid IE10/11 flexbox property (the correct one is -ms-flex-align), keeping the invalid property can trip CSS linters and adds noise",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "align-items:$alignment is missing the usual spacing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": ".small-action is now a flex container, but .small-action-desc doesn't flex to fill remaining space. Since float is ignored on flex items, the trailing button will no longer be pushed to the right unless the description grows (or the button is auto-margined)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6": {
@@ -35221,6 +36363,32 @@
       },
       {
         "text": "`website_name` is added to the main `attributes` list but not to `untrusted_attributes`, unlike `website` which is protected there. For TL0 users viewed by anonymous visitors, `scope.restrict_user_fields?` suppresses `website` via its `include_website?` guard \u2014 but `website_name` has no such protection, so it would leak the user's website information to anonymous viewers for TL0 users.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "`include_website_name` is missing the `?`, so ActiveModel::Serializer won't treat it as an include-guard, causing `website_name` to be serialized unconditionally even when `restrict_user_fields?` is true, which can leak the user's website for TL0 users seen by anonymous",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` repeatedly reparses the URL (`URI(website.to_s)` is called multiple times) causing repeated work",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`website_name` uses a broad `rescue nil` which can hide unexpected errors - should rescue `URI::InvalidURIError` specifically for better robustness",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Host comparison doesn't normalize hosts, which can cause case-sensitivity surprises",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -37588,6 +38756,56 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "ERB block closing tag is invalid Ruby (`end if`) and will raise a template syntax error - should just close the `if` block",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "postMessage is being called with request.referer as the targetOrigin, but targetOrigin must be an origin (scheme+host+port) or '*', so passing a full referer URL can break resizing and risks breaking the JS string if the referer contains quotes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "url is interpolated directly into HTML without proper validation - since the only validation is a regex prefix check, a crafted URL containing quotes/`>` can inject arbitrary HTML into the stored post",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "import_remote calls open(url) without requiring open-uri and before validating that the URL is actually http(s), which can raise at runtime and allows non-http(s) schemes if the method is called directly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Feed item HTML is imported and later rendered via raw_html without sanitization, allowing script/event-handler injection through the feed content and can also crash if i.content is nil",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Sanitize is used but isn't required in the job file - without an explicit require, this can fail in some boot paths/jobs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "embed_url is not validated before enqueuing retrieval - if it's malformed or has a different host than embeddable_host, TopicRetriever will skip retrieval and the embed endpoint will keep rendering the loading page indefinitely (auto-reloading every 30s)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The origin check is incorrect: discourseUrl.indexOf(e.origin) can be bypassed via prefix/suffix tricks and also fails when discourseUrl contains a path - should compare the exact origin derived from discourseUrl to e.origin",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -39009,6 +40227,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "downsize method is defined twice; the second definition overwrites the first in Ruby, causing existing call sites that pass (max_width, max_height, opts) to raise ArgumentError due to wrong arity",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "API URL download limit is hard-coded to 10MB, which can diverge from SiteSetting.max_image_size_kb (including cases where the setting is >10MB), creating inconsistent behavior vs other upload paths",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The downsizing loop ignores the return value from OptimizedImage.downsize. If the conversion fails, the loop will keep retrying and may leave an oversized (or partially written) file, then continue to Upload.create_for anyway",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "validateUploadedFile now hard-codes a 10MB limit for all uploads, ignoring max_image_size_kb/max_attachment_size_kb, breaking existing behavior and existing JS tests that expect the site setting to be enforced",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The 413 handler reports a hard-coded 10MB limit, which can be incorrect if the instance allows larger uploads or if the failure relates to attachments, misleading users about the actual limit enforced by the server/proxy",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -40265,6 +41515,44 @@
       },
       {
         "text": "List-Unsubscribe header only points to user preferences URL instead of using the topic-specific unsubscribe_url when available, bypassing the new per-topic unsubscribe page for email clients supporting RFC 8058",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "TopicUser.find_by can return nil and notification_level can be NULL, which will raise an error when calling tu.notification_level or comparing it, breaking unsubscribe for users without a topic_users row",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The unsubscribe endpoint is wired as a GET route but mutates server state (updates TopicUser.notification_level), making it CSRF-able and violating the expectation that GET requests are side-effect free - should use POST/PUT with CSRF protection or require a signed one-click token",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The new unsubscribe action lacks accompanying controller/request specs to prevent regressions - needs coverage for creating missing TopicUser row, updating notification_level, and canonical redirect when slug is missing/mismatched",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The scope chain indentation is off, making it easy to miss that the second where is part of the scope and can trip style/linting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Controller file ends with }) and includes a trailing comma after the last property, which is inconsistent with other controllers and can cause issues with older JS runtimes/linting - should use }); terminator and no trailing comma",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Template renders a computed property named stopNotificiationsText with a typo via triple-stash - should render the translation directly with the existing i18n helper instead",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -41615,6 +42903,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Calling updateManyByCredentialId with an empty update object will result in an invalid Prisma update (no fields to SET), causing a runtime error that breaks the sync flow. If the goal is to bump SelectedCalendar.updatedAt, explicitly set it in the update data.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Throwing a plain Error will be converted to an INTERNAL_SERVER_ERROR by tRPC, which is misleading for a not-found/unauthorized credential. Use TRPCError with an appropriate code so clients can handle it correctly.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The cache deletion mutation doesn't invalidate the connectedCalendars query, so the displayed cache status/timestamp can remain stale until a manual refresh. Add an onSettled handler similar to the disconnect mutation.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hard-coding 'en-US' for the cache timestamp ignores the user's selected locale. Use the runtime locale so the date/time formatting matches the rest of the app.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "sed -i '' is BSD/macOS-specific and will fail on GNU sed (common on Linux). Make the in-place edit portable across macOS/Linux.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "dev:cron now uses npx tsx, but tsx is not listed as a dependency in this workspace or the repo root. This will trigger a network download or fail offline. Since ts-node is still a dependency, prefer keeping ts-node until tsx is added as a dependency.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -42835,6 +44161,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Comparison is always false because it compares two different Dayjs object instances with `===`, causing zero-length date overrides (start == end) to never be treated as full-day unavailability, potentially offering incorrect slots",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When `dateOverrideExist` is true, the function returns `true` immediately, skipping busy checks below, which can mark a slot as available even when it overlaps an existing busy interval",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Working-hours check computes `end` from `slotStartTime` making start/end identical and does not handle the case where there are no working hours for that day (which should be unavailable)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Date-override check using `dateOverrides.find(...)` returns `false` if it finds any override on the same day where the slot is outside that override, causing slots inside one range to be rejected because they are outside other ranges when a day has multiple override ranges",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`override.timeZone` is optional in `TimeRange` but is used as a required timezone (`tz(override.timeZone)`), which can throw or compute incorrect offsets if caller passes date overrides without a timezone - should fall back to `organizerTimeZone`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing regression test for ROUND_ROBIN event with a fixed host + date override that removes availability to verify affected slots are filtered out",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -43628,6 +44992,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "The retryCount branch in the OR clause is not scoped to SMS, so it will delete any WorkflowReminder with retryCount > 1 regardless of method/scheduledDate, potentially removing other reminder types",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "retryCount: reminder.retryCount + 1 is not an atomic update and can lose increments if multiple schedulers/cron invocations overlap - should use Prisma's atomic increment via { increment: 1 }",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same non-atomic increment issue exists in another location - should use atomic increment to avoid lost updates if the job runs concurrently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/22345": {
@@ -44396,6 +45780,32 @@
       },
       {
         "text": "The entire 'Caching' describe block was removed from tests, but the caching logic (cachedAuthConditions, cachedFilterConditions) still exists in the implementation. This leaves the caching behavior untested - a second call could silently return stale or incorrect cached values without any test catching it.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "InsightsBookingServicePublicOptions is a weaker type than the zod schema (teamId is optional even when scope is 'team'), allowing callers to pass invalid option shapes without TypeScript errors that are silently treated as unauthorized at runtime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Caching test cases were removed but the service still implements caching (cachedAuthConditions/cachedFilterConditions), reducing coverage around behavior that was changed and potentially hiding regressions where conditions are rebuilt repeatedly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "buildOrgAuthorizationCondition builds SQL using teamIds/userIdsFromOrg arrays whose ordering is not guaranteed, making the generated Prisma.sql nondeterministic and causing flaky equality-based tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "userIdsFromOrg lookup is skipped when there are no child teams, causing org members' non-team bookings (isTeamBooking = false) to be incorrectly excluded for orgs without child teams",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -46759,6 +48169,56 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "refreshOAuthTokens returns a fetch Response when sync is enabled, but returns provider-specific response types otherwise (AxiosResponse, HubSpot token object, GaxiosResponse), causing call sites that access .data or assume provider-specific return shape to break when credential syncing is enabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "minimumTokenResponseSchema uses computed keys that evaluate to a single literal key instead of expressing 'any numeric property' in Zod, causing the schema to fail validation of real token responses and making refresh flows throw when sync is enabled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Forcing refresh_token to the literal string 'refresh_token' will overwrite the real refresh token when call sites persist tokenResponse.data back to the DB (e.g. Zoom/Office365), breaking subsequent refreshes and potentially locking users out of the integration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "APP_CREDENTIAL_SHARING_ENABLED is a string/undefined value (from && of env vars) but used as a boolean flag, causing potential string leakage and unclear downstream typing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "parseRefreshTokenResponse can accept a response without a real refresh_token when credential syncing is enabled and injects a placeholder, which risks overwriting the real refresh token when persisted back onto the credential",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Checking response.statusText !== 'OK' is brittle since statusText can vary and doesn't guarantee 2xx; should use response.ok or response.status for reliability and correct error status codes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook handler doesn't enforce HTTP method and uses schema.parse(req.body) which throws and returns 500 on invalid payloads instead of using safeParse",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "req.headers[...] can be a string[] so direct equality check can incorrectly reject valid requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -48267,6 +49727,26 @@
       },
       {
         "text": "The query fetches reminders where cancelled: true but does not filter by scheduled: true or referenceId: { not: null }, which can result in calling SendGrid API with batch_id: null when a reminder was cancelled before being scheduled, causing an API error that aborts processing of all subsequent reminders",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "The cancellation query should be scoped to email reminders with a non-null SendGrid batch_id by filtering by method: EMAIL, scheduled: true, and referenceId: { not: null } to make intent explicit and prevent batch_id: null requests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The call passes immediateDelete: true which triggers immediate SendGrid cancellation, bringing back the original failure mode where SendGrid only allows 100 pending cancellations - should drop the immediateDelete flag to use the new approach of marking as cancelled and letting the cron cancel within the last hour",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The current try/catch wraps the entire cancellation loop, so if one SendGrid cancellation request fails the cron stops processing remaining reminders - should handle errors per reminder and continue to make the job resilient",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -49899,6 +51379,62 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "isTeamAdminOrOwner currently requires the user to be both team admin AND team owner instead of OR semantics, which will wrongly forbid legitimate team admins/owners from adding guests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Guest normalization/deduping is missing: blacklist entries are lowercased but guest isn't, and duplicates/whitespace/case variants can slip through, potentially bypassing BLACKLISTED_GUEST_EMAILS and causing duplicate attendee inserts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "createMany can fail the whole update if duplicate emails make it into guestsFullDetails (e.g., same email entered twice with different casing) - should add skipDuplicates: true",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Email sender is passed the raw guests array but handler filters to uniqueGuests before writing attendees, which can misclassify existing/blacklisted/duplicate entries as newGuests and send wrong email template",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Server schema validates email format but not uniqueness/non-empty, which can lead to DB constraint failures with createMany - should add uniqueness and non-empty refinement at schema level",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "sendAddGuestsEmails always emails organizer + attendees but doesn't respect eventTypeDisableHostEmail / eventTypeDisableAttendeeEmail like other booking-update emails do",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Group label uses htmlFor='emails' but rendered inputs don't have matching id, so label isn't associated with any control (hurts screen-reader and click-to-focus behavior)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Remove-email control has hard-coded English tooltip and icon-only button lacks accessible label - should use translated text and add aria-label for screen readers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Once isInvalidEmail is set, it never clears when user edits the email list, so error stays visible even after input becomes valid until next submit/cancel",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -51423,6 +52959,62 @@
       },
       {
         "text": "Backup code verification path has no rate limiting unlike login flow, allowing brute-force attacks on the 10 backup codes without throttling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Password visibility toggle button is removed from tab order via tabIndex={-1}, making it inaccessible to keyboard-only users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "resetState() doesn't clear/revoke the generated ObjectURL for the backup-codes download, causing Blob URL leaks when modal is closed/reopened multiple times",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "UI always shows success toast after navigator.clipboard.writeText even though it can reject (permissions, insecure context), giving false 'copied' success for backup codes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Default-exported component is named TwoFactor but the file/component is for backup codes, making stack traces/React DevTools misleading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Log message says 'backup code login' but endpoint is disabling 2FA, making operational logs misleading when diagnosing failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "backupCodes are decrypted and JSON.parse'd without validation/handling in the login flow - if encryption key changes or data is corrupted, this throws an unhandled exception",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code consumption is not atomic: two concurrent login attempts with the same backup code can both pass indexOf() before either update runs, allowing one-time code reuse",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "backupCodes are decrypted and JSON.parse'd without validation/handling in the disable endpoint - if encryption key changes or stored value is corrupted, JSON.parse will throw and crash the endpoint instead of returning structured error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup codes are generated as lowercase hex but user input isn't normalized - uppercase input from password managers would be rejected even if the code is correct",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -53471,6 +55063,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "mainHostDestinationCalendar can be undefined when evt.destinationCalendar is null/[], accessing .integration will throw and break booking creation/reschedule for Meet location - use optional chaining or a guard",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "credentialId is now only set on references when isCalendarType is true, but video references rely on credentialId for later cleanup (cancellation uses bookingVideoReference.credentialId), so dropping it will prevent deleting/updating the created video meeting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "If a calendar reference has credentialId but that credential isn't present in this.calendarCredentials and also can't be fetched from DB, credential stays undefined and updateEvent(credential, ...) will throw a non-obvious runtime error - add an explicit guard or return a failure result before calling updateEvent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "selectedCalendar can be undefined when destinationCalendar doesn't contain an entry for the passed credentialId, the insert uses fallback to 'primary' but later events.patch({ calendarId: selectedCalendar }) will be called with undefined and can fail - default selectedCalendar to 'primary' when not found",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In updateEvent, externalCalendarId can be null/empty (passed from booking references), the current fallback branch searches for externalId === externalCalendarId (which will be null/undefined) and can produce an undefined calendarId, causing the Google API call to fail - provide a reliable fallback",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In deleteEvent, the fallback path tries to find a destinationCalendar entry matching externalCalendarId even when externalCalendarId is falsy, resulting in undefined and relying on later ternaries - simplify and make the fallback explicit to avoid deleting from the wrong calendar",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "evt.destinationCalendar is set to null when neither event type nor organizer has a destination calendar, but later collective logic appends team members via evt.destinationCalendar?.push(...) - if organizer has no destination calendar, team host destination calendars will be dropped - prefer an empty array so the collective append always works",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When dynamicUserList is missing/empty for a dynamic booking, this currently throws a generic Error and gets converted into a 500 'Unable to load users' - that's a client input problem and should return a 400 with a clear message",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "This inverts the org slug behavior compared to the existing publish/update flow - elsewhere when IS_TEAM_BILLING_ENABLED is true and an org isn't published yet, the slug is stored in metadata.requestedSlug (not team.slug) - setting slug directly here under team billing likely bypasses that flow",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In the recurring-event branch, the code already iterates all calendar credentials and deletes events for all updatedBookings, when there are multiple _calendar references the surrounding loop will repeat that same work for each reference, causing duplicate delete calls and unnecessary API load - exit the loop after completing the recurring deletion pass",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "With destinationCalendar now an array and Calendar.createEvent receiving credentialId, Office365 implementation always uses the first destination calendar - when EventManager iterates multiple destinations, Office365 event creation for non-primary hosts can end up using the wrong externalId and create on the wrong calendar / 404 - select the destination calendar that matches the passed credentialId",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Same issue as other calendar services: Lark always uses the first element of event.destinationCalendar - for collective/multi-host bookings, EventManager will call createEvent once per destination/credential, without selecting by credentialId Lark event creation for secondary hosts can target the wrong calendar ID - update the signature to accept credentialId and pick the matching destination calendar",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -54803,6 +56469,38 @@
       },
       {
         "text": "The `async` keyword was added to `forEach` callback but `forEach` ignores the returned Promise, causing any error thrown by `await getCalendar(...)` to be an unhandled Promise rejection rather than being caught by error handlers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "Using `forEach(async ...)` means delete operations are not awaited; the handler can proceed to send emails/return before calendar/video deletions finish, and any rejection becomes unhandled. Use `await Promise.all(...)` or a `for...of` loop so side effects complete and errors propagate predictably.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`forEach(async ...)` inside the `try` block is not awaited, so calendar/video deletions can continue after the function proceeds, and exceptions inside the async callback will not be caught by this `try/catch`. Await the work so failures are handled and deletions complete before continuing.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`forEach(async ...)` is not awaited, so deletions may still be running after the function continues, and errors thrown in the async callback will not be caught by the surrounding `try/catch`. Switch to an awaited pattern.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Branch uses `forEach(async ...)` and awaits deletions inside the callback, but the outer flow never awaits those promises. This can lead to missed/late deletions and unhandled rejections because `apiDeletes` may be awaited before it is fully populated. Use a `for...of` loop or an awaited `Promise.all` and push the deletion promises directly.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`getVideoAdapters` now awaits each app module sequentially in a loop. When `withCredentials` contains multiple credentials, this serializes imports and can increase latency. Consider importing/building adapters in parallel with `Promise.all` and filtering nulls.",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -56243,6 +57941,62 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "The anchor-mismatch error message omits the key and file, which makes it hard to pinpoint the problematic translation when this fails in CI. Include key+file context in the message.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Method name has a typo: santizeAnchors -> sanitizeAnchors. Keeping the typo makes the intent harder to read/search for.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Lithuanian bundle contains an Italian sentence ('Installa una delle...') which looks like an accidental copy/paste and makes the UI inconsistent for lt users.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "zh_CN bundle line uses Traditional Chinese characters/wording (\u624b\u6a5f/\u61c9\u7528\u7a0b\u5f0f). For zh_CN it should be Simplified Chinese to stay consistent with the rest of the file.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The HTML body contains what looks like a stray 'n' prefix ('<p>nHvis ...'). This reads like a typo and shows up in the rendered email.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "HTML email text contains likely typos ('tao' -> 'tai', 'nJei' -> 'Jei', 'ignuoruokite' -> 'ignoruokite'). Since this line is being modified anyway, it's a good opportunity to fix them.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Changing placeholders to single-brace MessageFormat/ICU syntax ({0}, {2,choice,...}) in files consumed by i18next (default {{...}} interpolation) will not be interpolated and will likely be shown verbatim to users. Keep the existing i18next placeholder style or implement i18next pluralization via separate *_one/*_other keys.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "verifySafeHtml() throws RuntimeException on IO errors, which bypasses the plugin's MojoExecutionException flow and produces an inconsistent failure mode.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Deriving the English bundle path via replaceAll() is regex-based and not anchored, which can produce wrong paths for filenames that contain underscores (e.g. some_key_en.properties). Prefer replacing only a locale suffix at the end.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -57426,6 +59180,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "isAccessTokenId matcher has reversed grant-shortcut logic - returns false when the expected grant shortcut matches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId matcher has incorrect substring indices - extracts characters 3..5 instead of the last 2 chars (grantType) from the 6-char prefix",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isAccessTokenId matcher can throw StringIndexOutOfBoundsException if the prefix is shorter than expected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AccessTokenContext constructor mistakenly checks grantType twice and never validates rawTokenId for null - the exception message says rawTokenId but the checked reference is still grantType",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OAuth2GrantTypeFactory#getShortcut() Javadoc documents a 3-letters shortcut but the encoder assumes fixed-length 2-character shortcuts (6-char prefix total) - SPI Javadoc should state the expected constraints",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unused import TokenExchangeGrantTypeFactory not referenced anywhere in the class - can fail builds if unused imports are enforced by Checkstyle/Spotless",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -58512,6 +60304,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "copilot-v2": [
+      {
+        "text": "credentialType.equals(...) can throw NPE if called with null credentialType - should use constant-first equals pattern",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateCredential persists plaintext recovery codes list (JSON) into user storage provider instead of hashed data, which is a security regression - should store hashed RecoveryAuthnCodesCredentialModel data instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Optional.get() called twice via getNextRecoveryAuthnCode().get() will throw NoSuchElementException if credential is missing or has no remaining codes - should handle empty cases explicitly with orElseThrow",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc grammar error: 'a optional credential model' should be 'an optional credential model'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Typo in alias value: 'delayed-suthenticator-config' appears unintentional and makes it harder to search/maintain flow config",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "JsonSerialization.readValue(..., List.class) loses element type and forces raw types, and catch block drops exception details - should use TypeReference<List<String>> and include exception when logging",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Recovery codes validator accepts any matching code without consuming it, allowing the same recovery code to be replayed indefinitely and out-of-order codes to work - codes should be one-time use",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
@@ -59168,6 +61004,26 @@
       },
       {
         "text": "setEnabledFeatures replaces the entire list of enabled features, which could silently drop other enabled features that were already set - should add ROLLING_UPDATES to the existing list rather than replacing it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "The new FEATURE_DISABLED constant is inconsistent with the existing *_EXIT_CODE naming convention (ROLLING_UPGRADE_EXIT_CODE, RECREATE_UPGRADE_EXIT_CODE), making it harder to recognize as an exit-code contract and easier to confuse with a boolean flag. Should be renamed to FEATURE_DISABLED_EXIT_CODE",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The feature-disabled error message doesn't tell the user how to resolve the problem. Should include the exact CLI option to enable it (e.g. 'Enable it with --features=rolling-updates') to make the failure actionable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Grammar issue: 'While on preview stage' is unidiomatic English. Should be 'While in preview' or 'While in the preview stage'",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -60268,6 +62124,50 @@
       },
       {
         "text": "Same assumption about list size is made on line 174 - should assert list size before indexing or use get(0) with guard",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "copilot-v2": [
+      {
+        "text": "getClientsWithPermission iterates resources via resourceStore.findByType but resources created by AdminPermissionsSchema#getOrCreateResource do not set a resource type, so findByType is unlikely to return per-client resources, causing the method to return an empty set or incorrect names",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc for requireView() says it 'Returns true' but the method is void and throws when access is denied, which is misleading for API consumers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc for requireViewClientScopes() says it 'Returns true' but the method is void and throws when access is denied",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Trailing whitespace on the blank line after the class declaration can cause formatting/lint checks to fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test class uses JUnit Jupiter (org.junit.jupiter.api.Test) but statically imports fail from JUnit 4 (org.junit.Assert.fail), which is inconsistent and can break builds if JUnit 4 is not on the test classpath",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Logger and Scope imports are unused in the new class, which can fail formatting/static-analysis checks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Static import TOKEN_EXCHANGE and the logger field are unused in production code, increasing noise and potentially failing static-analysis checks",
         "path": null,
         "line": null,
         "source": "extracted"

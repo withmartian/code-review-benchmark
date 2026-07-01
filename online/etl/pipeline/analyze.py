@@ -18,6 +18,7 @@ from llm.prompts import JUDGE_MATCHING
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
+from pipeline.actors import same_github_actor
 
 logger = logging.getLogger(__name__)
 
@@ -35,30 +36,29 @@ def _find_bot_review_commit(
     2. Fallback: original_commit_id on review_comment events in assembled timeline
     3. Last resort: last commit before bot's first comment timestamp
     """
-    bot_user_lower = chatbot_username.lower()
-
     # Strategy 1: raw reviews
     for r in reviews:
-        author = (r.get("author") or r.get("user", {}).get("login", "")).lower()
-        if author == bot_user_lower and r.get("commit_id"):
+        author = r.get("author") or r.get("user", {}).get("login", "")
+        if same_github_actor(author, chatbot_username) and r.get("commit_id"):
             return r["commit_id"]
 
     # Strategy 2: review_comment events with original_commit_id
     for e in events:
-        if e.get("event_type") == "review_comment":
-            actor = (e.get("actor") or "").lower()
-            if actor == bot_user_lower:
-                data = e.get("data", {})
-                if data.get("original_commit_id"):
-                    return data["original_commit_id"]
-                if data.get("commit_id"):
-                    return data["commit_id"]
+        if e.get("event_type") == "review_comment" and same_github_actor(e.get("actor"), chatbot_username):
+            data = e.get("data", {})
+            if data.get("original_commit_id"):
+                return data["original_commit_id"]
+            if data.get("commit_id"):
+                return data["commit_id"]
 
     # Strategy 3: last commit before bot's first comment timestamp
     bot_first_ts = None
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor == bot_user_lower and e.get("event_type") in ("review", "review_comment", "issue_comment"):
+        if same_github_actor(e.get("actor"), chatbot_username) and e.get("event_type") in (
+            "review",
+            "review_comment",
+            "issue_comment",
+        ):
             bot_first_ts = e.get("timestamp")
             break
 
@@ -148,11 +148,9 @@ def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
     Skips review_comment replies (in_reply_to_id set) — these are responses
     to other commenters' threads, not original review suggestions.
     """
-    bot_user_lower = chatbot_username.lower()
     lines = []
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor != bot_user_lower:
+        if not same_github_actor(e.get("actor"), chatbot_username):
             continue
         etype = e.get("event_type", "")
         if etype not in ("review", "review_comment", "issue_comment"):
@@ -194,7 +192,6 @@ def _format_post_review_activity(
     hash_x: str | None,  # noqa: ARG001
 ) -> str:
     """Format post-review commits with diffs + all human comments/replies after bot review."""
-    bot_user_lower = chatbot_username.lower()
     sections = []
 
     # Post-review commits with diffs
@@ -206,16 +203,18 @@ def _format_post_review_activity(
     # We use the bot's first comment as the cutoff for "after bot review"
     bot_first_ts = None
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor == bot_user_lower and e.get("event_type") in ("review", "review_comment", "issue_comment"):
+        if same_github_actor(e.get("actor"), chatbot_username) and e.get("event_type") in (
+            "review",
+            "review_comment",
+            "issue_comment",
+        ):
             bot_first_ts = e.get("timestamp")
             break
 
     # All human activity after bot review
     human_lines = []
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor == bot_user_lower:
+        if same_github_actor(e.get("actor"), chatbot_username):
             continue
         ts = e.get("timestamp", "")
         etype = e.get("event_type", "")

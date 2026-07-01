@@ -113,8 +113,9 @@ class PRRepository:
                     )
                 )
                 # New events arrived — reset to pending so PR gets
-                # re-enriched/assembled/analyzed with the updated timeline
-                if len(merged_events) > len(old_events):
+                # re-enriched/assembled/analyzed with the updated timeline.
+                # Skip reset for PRs already analyzed/labeled: post-merge events
+                if len(merged_events) > len(old_events) and existing.get("status") not in ("analyzed", "labeled"):
                     await self.db.execute(
                         *self.db._translate_params(
                             "UPDATE prs SET status = 'pending', enrichment_step = NULL, "

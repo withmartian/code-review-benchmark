@@ -21,6 +21,8 @@ import logging
 from typing import Any
 
 from config import DEFAULT_CHATBOT_USERNAMES
+from pipeline.actors import normalize_github_actor
+from pipeline.actors import same_github_actor
 
 logger = logging.getLogger(__name__)
 
@@ -60,12 +62,11 @@ def is_bot_username(username: str) -> bool:
 
 def _find_bot_first_review_ts(
     events: list[dict[str, Any]],
-    bot_lower: str,
+    chatbot_username: str,
 ) -> str | None:
     """Find the timestamp of the bot's first review/comment event."""
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor == bot_lower and e.get("event_type") in _REVIEW_EVENT_TYPES:
+        if same_github_actor(e.get("actor"), chatbot_username) and e.get("event_type") in _REVIEW_EVENT_TYPES:
             return e.get("timestamp")
     return None
 
@@ -87,8 +88,7 @@ def compute_engagement_signals(
             "self-dealing" (only the PR author engaged with the review).
     """
     events = assembled.get("events", [])
-    bot_lower = chatbot_username.lower()
-    bot_first_ts = _find_bot_first_review_ts(events, bot_lower)
+    bot_first_ts = _find_bot_first_review_ts(events, chatbot_username)
 
     if bot_first_ts is None:
         return {
@@ -120,10 +120,10 @@ def compute_engagement_signals(
         if not actor:
             continue
 
-        actor_lower = actor.lower()
+        actor_lower = normalize_github_actor(actor)
         etype = e.get("event_type", "")
 
-        if actor_lower == bot_lower:
+        if same_github_actor(actor, chatbot_username):
             # Bot activity after human response = start of new round
             if etype in _REVIEW_EVENT_TYPES and last_phase == "human":
                 back_and_forth_rounds += 1

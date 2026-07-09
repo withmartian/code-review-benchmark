@@ -30,7 +30,7 @@ _PROMO_FOOTER_HINTS = (
     "if you found this review helpful",
     "coderabbit",
     "review details",
-    "configured",
+    "configuration used",
 )
 
 

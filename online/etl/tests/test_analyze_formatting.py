@@ -31,6 +31,19 @@ If you found this review helpful, react to this comment.
     assert _clean_bot_comment_body(body) == "Potential null dereference here."
 
 
+def test_clean_bot_comment_body_preserves_configured_findings_after_separator() -> None:
+    body = """Initial context.
+
+---
+P2: This option is configured incorrectly and can fail at runtime.
+"""
+
+    assert (
+        _clean_bot_comment_body(body)
+        == "Initial context.\n\n---\nP2: This option is configured incorrectly and can fail at runtime."
+    )
+
+
 def test_format_bot_comments_labels_and_numbers_comments() -> None:
     events = [
         {

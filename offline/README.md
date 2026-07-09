@@ -4,19 +4,19 @@ Open replication of the code review benchmark used by companies like [Augment](h
 
 ## Evaluated tools
 
-| Tool | Type |
-|---|---|
-| [Augment](https://www.augmentcode.com/) | AI code review |
-| [Claude Code](https://claude.ai) | AI assistant |
-| [CodeRabbit](https://www.coderabbit.ai/) | AI code review |
-| [Codex](https://openai.com/codex) | AI assistant |
-| [Cursor Bugbot](https://cursor.com) | AI code review |
-| [Gemini](https://gemini.google.com/) | AI assistant |
+| Tool                                                  | Type           |
+| ----------------------------------------------------- | -------------- |
+| [Augment](https://www.augmentcode.com/)               | AI code review |
+| [Claude Code](https://claude.ai)                      | AI assistant   |
+| [CodeRabbit](https://www.coderabbit.ai/)              | AI code review |
+| [Codex](https://openai.com/codex)                     | AI assistant   |
+| [Cursor Bugbot](https://cursor.com)                   | AI code review |
+| [Gemini](https://gemini.google.com/)                  | AI assistant   |
 | [GitHub Copilot](https://github.com/features/copilot) | AI code review |
-| [Graphite](https://graphite.dev/) | AI code review |
-| [Greptile](https://www.greptile.com/) | AI code review |
-| [Propel](https://propelauth.com/) | AI code review |
-| [Qodo](https://www.qodo.ai/) | AI code review |
+| [Graphite](https://graphite.dev/)                     | AI code review |
+| [Greptile](https://www.greptile.com/)                 | AI code review |
+| [Propel](https://propelauth.com/)                     | AI code review |
+| [Qodo](https://www.qodo.ai/)                          | AI code review |
 
 Adding a new tool requires forking the benchmark PRs and collecting the tool's reviews — see Steps 0 and 1 below.
 
@@ -25,6 +25,7 @@ Adding a new tool requires forking the benchmark PRs and collecting the tool's r
 Each of the 50 benchmark PRs has a set of **golden comments**: real issues that a human reviewer identified, with severity labels (Low / Medium / High / Critical). These are the ground truth.
 
 For each tool, the pipeline:
+
 1. **Extracts** individual issues from the tool's review comments (line-specific comments become candidates directly; general comments are sent to an LLM to extract distinct issues)
 2. **Deduplicates** candidates — tools that post the same issue in both a summary comment and as inline comments would otherwise be penalised for the duplicate. An LLM groups candidates that express the same underlying concern; sibling duplicates are not counted as false positives in step 3.
 3. **Judges** each candidate against each golden comment using an LLM: "Do these describe the same underlying issue?"
@@ -35,6 +36,7 @@ The judge accepts semantic matches — different wording is fine as long as the 
 ### Judge models used
 
 Results are stored per judge model so you can compare how different judges score:
+
 - `anthropic_claude-opus-4-5-20251101`
 - `anthropic_claude-sonnet-4-5-20250929`
 - `openai_gpt-5.2`
@@ -45,21 +47,29 @@ Results are stored per judge model so you can compare how different judges score
 - **Golden comments are human-curated** but may miss edge cases or disagree with other reviewers.
 - **LLM judge introduces model-dependent variance** — different judge models may score differently. We mitigate this by using consistent prompts and reporting the judge model used.
 
+## Requirements
+
+- Write access to GitHub org
+- GitHub CLI
+- uv
+
 ---
 
 ## Setup
 
 1. Install dependencies:
-```bash
-cd offline
-uv sync
-```
+
+   ```bash
+   cd offline
+   uv sync
+   ```
 
 2. Create `.env` file (see `.env.example`):
-```bash
-cp .env.example .env
-# fill in your tokens
-```
+
+   ```bash
+   cp .env.example .env
+   # fill in your tokens
+   ```
 
 ## Tests
 
@@ -86,7 +96,10 @@ All scripts live in the `code_review_benchmark/` package. Run from the `offline/
 Fork benchmark PRs into a GitHub org where the tool under evaluation is installed:
 
 ```bash
-uv run python -m code_review_benchmark.step0_fork_prs
+uv run python -m code_review_benchmark.step0_fork_prs \
+--file golden_comments/${repository_name}.json \
+--org ${your_organization} \
+--name ${AI_tool_name}
 ```
 
 ### 1. Download PR data
@@ -95,16 +108,16 @@ Aggregate PR reviews from benchmark repos with golden comments:
 
 ```bash
 # Full run (incremental - skips already downloaded)
-uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json
+uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json --org ${your_organization}
 
 # Test mode: 1 PR per tool
-uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json --test
+uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json --test --org ${your_organization}
 
 # Force refetch all reviews
-uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json --force
+uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json --force --org ${your_organization}
 
 # Force refetch for a specific tool
-uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json --force --tool copilot
+uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json --force --tool copilot --org ${your_organization}
 ```
 
 **Output:** `results/benchmark_data.json`
@@ -126,7 +139,7 @@ uv run python -m code_review_benchmark.step2_extract_comments --tool claude --li
 
 Line-specific comments become direct candidates. General comments are sent to the LLM to extract individual issues.
 
-**Output:** Updates `results/benchmark_data.json` with `candidates` field per review.
+**Output:** `results/{model}/candidates.json`
 
 ### 2.5. Deduplicate candidates (recommended)
 
@@ -202,6 +215,7 @@ uv run python -m code_review_benchmark.summary_table
 ```
 
 **Example output:**
+
 ```
 Tool        cal_dot_com  discourse    grafana      keycloak     sentry       Total
 ----------------------------------------------------------------------------------
@@ -255,15 +269,13 @@ Source files: `sentry.json`, `grafana.json`, `keycloak.json`, `discourse.json`, 
     "pr_title": "...",
     "original_url": "...",
     "source_repo": "sentry",
-    "golden_comments": [
-      {"comment": "...", "severity": "High"}
-    ],
+    "golden_comments": [{ "comment": "...", "severity": "High" }],
     "reviews": [
       {
         "tool": "claude",
         "pr_url": "https://github.com/code-review-benchmark/...",
         "review_comments": [
-          {"path": "...", "line": 42, "body": "...", "created_at": "..."}
+          { "path": "...", "line": 42, "body": "...", "created_at": "..." }
         ],
         "candidates": ["issue description 1", "issue description 2"]
       }

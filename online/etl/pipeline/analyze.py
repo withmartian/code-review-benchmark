@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 
 from openai import BadRequestError
 
@@ -21,6 +22,16 @@ from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
 
 logger = logging.getLogger(__name__)
+
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+_DETAILS_RE = re.compile(r"<details\b[^>]*>.*?</details>", re.DOTALL | re.IGNORECASE)
+_SUB_RE = re.compile(r"<sub\b[^>]*>.*?</sub>", re.DOTALL | re.IGNORECASE)
+_PROMO_FOOTER_HINTS = (
+    "if you found this review helpful",
+    "coderabbit",
+    "review details",
+    "configured",
+)
 
 
 def _find_bot_review_commit(
@@ -142,6 +153,24 @@ def _format_commits_with_diffs(commits: list[dict], details_by_sha: dict[str, di
     return "\n".join(lines)
 
 
+def _clean_bot_comment_body(body: str) -> str:
+    """Remove hidden/generated Markdown that is not part of the review finding text."""
+    cleaned = _HTML_COMMENT_RE.sub("", body)
+    cleaned = _DETAILS_RE.sub("", cleaned)
+    cleaned = _SUB_RE.sub("", cleaned)
+
+    lines = cleaned.splitlines()
+    for idx, line in enumerate(lines):
+        if line.strip() != "---":
+            continue
+        tail = "\n".join(lines[idx + 1 :]).lower()
+        if any(hint in tail for hint in _PROMO_FOOTER_HINTS):
+            lines = lines[:idx]
+            break
+
+    return "\n".join(lines).strip()
+
+
 def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
     """Format bot's review/review_comment/issue_comment events with full context.
 
@@ -149,6 +178,7 @@ def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
     to other commenters' threads, not original review suggestions.
     """
     lines = []
+    comment_num = 1
     for e in events:
         if not same_github_actor(e.get("actor"), chatbot_username):
             continue
@@ -164,23 +194,29 @@ def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
 
         if etype == "review":
             state = data.get("state", "")
-            body = data.get("body") or ""
-            lines.append(f"[{ts}] REVIEW ({state}):")
+            body = _clean_bot_comment_body(data.get("body") or "")
+            lines.append(f"COMMENT C{comment_num} [REVIEW_BODY state={state} timestamp={ts}]")
             if body:
-                lines.append(f"  {body}")
+                lines.append(body)
         elif etype in ("review_comment", "issue_comment"):
-            body = data.get("body") or ""
+            body = _clean_bot_comment_body(data.get("body") or "")
             path = data.get("path") or ""
             line = data.get("line") or ""
-            loc = f" ({path}:{line})" if path else ""
             diff_hunk = data.get("diff_hunk") or ""
             resolved = " [RESOLVED]" if data.get("is_resolved") else ""
-            lines.append(f"[{ts}] {etype.upper()}{loc}{resolved}:")
+            if etype == "review_comment":
+                label = "INLINE_REVIEW_COMMENT"
+                location = f" path={path}:{line}" if path else ""
+            else:
+                label = "ISSUE_COMMENT"
+                location = ""
+            lines.append(f"COMMENT C{comment_num} [{label}{location}{resolved} timestamp={ts}]")
             if diff_hunk:
-                lines.append(f"  Code context:\n  ```\n{diff_hunk}\n  ```")
+                lines.append(f"Code context:\n```diff\n{diff_hunk}\n```")
             if body:
-                lines.append(f"  {body}")
+                lines.append(body)
         lines.append("")
+        comment_num += 1
     return "\n".join(lines) if lines else "(no bot comments)"
 
 

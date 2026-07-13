@@ -113,8 +113,9 @@ class PRRepository:
                     )
                 )
                 # New events arrived — reset to pending so PR gets
-                # re-enriched/assembled/analyzed with the updated timeline
-                if len(merged_events) > len(old_events):
+                # re-enriched/assembled/analyzed with the updated timeline.
+                # Skip reset for PRs already analyzed/labeled: post-merge events
+                if len(merged_events) > len(old_events) and existing.get("status") not in ("analyzed", "labeled"):
                     await self.db.execute(
                         *self.db._translate_params(
                             "UPDATE prs SET status = 'pending', enrichment_step = NULL, "
@@ -326,7 +327,7 @@ class PRRepository:
         if sort_by == "sweep":
             if chatbot_id is not None:
                 return await self.db.fetchall(
-                    q.GET_ANALYZED_NOT_LABELED_SWEEP, (chatbot_id, limit)
+                    q.GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED, (chatbot_id, limit)
                 )
             return await self.db.fetchall(
                 q.GET_ALL_ANALYZED_NOT_LABELED_SWEEP, (limit,)

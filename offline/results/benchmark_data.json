@@ -1364,6 +1364,11 @@
             "created_at": "2026-04-07T19:38:04Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/37429",
+        "review_comments": []
       }
     ]
   },
@@ -2498,6 +2503,11 @@
             "created_at": "2026-04-07T19:31:41Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/37634",
+        "review_comments": []
       }
     ]
   },
@@ -3646,6 +3656,36 @@
             "created_at": "2026-04-07T19:31:24Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/38446",
+        "review_comments": [
+          {
+            "path": "services/src/main/java/org/keycloak/forms/login/freemarker/model/RecoveryAuthnCodeInputLoginBean.java",
+            "line": 5,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Optional Get Without Check** [CRITICAL]\n\nCalling Optional.get() without first checking isPresent() will throw NoSuchElementException if the Optional is empty. Use isPresent(), orElse(), orElseGet(), or orElseThrow() to handle the empty case explicitly.\n\n",
+            "created_at": "2026-04-10T05:32:15.324Z"
+          },
+          {
+            "path": "services/src/main/java/org/keycloak/forms/login/freemarker/model/RecoveryAuthnCodeInputLoginBean.java",
+            "line": 5,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Optional Get Without Ispresent** [CRITICAL]\n\nCalling Optional.get() without checking isPresent() will throw NoSuchElementException when the Optional is empty. Use orElse(), orElseGet(), orElseThrow(), or check isPresent() before calling get().\n\n",
+            "created_at": "2026-04-10T05:32:15.324Z"
+          },
+          {
+            "path": "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/BackwardsCompatibilityUserStorage.java",
+            "line": 15,
+            "body": "**CodeSheriff: Recovery codes are stored in plain text in credential data without any encryption or hashing** [CRITICAL]\n\nRecovery codes are stored in plain text in credential data without any encryption or hashing. An attacker with access to the credential storage can directly read and use these backup authentication codes to bypass MFA protection.\n",
+            "created_at": "2026-04-10T05:32:15.324Z"
+          },
+          {
+            "path": "services/src/main/java/org/keycloak/forms/login/freemarker/model/RecoveryAuthnCodeInputLoginBean.java",
+            "line": 5,
+            "body": "**CodeSheriff: Calling ** [HIGH]\n\nCalling .get() on Optional without checking if it's present first. If RecoveryAuthnCodesUtils.getCredential(user) returns empty Optional, this will throw NoSuchElementException, potentially causing denial of service or revealing internal application state through stack traces.\n",
+            "created_at": "2026-04-10T05:32:15.324Z"
+          }
+        ]
       }
     ]
   },
@@ -4526,6 +4566,11 @@
             "created_at": "2026-04-07T19:21:12Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/36882",
+        "review_comments": []
       }
     ]
   },
@@ -5682,6 +5727,24 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR adds the `Clients` resource type (with `configure`, `manage`, `view`, `map-roles`, `map-roles-client-scope`, and `map-roles-composite` scopes) to the `AdminPermissionsSchema` and implements `ClientPermissionsV2` to evaluate those permissions, wired through `MgmtPermissionsV2`. Comprehensive integration tests covering per-client and all-clients permission scenarios are also included.\n\n- **P1 \u2013 NPE risk**: In `ClientPermissionsV2.hasPermission(ClientModel, String)`, the result of `getResourceTypeResource(...)` is passed directly to `findByResource(server, resource)` without a null guard. If the \\\"Clients\\\" wildcard resource is absent for any reason, this throws a `NullPointerException`. The sibling `hasPermission(String)` method already does the correct null check.\n\n<h3>Confidence Score: 4/5</h3>\n\nSafe to merge after adding the null guard in ClientPermissionsV2.hasPermission; the logic is otherwise sound and well-tested.\n\nOne P1 finding \u2014 a missing null check that can produce a NullPointerException when the Clients wildcard resource is unexpectedly absent \u2014 warrants a 4 rather than a 5. The remaining findings are P2 style/cleanup items that do not block merge.\n\nservices/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java (null guard), server-spi-private/src/main/java/org/keycloak/authorization/AdminPermissionsSchema.java (getResourceName CLIENTS branch)\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java | New V2 evaluator for client permissions; contains a missing null check after `getResourceTypeResource` that can cause NPE, plus unused `getEvaluationContext` dead code. |\n| server-spi-private/src/main/java/org/keycloak/authorization/AdminPermissionsSchema.java | Adds `CLIENTS` resource type with its six scopes and `resolveClient` helper; `getResourceName` lacks a `CLIENTS` branch causing null display names. |\n| services/src/main/java/org/keycloak/services/resources/admin/permissions/MgmtPermissionsV2.java | Wires `ClientPermissionsV2` into the V2 management permissions by overriding `clients()` with lazy initialization \u2014 straightforward and consistent with existing `users()` pattern. |\n| services/src/main/java/org/keycloak/services/resources/admin/permissions/AdminPermissions.java | Wraps role/client removal event listeners in a `Profile.isFeatureEnabled(ADMIN_FINE_GRAINED_AUTHZ)` guard to skip unnecessary work when the feature is off. |\n| tests/base/src/test/java/org/keycloak/tests/admin/authz/fgap/PermissionClientTest.java | New integration tests covering manage, configure, view, map-roles, and all-clients permission scenarios for the new `ClientPermissionsV2`. |\n| tests/base/src/test/java/org/keycloak/tests/admin/authz/fgap/AbstractPermissionTest.java | Refactors helper methods to static with an explicit `ManagedClient` parameter; adds `createUserPolicy` and `createClientPolicy` shared helpers used by new tests. |\n| tests/base/src/test/java/org/keycloak/tests/admin/authz/fgap/UserResourceTypeEvaluationTest.java | Updated to use new static helper method signatures; no behavioral changes to the existing user-permission evaluation tests. |\n| tests/base/src/test/java/org/keycloak/tests/admin/authz/fgap/UserResourceTypePermissionTest.java | Updated to use new static helper method signatures; no behavioral changes to the existing user-permission tests. |\n| tests/base/src/test/java/org/keycloak/tests/admin/authz/fgap/PermissionRESTTest.java | Minor updates to existing REST tests to adapt to static helper method signatures from `AbstractPermissionTest`. |\n| services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionEvaluator.java | Adds Javadoc clarifying V2 behavior for map-role and configure methods; no logic changes. |\n\n</details>\n\n\n\n<h3>Sequence Diagram</h3>\n\n```mermaid\nsequenceDiagram\n    participant Caller\n    participant ClientPermissionsV2\n    participant ResourceStore\n    participant AdminPermissionsSchema\n    participant PolicyStore\n    participant Evaluator\n\n    Caller->>ClientPermissionsV2: canManage(client) / canConfigure(client) / canView(client)\n    ClientPermissionsV2->>ResourceStore: findByName(server, client.getId(), server.getId())\n    alt Per-client resource exists\n        ResourceStore-->>ClientPermissionsV2: resource\n    else No per-client resource\n        ClientPermissionsV2->>AdminPermissionsSchema: getResourceTypeResource(session, server, \"Clients\")\n        AdminPermissionsSchema-->>ClientPermissionsV2: \"Clients\" wildcard resource (or null \u26a0\ufe0f)\n        ClientPermissionsV2->>PolicyStore: findByResource(server, resource)\n        PolicyStore-->>ClientPermissionsV2: policies\n    end\n    ClientPermissionsV2->>Evaluator: evaluatePermission(ResourcePermission, server)\n    Evaluator-->>ClientPermissionsV2: granted Permission set\n    ClientPermissionsV2-->>Caller: true / false\n```\n\n<!-- greptile_failed_comments -->\n<details><summary><h3>Comments Outside Diff (1)</h3></summary>\n\n1. `server-spi-private/src/main/java/org/keycloak/authorization/AdminPermissionsSchema.java`, line 304-326 ([link](https://github.com/code-review-benchmark/keycloak__keycloak__greptile-v4-1__pr36880__20260406/blob/1950a511026d520a7329c7b6b9ee60a4af8f8b55/server-spi-private/src/main/java/org/keycloak/authorization/AdminPermissionsSchema.java#L304-L326)) \n\n   <a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **`getResourceName` doesn't handle the `CLIENTS` resource type**\n\n   The `USERS` branch returns `\"All users\"` for the wildcard resource and looks up a human-readable username for individual resources. For `CLIENTS`, the method falls through to `resource.getDisplayName()`, which is `null` for individually-created client resources (only their name/UUID is set). This is inconsistent with the `USERS` handling and may produce null/UUID display names anywhere `getResourceName` is called for client permissions.\n\n   Consider adding a `CLIENTS` branch analogous to the existing `USERS` one:\n   ```java\n   } else if (CLIENTS.getType().equals(resourceType)) {\n       if (resource.getName().equals(CLIENTS_RESOURCE_TYPE)) {\n           return \"All clients\";\n       }\n       ClientModel clientModel = session.clients().getClientById(\n               session.getContext().getRealm(), resource.getName());\n       if (clientModel == null) {\n           throw new ModelIllegalStateException(\n                   \"Client not found for resource [\" + resource.getId() + \"]\");\n       }\n       return clientModel.getClientId();\n   }\n   ```\n\n</details>\n\n<!-- /greptile_failed_comments -->\n\n<sub>Reviews (1): Last reviewed commit: [\"Add Client resource type and its scopes ...\"](https://github.com/code-review-benchmark/keycloak__keycloak__greptile-v4-1__pr36880__20260406/commit/1950a511026d520a7329c7b6b9ee60a4af8f8b55) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629638)</sub>",
             "created_at": "2026-04-07T19:32:43Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/36880",
+        "review_comments": [
+          {
+            "path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java",
+            "line": 71,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Recursive Delegation Bug** [CRITICAL]\n\nMethod appears to call itself recursively instead of delegating to a wrapped or parent object. This can cause infinite recursion and StackOverflowError. Verify that the recursive call is intentional and has a proper base case, or change to delegate to the correct target (e.g., delegate.method() instead of this.method()).\n\n",
+            "created_at": "2026-04-10T05:27:38.123Z"
+          },
+          {
+            "path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java",
+            "line": 265,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Recursive Delegation Bug** [CRITICAL]\n\nMethod appears to call itself recursively instead of delegating to a wrapped or parent object. This can cause infinite recursion and StackOverflowError. Verify that the recursive call is intentional and has a proper base case, or change to delegate to the correct target (e.g., delegate.method() instead of this.method()).\n\n",
+            "created_at": "2026-04-10T05:27:38.123Z"
           }
         ]
       }
@@ -6947,6 +7010,18 @@
             "created_at": "2026-04-07T19:34:49Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/37038",
+        "review_comments": [
+          {
+            "path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/UserPermissionsV2.java",
+            "line": 1,
+            "body": "**CodeSheriff: Authorization bypass due to missing closing braces in if statements** [CRITICAL]\n\nAuthorization bypass due to missing closing braces in if statements. All permission checks after the first if statement will execute unconditionally, allowing unauthorized users to perform admin operations like managing users, mapping roles, and managing group membership without proper MANAGE_USERS role verification.\n",
+            "created_at": "2026-04-10T05:29:04.803Z"
+          }
+        ]
       }
     ]
   },
@@ -8079,6 +8154,18 @@
             "created_at": "2026-04-07T19:29:46Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/33832",
+        "review_comments": [
+          {
+            "path": "authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/ASN1Encoder.java",
+            "line": 56,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Recursive Delegation Bug** [CRITICAL]\n\nMethod appears to call itself recursively instead of delegating to a wrapped or parent object. This can cause infinite recursion and StackOverflowError. Verify that the recursive call is intentional and has a proper base case, or change to delegate to the correct target (e.g., delegate.method() instead of this.method()).\n\n",
+            "created_at": "2026-04-10T05:25:40.104Z"
+          }
+        ]
       }
     ]
   },
@@ -9083,6 +9170,24 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR fixes a `NullPointerException` that occurs when `getSubGroupsCount()` is called on a cached group that has been concurrently deleted, by adding a null guard on the `modelSupplier.get()` result. It also removes an unused private method in `GroupUtils`, adds a missing `@Override` annotation in `CachedGroup`, and adds a concurrent read/delete integration test.\n\n- **P1**: Three `getSubGroupsStream` overloads in `GroupAdapter` (lines 254\u2013268) have the identical unguarded `modelSupplier.get()` pattern and will still NPE under concurrent deletion \u2014 the fix is incomplete.\n- **P1**: The new test's reader thread is not joined before the assertion, so exceptions caught in the thread's last iteration can race past the `assertThat`, making the test a non-deterministic false negative.\n\n<h3>Confidence Score: 4/5</h3>\n\nNot safe to merge as-is \u2014 the fix is incomplete and leaves three closely related NPE paths open.\n\nTwo P1 findings remain: the three `getSubGroupsStream` overloads in `GroupAdapter` have the same unguarded null-dereference that this PR intends to fix, and the new regression test has a thread-join race that makes it an unreliable guard against future regressions.\n\nGroupAdapter.java (lines 254\u2013269) needs the same null-guard pattern applied to the three getSubGroupsStream overloads; GroupTest.java needs a Thread.join() before the assertion.\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java | Fixes NPE in `getSubGroupsCount()` via null check on `modelSupplier.get()`, but the three `getSubGroupsStream` overloads directly above still dereference the supplier result without a null check, leaving the same concurrent-deletion NPE unfixed. |\n| model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedGroup.java | Adds missing `@Override` annotation to `getRealm()` \u2014 harmless correctness improvement. |\n| services/src/main/java/org/keycloak/utils/GroupUtils.java | Removes unused private method `groupMatchesSearchOrIsPathElement` \u2014 dead code cleanup, no functional impact. |\n| tests/base/src/test/java/org/keycloak/tests/admin/group/GroupTest.java | Adds a concurrent create/delete/read test to reproduce the NPE. The test lacks a `Thread.join()` before the assertion, creating a race where late exceptions from the reader thread are missed, and has a minor typo in `groupUuuids`. |\n\n</details>\n\n\n\n<h3>Sequence Diagram</h3>\n\n```mermaid\nsequenceDiagram\n    participant RT as Reader Thread\n    participant MA as GroupAdapter\n    participant MS as modelSupplier\n    participant DB as Database\n\n    RT->>MA: getSubGroupsCount()\n    MA->>MA: isUpdated()? \u2192 false\n    MA->>MS: get()\n    MS->>DB: getGroupById(realm, id)\n    Note over DB: Group concurrently deleted\n    DB-->>MS: null\n    MS-->>MA: null (GroupModel)\n    MA->>MA: null check \u2192 return null \u2705 (fixed)\n\n    RT->>MA: getSubGroupsStream(search, first, max)\n    MA->>MA: isUpdated()? \u2192 false\n    MA->>MS: get()\n    MS->>DB: getGroupById(realm, id)\n    DB-->>MS: null\n    MS-->>MA: null (GroupModel)\n    MA->>MA: null.getSubGroupsStream(...) \ud83d\udca5 NPE (NOT fixed)\n```\n\n<!-- greptile_failed_comments -->\n<details><summary><h3>Comments Outside Diff (1)</h3></summary>\n\n1. `model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java`, line 254-269 ([link](https://github.com/code-review-benchmark/keycloak__keycloak__greptile-v4-1__pr40940__20260406/blob/4def149a50c4b9b2c24fbb753ac60fe4f4df0cac/model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java#L254-L269)) \n\n   <a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=7\" align=\"top\"></a> **Same NPE risk in `getSubGroupsStream` overloads**\n\n   Three `getSubGroupsStream` overloads also call `modelSupplier.get()` directly without a null check, so they are susceptible to the same NPE this PR fixes in `getSubGroupsCount()`. When a group is concurrently deleted, `modelSupplier.get()` can return `null`, causing an NPE on the chained method call.\n\n</details>\n\n<!-- /greptile_failed_comments -->\n\n<sub>Reviews (1): Last reviewed commit: [\"Fix NPE when accessing group concurrentl...\"](https://github.com/code-review-benchmark/keycloak__keycloak__greptile-v4-1__pr40940__20260406/commit/4def149a50c4b9b2c24fbb753ac60fe4f4df0cac) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629719)</sub>",
             "created_at": "2026-04-07T19:29:09Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/40940",
+        "review_comments": [
+          {
+            "path": "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java",
+            "line": 1,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Optional Get Without Check** [CRITICAL]\n\nCalling Optional.get() without first checking isPresent() will throw NoSuchElementException if the Optional is empty. Use isPresent(), orElse(), orElseGet(), or orElseThrow() to handle the empty case explicitly.\n\n",
+            "created_at": "2026-04-10T05:32:28.365Z"
+          },
+          {
+            "path": "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java",
+            "line": 1,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Optional Get Without Ispresent** [CRITICAL]\n\nCalling Optional.get() without checking isPresent() will throw NoSuchElementException when the Optional is empty. Use orElse(), orElseGet(), orElseThrow(), or check isPresent() before calling get().\n\n",
+            "created_at": "2026-04-10T05:32:28.365Z"
           }
         ]
       }
@@ -10207,6 +10312,18 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR enables passkey (WebAuthn conditional UI) authentication during re-authentication flows (`prompt=login`) for both `UsernamePasswordForm` and `UsernameForm`, and adds a shared helper `AuthenticatorUtils.setupReauthenticationInUsernamePasswordFormError` to keep the re-auth UI consistent on error. There are two blocking issues that need to be resolved before merging:\n\n- `UsernameForm.java` calls `isConditionalPasskeysEnabled()` with no arguments; the only available method is `isConditionalPasskeysEnabled(UserModel user)` \u2014 this is a compile-time error.\n- `UsernamePasswordForm.authenticate()` and `challenge()` now gate `fillContextForm` on `user != null`, which is the inverse of the original condition (`user == null`). Passkeys are no longer initialised for anonymous initial-login requests, breaking the standard conditional-UI flow.\n\n<h3>Confidence Score: 3/5</h3>\n\nNot safe to merge \u2014 one compile-time error and one logic regression break both the username form and the existing passkey initial-login flow.\n\nA P0 compile error in UsernameForm and two P1 logic inversions in UsernamePasswordForm mean the PR cannot build and would regress the anonymous-login passkeys flow that worked before.\n\nUsernameForm.java (missing-arg compile error) and UsernamePasswordForm.java (inverted user-null guard in authenticate and challenge).\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| services/src/main/java/org/keycloak/authentication/authenticators/browser/UsernameForm.java | Calls `isConditionalPasskeysEnabled()` with no arguments \u2014 a method that does not exist; this is a compilation error. |\n| services/src/main/java/org/keycloak/authentication/authenticators/browser/UsernamePasswordForm.java | Moves `fillContextForm` calls to be conditional on `user != null`, breaking passkey setup for the anonymous initial-login path and inverting the original `challenge()` guard. |\n| services/src/main/java/org/keycloak/authentication/authenticators/browser/AbstractUsernameFormAuthenticator.java | Widens `USER_SET_BEFORE_USERNAME_PASSWORD_AUTH` from `protected` to `public` and extracts re-auth form setup to `AuthenticatorUtils` \u2014 clean refactor. |\n| services/src/main/java/org/keycloak/authentication/authenticators/browser/WebAuthnConditionalUIAuthenticator.java | Calls `AuthenticatorUtils.setupReauthenticationInUsernamePasswordFormError` in `createErrorResponse` to restore hidden-username/no-registration UI during passkey failures on re-auth \u2014 correct addition. |\n| services/src/main/java/org/keycloak/authentication/authenticators/util/AuthenticatorUtils.java | Adds `setupReauthenticationInUsernamePasswordFormError` helper that hides the username field and disables registration in re-auth error responses \u2014 correctly factored out from `AbstractUsernameFormAuthenticator`. |\n| testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/webauthn/passwordless/PasskeysUsernameFormTest.java | New tests for re-authentication with passkeys using `UsernameForm`; will not compile/run until the P0 in `UsernameForm.java` is fixed. |\n| testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/webauthn/passwordless/PasskeysUsernamePasswordFormTest.java | New/updated tests for re-authentication with `UsernamePasswordForm`; regression tests for `reauthenticationOfUserWithoutPasskey` look correct, but initial-login passkey tests may fail due to the P1 logic change. |\n| testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/webauthn/passwordless/PasskeysOrganizationAuthenticationTest.java | Adds organization-scoped re-authentication tests for passkeys; test logic appears correct but depends on the production-code fixes being resolved first. |\n\n</details>\n\n\n\n<h3>Flowchart</h3>\n\n```mermaid\n%%{init: {'theme': 'neutral'}}%%\nflowchart TD\n    A[authenticate called] --> B{User already set?}\n    B -- Yes --> C{Authenticated via passwordless?}\n    C -- Yes --> D[context.success]\n    C -- No --> E[Hide username field\\nSet reauth auth-note]\n    B -- No --> F[Populate loginHint or rememberMe]\n    E --> G{isConditionalPasskeysEnabled\\nuser param}\n    F --> G\n    G -- user NOT null AND passkeys enabled --> H[webauthnAuth.fillContextForm]\n    G -- user IS null OR passkeys off --> I[Passkeys NOT set up\\nInitial login broken]\n    H --> J[Render login form]\n    I --> J\n\n    K[challenge with error] --> L{isConditionalPasskeysEnabled\\nuser param}\n    L -- user NOT null --> M[fillContextForm\\nPasskeys in error view]\n    L -- user IS null --> N[Passkeys missing\\non bad-username error]\n```\n\n<!-- greptile_other_comments_section -->\n\n<sub>Reviews (1): Last reviewed commit: [\"Add user parameter requirement to isCond...\"](https://github.com/code-review-benchmark/keycloak__keycloak-greptile__greptile-v4-1__pr1__20260406/commit/3214b188de808fdb0fff335556b686f1b0a63218) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629589)</sub>",
             "created_at": "2026-04-07T19:31:17Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1",
+        "review_comments": [
+          {
+            "path": "services/src/main/java/org/keycloak/authentication/authenticators/browser/AbstractUsernameFormAuthenticator.java",
+            "line": 1,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Hardcoded Credential Secret Pattern** [CRITICAL]\n\nHardcoded credential or API key in source. Keys checked into source control are effectively public \u2014 they leak via git history, CI logs, and forks. Move the value to an environment variable, a JNDI binding, or a secrets manager (Vault, AWS Secrets Manager, Spring Cloud Config).\n\n",
+            "created_at": "2026-04-10T05:24:02.210Z"
           }
         ]
       }
@@ -11364,6 +11481,11 @@
             "created_at": "2026-04-07T19:29:13Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/getsentry/sentry/pull/93824",
+        "review_comments": []
       }
     ]
   },
@@ -12907,6 +13029,11 @@
             "created_at": "2026-04-07T19:31:30Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5",
+        "review_comments": []
       }
     ]
   },
@@ -14316,6 +14443,30 @@
             "created_at": "2026-04-07T19:32:48Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1",
+        "review_comments": [
+          {
+            "path": "src/sentry/api/paginator.py",
+            "line": 6,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Python Queryset Negative Slice** [CRITICAL]\n\nDjango QuerySets do not support negative indexing or negative slicing. Using a negative index on a QuerySet raises AssertionError. Convert to a list first or use alternative logic to access elements from the end.\n\n",
+            "created_at": "2026-04-10T04:37:58.622Z"
+          },
+          {
+            "path": "src/sentry/api/paginator.py",
+            "line": 71,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Python Queryset Negative Slice** [CRITICAL]\n\nDjango QuerySets do not support negative indexing or negative slicing. Using a negative index on a QuerySet raises AssertionError. Convert to a list first or use alternative logic to access elements from the end.\n\n",
+            "created_at": "2026-04-10T04:37:58.622Z"
+          },
+          {
+            "path": "src/sentry/api/paginator.py",
+            "line": 75,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Python Queryset Negative Slice** [CRITICAL]\n\nDjango QuerySets do not support negative indexing or negative slicing. Using a negative index on a QuerySet raises AssertionError. Convert to a list first or use alternative logic to access elements from the end.\n\n",
+            "created_at": "2026-04-10T04:37:58.622Z"
+          }
+        ]
       }
     ]
   },
@@ -15331,6 +15482,11 @@
             "created_at": "2026-04-07T19:31:16Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/97529",
+        "review_comments": []
       }
     ]
   },
@@ -16389,6 +16545,11 @@
             "created_at": "2026-04-07T19:31:42Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/getsentry/sentry/pull/80168",
+        "review_comments": []
       }
     ]
   },
@@ -17362,6 +17523,18 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR reorganizes crons incident logic into two dedicated modules \u2014 `incidents.py` (threshold evaluation and incident creation) and `incident_occurrence.py` (Kafka occurrence production) \u2014 and adds a `SimpleCheckIn` TypedDict to `types.py` to formalize the stripped-down check-in shape shared between them. It is a pure code-move with no behavioral changes.\n\n<h3>Confidence Score: 5/5</h3>\n\nSafe to merge \u2014 this is a faithful refactor with no logic changes; both findings are pre-existing P2 style issues.\n\nAll findings are P2 (a carry-over typo and a carry-over config bug that does not affect behaviour in the current callers). No new logic is introduced and the module split is clean.\n\nsrc/sentry/monitors/logic/incident_occurrence.py \u2014 the get_monitor_environment_context config-copy bug is worth fixing while the refactor window is open.\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| src/sentry/monitors/logic/incident_occurrence.py | New module extracting occurrence creation logic from mark_failed.py; contains a pre-existing bug where a copied+modified config is never used in the return dict. |\n| src/sentry/monitors/logic/incidents.py | New module extracting try_incident_threshold from mark_failed.py; faithful move with correct imports and types. |\n| src/sentry/monitors/logic/mark_failed.py | Simplified to delegate incident/occurrence logic to new modules; all imports and usages are correct. |\n| src/sentry/monitors/types.py | Adds SimpleCheckIn TypedDict (id, date_added, status) to centralize the stripped-down check-in shape used across the new modules. |\n\n</details>\n\n\n\n<h3>Sequence Diagram</h3>\n\n```mermaid\nsequenceDiagram\n    participant MF as mark_failed.py\n    participant INC as incidents.py\n    participant IO as incident_occurrence.py\n    participant Kafka as Kafka (produce_occurrence_to_kafka)\n\n    MF->>INC: try_incident_threshold(failed_checkin, threshold, received)\n    INC->>INC: query previous check-ins\n    INC->>INC: get_or_create MonitorIncident\n    INC->>IO: create_incident_occurrence(failed_checkins, checkin, incident, received)\n    IO->>IO: build IssueOccurrence + event_data\n    IO->>Kafka: produce_occurrence_to_kafka(OCCURRENCE, occurrence, event_data)\n    INC-->>MF: bool (threshold reached)\n```\n\n<!-- greptile_other_comments_section -->\n\n<sub>Reviews (1): Last reviewed commit: [\"ref(crons): Reorganize incident creation...\"](https://github.com/code-review-benchmark/sentry__sentry__greptile-v4-1__pr80528__20260406/commit/dcdcadb771128e79259cc9eff9c70c38fc597976) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629735)</sub>",
             "created_at": "2026-04-07T19:29:29Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/getsentry/sentry/pull/80528",
+        "review_comments": [
+          {
+            "path": "src/sentry/monitors/logic/mark_failed.py",
+            "line": 2,
+            "body": "**CodeSheriff: Hallucinated API: sentry.monitors.logic.incidents.try_incident_threshold** [HIGH]\n\nThe function try_incident_threshold does not exist in sentry.monitors.logic.incidents module\n",
+            "created_at": "2026-04-10T04:52:49.537Z"
           }
         ]
       }
@@ -18344,6 +18517,18 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR introduces an `AssignmentSource` dataclass to carry integration context through the assignment pipeline, and uses it in `should_sync` to prevent outbound sync cycles back to the originating integration.\n\n- **`queued: datetime = timezone.now()`** in `AssignmentSource` (line 18) is evaluated once at module load time, so every instance without an explicit `queued` value shares the same stale timestamp. Use `field(default_factory=timezone.now)` instead (consistent with other models in the codebase).\n- The `assignment_source` parameter added to the `sync_status_outbound` abstract method is never passed by the `sync_status_outbound` task and has no effect today; a TODO comment or removal would clarify intent.\n\n<h3>Confidence Score: 4/5</h3>\n\nSafe to merge after fixing the stale timezone.now() default in AssignmentSource.\n\nThe cycle-breaking logic itself is correct and well-tested. One P1 defect exists: the queued field default is evaluated once at class import time, causing all instances to share the same stale timestamp. While queued is not used in cycle-prevention logic today, it is serialized and returned from to_dict, making any future time-based use silently wrong from day one.\n\nsrc/sentry/integrations/services/assignment_source.py - the queued default needs to be changed to field(default_factory=timezone.now).\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| src/sentry/integrations/services/assignment_source.py | New AssignmentSource dataclass; queued default uses timezone.now() evaluated at module load time instead of field(default_factory=timezone.now), giving every instance the same stale timestamp. |\n| src/sentry/integrations/tasks/sync_assignee_outbound.py | Adds assignment_source_dict kwarg, deserializes it via AssignmentSource.from_dict, and passes it to should_sync - correctly wires up cycle prevention in the async task. |\n| src/sentry/integrations/utils/sync.py | Properly passes assignment_source through sync_group_assignee_inbound and serializes it to dict for the Celery task kwargs. |\n| src/sentry/integrations/mixins/issues.py | Cycle-breaking should_sync logic is correct; assignment_source parameter added to sync_status_outbound abstract method is never passed by the task and is effectively dead code. |\n| src/sentry/models/groupassignee.py | Cleanly threads assignment_source through assign and deassign methods and forwards it to sync_group_assignee_outbound. |\n| tests/sentry/integrations/services/test_assignment_source.py | Basic unit tests for AssignmentSource serialization round-trips; coverage looks adequate for the new dataclass. |\n| tests/sentry/models/test_groupassignee.py | New test properly validates that outbound sync is skipped when the source integration matches the target integration. |\n\n</details>\n\n\n\n<h3>Sequence Diagram</h3>\n\n```mermaid\nsequenceDiagram\n    participant Jira\n    participant SentryWebhook as Sentry Webhook Handler\n    participant sync_inbound as sync_group_assignee_inbound\n    participant GroupAssignee\n    participant CeleryTask as sync_assignee_outbound (Celery)\n    participant should_sync as installation.should_sync()\n\n    Jira->>SentryWebhook: assignee changed webhook\n    SentryWebhook->>sync_inbound: sync_group_assignee_inbound(integration, email, key)\n    sync_inbound->>GroupAssignee: assign(group, user, assignment_source=AssignmentSource.from_integration(integration))\n    GroupAssignee->>CeleryTask: apply_async(assignment_source_dict=source.to_dict())\n    CeleryTask->>should_sync: should_sync(outbound_assignee, parsed_source)\n    note over should_sync: source.integration_id == org_integration.integration_id?\n    should_sync-->>CeleryTask: False (same integration - cycle blocked)\n    note over CeleryTask: Skips outbound sync back to Jira\n```\n\n<!-- greptile_failed_comments -->\n<details><summary><h3>Comments Outside Diff (1)</h3></summary>\n\n1. `src/sentry/integrations/mixins/issues.py`, line 411-422 ([link](https://github.com/code-review-benchmark/sentry__sentry__greptile-v4-1__pr77754__20260406/blob/9501091c52ae94e8d916f79b35d21975b3f9cadb/src/sentry/integrations/mixins/issues.py#L411-L422)) \n\n   <a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **`assignment_source` in `sync_status_outbound` is unused dead code**\n\n   The `assignment_source: AssignmentSource | None = None` parameter was added to the `sync_status_outbound` abstract method, but `src/sentry/integrations/tasks/sync_status_outbound.py` calls `installation.sync_status_outbound(external_issue, group.status == GroupStatus.RESOLVED, group.project_id)` without ever passing an `assignment_source`. The parameter is never set and never checked anywhere in the status sync path, so it has no effect. If this is preparatory work for a future status-cycle fix, a TODO comment would help clarify intent; otherwise it can be removed to avoid confusion.\n\n</details>\n\n<!-- /greptile_failed_comments -->\n\n<sub>Reviews (1): Last reviewed commit: [\"Fixes tests, adds new test for sync loop...\"](https://github.com/code-review-benchmark/sentry__sentry__greptile-v4-1__pr77754__20260406/commit/9501091c52ae94e8d916f79b35d21975b3f9cadb) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629728)</sub>",
             "created_at": "2026-04-07T19:30:55Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/getsentry/sentry/pull/77754",
+        "review_comments": [
+          {
+            "path": "src/sentry/integrations/services/assignment_source.py",
+            "line": 15,
+            "body": "**CodeSheriff: Hallucinated API: queued: datetime = timezone.now()** [HIGH]\n\ntimezone.now() is not callable - it should be timezone.now\n",
+            "created_at": "2026-04-10T04:51:48.317Z"
           }
         ]
       }
@@ -19449,6 +19634,11 @@
             "created_at": "2026-04-07T19:31:36Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/getsentry/sentry/pull/95633",
+        "review_comments": []
       }
     ]
   },
@@ -20820,6 +21010,30 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR optimizes the spans buffer by switching from an unscored Redis set to a sorted set scored by `end_timestamp_precise`, and adds in-place eviction in `add-buffer.lua` when a segment exceeds 1000 spans. It also introduces an `OptimizedCursorPaginator` gated behind `?optimized_pagination=true` for superusers/global-access members on the audit logs endpoint.\n\n- **P1 \u2013 Crash on negative offset**: `OptimizedCursorPaginator` passes `cursor.offset` (user-controlled) directly to Django queryset slicing (`queryset[negative:stop]`). Django's ORM raises `AssertionError: Negative indexing is not supported`, causing a 500 for any eligible admin who triggers this path.\n- **P1 \u2013 AttributeError for memberless superusers**: `organization_context.member.has_global_access` throws `AttributeError` when `member` is `None`, which occurs when a superuser accesses an org they don't explicitly belong to.\n\n<h3>Confidence Score: 3/5</h3>\n\nNot safe to merge \u2014 the OptimizedCursorPaginator path causes guaranteed runtime crashes via negative Django queryset offsets, and the audit log endpoint raises AttributeError for superusers without org membership.\n\nTwo P1 defects on the new OptimizedCursorPaginator + audit logs path: Django will crash on any negative cursor offset, and member.has_global_access will raise AttributeError for memberless superusers. The spans buffer core changes (sorted set + eviction) look functionally sound.\n\nsrc/sentry/api/paginator.py and src/sentry/api/endpoints/organization_auditlogs.py require fixes before merging.\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| src/sentry/api/paginator.py | Introduces `OptimizedCursorPaginator` with a negative-offset code path that will raise `AssertionError` in Django's ORM; also modifies `BasePaginator.get_result` to clamp forward-cursor offsets with `max(0, offset)`. |\n| src/sentry/api/endpoints/organization_auditlogs.py | Adds opt-in `OptimizedCursorPaginator` path for superusers/global-access members; `organization_context.member.has_global_access` will raise `AttributeError` when `member` is `None` (e.g., superuser not in the org). |\n| src/sentry/scripts/spans/add-buffer.lua | Adds sorted-set eviction (`zpopmin`) when segment exceeds 1000 spans; removes `payload` from ARGV (now inserted by Python via `zadd`), but the header comment still lists `payload` as the first argument. |\n| src/sentry/spans/buffer.py | Adds `end_timestamp_precise` field to `Span` NamedTuple; switches span storage from unscored set to sorted set (scored by timestamp) to enable eviction; `max_segment_spans` constructor parameter is accepted but never passed to the Lua script. |\n| src/sentry/spans/consumers/process/factory.py | Adds `end_timestamp_precise` to `Span` construction from Kafka payload; straightforward addition to match the new NamedTuple field. |\n| src/sentry/utils/cursors.py | Adds an inline comment noting negative offset support; no functional changes to the `Cursor` class itself. |\n| tests/sentry/spans/test_buffer.py | Updates existing span fixtures to include `end_timestamp_precise=1700000000.0`; no new test coverage for eviction behavior. |\n\n</details>\n\n\n\n<h3>Flowchart</h3>\n\n```mermaid\n%%{init: {'theme': 'neutral'}}%%\nflowchart TD\n    A[Incoming Span from Kafka] --> B[process_batch: build Span with end_timestamp_precise]\n    B --> C[process_spans: group spans by parent via _group_by_parent]\n    C --> D[Pipeline 1: zadd span payloads to sorted set scored by end_timestamp_precise]\n    D --> E[Pipeline 2: EVALSHA add-buffer.lua per span]\n    E --> F{Redirect lookup hget span-buf:sr}\n    F --> G[zunionstore: merge span_key and parent_key into set_key]\n    G --> H{span_count > 1000?}\n    H -- Yes --> I[zpopmin: evict oldest spans down to 1000]\n    H -- No --> J[Set HRS key if root span]\n    I --> J\n    J --> K[Return redirect_depth, delete_item, add_item, has_root_span]\n    K --> L[Pipeline 3: update priority queue zadd with timeout offset]\n    L --> M[flush_segments: zrangebyscore to find timed-out segments]\n    M --> N[Load segment data via zscan]\n    N --> O[done_flush_segments: delete set keys and redirect maps]\n```\n\n<!-- greptile_failed_comments -->\n<details><summary><h3>Comments Outside Diff (2)</h3></summary>\n\n1. `src/sentry/scripts/spans/add-buffer.lua`, line 8-14 ([link](https://github.com/code-review-benchmark/sentry__sentry-greptile__greptile-v4-1__pr2__20260406/blob/8ab88145113dd23a930e23b9cbbcf8b30e4c0b17/src/sentry/scripts/spans/add-buffer.lua#L8-L14)) \n\n   <a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **Stale `ARGS` documentation \u2014 `payload` was removed**\n\n   The header comment still lists `payload` as the first ARGV parameter, but the script body maps `ARGV[1]` to `is_root_span`. The payload is now inserted by the Python caller via `zadd` before the script runs. Update the comment to reflect the current signature.\n\n\n2. `src/sentry/spans/buffer.py`, line 149 ([link](https://github.com/code-review-benchmark/sentry__sentry-greptile__greptile-v4-1__pr2__20260406/blob/8ab88145113dd23a930e23b9cbbcf8b30e4c0b17/src/sentry/spans/buffer.py#L149)) \n\n   <a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **`max_segment_spans` parameter is never used**\n\n   `SpansBuffer` accepts `max_segment_spans` (default 1001), but the eviction threshold is hardcoded as `1000` in `add-buffer.lua`. This parameter is dead code and the off-by-one between `1001` and `1000` is confusing. Either thread the parameter through to the Lua script as an ARGV argument, or remove the constructor parameter and add a constant for the hardcoded limit.\n\n</details>\n\n<!-- /greptile_failed_comments -->\n\n<sub>Reviews (1): Last reviewed commit: [\"feat(audit-logs): Enhanced pagination pe...\"](https://github.com/code-review-benchmark/sentry__sentry-greptile__greptile-v4-1__pr2__20260406/commit/8ab88145113dd23a930e23b9cbbcf8b30e4c0b17) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629624)</sub>",
             "created_at": "2026-04-07T19:30:55Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2",
+        "review_comments": [
+          {
+            "path": "src/sentry/api/paginator.py",
+            "line": 6,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Python Queryset Negative Slice** [CRITICAL]\n\nDjango QuerySets do not support negative indexing or negative slicing. Using a negative index on a QuerySet raises AssertionError. Convert to a list first or use alternative logic to access elements from the end.\n\n",
+            "created_at": "2026-04-10T04:38:22.876Z"
+          },
+          {
+            "path": "src/sentry/api/paginator.py",
+            "line": 71,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Python Queryset Negative Slice** [CRITICAL]\n\nDjango QuerySets do not support negative indexing or negative slicing. Using a negative index on a QuerySet raises AssertionError. Convert to a list first or use alternative logic to access elements from the end.\n\n",
+            "created_at": "2026-04-10T04:38:22.876Z"
+          },
+          {
+            "path": "src/sentry/api/paginator.py",
+            "line": 75,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Python Queryset Negative Slice** [CRITICAL]\n\nDjango QuerySets do not support negative indexing or negative slicing. Using a negative index on a QuerySet raises AssertionError. Convert to a list first or use alternative logic to access elements from the end.\n\n",
+            "created_at": "2026-04-10T04:38:22.876Z"
           }
         ]
       }
@@ -22209,6 +22423,11 @@
             "created_at": "2026-04-07T19:31:12Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3",
+        "review_comments": []
       }
     ]
   },
@@ -23255,6 +23474,11 @@
             "created_at": "2026-04-07T19:28:44Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/103633",
+        "review_comments": []
       }
     ]
   },
@@ -24449,6 +24673,36 @@
             "created_at": "2026-04-07T19:30:58Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/getsentry/sentry/pull/67876",
+        "review_comments": [
+          {
+            "path": "tests/sentry/integrations/github/test_integration.py",
+            "line": 3,
+            "body": "**CodeSheriff: API key in source code** [CRITICAL]\n\nHardcoded credential detected \u2014 must be moved to environment variables.\n",
+            "created_at": "2026-04-10T04:40:39.907Z"
+          },
+          {
+            "path": "src/sentry/integrations/github/integration.py",
+            "line": 3,
+            "body": "**CodeSheriff: Hallucinated API: sentry.http.safe_urlopen** [HIGH]\n\nModule sentry.http does not exist - this appears to be a hallucinated import\n",
+            "created_at": "2026-04-10T04:40:39.908Z"
+          },
+          {
+            "path": "src/sentry/integrations/github/integration.py",
+            "line": 3,
+            "body": "**CodeSheriff: Hallucinated API: sentry.http.safe_urlread** [HIGH]\n\nModule sentry.http does not exist - this appears to be a hallucinated import\n",
+            "created_at": "2026-04-10T04:40:39.908Z"
+          },
+          {
+            "path": "src/sentry/integrations/github/integration.py",
+            "line": 4,
+            "body": "**CodeSheriff: Hallucinated API: sentry.identity.github.get_user_info** [HIGH]\n\nFunction get_user_info does not exist in sentry.identity.github module\n",
+            "created_at": "2026-04-10T04:40:39.908Z"
+          }
+        ]
       }
     ]
   },
@@ -25447,6 +25701,18 @@
             "created_at": "2026-04-07T19:33:42Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/keycloak/keycloak/pull/32918",
+        "review_comments": [
+          {
+            "path": "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/InfinispanIdentityProviderStorageProvider.java",
+            "line": 14,
+            "body": "**CodeSheriff: Users.Oc.Codesheriff Bench.Rules.Java Recursive Delegation Bug** [CRITICAL]\n\nMethod appears to call itself recursively instead of delegating to a wrapped or parent object. This can cause infinite recursion and StackOverflowError. Verify that the recursive call is intentional and has a proper base case, or change to delegate to the correct target (e.g., delegate.method() instead of this.method()).\n\n",
+            "created_at": "2026-04-10T05:24:28.113Z"
+          }
+        ]
       }
     ]
   },
@@ -26384,6 +26650,11 @@
             "created_at": "2026-04-07T19:28:24Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/94942",
+        "review_comments": []
       }
     ]
   },
@@ -27221,6 +27492,11 @@
             "created_at": "2026-04-07T19:27:53Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/90939",
+        "review_comments": []
       }
     ]
   },
@@ -28348,6 +28624,11 @@
             "created_at": "2026-04-07T19:29:11Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/80329",
+        "review_comments": []
       }
     ]
   },
@@ -29879,6 +30160,11 @@
             "created_at": "2026-04-07T19:28:57Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/90045",
+        "review_comments": []
       }
     ]
   },
@@ -31076,6 +31362,11 @@
             "created_at": "2026-04-07T19:31:17Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/106778",
+        "review_comments": []
       }
     ]
   },
@@ -31975,6 +32266,11 @@
             "created_at": "2026-04-07T19:33:42Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/107534",
+        "review_comments": []
       }
     ]
   },
@@ -33190,6 +33486,11 @@
             "created_at": "2026-04-07T19:29:14Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/79265",
+        "review_comments": []
       }
     ]
   },
@@ -34117,6 +34418,11 @@
             "created_at": "2026-04-07T19:29:37Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9",
+        "review_comments": []
       }
     ]
   },
@@ -35031,6 +35337,11 @@
             "created_at": "2026-04-07T19:27:58Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/grafana/grafana/pull/76186",
+        "review_comments": []
       }
     ]
   },
@@ -36703,6 +37014,11 @@
             "created_at": "2026-04-07T19:31:16Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/10",
+        "review_comments": []
       }
     ]
   },
@@ -37867,6 +38183,11 @@
             "created_at": "2026-04-07T19:28:29Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7",
+        "review_comments": []
       }
     ]
   },
@@ -39446,6 +39767,11 @@
             "created_at": "2026-04-07T19:31:09Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/8",
+        "review_comments": []
       }
     ]
   },
@@ -40598,6 +40924,11 @@
             "created_at": "2026-04-07T19:29:21Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3",
+        "review_comments": []
       }
     ]
   },
@@ -41603,6 +41934,11 @@
             "created_at": "2026-04-07T19:28:31Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5",
+        "review_comments": []
       }
     ]
   },
@@ -42634,6 +42970,11 @@
             "created_at": "2026-04-07T19:29:01Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6",
+        "review_comments": []
       }
     ]
   },
@@ -44573,6 +44914,11 @@
             "created_at": "2026-04-07T19:29:25Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/4",
+        "review_comments": []
       }
     ]
   },
@@ -45858,6 +46204,11 @@
             "created_at": "2026-04-07T19:29:04Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1",
+        "review_comments": []
       }
     ]
   },
@@ -47073,6 +47424,11 @@
             "created_at": "2026-04-07T19:29:36Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2",
+        "review_comments": []
       }
     ]
   },
@@ -48402,6 +48758,11 @@
             "created_at": "2026-04-07T19:31:33Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/22532",
+        "review_comments": []
       }
     ]
   },
@@ -49618,6 +49979,24 @@
             "created_at": "2026-04-07T19:31:31Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/8330",
+        "review_comments": [
+          {
+            "path": "packages/lib/slots.ts",
+            "line": 2,
+            "body": "**CodeSheriff: Hallucinated API: dayjs().tz()** [HIGH]\n\nThe tz() method requires the dayjs/plugin/timezone plugin to be imported and extended, but no timezone plugin is visible in the dependencies or imports\n",
+            "created_at": "2026-04-10T05:10:27.448Z"
+          },
+          {
+            "path": "packages/lib/slots.ts",
+            "line": 3,
+            "body": "**CodeSheriff: Hallucinated API: dayjs().tz()** [HIGH]\n\nThe tz() method requires the dayjs/plugin/timezone plugin to be imported and extended, but no timezone plugin is visible in the dependencies or imports\n",
+            "created_at": "2026-04-10T05:10:27.448Z"
+          }
+        ]
       }
     ]
   },
@@ -50648,6 +51027,11 @@
             "created_at": "2026-04-07T19:29:08Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/14943",
+        "review_comments": []
       }
     ]
   },
@@ -51616,6 +52000,11 @@
             "created_at": "2026-04-07T19:32:49Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/22345",
+        "review_comments": []
       }
     ]
   },
@@ -53480,6 +53869,24 @@
             "created_at": "2026-04-07T19:33:06Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/11059",
+        "review_comments": [
+          {
+            "path": "packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts",
+            "line": 8,
+            "body": "**CodeSheriff: Hallucinated API: [z.string().toString()]: z.number()** [HIGH]\n\nInvalid Zod schema syntax - computed property keys with toString() are not valid in Zod object schemas\n",
+            "created_at": "2026-04-10T05:12:40.355Z"
+          },
+          {
+            "path": "packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts",
+            "line": 10,
+            "body": "**CodeSheriff: Hallucinated API: [z.string().optional().toString()]: z.unknown().optional()** [HIGH]\n\nInvalid Zod schema syntax - computed property keys with toString() are not valid in Zod object schemas\n",
+            "created_at": "2026-04-10T05:12:40.355Z"
+          }
+        ]
       }
     ]
   },
@@ -54887,6 +55294,11 @@
             "created_at": "2026-04-07T19:35:41Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/7232",
+        "review_comments": []
       }
     ]
   },
@@ -56457,6 +56869,11 @@
             "created_at": "2026-04-07T19:31:18Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/14740",
+        "review_comments": []
       }
     ]
   },
@@ -57822,6 +58239,18 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR adds 2FA backup codes: generated and encrypted during setup, displayed once after TOTP verification, and usable in both the login and disable-2FA flows. The overall approach is solid \u2014 codes are symmetrically encrypted at rest, single-use in the login path, and fully cleared when 2FA is disabled.\n\n- **P1 (two places):** The `indexOf` comparison in both `next-auth-options.ts` and `disable.ts` is case-sensitive, but stored codes are always lowercase hex (`crypto.randomBytes(5).toString(\"hex\")`). A user who types or pastes uppercase characters will always get `IncorrectBackupCode` and could be locked out. Both checks need `.toLowerCase()` applied to the user-supplied input before comparison.\n\n<h3>Confidence Score: 4/5</h3>\n\nSafe to merge after fixing the case-sensitivity bug in the two backup-code indexOf checks.\n\nTwo P1 issues share the same root cause (missing `.toLowerCase()`) and can lock users out of their account when they type backup codes in uppercase. The fixes are one-liners. Everything else \u2014 encryption at rest, single-use codes in the login path, full code clearance on disable \u2014 is implemented correctly.\n\n`packages/features/auth/lib/next-auth-options.ts` and `apps/web/pages/api/auth/two-factor/totp/disable.ts` \u2014 both need `.toLowerCase()` on the user-supplied backup code before the `indexOf` comparison.\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| packages/features/auth/lib/next-auth-options.ts | Adds backup-code login path; contains a case-sensitivity bug where user-supplied input is not `.toLowerCase()`-d before `indexOf` comparison against stored lowercase-hex codes. |\n| apps/web/pages/api/auth/two-factor/totp/disable.ts | Adds backup-code path to the disable endpoint; same case-sensitivity bug present in the `indexOf` check; backup codes are fully cleared on successful disable which is correct. |\n| apps/web/pages/api/auth/two-factor/totp/setup.ts | Generates 10 random 5-byte hex backup codes, encrypts them, and persists them alongside the TOTP key; returns plaintext codes to the frontend (once, intentionally). |\n| apps/web/components/settings/EnableTwoFactorModal.tsx | Introduces the DisplayBackupCodes step with copy/download actions; `resetState` doesn't clear `backupCodes`/`backupCodesUrl`, leaving a stale object URL on early cancellation. |\n| apps/web/components/auth/BackupCode.tsx | New component for entering a backup code; functional but the exported function is incorrectly named `TwoFactor` instead of `BackupCode`. |\n| apps/web/pages/auth/login.tsx | Adds backup-code form field and a 'Lost access' toggle; routes new error codes to user-facing messages; password field value is preserved across the 2FA step so password re-validation works correctly. |\n\n</details>\n\n\n\n<h3>Flowchart</h3>\n\n```mermaid\n%%{init: {'theme': 'neutral'}}%%\nflowchart TD\n    A[User: enable 2FA] --> B[POST /totp/setup with password]\n    B --> C[Generate TOTP key + backup codes]\n    C --> D[Encrypt and store both in DB]\n    D --> E[Return codes to frontend]\n    E --> F[User scans QR code]\n    F --> G[POST /totp/enable with TOTP code]\n    G --> H[twoFactorEnabled = true]\n    H --> I[Show backup codes to user]\n\n    J[User: login] --> K{twoFactor enabled?}\n    K -- No --> L[Login success]\n    K -- Yes --> M{Input type?}\n    M -- TOTP code --> N[Verify TOTP]\n    M -- Backup code --> O[Decrypt stored codes]\n    O --> P{indexOf match?}\n    P -- Match --> Q[Nullify used code, re-encrypt]\n    Q --> L\n    P -- No match --> R[IncorrectBackupCode error]\n\n    S[User: disable 2FA] --> T[Verify password]\n    T --> U{Backup code provided?}\n    U -- Yes --> V[Decrypt stored codes]\n    V --> W{indexOf match?}\n    W -- Match --> X[Clear all codes, disable 2FA]\n    W -- No match --> Y[IncorrectBackupCode error]\n    U -- No --> Z[Verify TOTP, then disable]\n```\n\n<!-- greptile_failed_comments -->\n<details><summary><h3>Comments Outside Diff (3)</h3></summary>\n\n1. `apps/web/pages/api/auth/two-factor/totp/disable.ts`, line 61-63 ([link](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr10600__20260406/blob/54486a059cd2032042189bb565646ba4e0f6bd61/apps/web/pages/api/auth/two-factor/totp/disable.ts#L61-L63)) \n\n   <a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=7\" align=\"top\"></a> **Same case-sensitivity bug in the disable flow**\n\n   The same `indexOf` comparison is used here without lowercasing the user-supplied input. Since stored codes are always lowercase hex, an uppercase entry will always return `-1` and block the user from disabling 2FA via their backup code.\n\n\n2. `apps/web/components/auth/BackupCode.tsx`, line 7 ([link](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr10600__20260406/blob/54486a059cd2032042189bb565646ba4e0f6bd61/apps/web/components/auth/BackupCode.tsx#L7)) \n\n   <a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **Exported function is named `TwoFactor` instead of `BackupCode`**\n\n   The file is `BackupCode.tsx` but the default export is named `TwoFactor`. This is the same name as the TOTP component in `TwoFactor.tsx`, making grep/IDE navigation misleading and stack traces confusing.\n\n\n3. `apps/web/components/settings/EnableTwoFactorModal.tsx`, line 71-75 ([link](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr10600__20260406/blob/54486a059cd2032042189bb565646ba4e0f6bd61/apps/web/components/settings/EnableTwoFactorModal.tsx#L71-L75)) \n\n   <a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **`resetState` doesn't clear `backupCodes` or `backupCodesUrl`**\n\n   If the user cancels mid-flow (after the password step has already fetched codes), re-opening the modal jumps straight to `ConfirmPassword` but the stale `backupCodes`/`backupCodesUrl` values remain in state. A second password confirmation will overwrite them, so this isn't catastrophic, but it's worth clearing them for correctness and to ensure the previous object URL is revoked before the modal is reopened.\n\n</details>\n\n<!-- /greptile_failed_comments -->\n\n<sub>Reviews (1): Last reviewed commit: [\"Merge branch &#39;main&#39; into feat/2fa-backup...\"](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr10600__20260406/commit/54486a059cd2032042189bb565646ba4e0f6bd61) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629655)</sub>",
             "created_at": "2026-04-07T19:31:37Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/10600",
+        "review_comments": [
+          {
+            "path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+            "line": 1,
+            "body": "**CodeSheriff: Hallucinated API: PasswordField** [MEDIUM]\n\nPasswordField is not a valid export from @calcom/ui\n",
+            "created_at": "2026-04-10T05:04:41.209Z"
           }
         ]
       }
@@ -59525,6 +59954,11 @@
             "created_at": "2026-04-07T19:29:36Z"
           }
         ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/10967",
+        "review_comments": []
       }
     ]
   },
@@ -60749,6 +61183,18 @@
             "line": null,
             "body": "<h3>Greptile Summary</h3>\n\nThis PR converts `packages/app-store/index.ts` from static imports to dynamic `import()` calls and propagates the necessary `await` additions throughout the codebase (CalendarManager, EventManager, videoClient, payment handlers, and booking flows).\n\n- **P1 (\u00d73):** `vital/lib/reschedule.ts`, `wipemycalother/lib/reschedule.ts`, and `trpc/server/routers/viewer/bookings.tsx` all introduced `forEach(async ...)` to accommodate the new `await getCalendar(...)` call. `forEach` discards returned Promises \u2014 calendar and video event deletions become fire-and-forget, errors are silently lost as unhandled rejections, and the outer `try/catch` in the vital/wipemycalother files cannot catch them. These should use `for...of` loops instead (as done correctly in `videoClient.ts` and the `handleCancelBooking.ts` fallback path).\n- **P2:** The dynamic `import()` values in `index.ts` are placed directly in an object literal, so all 28 modules begin loading the moment the store is first required \u2014 the same eager-load footprint as before, just wrapped in Promises. True lazy loading would require thunk functions (`() => import(...)`).\n\n<h3>Confidence Score: 4/5</h3>\n\nNot safe to merge until the three `forEach(async)` usages are replaced with `for...of` loops to ensure calendar/video deletions are properly awaited.\n\nThree P1 defects introduced: calendar and video event deletions in reschedule flows (vital, wipemycalother, bookings.tsx) are now silently fire-and-forget due to `forEach` not awaiting async callbacks. The rest of the async migration (CalendarManager, EventManager, videoClient, payment handlers) is correct and uses proper `for...of` or `await` patterns.\n\npackages/app-store/vital/lib/reschedule.ts, packages/app-store/wipemycalother/lib/reschedule.ts, packages/trpc/server/routers/viewer/bookings.tsx\n\n<h3>Important Files Changed</h3>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n| packages/app-store/index.ts | Replaced static imports with dynamic `import()` calls, but all imports are still eagerly initiated at module load time \u2014 no true lazy loading benefit is achieved. |\n| packages/app-store/_utils/getCalendar.ts | Made async and added `await` for the appStore lookup \u2014 correct and straightforward change. |\n| packages/app-store/vital/lib/reschedule.ts | Introduced `forEach(async ...)` pattern \u2014 calendar/video deletions are now fire-and-forget with errors silently lost; the outer try/catch cannot catch async errors. |\n| packages/app-store/wipemycalother/lib/reschedule.ts | Same `forEach(async ...)` bug as vital/lib/reschedule.ts \u2014 calendar/video deletions are not awaited and errors are silently swallowed. |\n| packages/core/CalendarManager.ts | Correctly updated to await `getCalendar` calls in `getCachedResults`, `createEvent`, `updateEvent`, and `deleteEvent`; `getConnectedCalendars` now awaits the Promise-typed `calendar` property. |\n| packages/core/EventManager.ts | Updated to await `getCalendar` calls throughout \u2014 changes look correct. |\n| packages/core/videoClient.ts | Uses `for...of` loop with `await appStore[appName]` correctly \u2014 the async pattern is applied properly here. |\n| packages/features/bookings/lib/handleCancelBooking.ts | Most `getCalendar` usages are correctly awaited; pre-existing `forEach(async ...)` on line ~458 (not introduced by this PR) remains, but the new fallback path correctly uses `for...of`. |\n| packages/features/bookings/lib/handleNewBooking.ts | Correctly added `await getCalendar(credential)` in a context that was already inside an async function. |\n| packages/lib/payment/deletePayment.ts | Added `await` to appStore lookup \u2014 correct change within an async function. |\n| packages/lib/payment/handlePayment.ts | Added `await` to appStore lookup \u2014 correct change within an async function. |\n| packages/trpc/server/routers/viewer/bookings.tsx | Introduced `forEach(async ...)` for booking ref deletions \u2014 calendar and video event deletions are now unawaited, fire-and-forget tasks. |\n\n</details>\n\n\n\n<h3>Flowchart</h3>\n\n```mermaid\n%%{init: {'theme': 'neutral'}}%%\nflowchart TD\n    A[Module requires appStore index.ts] --> B[All dynamic imports start immediately at module load]\n    B --> C{Caller looks up app by key}\n    C --> D[await appStore of type]\n    D --> E[Resolved module namespace]\n\n    E --> F{App type?}\n    F -->|_calendar| G[getCalendar - now async]\n    F -->|_video| H[await appStore in videoClient]\n    F -->|_payment| I[await appStore in payment handlers]\n\n    G --> J{Caller loop pattern?}\n    J -->|for-of loop| K[Awaited correctly - CalendarManager, handleCancelBooking, EventManager]\n    J -->|forEach async| L[Fire-and-forget BUG - vital, wipemycalother, bookings.tsx]\n\n    L --> M[Deletion Promises are discarded]\n    M --> N[Errors become silent unhandled rejections]\n    M --> O[Execution continues without confirming deletion]\n```\n\n<!-- greptile_failed_comments -->\n<details><summary><h3>Comments Outside Diff (3)</h3></summary>\n\n1. `packages/app-store/vital/lib/reschedule.ts`, line 125-134 ([link](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr8087__20260406/blob/820d7fa87e0c824c5dee8082a33efadb1a2566f7/packages/app-store/vital/lib/reschedule.ts#L125-L134)) \n\n   <a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=7\" align=\"top\"></a> **`forEach(async)` doesn't await calendar deletions**\n\n   `Array.forEach` ignores the Promise returned by the async callback, so `await getCalendar(...)` and the subsequent `deleteEvent` call run as detached, fire-and-forget tasks. The outer `try/catch` also cannot catch errors from these async callbacks \u2014 they become unhandled Promise rejections. If deletion fails, the booking will still be marked cancelled/rescheduled but the calendar event will remain.\n\n\n2. `packages/app-store/wipemycalother/lib/reschedule.ts`, line 125-134 ([link](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr8087__20260406/blob/820d7fa87e0c824c5dee8082a33efadb1a2566f7/packages/app-store/wipemycalother/lib/reschedule.ts#L125-L134)) \n\n   <a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=7\" align=\"top\"></a> **`forEach(async)` \u2014 calendar deletions are fire-and-forget**\n\n   Same issue as in `vital/lib/reschedule.ts`: `forEach` discards the returned Promises, so the `await getCalendar(...)` and `deleteEvent` calls are unobserved. Errors become silent unhandled rejections and the function completes without confirming calendar events were removed.\n\n\n3. `packages/trpc/server/routers/viewer/bookings.tsx`, line 553-567 ([link](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr8087__20260406/blob/820d7fa87e0c824c5dee8082a33efadb1a2566f7/packages/trpc/server/routers/viewer/bookings.tsx#L553-L567)) \n\n   <a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=7\" align=\"top\"></a> **`forEach(async)` \u2014 calendar/video deletions are not awaited**\n\n   `forEach` does not await async callbacks, so the `await getCalendar(...)` call inside runs as a detached task. The `sendRequestRescheduleEmail` on line 570 (and anything after) runs immediately \u2014 before any calendar or video events are deleted. Errors inside the callback are silently lost.\n\n</details>\n\n<!-- /greptile_failed_comments -->\n\n<sub>Reviews (1): Last reviewed commit: [\"Merge branch &#39;main&#39; into techdebt/async-...\"](https://github.com/code-review-benchmark/cal_dot_com__cal.com__greptile-v4-1__pr8087__20260406/commit/820d7fa87e0c824c5dee8082a33efadb1a2566f7) | [Re-trigger Greptile](https://app.greptile.com/api/retrigger?id=27629643)</sub>",
             "created_at": "2026-04-07T19:30:55Z"
+          }
+        ]
+      },
+      {
+        "tool": "codesheriff",
+        "pr_url": "https://github.com/calcom/cal.com/pull/8087",
+        "review_comments": [
+          {
+            "path": "packages/core/videoClient.ts",
+            "line": 5,
+            "body": "**CodeSheriff: Hallucinated API: appStore[appName as keyof typeof appStore]** [HIGH]\n\nVariable 'appName' is not defined anywhere in the code\n",
+            "created_at": "2026-04-10T05:03:12.404Z"
           }
         ]
       }

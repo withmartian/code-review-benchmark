@@ -6,15 +6,23 @@
     "comments": [
       {
         "comment": "The OptimizedCursorPaginator in organization_auditlogs.py attempts to use negative slice offsets on Django querysets, but Django querysets do not support negative slicing and will raise an AssertionError.",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
       },
       {
         "comment": "When requests are authenticated with API keys or org auth tokens (which have user_id=None), organization_context.member is None. Line 71 attempts to access organization_context.member.has_global_access without checking if member is None, causing an AttributeError crash when optimized_pagination=true is used, even though the request passed all permission checks with valid org:write scope.",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
       },
       {
         "comment": "get_item_key assumes a numeric key, but the paginator is used with order_by=-datetime in the audit logs endpoint; calling math.floor/ceil on a datetime will raise a TypeError.",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "Importing non-existent OptimizedCursorPaginator",
+        "severity": "Low",
+        "category": "bug"
       }
     ]
   },
@@ -26,15 +34,18 @@
     "comments": [
       {
         "comment": "OptimizedCursorPaginator's negative-offset branch in get_result() passes cursor.offset directly as start_offset to queryset slicing when enable_advanced_features is True and cursor.offset < 0.",
-        "severity": "Critical"
+        "severity": "Critical",
+        "category": "bug"
       },
       {
         "comment": "In BasePaginator.get_result(), when cursor.is_prev is True, it sets start_offset = offset without clamping, allowing negative offset values to be passed to queryset slicing.",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
       },
       {
         "comment": "OptimizedCursorPaginator.get_item_key uses floor/ceil on a datetime key (order_by='-datetime'), causing TypeError.",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
       }
     ]
   },
@@ -46,15 +57,18 @@
     "comments": [
       {
         "comment": "In _set_sample_rate_from_error_sampling(), the check `if client_sample_rate:` treats 0.0 as falsy, so a sample_rate of 0.0 is silently skipped and never set on normalized_data.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "bug"
       },
       {
         "comment": "Using Python’s built-in hash() to build cache keys is non-deterministic across processes (hash randomization), so keys won’t match across workers and invalidate_upsampling_cache may fail to delete them. Use a deterministic serialization of project_ids for the cache key.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "data"
       },
       {
         "comment": "The upsampling eligibility check passes the outer dataset instead of the actual dataset used by scoped_dataset. In paths where the query ultimately runs against discover (e.g., dashboard split) while the original dataset is metrics, upsampling may be skipped even when all projects are allowlisted.",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "bug"
       }
     ]
   },
@@ -64,15 +78,18 @@
     "comments": [
       {
         "comment": "Null reference if github_authenticated_user state is missing",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "bug"
       },
       {
         "comment": "OAuth state uses pipeline.signature (static) instead of a per-request random value",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "security"
       },
       {
         "comment": "The code attempts to access integration.metadata[sender][login] without checking for the existence of the sender key. This causes a KeyError for integrations where the sender metadata was not set during creation",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
       }
     ]
   },
@@ -83,15 +100,18 @@
     "comments": [
       {
         "comment": "The BrowserReportingCollectorEndpoint returns HttpResponse objects but the endpoint inherits from Endpoint which expects rest_framework.response.Response objects.",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "api"
       },
       {
         "comment": "In BaseDetectorTypeValidator.update(), the validator incorrectly updates instance.type using validated_data.get('detector_type') instead of validated_data.get('type').",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "bug"
       },
       {
         "comment": "Using zip(error_ids, events.values()) assumes the get_multi result preserves the input order; dict value order is not guaranteed to match error_ids, so event data can be paired with the wrong ID (missing nodes also shift alignment).",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "bug"
       }
     ]
   },
@@ -101,23 +121,28 @@
     "comments": [
       {
         "comment": "In the SpanFlusher flush loop, metric tags inconsistently use 'shard' (e.g., in spans.buffer.flusher.produce and spans.buffer.segment_size_bytes) and 'shards' (in spans.buffer.flusher.wait_produce) for the same shard identifier value. This prevents correct metric aggregation across flush stages — dashboards and alerts filtering by tag 'shard' will miss data tagged as 'shards' and vice versa.",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "bug"
       },
       {
         "comment": "The test_basic function in test_consumer.py uses a monkeypatched time.sleep that returns immediately, but then calls time.sleep(0.1) expecting it to actually wait.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "test_gap"
       },
       {
         "comment": "Because flusher processes are created via multiprocessing.get_context('spawn').Process, they are instances of multiprocessing.context.SpawnProcess, which on POSIX is not a subclass of multiprocessing.Process, so this isinstance check will always be false and hung processes won't be killed here.",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
       },
       {
         "comment": "Sleep in test_consumer.py won’t actually wait because time.sleep was monkeypatched above; consider restoring sleep or using a different sync to ensure the flusher has time to process.",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "test_gap"
       },
       {
         "comment": "Breaking out of the loop when the deadline has elapsed can skip terminating remaining flusher processes, potentially leaving them running after shutdown; consider ensuring termination is attempted even if the deadline is exceeded.",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "concurrency"
       }
     ]
   },
@@ -127,19 +152,23 @@
     "comments": [
       {
         "comment": "The AssignmentSource dataclass uses queued: datetime = timezone.now() as a default field value, which evaluates timezone.now() once at class definition time and shares that single datetime instance across all objects.",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "concurrency"
       },
       {
         "comment": "The method name has a typo: test_from_dict_inalid_data should be test_from_dict_invalid_data.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "style"
       },
       {
         "comment": "Method name says 'empty_array' but tests empty dict - consider renaming to 'test_from_dict_empty_dict' for clarity.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "style"
       },
       {
         "comment": "to_dict() returns a datetime for queued; if this dict is passed in task kwargs (e.g., via apply_async), JSON serialization may fail depending on the serializer, which can cause enqueue errors.",
-        "severity": "Medium"
+        "severity": "Medium",
+        "category": "bug"
       }
     ]
   },
@@ -149,11 +178,13 @@
     "comments": [
       {
         "comment": "The function modifies the config variable to include display values but then returns the original monitor.config instead of the modified version.",
-        "severity": "High"
+        "severity": "High",
+        "category": "bug"
       },
       {
         "comment": "The code fetches MonitorCheckIn objects by ID when the required data already exists in previous_checkins. This creates an unnecessary database query.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "perf"
       }
     ]
   },
@@ -163,11 +194,13 @@
     "comments": [
       {
         "comment": "The magic number 50 for max_wait is used repeatedly throughout the tests. Consider extracting this as a named constant to improve maintainability.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "style"
       },
       {
         "comment": "The test test_thread_queue_parallel_error_handling has a docstring that doesn't match the test implementation.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "doc_defect"
       }
     ]
   },
@@ -177,11 +210,13 @@
     "comments": [
       {
         "comment": "MetricAlertDetectorHandler inherits from StatefulDetectorHandler but only contains pass, failing to implement its required abstract methods: counter_names (property), get_dedupe_value(), get_group_key_values(), and build_occurrence_and_event_data(). This will cause a TypeError at runtime when the class is instantiated.",
-        "severity": "High"
+        "severity": "High",
+        "category": "api"
       },
       {
         "comment": "Docstring says this returns a list of DetectorEvaluationResult, but the method now returns a dict keyed by DetectorGroupKey. Consider updating the docstring to match the new return type.",
-        "severity": "Low"
+        "severity": "Low",
+        "category": "doc_defect"
       }
     ]
   }

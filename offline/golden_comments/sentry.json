@@ -162,10 +162,6 @@
     "url": "https://github.com/getsentry/sentry/pull/95633",
     "comments": [
       {
-        "comment": "The queue.shutdown() method with 'immediate=False' parameter may not exist in the standard Python queue module. This could cause AttributeError at runtime. Verify the correct API or implement a custom shutdown mechanism.",
-        "severity": "High"
-      },
-      {
         "comment": "The magic number 50 for max_wait is used repeatedly throughout the tests. Consider extracting this as a named constant to improve maintainability.",
         "severity": "Low"
       },

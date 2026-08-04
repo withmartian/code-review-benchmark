@@ -12,10 +12,6 @@
         "severity": "Medium"
       },
       {
-        "comment": "This call won’t compile: dbSession.Exec(args...) is given a []interface{} where the first element is the query, but Exec’s signature requires a first parameter of type string (not an interface{} splat).",
-        "severity": "Medium"
-      },
-      {
         "comment": "The updateDevice function returns ErrDeviceLimitReached when rowsAffected == 0, but zero affected rows means the device doesn't exist or falls outside the time window, not that a limit was reached.",
         "severity": "Low"
       },

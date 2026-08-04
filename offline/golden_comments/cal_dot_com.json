@@ -40,7 +40,7 @@
     "url": "https://github.com/calcom/cal.com/pull/10967",
     "comments": [
       {
-        "comment": "Potential null reference if mainHostDestinationCalendar is undefined if evt.destinationCalendar is null or an empty array ",
+        "comment": "A null reference occurs in GoogleCalendarService.createEvent() and updateEvent() when mainHostDestinationCalendar is destructured from evt.destinationCalendar but evt.destinationCalendar is null or an empty array, causing mainHostDestinationCalendar to be undefined.",
         "severity": "High"
       },
       {
@@ -112,7 +112,7 @@
         "severity": "High"
       },
       {
-        "comment": "Invalid Zod schema syntax. Computed property keys like [z.string().toString()] are not valid in Zod object schemas and will cause runtime errors. ",
+        "comment": "The Zod schema in parseRefreshTokenResponse uses computed property keys [z.string().toString()] and [z.string().optional().toString()] in minimumTokenResponseSchema, which is invalid Zod syntax and will throw a runtime error.",
         "severity": "High"
       },
       {
@@ -148,7 +148,7 @@
     "url": "https://github.com/calcom/cal.com/pull/14740",
     "comments": [
       {
-        "comment": "Case sensitivity bypass in email blacklist",
+        "comment": "The addGuests.handler.ts blacklist check uses blacklistedGuestEmails.includes(guest) after lowercasing the blacklist but not the input guest emails, allowing attackers to bypass BLACKLISTED_GUEST_EMAILS restrictions by submitting emails with uppercase characters.",
         "severity": "High"
       },
       {
@@ -156,7 +156,7 @@
         "severity": "Critical"
       },
       {
-        "comment": "This calls the email sender with the original guests, so existing attendees included in the input will be treated as new when sending notifications, leading to incorrect emails.",
+        "comment": "The sendAddGuestsEmails function in email-manager.ts passes the full calendarEvent.attendees array when determining which attendees receive AttendeeScheduledEmail vs AttendeeAddGuestsEmail, but checks if newGuests.includes(attendee.email) where newGuests is the input guests array.",
         "severity": "Medium"
       },
       {

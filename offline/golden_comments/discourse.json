@@ -43,7 +43,7 @@
         "severity": "Medium"
       },
       {
-        "comment": "Regex pattern @(#{domains}) only matches domain suffixes, not full domains. evil.example.com would match whitelist entry example.com.",
+        "comment": "The regex pattern @(#{domains}) in email_in_restriction_setting? method only matches domain suffixes, not full domains with proper boundary anchoring. An attacker can register evil.example.com to bypass a whitelist entry for example.com.",
         "severity": "Medium"
       }
     ]
@@ -54,7 +54,7 @@
     "original_url": "https://github.com/discourse/discourse/commit/4f8aed295a29954023b2849c060ef4fb299d1b5d",
     "comments": [
       {
-        "comment": "SSRF vulnerability using open(url) without validation",
+        "comment": "The PollFeed job calls open(SiteSetting.feed_polling_url) without validating the URL, allowing an attacker who controls the feed_polling_url site setting to make the server fetch arbitrary internal or external URLs.",
         "severity": "Critical"
       },
       {
@@ -138,7 +138,7 @@
         "severity": "Medium"
       },
       {
-        "comment": "HTTP method mismatch in .remove_member - test uses PUT but remove_member action expects DELETE",
+        "comment": "The remove_member test uses xhr :put to call the remove_member action, but the route defines delete 'members' => 'groups#remove_member' requiring DELETE method.",
         "severity": "Medium"
       }
     ]
@@ -149,7 +149,7 @@
     "original_url": "https://github.com/discourse/discourse/commit/ecfa17b5a79dfdc91e7a4d50b42ae78a35d0a293",
     "comments": [
       {
-        "comment": "Thread-safety issue with lazy @loaded_locales",
+        "comment": "The @loaded_locales instance variable in translate_accelerator.rb is lazily initialized and accessed by multiple concurrent threads without synchronization.",
         "severity": "Low"
       },
       {
@@ -164,7 +164,7 @@
     "original_url": "https://github.com/discourse/discourse/commit/d1c69189f3c90ecf56013a8da904da9bff9a8e19",
     "comments": [
       {
-        "comment": "NoMethodError before_validation in EmbeddableHost",
+        "comment": "The EmbeddableHost model's before_validation callback calls self.host.sub! to strip http://, https://, and path segments, but if self.host is nil, this raises NoMethodError.",
         "severity": "Critical"
       },
       {

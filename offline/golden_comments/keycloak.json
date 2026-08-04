@@ -6,7 +6,7 @@
     "az_comment": "reviewed commit is not in the repo",
     "comments": [
       {
-        "comment": "ConditionalPasskeysEnabled() called without UserModel parameter",
+        "comment": "In UsernameForm.authenticate(), isConditionalPasskeysEnabled() is called without passing the required UserModel parameter.",
         "severity": "Medium"
       },
       {
@@ -20,7 +20,7 @@
     "url": "https://github.com/keycloak/keycloak/pull/32918",
     "comments": [
       {
-        "comment": "Recursive caching call using session instead of delegate",
+        "comment": "InfinispanIdentityProviderStorageProvider.getForLogin() recursively calls session.identityProviders().getById() instead of idpDelegate.getById(), causing the cache lookup to re-enter the same caching layer.",
         "severity": "Critical"
       },
       {
@@ -76,7 +76,7 @@
     "url": "https://github.com/keycloak/keycloak/pull/37038",
     "comments": [
       {
-        "comment": "Incorrect permission check in canManage() method",
+        "comment": "In GroupPermissionsV2.canManage(), the permission fallback checks for both VIEW and MANAGE scopes (hasPermission(null, AdminPermissionsSchema.VIEW, AdminPermissionsSchema.MANAGE)), but canManage() should only grant access for MANAGE scope, not VIEW. This means users with only VIEW permission on groups can pass the canManage() check, granting them write access they should not have. The canView() method correctly checks both VIEW and MANAGE, but canManage() should only check MANAGE.",
         "severity": "High"
       },
       {
@@ -112,7 +112,7 @@
     "url": "https://github.com/keycloak/keycloak/pull/37634",
     "comments": [
       {
-        "comment": "Wrong parameter in null check (grantType vs. rawTokenId)",
+        "comment": "In AccessTokenContext constructor, the fourth Objects.requireNonNull validates grantType twice instead of validating rawTokenId, allowing null rawTokenId values to pass validation.",
         "severity": "Critical"
       },
       {

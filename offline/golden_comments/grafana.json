@@ -16,7 +16,7 @@
         "severity": "Medium"
       },
       {
-        "comment": "Returning ErrDeviceLimitReached when no rows were updated is misleading; the device might not exist.",
+        "comment": "The updateDevice function returns ErrDeviceLimitReached when rowsAffected == 0, but zero affected rows means the device doesn't exist or falls outside the time window, not that a limit was reached.",
         "severity": "Low"
       },
       {
@@ -86,7 +86,7 @@
         "severity": "Medium"
       },
       {
-        "comment": "Bug: calling recordLegacyDuration when storage operation fails should be recordStorageDuration.",
+        "comment": "In DualWriterMode3's DeleteCollection method, when a storage operation fails, recordStorageDuration is incorrectly called with recordLegacyDuration instead.",
         "severity": "High"
       },
       {
@@ -128,7 +128,7 @@
         "severity": "Critical"
       },
       {
-        "comment": "Several methods such as NewInMemoryDB().RunCommands and db.QueryFramesInto return 'not implemented'.",
+        "comment": "The DB methods NewInMemoryDB().RunCommands, DB.QueryFramesInto, and DB.TablesList in pkg/expr/sql/db.go return hardcoded 'not implemented' errors after removing the go-duck dependency.",
         "severity": "High"
       }
     ]

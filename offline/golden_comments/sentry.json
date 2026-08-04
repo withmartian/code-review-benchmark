@@ -5,7 +5,7 @@
     "az_comment": "reviewed commit is not in the repo",
     "comments": [
       {
-        "comment": "Django querysets do not support negative slicing",
+        "comment": "The OptimizedCursorPaginator in organization_auditlogs.py attempts to use negative slice offsets on Django querysets, but Django querysets do not support negative slicing and will raise an AssertionError.",
         "severity": "High"
       },
       {
@@ -25,11 +25,11 @@
     "az_comment": "reviewed commit is not in the repo",
     "comments": [
       {
-        "comment": "OptimizedCursorPaginator negative-offset branch slices QuerySet with a negative start index",
+        "comment": "OptimizedCursorPaginator's negative-offset branch in get_result() passes cursor.offset directly as start_offset to queryset slicing when enable_advanced_features is True and cursor.offset < 0.",
         "severity": "Critical"
       },
       {
-        "comment": "BasePaginator negative-offset branch slices QuerySet with a negative start index",
+        "comment": "In BasePaginator.get_result(), when cursor.is_prev is True, it sets start_offset = offset without clamping, allowing negative offset values to be passed to queryset slicing.",
         "severity": "High"
       },
       {
@@ -45,7 +45,7 @@
     "az_comment": "reviewed commit is not in the repo",
     "comments": [
       {
-        "comment": "sample_rate = 0.0 is falsy and skipped",
+        "comment": "In _set_sample_rate_from_error_sampling(), the check `if client_sample_rate:` treats 0.0 as falsy, so a sample_rate of 0.0 is silently skipped and never set on normalized_data.",
         "severity": "Low"
       },
       {
@@ -82,11 +82,11 @@
     "az_comment": "there is no such PR, it is a mix of many PRs",
     "comments": [
       {
-        "comment": "Breaking changes in error response format",
+        "comment": "The BrowserReportingCollectorEndpoint returns HttpResponse objects but the endpoint inherits from Endpoint which expects rest_framework.response.Response objects.",
         "severity": "Medium"
       },
       {
-        "comment": "Detector validator uses wrong key when updating type",
+        "comment": "In BaseDetectorTypeValidator.update(), the validator incorrectly updates instance.type using validated_data.get('detector_type') instead of validated_data.get('type').",
         "severity": "Medium"
       },
       {
@@ -100,11 +100,11 @@
     "url": "https://github.com/getsentry/sentry/pull/93824",
     "comments": [
       {
-        "comment": "Inconsistent metric tagging with 'shard' and 'shards'",
+        "comment": "In the SpanFlusher flush loop, metric tags inconsistently use 'shard' (e.g., in spans.buffer.flusher.produce and spans.buffer.segment_size_bytes) and 'shards' (in spans.buffer.flusher.wait_produce) for the same shard identifier value. This prevents correct metric aggregation across flush stages — dashboards and alerts filtering by tag 'shard' will miss data tagged as 'shards' and vice versa.",
         "severity": "Medium"
       },
       {
-        "comment": "Fixed sleep in tests can be flaky; wait on condition instead",
+        "comment": "The test_basic function in test_consumer.py uses a monkeypatched time.sleep that returns immediately, but then calls time.sleep(0.1) expecting it to actually wait.",
         "severity": "Low"
       },
       {
@@ -126,7 +126,7 @@
     "url": "https://github.com/getsentry/sentry/pull/77754",
     "comments": [
       {
-        "comment": "Shared mutable default in dataclass timestamp",
+        "comment": "The AssignmentSource dataclass uses queued: datetime = timezone.now() as a default field value, which evaluates timezone.now() once at class definition time and shares that single datetime instance across all objects.",
         "severity": "Medium"
       },
       {

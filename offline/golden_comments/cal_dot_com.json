@@ -38,6 +38,11 @@
         "comment": "Because backupCodes are decrypted and mutated in memory before being written back, two concurrent login requests using the same backupCode could both pass this check and update, so a single backup code may effectively be accepted more than once if used concurrently, weakening the intended one-time-use semantics.",
         "severity": "High",
         "category": "concurrency"
+      },
+      {
+        "comment": "Object URL for backup codes is not revoked on component unmount, leading to a potential memory leak. This can cause increased memory usage over time, especially if the component is mounted and unmounted frequently.",
+        "severity": "Low",
+        "category": "perf"
       }
     ]
   },
@@ -69,6 +74,11 @@
         "comment": "The Calendar interface now requires createEvent(event, credentialId), but some implementations (e.g., Lark/Office365) still declare createEvent(event) only—this breaks the interface contract (also applies to other locations in the PR).",
         "severity": "Low",
         "category": "api"
+      },
+      {
+        "comment": "The `credential` may be undefined when passed to `updateEvent` if `reference.credentialId` is set but the credential is not found. This can lead to a runtime error when `updateEvent` is called with an undefined credential, which should be handled to prevent crashes.",
+        "severity": "High",
+        "category": "bug"
       }
     ]
   },
@@ -100,6 +110,11 @@
       {
         "comment": "When immediateDelete is true, the deleteScheduledEmailReminder function cancels the SendGrid email but fails to delete the corresponding WorkflowReminder record from the database. This creates orphaned database entries and is inconsistent with the immediateDelete: false path, which marks the record as cancelled. The SendGrid DELETE API call is also omitted in this path.",
         "severity": "High",
+        "category": "data"
+      },
+      {
+        "comment": "The 'cancelled' field is nullable, which can lead to existing records having null values instead of a default of false. This can cause incorrect behavior in the application when checking the cancellation status of reminders.",
+        "severity": "Medium",
         "category": "data"
       }
     ]
@@ -148,6 +163,26 @@
         "comment": "When the sync endpoint path is used, res is a fetch Response and has no .data; res?.data will be undefined and token.access_token will throw at runtime. This relies on a consistent return shape from refreshOAuthTokens, which isn’t guaranteed currently.",
         "severity": "High",
         "category": "bug"
+      },
+      {
+        "comment": "The `refreshOAuthTokens` function is passed `credentialId` instead of `userId`, which breaks the credential sync functionality by causing incorrect user lookups. This issue can lead to failures in syncing user credentials, impacting user experience.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The Salesforce integration checks `response.statusText` instead of `response.ok` when handling OAuth token refresh responses. This can lead to unreliable behavior, as a successful response may not be correctly identified, resulting in the use of stale credentials and potential authentication failures.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The `jsforce.Connection` is created using stale `credentialKey.access_token` and `credentialKey.instance_url` after a token refresh, which can lead to authentication failures and incorrect data access. Ensure that the connection is established using the refreshed token values instead.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The `appCredentialWebhookRequestBodySchema.parse` function can throw on invalid payloads, resulting in 500 Internal Server Errors instead of the expected 400 Bad Request responses. This can lead to confusion for clients and hinder proper error handling.",
+        "severity": "Medium",
+        "category": "api"
       }
     ]
   },
@@ -195,6 +230,11 @@
         "comment": "Starting with an array containing an empty string may cause validation issues. Consider starting with an empty array [] and handling the empty state in the MultiEmail component instead.",
         "severity": "Low",
         "category": "bug"
+      },
+      {
+        "comment": "The `sendAddGuestsEmails` function does not check the `disableStandardEmails` flags in the `EventType` metadata, which may result in sending emails to hosts/attendees even when standard emails are disabled for the event type.",
+        "severity": "Medium",
+        "category": "bug"
       }
     ]
   },
@@ -210,6 +250,16 @@
       {
         "comment": "logic: macOS-specific sed syntax with empty string after -i flag will fail on Linux systems",
         "severity": "Low",
+        "category": "bug"
+      },
+      {
+        "comment": "Throwing a generic Error for authentication failures results in a 500 response in tRPC. Instead, it should return a structured TRPCError with an appropriate code, such as FORBIDDEN, to accurately reflect the error type.",
+        "severity": "High",
+        "category": "api"
+      },
+      {
+        "comment": "Date is formatted with hardcoded 'en-US' locale instead of using the user's locale from useLocale, which can lead to incorrect date representation for users in different locales.",
+        "severity": "Medium",
         "category": "bug"
       }
     ]

@@ -46,6 +46,11 @@
         "comment": "OptimizedCursorPaginator.get_item_key uses floor/ceil on a datetime key (order_by='-datetime'), causing TypeError.",
         "severity": "High",
         "category": "bug"
+      },
+      {
+        "comment": "Accessing .has_global_access on organization_context.member can raise an AttributeError when organization_context is None, particularly for non-superuser non-member users.",
+        "severity": "High",
+        "category": "bug"
       }
     ]
   },
@@ -111,6 +116,21 @@
       {
         "comment": "Using zip(error_ids, events.values()) assumes the get_multi result preserves the input order; dict value order is not guaranteed to match error_ids, so event data can be paired with the wrong ID (missing nodes also shift alignment).",
         "severity": "Low",
+        "category": "bug"
+      },
+      {
+        "comment": "Hardcoded empty data passed to TableWidgetVisualization causes it to always render an empty table instead of displaying actual results when the feature flag is enabled.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "Validation logic incorrectly uses .get('timestamp'), which treats a timestamp of 0 as absent. It should directly check 'timestamp' in self.initial_data to ensure proper field presence detection, preventing both 'age=0' and 'timestamp' from passing mutual-exclusion validation.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "Analytics events are recorded before the feature flag check, resulting in analytics being logged for all requests, including those that return 404 due to the feature being disabled. This can lead to misleading analytics data.",
+        "severity": "Medium",
         "category": "bug"
       }
     ]
@@ -217,6 +237,11 @@
         "comment": "Docstring says this returns a list of DetectorEvaluationResult, but the method now returns a dict keyed by DetectorGroupKey. Consider updating the docstring to match the new return type.",
         "severity": "Low",
         "category": "doc_defect"
+      },
+      {
+        "comment": "Wrong value `6` passed for `group_2` occurrence — the data packet specifies `\"group_2\": 10`. Should be `10` to accurately reflect the test scenario, which will ensure the test produces the correct occurrence data.",
+        "severity": "Medium",
+        "category": "test_gap"
       }
     ]
   }

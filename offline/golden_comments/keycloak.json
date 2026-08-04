@@ -46,6 +46,16 @@
         "comment": "Dead code exists where ASN1Encoder instances are created and written to, but their results are immediately discarded. The actual encoding is performed by new ASN1Encoder instances created in the subsequent return statement, rendering the earlier operations useless.",
         "severity": "Low",
         "category": "perf"
+      },
+      {
+        "comment": "When length starts at -1 from indefinite-length encoding, the arithmetic 'length = length - bytes.length' will behave unexpectedly, potentially leading to incorrect processing of encoded data.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "Abstract order() method on CryptoProvider may break backward compatibility with existing implementations",
+        "severity": "Low",
+        "category": "speculative"
       }
     ]
   },
@@ -57,6 +67,11 @@
         "comment": "Incorrect method call for exit codes. The picocli.exit() method calls System.exit() directly, which is problematic:",
         "severity": "Medium",
         "category": "bug"
+      },
+      {
+        "comment": "Need to add changelog/release notes documenting the exit code change and migration guidance",
+        "severity": "Low",
+        "category": "doc_defect"
       }
     ]
   },
@@ -78,6 +93,16 @@
         "comment": "In getClientsWithPermission(String scope), iterating resourceStore.findByType(server, AdminPermissionsSchema.CLIENTS_RESOURCE_TYPE) and returning resource.getName() will only ever consider the type-level 'Clients' resource (per-client resources have no type) and return its name, while AvailableRoleMappingResource#getRoleIdsWithPermissions expects actual client IDs to pass to realm.getClientById, which can lead to incorrect behavior or a null client and subsequent failures.",
         "severity": "High",
         "category": "bug"
+      },
+      {
+        "comment": "In ClientPermissionsV2.hasPermission, the method getResourceTypeResource could return null, leading to a NullPointerException in findByResource. Defensive null checks are needed to prevent this issue.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "Remove unused getEvaluationContext private method in ClientPermissionsV2 - it is defined but never called",
+        "severity": "Low",
+        "category": "style"
       }
     ]
   },
@@ -118,6 +143,11 @@
       },
       {
         "comment": "The method name 'santizeAnchors' should be 'sanitizeAnchors' (missing 'i').",
+        "severity": "Low",
+        "category": "style"
+      },
+      {
+        "comment": "Field HTML_TAGS should be declared as 'private static final' following Java naming conventions for constants",
         "severity": "Low",
         "category": "style"
       }

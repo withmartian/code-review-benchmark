@@ -381,8 +381,13 @@ async def main():
     parser.add_argument(
         "--dedup-groups",
         metavar="FILE",
-        help="Path to dedup_groups_strict.json (or loose) from step2_5. "
-             "Duplicate candidates in the same group will not be counted as FPs.",
+        help="Path to dedup_groups.json from step2_5. "
+             "Defaults to {model_dir}/dedup_groups.json if it exists.",
+    )
+    parser.add_argument(
+        "--no-dedup",
+        action="store_true",
+        help="Disable dedup even if dedup_groups.json exists in the model directory.",
     )
     parser.add_argument(
         "--evaluations-file",
@@ -416,16 +421,21 @@ async def main():
             all_candidates = json.load(f)
         print(f"Loaded candidates from {candidates_file}")
 
-    # Load dedup groups if provided
+    # Load dedup groups: explicit path > auto-detect in model dir > disabled
     all_dedup_groups: dict = {}
-    if args.dedup_groups:
-        dedup_path = Path(args.dedup_groups)
-        if not dedup_path.exists():
+    if args.no_dedup:
+        print("Dedup: disabled (--no-dedup)")
+    else:
+        dedup_path = Path(args.dedup_groups) if args.dedup_groups else model_dir / "dedup_groups.json"
+        if dedup_path.exists():
+            with open(dedup_path) as f:
+                all_dedup_groups = json.load(f)
+            print(f"Loaded dedup groups from {dedup_path}")
+        elif args.dedup_groups:
             print(f"Error: dedup groups file not found: {dedup_path}")
             return
-        with open(dedup_path) as f:
-            all_dedup_groups = json.load(f)
-        print(f"Loaded dedup groups from {dedup_path}")
+        else:
+            print("Dedup: no dedup_groups.json found in model dir, running without dedup")
 
     # Load state
     state = EvaluationState.load(evaluations_file)

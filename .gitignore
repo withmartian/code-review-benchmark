@@ -23,6 +23,10 @@ target/
 # Output data
 output/
 results/
+analysis/*
+
+# Local scripts
+online/etl/scripts/
 
 # Generated exports
 *.xlsx
@@ -30,6 +34,7 @@ results/
 # Test and coverage
 .pytest_cache/
 .coverage
+.hypothesis/
 htmlcov/
 
 # Linters

@@ -16,6 +16,7 @@ from typing import Any
 
 from db.connection import DBAdapter
 from db.repository import PRRepository
+from pipeline.actors import same_github_actor
 
 logger = logging.getLogger(__name__)
 
@@ -108,10 +109,10 @@ def _extract_pr_metadata(bq_events: list[dict]) -> dict:
                 meta["pr_author"] = (pr_obj.get("user") or {}).get("login")
             if meta["pr_created_at"] is None:
                 meta["pr_created_at"] = pr_obj.get("created_at")
-            if meta["pr_merged"] is None:
-                if payload.get("action") == "closed" and pr_obj.get("merged"):
+            if payload.get("action") == "closed":
+                if pr_obj.get("merged"):
                     meta["pr_merged"] = True
-                elif payload.get("action") == "closed":
+                elif meta["pr_merged"] is None:
                     meta["pr_merged"] = False
         elif event["type"] in ("PullRequestReviewEvent", "PullRequestReviewCommentEvent"):
             pr_obj = payload.get("pull_request", {})
@@ -121,6 +122,15 @@ def _extract_pr_metadata(bq_events: list[dict]) -> dict:
                 meta["pr_author"] = (pr_obj.get("user") or {}).get("login")
             if meta["pr_created_at"] is None:
                 meta["pr_created_at"] = pr_obj.get("created_at")
+        elif event["type"] == "IssueCommentEvent":
+            issue_obj = payload.get("issue", {})
+            pr_obj = issue_obj.get("pull_request", {})
+            if not meta["pr_title"]:
+                meta["pr_title"] = issue_obj.get("title", "")
+            if meta["pr_author"] is None:
+                meta["pr_author"] = (issue_obj.get("user") or {}).get("login")
+            if meta["pr_created_at"] is None:
+                meta["pr_created_at"] = issue_obj.get("created_at")
     return meta
 
 
@@ -391,12 +401,14 @@ def _compute_stats(target_user: str, timeline: list[TimelineEvent], threads: lis
     stats.total_events = len(timeline)
     stats.total_commits = sum(1 for e in timeline if e.event_type == "commit")
     stats.total_review_comments_by_target = sum(
-        1 for e in timeline if e.event_type == "review_comment" and e.actor == target_user
+        1 for e in timeline if e.event_type == "review_comment" and same_github_actor(e.actor, target_user)
     )
     stats.total_review_threads = len(threads)
     stats.resolved_threads = sum(1 for t in threads if t.is_resolved)
     stats.target_user_comments_count = sum(
-        1 for e in timeline if e.actor == target_user and e.event_type in ("review_comment", "issue_comment", "review")
+        1
+        for e in timeline
+        if same_github_actor(e.actor, target_user) and e.event_type in ("review_comment", "issue_comment", "review")
     )
     return stats
 
@@ -404,10 +416,10 @@ def _compute_stats(target_user: str, timeline: list[TimelineEvent], threads: lis
 def _determine_roles(target_user: str, timeline: list[TimelineEvent], pr_author: str | None) -> list[str]:
     """Determine what roles the target user played in this PR."""
     roles: set[str] = set()
-    if pr_author == target_user:
+    if same_github_actor(pr_author, target_user):
         roles.add("author")
     for e in timeline:
-        if e.actor != target_user:
+        if not same_github_actor(e.actor, target_user):
             continue
         if e.event_type in ("review", "review_comment"):
             roles.add("reviewer")
@@ -475,11 +487,24 @@ async def assemble_pr(
     chatbot_username: str,
 ) -> bool:
     """Assemble a single PR and save to DB. Returns True if successful."""
+    from pipeline.quality import serialize_engagement_signals
+
     record = assemble_pr_from_row(pr_row, chatbot_username)
     if record is None:
         return False
 
     await repo.mark_assembled(pr_row["id"], record)
+
+    # Compute and store engagement signals from the assembled timeline
+    engagement_json = serialize_engagement_signals(
+        record, chatbot_username, pr_author=record.get("pr_author"),
+    )
+    await repo.db.execute(
+        *repo.db._translate_params(
+            "UPDATE prs SET engagement_signals = $1 WHERE id = $2",
+            (engagement_json, pr_row["id"]),
+        )
+    )
 
     # Also update metadata from BQ events
     await repo.update_metadata(

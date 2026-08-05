@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 // ---------------------------------------------------------------------------
 // Enums — filter dimensions parsed from pr_labels JSON
@@ -84,6 +84,7 @@ impl Severity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct PrRecord {
+    pub pr_id: i64,
     pub chatbot_idx: u8,
     pub bot_reviewed_at: Option<DateTime<Utc>>,
     pub precision: Option<f32>,
@@ -93,6 +94,16 @@ pub struct PrRecord {
     pub domain: Option<Domain>,
     pub pr_type: Option<PrType>,
     pub severity: Option<Severity>,
+    pub self_authored: bool,
+    pub has_reviews: bool,
+    pub pr_author_is_bot: bool,
+    pub repo_name_idx: u32,
+    /// Index into Snapshot.authors (lowercased), or u32::MAX if unknown
+    pub author_idx: u32,
+    // Engagement signals (from engagement_signals JSON column)
+    pub has_human_engagement: bool,
+    pub human_reviewer_count: u8,
+    pub commits_after_review: u16,
 }
 
 // ---------------------------------------------------------------------------
@@ -123,6 +134,10 @@ pub struct Snapshot {
     pub chatbots: Vec<ChatbotInfo>,
     pub languages: Vec<String>,
     pub volumes: BTreeMap<NaiveDate, Vec<VolumeRecord>>,
+    /// repo_name_idx -> number of unique PR authors in that repo
+    pub repo_contributor_counts: HashMap<u32, u32>,
+    /// (repo_name_idx, author_idx, chatbot_idx) -> list of pr_ids for random sampling
+    pub author_repo_prs: HashMap<(u32, u32, u8), Vec<i64>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +159,21 @@ pub struct FilterParams {
     pub min_prs_per_day: usize,
     pub min_total_prs: usize,
     pub include_ignored: bool,
+    pub exclude_self_authored: bool,
+    pub require_reviews: bool,
+    pub exclude_bot_authored: bool,
+    /// Exclude PRs from repos with fewer unique contributors than this
+    pub min_repo_contributors: Option<u32>,
+    /// Cap: exclude PRs where (repo, author, bot) triple exceeds this count
+    pub max_author_repo_prs: Option<u32>,
+    /// Only include PRs with human engagement (comments or commits after bot review)
+    pub require_human_engagement: bool,
+    /// Minimum distinct human reviewers (excluding PR author)
+    pub min_human_reviewers: Option<u32>,
+    /// Minimum commits after bot review
+    pub min_commits_after_review: Option<u32>,
+    /// Hide bots with fewer than this many scored PRs in the period
+    pub min_scored_prs: usize,
 }
 
 impl Default for FilterParams {
@@ -162,6 +192,15 @@ impl Default for FilterParams {
             min_prs_per_day: 0,
             min_total_prs: 0,
             include_ignored: false,
+            exclude_self_authored: false,
+            require_reviews: false,
+            exclude_bot_authored: false,
+            min_repo_contributors: None,
+            max_author_repo_prs: None,
+            require_human_engagement: false,
+            min_human_reviewers: None,
+            min_commits_after_review: None,
+            min_scored_prs: 0,
         }
     }
 }

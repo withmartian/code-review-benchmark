@@ -18,6 +18,7 @@ from llm.prompts import JUDGE_MATCHING
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
+from pipeline.actors import same_github_actor
 
 logger = logging.getLogger(__name__)
 
@@ -35,30 +36,29 @@ def _find_bot_review_commit(
     2. Fallback: original_commit_id on review_comment events in assembled timeline
     3. Last resort: last commit before bot's first comment timestamp
     """
-    bot_user_lower = chatbot_username.lower()
-
     # Strategy 1: raw reviews
     for r in reviews:
-        author = (r.get("author") or r.get("user", {}).get("login", "")).lower()
-        if author == bot_user_lower and r.get("commit_id"):
+        author = r.get("author") or r.get("user", {}).get("login", "")
+        if same_github_actor(author, chatbot_username) and r.get("commit_id"):
             return r["commit_id"]
 
     # Strategy 2: review_comment events with original_commit_id
     for e in events:
-        if e.get("event_type") == "review_comment":
-            actor = (e.get("actor") or "").lower()
-            if actor == bot_user_lower:
-                data = e.get("data", {})
-                if data.get("original_commit_id"):
-                    return data["original_commit_id"]
-                if data.get("commit_id"):
-                    return data["commit_id"]
+        if e.get("event_type") == "review_comment" and same_github_actor(e.get("actor"), chatbot_username):
+            data = e.get("data", {})
+            if data.get("original_commit_id"):
+                return data["original_commit_id"]
+            if data.get("commit_id"):
+                return data["commit_id"]
 
     # Strategy 3: last commit before bot's first comment timestamp
     bot_first_ts = None
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor == bot_user_lower and e.get("event_type") in ("review", "review_comment", "issue_comment"):
+        if same_github_actor(e.get("actor"), chatbot_username) and e.get("event_type") in (
+            "review",
+            "review_comment",
+            "issue_comment",
+        ):
             bot_first_ts = e.get("timestamp")
             break
 
@@ -143,19 +143,24 @@ def _format_commits_with_diffs(commits: list[dict], details_by_sha: dict[str, di
 
 
 def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
-    """Format bot's review/review_comment/issue_comment events with full context."""
-    bot_user_lower = chatbot_username.lower()
+    """Format bot's review/review_comment/issue_comment events with full context.
+
+    Skips review_comment replies (in_reply_to_id set) — these are responses
+    to other commenters' threads, not original review suggestions.
+    """
     lines = []
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor != bot_user_lower:
+        if not same_github_actor(e.get("actor"), chatbot_username):
             continue
         etype = e.get("event_type", "")
         if etype not in ("review", "review_comment", "issue_comment"):
             continue
 
-        ts = e.get("timestamp", "")
         data = e.get("data", {})
+        if etype == "review_comment" and data.get("in_reply_to_id"):
+            continue
+
+        ts = e.get("timestamp", "")
 
         if etype == "review":
             state = data.get("state", "")
@@ -187,7 +192,6 @@ def _format_post_review_activity(
     hash_x: str | None,  # noqa: ARG001
 ) -> str:
     """Format post-review commits with diffs + all human comments/replies after bot review."""
-    bot_user_lower = chatbot_username.lower()
     sections = []
 
     # Post-review commits with diffs
@@ -199,16 +203,18 @@ def _format_post_review_activity(
     # We use the bot's first comment as the cutoff for "after bot review"
     bot_first_ts = None
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor == bot_user_lower and e.get("event_type") in ("review", "review_comment", "issue_comment"):
+        if same_github_actor(e.get("actor"), chatbot_username) and e.get("event_type") in (
+            "review",
+            "review_comment",
+            "issue_comment",
+        ):
             bot_first_ts = e.get("timestamp")
             break
 
     # All human activity after bot review
     human_lines = []
     for e in events:
-        actor = (e.get("actor") or "").lower()
-        if actor == bot_user_lower:
+        if same_github_actor(e.get("actor"), chatbot_username):
             continue
         ts = e.get("timestamp", "")
         etype = e.get("event_type", "")
@@ -414,13 +420,21 @@ async def analyze_prs(
     chatbot_username: str,
     limit: int = 100,
     since: str | None = None,
+    until: str | None = None,
+    sort_by: str = "reviewed",
 ) -> int:
     """Run LLM analysis on all assembled, unanalyzed PRs for a chatbot.
 
+    `since` is an inclusive lower bound on bot_reviewed_at; `until` is an exclusive
+    upper bound. `sort_by` controls priority: "reviewed" (bot_reviewed_at DESC) or
+    "sweep" (assembled_at DESC, for catching late-discovered PRs).
     Returns the number of PRs analyzed.
     """
     repo = PRRepository(db)
-    prs = await repo.get_assembled_not_analyzed(chatbot_id=chatbot_id, limit=limit, since=since)
+    prs = await repo.get_assembled_not_analyzed(
+        chatbot_id=chatbot_id, limit=limit, since=since, until=until,
+        sort_by=sort_by,
+    )
 
     if not prs:
         logger.info(f"No unanalyzed PRs for {chatbot_username}")

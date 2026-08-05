@@ -111,10 +111,19 @@ async def label_prs(
     chatbot_username: str,
     limit: int = 100,
     since: str | None = None,
+    until: str | None = None,
+    sort_by: str = "reviewed",
 ) -> int:
-    """Label all analyzed, unlabeled PRs for a chatbot. Returns count labeled."""
+    """Label all analyzed, unlabeled PRs for a chatbot. Returns count labeled.
+
+    `since` is an inclusive lower bound on bot_reviewed_at; `until` is an exclusive
+    upper bound. `sort_by` controls priority: "reviewed" or "sweep".
+    """
     repo = PRRepository(db)
-    prs = await repo.get_analyzed_not_labeled(chatbot_id=chatbot_id, limit=limit, since=since)
+    prs = await repo.get_analyzed_not_labeled(
+        chatbot_id=chatbot_id, limit=limit, since=since, until=until,
+        sort_by=sort_by,
+    )
 
     if not prs:
         logger.info(f"No unlabeled PRs for {chatbot_username}")

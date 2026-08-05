@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  offline:
+    name: Offline tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: offline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --dev
+      - run: uv run ruff check .
+      - run: uv run pytest tests/
+
+  online-etl:
+    name: Online ETL tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/etl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version-file: online/etl/.python-version
+      - run: uv sync --dev
+      - run: uv run ruff check .
+      - run: uv run pytest tests/

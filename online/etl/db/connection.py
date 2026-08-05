@@ -76,9 +76,10 @@ class DBAdapter:
         s = s.replace("JSONB", "TEXT")
         s = s.replace("NOW()", "datetime('now')")
         s = s.replace("BOOLEAN", "INTEGER")
+        s = s.replace("CURRENT_TIMESTAMP", "__CURRENT_TS__")
         s = s.replace("TIMESTAMPTZ", "TEXT")
         s = s.replace("TIMESTAMP", "TEXT")
-        s = s.replace("CURRENT_TEXT", "datetime('now')")
+        s = s.replace("__CURRENT_TS__", "CURRENT_TIMESTAMP")
         # Remove Postgres-specific DEFAULT true/false for boolean columns
         s = s.replace("DEFAULT TRUE", "DEFAULT 1")
         s = s.replace("DEFAULT FALSE", "DEFAULT 0")
@@ -118,19 +119,24 @@ class DBAdapter:
 
         Handles re-used parameters (e.g. $2 appearing twice in ON CONFLICT)
         by expanding the args list so each ? gets the right positional value.
+
+        Also strips PostgreSQL-style `::type` casts (e.g. `$2::timestamptz`) for
+        SQLite. The casts are needed in PG to disambiguate NULL parameter types
+        in expressions like `$2::timestamptz IS NULL OR col >= $2`; SQLite is
+        dynamically typed and handles NULL comparisons natively.
         """
         if self.is_postgres:
             return sql, self._coerce_args(args)
         if args is None:
-            return sql, args
-        # Find all $N references in order of appearance
-        refs = re.findall(r"\$(\d+)", sql)
+            # Still strip casts so DDL/queries with no params parse cleanly under SQLite.
+            return re.sub(r"::\w+", "", sql), args
+        sql_no_casts = re.sub(r"::\w+", "", sql)
+        refs = re.findall(r"\$(\d+)", sql_no_casts)
         if not refs:
-            return sql, args
-        # Build expanded args list matching each ? to the referenced $N
+            return sql_no_casts, args
         args_tuple = tuple(args)
         expanded = tuple(args_tuple[int(r) - 1] for r in refs)
-        translated = re.sub(r"\$\d+", "?", sql)
+        translated = re.sub(r"\$\d+", "?", sql_no_casts)
         return translated, expanded
 
     # -- Query execution -------------------------------------------------------

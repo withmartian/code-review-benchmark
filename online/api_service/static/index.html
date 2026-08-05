@@ -42,15 +42,31 @@ tr:hover td{background:#f9f9f9}
   </div>
   <label>F-beta (&beta;)</label>
   <input type="number" id="beta" value="1.0" min="0.1" max="10" step="0.1">
-  <label>Min PRs (total)</label>
+  <label title="Hide bots with fewer than this many total discovered PRs in the selected period">Min PRs (volume)</label>
   <input type="number" id="min-prs-total" value="0" min="0" step="1">
-  <label>Min PRs (per day)</label>
+  <label title="Hide bots with fewer than this many scored PRs in the selected period">Min scored PRs</label>
+  <input type="number" id="min-scored-prs" value="0" min="0" step="1">
+  <label title="Exclude days where a bot has fewer than this many scored PRs from the score average">Min daily sample size</label>
   <input type="number" id="min-prs" value="0" min="0" step="1">
   <label>Diff lines range</label>
   <div class="row">
     <div><input type="number" id="diff-min" value="0" min="0" step="50"></div>
     <div><input type="number" id="diff-max" value="2000" min="0" step="50"></div>
   </div>
+  <h3>Quality Filters</h3>
+  <label><input type="checkbox" id="exclude-self-authored"> Exclude self-authored</label>
+  <label><input type="checkbox" id="exclude-bot-authored"> Exclude bot-authored</label>
+  <label><input type="checkbox" id="require-reviews"> Require reviews</label>
+  <label>Min repo contributors</label>
+  <input type="number" id="min-repo-contributors" value="" min="0" step="1" placeholder="e.g. 2">
+  <label>Max PRs per (repo, author, bot)</label>
+  <input type="number" id="max-author-repo-prs" value="" min="0" step="1" placeholder="e.g. 50">
+  <h3>Engagement Filters</h3>
+  <label><input type="checkbox" id="require-human-engagement"> Require human engagement</label>
+  <label>Min human reviewers</label>
+  <input type="number" id="min-human-reviewers" value="" min="0" step="1" placeholder="e.g. 1">
+  <label>Min commits after review</label>
+  <input type="number" id="min-commits-after-review" value="" min="0" step="1" placeholder="e.g. 1">
   <h3>Label Filters</h3>
   <label>Domain</label><div class="cb-group" id="f-domain"></div>
   <label>Language</label><input type="text" class="search-input" placeholder="Type to filter..." oninput="filterCbs('f-language',this.value)"><div class="cb-group" id="f-language"></div>
@@ -126,7 +142,7 @@ async function init(){
   $('#end-date').value=d.end;
   // Build initial color map from all chatbots
   assignColors(o.chatbots);
-  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max','include-ignored'])
+  for(const id of['start-date','end-date','beta','min-prs-total','min-scored-prs','min-prs','diff-min','diff-max','exclude-self-authored','exclude-bot-authored','require-reviews','include-ignored','min-repo-contributors','max-author-repo-prs','require-human-engagement','min-human-reviewers','min-commits-after-review'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
 }
@@ -139,11 +155,25 @@ function qs(){
   p.set('beta',$('#beta').value||'1.0');
   const mpt=$('#min-prs-total').value;
   if(mpt&&mpt!=='0') p.set('min_total_prs',mpt);
+  const msp=$('#min-scored-prs').value;
+  if(msp&&msp!=='0') p.set('min_scored_prs',msp);
   const mp=$('#min-prs').value;
   if(mp&&mp!=='0') p.set('min_prs_per_day',mp);
   const dmin=$('#diff-min').value, dmax=$('#diff-max').value;
   if(dmin&&dmin!=='0') p.set('diff_lines_min',dmin);
   if(dmax) p.set('diff_lines_max',dmax);
+  if($('#exclude-self-authored').checked) p.set('exclude_self_authored','true');
+  if($('#exclude-bot-authored').checked) p.set('exclude_bot_authored','true');
+  if($('#require-reviews').checked) p.set('require_reviews','true');
+  const mrc=$('#min-repo-contributors').value;
+  if(mrc&&mrc!=='0') p.set('min_repo_contributors',mrc);
+  const marp=$('#max-author-repo-prs').value;
+  if(marp&&marp!=='0') p.set('max_author_repo_prs',marp);
+  if($('#require-human-engagement').checked) p.set('require_human_engagement','true');
+  const mhr=$('#min-human-reviewers').value;
+  if(mhr&&mhr!=='0') p.set('min_human_reviewers',mhr);
+  const mcar=$('#min-commits-after-review').value;
+  if(mcar&&mcar!=='0') p.set('min_commits_after_review',mcar);
   const j=(cls,key)=>{const v=checked(cls);if(v.length)p.set(key,v.join(','));};
   j('cb-bot','chatbot');j('cb-dom','domain');j('cb-lang','language');j('cb-prt','pr_type');j('cb-sev','severity');
   if($('#include-ignored').checked) p.set('include_ignored','true');

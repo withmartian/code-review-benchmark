@@ -74,7 +74,8 @@ SELECT
   e.actor.login AS actor,
   e.created_at,
   e.payload,
-  e.id AS event_id
+  e.id AS event_id,
+  e.repo.id AS repo_id
 FROM `githubarchive.day.20*` e
 INNER JOIN sampled_prs t ON e.repo.name = t.repo_name
 WHERE
@@ -152,7 +153,8 @@ SELECT
   e.actor.login AS actor,
   e.created_at,
   e.payload,
-  e.id AS event_id
+  e.id AS event_id,
+  e.repo.id AS repo_id
 FROM `githubarchive.day.20*` e
 INNER JOIN sampled_prs t ON e.repo.name = t.repo_name
 WHERE
@@ -188,10 +190,10 @@ def _extract_pr_metadata(events: list[dict]) -> dict:
                 meta["pr_author"] = (pr_obj.get("user") or {}).get("login")
             if meta["pr_created_at"] is None:
                 meta["pr_created_at"] = pr_obj.get("created_at")
-            if meta["pr_merged"] is None:
-                if payload.get("action") == "closed" and pr_obj.get("merged"):
+            if payload.get("action") == "closed":
+                if pr_obj.get("merged"):
                     meta["pr_merged"] = True
-                elif payload.get("action") == "closed":
+                elif meta["pr_merged"] is None:
                     meta["pr_merged"] = False
         elif event["type"] in ("PullRequestReviewEvent", "PullRequestReviewCommentEvent"):
             pr_obj = payload.get("pull_request", {})
@@ -201,6 +203,15 @@ def _extract_pr_metadata(events: list[dict]) -> dict:
                 meta["pr_author"] = (pr_obj.get("user") or {}).get("login")
             if meta["pr_created_at"] is None:
                 meta["pr_created_at"] = pr_obj.get("created_at")
+        elif event["type"] == "IssueCommentEvent":
+            issue_obj = payload.get("issue", {})
+            pr_obj = issue_obj.get("pull_request", {})
+            if not meta["pr_title"]:
+                meta["pr_title"] = issue_obj.get("title", "")
+            if meta["pr_author"] is None:
+                meta["pr_author"] = (issue_obj.get("user") or {}).get("login")
+            if meta["pr_created_at"] is None:
+                meta["pr_created_at"] = issue_obj.get("created_at")
     return meta
 
 
@@ -252,12 +263,16 @@ async def discover_prs(
     # Group events by PR
     events_by_key: dict[tuple[str, int], list[dict]] = {}
     pr_urls: dict[tuple[str, int], str] = {}
+    repo_ids: dict[tuple[str, int], int | None] = {}
 
     for row in rows:
         repo_name = row["repo_name"]
         pr_number = row["pr_number"]
         key = (repo_name, pr_number)
         pr_urls.setdefault(key, row.get("pr_url") or f"https://github.com/{repo_name}/pull/{pr_number}")
+        # BQ repo.id is stable across renames
+        if row.get("repo_id") is not None:
+            repo_ids[key] = int(row["repo_id"])
 
         payload_str = row.get("payload")
         payload = json.loads(payload_str) if isinstance(payload_str, str) else payload_str
@@ -302,6 +317,7 @@ async def discover_prs(
                 status="pending",
                 bq_events=events,
                 bot_reviewed_at=bot_reviewed_at,
+                repo_id=repo_ids.get((repo_name, pr_number)),
             )
             if was_inserted:
                 inserted += 1
@@ -361,6 +377,7 @@ async def discover_prs_batch(
     # Group events by (bot_username, repo_name, pr_number)
     events_by_key: dict[tuple[str, str, int], list[dict]] = {}
     pr_urls: dict[tuple[str, str, int], str] = {}
+    repo_ids: dict[tuple[str, str, int], int | None] = {}
 
     for row in rows:
         bot_username = row["bot_username"]
@@ -368,6 +385,8 @@ async def discover_prs_batch(
         pr_number = row["pr_number"]
         key = (bot_username, repo_name, pr_number)
         pr_urls.setdefault(key, row.get("pr_url") or f"https://github.com/{repo_name}/pull/{pr_number}")
+        if row.get("repo_id") is not None:
+            repo_ids[key] = int(row["repo_id"])
 
         payload_str = row.get("payload")
         payload = json.loads(payload_str) if isinstance(payload_str, str) else payload_str
@@ -413,6 +432,7 @@ async def discover_prs_batch(
                 status="pending",
                 bq_events=events,
                 bot_reviewed_at=bot_reviewed_at,
+                repo_id=repo_ids.get((bot_username, repo_name, pr_number)),
             )
             if was_inserted:
                 inserted += 1

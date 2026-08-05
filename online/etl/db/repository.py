@@ -11,6 +11,20 @@ from db import queries as q
 from db.connection import DBAdapter
 
 
+def _merge_bq_events(existing_raw: str | list | None, new_events: list[dict]) -> list[dict]:
+    """Merge new BQ events into existing ones, deduplicating by event_id."""
+    if existing_raw is None:
+        return new_events
+    old_events = json.loads(existing_raw) if isinstance(existing_raw, str) else existing_raw
+    seen_ids = {e.get("event_id") for e in old_events if e.get("event_id")}
+    unique_new = [e for e in new_events if e.get("event_id") not in seen_ids]
+    if not unique_new:
+        return old_events
+    merged = old_events + unique_new
+    merged.sort(key=lambda e: e.get("created_at", ""))
+    return merged
+
+
 class PRRepository:
     """High-level async database operations."""
 
@@ -46,10 +60,15 @@ class PRRepository:
         status: str = "pending",
         bq_events: list | None = None,
         bot_reviewed_at: str | None = None,
+        repo_id: int | None = None,
     ) -> bool:
-        """Insert a PR row (ON CONFLICT DO NOTHING for idempotency).
+        """Insert a PR row, merging bq_events on conflict.
 
-        Returns True if the row was actually inserted, False if it already existed.
+        On conflict (same chatbot_id, repo_name, pr_number), appends new BQ
+        events to existing ones (deduplicated by event_id) and fills in any
+        missing metadata (pr_merged, pr_author, etc.).
+
+        Returns True if the row was newly inserted, False if it already existed.
         """
         bq_json = json.dumps(bq_events) if bq_events is not None else None
         row = await self.db.fetchone(
@@ -66,9 +85,53 @@ class PRRepository:
                 status,
                 bq_json,
                 bot_reviewed_at,
+                repo_id,
             ),
         )
-        return row is not None
+        if row is not None:
+            return True
+
+        # Conflict: merge new bq_events into existing row
+        if bq_events:
+            existing = await self.get_pr(chatbot_id, repo_name, pr_number)
+            if existing:
+                old_events = json.loads(existing["bq_events"]) if isinstance(existing.get("bq_events"), str) else (existing.get("bq_events") or [])
+                merged_events = _merge_bq_events(existing.get("bq_events"), bq_events)
+                from pipeline.discover import _extract_pr_metadata
+                meta = _extract_pr_metadata(merged_events)
+                await self.db.execute(
+                    *self.db._translate_params(
+                        q.MERGE_PR_BQ_EVENTS,
+                        (
+                            json.dumps(merged_events),
+                            meta["pr_merged"],
+                            meta["pr_title"],
+                            meta["pr_author"],
+                            meta["pr_created_at"],
+                            existing["id"],
+                        ),
+                    )
+                )
+                # New events arrived — reset to pending so PR gets
+                # re-enriched/assembled/analyzed with the updated timeline.
+                # Skip reset for PRs already analyzed/labeled: post-merge events
+                if len(merged_events) > len(old_events) and existing.get("status") not in ("analyzed", "labeled"):
+                    await self.db.execute(
+                        *self.db._translate_params(
+                            "UPDATE prs SET status = 'pending', enrichment_step = NULL, "
+                            "assembled = NULL, assembled_at = NULL WHERE id = $1",
+                            (existing["id"],),
+                        )
+                    )
+                # Also set repo_id if we have it and existing doesn't
+                if repo_id and not existing.get("repo_id"):
+                    await self.db.execute(
+                        *self.db._translate_params(
+                            "UPDATE prs SET repo_id = $1 WHERE id = $2",
+                            (repo_id, existing["id"]),
+                        )
+                    )
+        return False
 
     async def get_pr(self, chatbot_id: int, repo_name: str, pr_number: int) -> dict[str, Any] | None:
         return await self.db.fetchone(q.GET_PR, (chatbot_id, repo_name, pr_number))
@@ -81,8 +144,33 @@ class PRRepository:
         return await self.db.fetchall(query, (chatbot_id, limit))
 
     async def get_assembled_not_analyzed(
-        self, chatbot_id: int | None = None, limit: int = 100, since: str | None = None
+        self,
+        chatbot_id: int | None = None,
+        limit: int = 100,
+        since: str | None = None,
+        until: str | None = None,
+        sort_by: str = "reviewed",
     ) -> list[dict[str, Any]]:
+        # `until` is exclusive: --since 2026-04-18 --until 2026-04-19 yields just 4/18.
+        # When `until` is set we use the bounded variant (which also handles since=None);
+        # otherwise we keep the existing fast paths to preserve query plans.
+        # `sort_by` == "sweep" uses assembled_at DESC (for catching late-discovered PRs).
+        if sort_by == "sweep":
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_SWEEP, (chatbot_id, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_SWEEP, (limit,)
+            )
+        if until is not None:
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_BOUNDED, (chatbot_id, since, until, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_BOUNDED, (since, until, limit)
+            )
         if since:
             if chatbot_id is not None:
                 return await self.db.fetchall(q.GET_ASSEMBLED_PRS_NOT_ANALYZED_SINCE, (chatbot_id, since, limit))
@@ -169,6 +257,9 @@ class PRRepository:
     ) -> None:
         await self.db.execute(q.UPDATE_PR_METADATA, (pr_title, pr_author, pr_created_at, pr_merged, pr_id))
 
+    async def update_pr_author(self, pr_id: int, pr_author: str) -> None:
+        await self.db.execute(q.UPDATE_PR_AUTHOR, (pr_author, pr_id))
+
     # -- LLM analyses ----------------------------------------------------------
 
     async def insert_analysis(
@@ -224,8 +315,31 @@ class PRRepository:
         )
 
     async def get_analyzed_not_labeled(
-        self, chatbot_id: int | None = None, limit: int = 100, since: str | None = None
+        self,
+        chatbot_id: int | None = None,
+        limit: int = 100,
+        since: str | None = None,
+        until: str | None = None,
+        sort_by: str = "reviewed",
     ) -> list[dict[str, Any]]:
+        # See note on get_assembled_not_analyzed: `until` is exclusive.
+        # `sort_by` == "sweep" uses analyzed_at DESC (for catching stragglers).
+        if sort_by == "sweep":
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ANALYZED_NOT_LABELED_BY_ASSEMBLED, (chatbot_id, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ANALYZED_NOT_LABELED_SWEEP, (limit,)
+            )
+        if until is not None:
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ANALYZED_NOT_LABELED_BOUNDED, (chatbot_id, since, until, limit)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ANALYZED_NOT_LABELED_BOUNDED, (since, until, limit)
+            )
         if since:
             if chatbot_id is not None:
                 return await self.db.fetchall(q.GET_ANALYZED_NOT_LABELED_SINCE, (chatbot_id, since, limit))

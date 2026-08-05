@@ -13,6 +13,34 @@ This script creates one dashboard HTML file with all models' data embedded:
 import json
 from pathlib import Path
 
+# Tools excluded from the dashboard (superseded versions, incomplete runs, etc.)
+# Anything matching these exact slugs or the "mra-" prefix is hidden.
+_HIDDEN_TOOLS: frozenset[str] = frozenset({
+    "qodo",
+    "greptile",
+    "linearb",
+    "bito",
+    "sentry",
+    "vercel",
+    "kodus",
+    "cubic-dev",
+    "cubic-v3",
+    "greptile-v4",
+    "mergemonkey",
+    "qodo-v22",
+    "qodo-v2-2",
+    "qodo-extended-summary",
+    "entelligence",
+    "mesa",
+    "codeant",
+})
+_HIDDEN_PREFIXES: tuple[str, ...] = ("mra-",)
+
+
+def _is_hidden(tool: str) -> bool:
+    return tool in _HIDDEN_TOOLS or any(tool.startswith(p) for p in _HIDDEN_PREFIXES)
+
+
 # Tool display configuration
 TOOL_DISPLAY_NAMES = {
     "graphite": "Graphite",
@@ -31,6 +59,16 @@ TOOL_DISPLAY_NAMES = {
     "cubic-dev": "Cubic",
     "sourcery": "Sourcery",
     "mesa": "Mesa",
+    "codeant": "CodeAnt",
+    "codeant-v2": "CodeAnt v2",
+    "claude-code": "Claude Code (CLI)",
+    "devin": "Devin",
+    "kodus-v2": "Kodus",
+    "greptile-v4": "Greptile v4",
+    "qodo-v2": "Qodo v2",
+    "qodo-extended-v2": "Qodo Extended",
+    "macroscope": "Macroscope",
+    "cubic-v2": "Cubic v2",
 }
 
 TOOL_COLORS = {
@@ -42,6 +80,7 @@ TOOL_COLORS = {
     "bugbot": "#3b82f6",
     "coderabbit": "#ec4899",
     "propel": "#14b8a6",
+    "propel-v2": "#0d9488",
     "copilot": "#6b7280",
     "baz": "#f97316",
     "greptile": "#22c55e",
@@ -50,6 +89,16 @@ TOOL_COLORS = {
     "cubic-dev": "#d946ef",
     "sourcery": "#84cc16",
     "mesa": "#f43f5e",
+    "codeant": "#e11d48",
+    "codeant-v2": "#fb7185",
+    "claude-code": "#d97706",
+    "devin": "#7c3aed",
+    "kodus-v2": "#059669",
+    "greptile-v4": "#16a34a",
+    "qodo-v2": "#7c3aed",
+    "qodo-extended-v2": "#6d28d9",
+    "macroscope": "#0891b2",
+    "cubic-v2": "#c026d3",
 }
 
 
@@ -127,6 +176,8 @@ def prepare_model_data(evaluations: dict, labels: dict) -> dict:
 
         tool_metrics = {}
         for tool_name, tool_eval in pr_evals.items():
+            if _is_hidden(tool_name):
+                continue
             all_tools.add(tool_name)
             tool_metrics[tool_name] = {
                 "tp": tool_eval.get("tp", 0),
@@ -1591,8 +1642,8 @@ def main():
         print(f"No model results found in {args.results_dir}")
         return
 
-    # Use first model as default
-    default_model = sorted(all_models_data.keys())[0]
+    # Use the model with the most tools evaluated as default
+    default_model = max(all_models_data.keys(), key=lambda m: len(all_models_data[m].get("tools", [])))
 
     # Generate HTML
     print(f"Generating HTML dashboard (default model: {default_model})...")

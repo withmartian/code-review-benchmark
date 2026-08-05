@@ -96,14 +96,41 @@ def find_golden_url(golden: dict[str, dict], original_repo: str, pr_number: int)
     return None
 
 
-def fetch_review_comments(org: str, repo: str, pr: int) -> list[dict]:
-    """Fetch all review comments from a PR."""
+def _is_bot(user: dict | None) -> bool:
+    """Return True if the GitHub user is a bot."""
+    if not user:
+        return False
+    if user.get("type") == "Bot":
+        return True
+    login = user.get("login", "")
+    return login.endswith("[bot]")
+
+
+# Tools that post their review comments as a human GitHub account rather than a bot.
+# For these, bot filtering is skipped and all human comments are collected.
+_NON_BOT_TOOLS: frozenset[str] = frozenset({"claude"})
+
+
+def fetch_review_comments(org: str, repo: str, pr: int, tool: str = "") -> list[dict]:
+    """Fetch review comments from a PR.
+
+    For most tools only bot-authored comments are collected, preventing human
+    trigger commands (e.g. '/propel review') from polluting candidate extraction.
+    Tools listed in _NON_BOT_TOOLS post reviews under a human account; for those
+    all human comments are collected as-is.
+    """
+    require_bot = tool not in _NON_BOT_TOOLS
     comments = []
+
+    def _include(user: dict | None) -> bool:
+        return _is_bot(user) if require_bot else True
 
     # Fetch PR review comments (inline code comments)
     try:
         review_comments = gh(["api", f"/repos/{org}/{repo}/pulls/{pr}/comments"])
         for c in review_comments:
+            if not _include(c.get("user")):
+                continue
             comments.append({
                 "path": c.get("path"),
                 "line": c.get("line") or c.get("original_line"),
@@ -117,6 +144,8 @@ def fetch_review_comments(org: str, repo: str, pr: int) -> list[dict]:
     try:
         reviews = gh(["api", f"/repos/{org}/{repo}/pulls/{pr}/reviews"])
         for r in reviews:
+            if not _include(r.get("user")):
+                continue
             if r.get("body"):
                 comments.append({
                     "path": None,
@@ -131,6 +160,8 @@ def fetch_review_comments(org: str, repo: str, pr: int) -> list[dict]:
     try:
         issue_comments = gh(["api", f"/repos/{org}/{repo}/issues/{pr}/comments"])
         for c in issue_comments:
+            if not _include(c.get("user")):
+                continue
             comments.append({
                 "path": None,
                 "line": None,
@@ -155,10 +186,10 @@ def fetch_pr_metadata(org: str, repo: str, pr: int) -> dict:
         return {"title": None, "url": None}
 
 
-def fetch_repo_data(org: str, repo_name: str) -> dict:
+def fetch_repo_data(org: str, repo_name: str, tool: str = "") -> dict:
     """Fetch both PR metadata and comments for a repo. Returns combined result."""
     pr_meta = fetch_pr_metadata(org, repo_name, 1)
-    comments = fetch_review_comments(org, repo_name, 1)
+    comments = fetch_review_comments(org, repo_name, 1, tool=tool)
     return {
         "repo_name": repo_name,
         "pr_meta": pr_meta,
@@ -250,7 +281,7 @@ def main():
     processed = 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_info = {
-            executor.submit(fetch_repo_data, args.org, repo_name): (repo_name, parsed, golden_url)
+            executor.submit(fetch_repo_data, args.org, repo_name, parsed["tool"]): (repo_name, parsed, golden_url)
             for repo_name, parsed, golden_url in to_process
         }
 

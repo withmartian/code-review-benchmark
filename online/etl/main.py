@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 from datetime import UTC
 import logging
 import sys
@@ -178,7 +179,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_ana.add_argument("--chatbot", help="Specific chatbot, or use --all")
     p_ana.add_argument("--all", action="store_true", dest="all_chatbots")
     p_ana.add_argument("--limit", type=int, default=100)
-    p_ana.add_argument("--since", help="Only analyze PRs reviewed since this date (e.g. '7d', '2026-02-05')")
+    p_ana.add_argument("--since", help="Inclusive lower bound on bot_reviewed_at (e.g. '7d', '2026-02-05')")
+    p_ana.add_argument(
+        "--until",
+        help=(
+            "Exclusive upper bound on bot_reviewed_at (e.g. '2d', '2026-04-19'). "
+            "With --since 2026-04-18 --until 2026-04-19 you get just 2026-04-18."
+        ),
+    )
+    p_ana.add_argument(
+        "--sort",
+        choices=["reviewed", "sweep"],
+        default="reviewed",
+        help="Sort order: 'reviewed' (default, bot_reviewed_at DESC) or 'sweep' (assembled_at DESC, catches late-merged PRs).",
+    )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
 
@@ -194,15 +208,33 @@ def build_parser() -> argparse.ArgumentParser:
     p_lbl.add_argument("--chatbot", help="Specific chatbot, or use --all")
     p_lbl.add_argument("--all", action="store_true", dest="all_chatbots")
     p_lbl.add_argument("--limit", type=int, default=100)
-    p_lbl.add_argument("--since", help="Only label PRs reviewed since this date (e.g. '7d', '2026-02-05')")
+    p_lbl.add_argument("--since", help="Inclusive lower bound on bot_reviewed_at (e.g. '7d', '2026-02-05')")
+    p_lbl.add_argument(
+        "--until",
+        help="Exclusive upper bound on bot_reviewed_at (e.g. '2d', '2026-04-19')",
+    )
+    p_lbl.add_argument(
+        "--sort",
+        choices=["reviewed", "sweep"],
+        default="reviewed",
+        help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'sweep' (analyzed_at DESC, for catching stragglers).",
+    )
     p_lbl.add_argument("--database-url")
     p_lbl.add_argument("--verbose", action="store_true")
 
     # volumes
-    p_vol = sub.add_parser("volumes", help="Fetch PR volume counts from BigQuery")
+    p_vol = sub.add_parser("volumes", help="Fetch PR volume counts from BigQuery or GitHub Search API")
     p_vol.add_argument("--chatbot", help="GitHub username of the chatbot")
     p_vol.add_argument(
         "--all", action="store_true", dest="all_chatbots", help="Fetch volumes for all registered chatbots"
+    )
+    p_vol.add_argument(
+        "--source", choices=["bq", "search-api"], default="search-api",
+        help="Data source: 'bq' for BigQuery/GH Archive (legacy), 'search-api' for GitHub Search API (default)",
+    )
+    p_vol.add_argument(
+        "--weekly", action="store_true",
+        help="(search-api only) Query in weekly chunks instead of daily. ~7x fewer API calls, less accurate per-day.",
     )
     p_vol.add_argument("--days-back", type=int, default=7)
     p_vol.add_argument("--start-date", help="YYYY-MM-DD")
@@ -216,6 +248,39 @@ def build_parser() -> argparse.ArgumentParser:
     p_bf.add_argument("--database-url")
     p_bf.add_argument("--batch-size", type=int, default=5000)
     p_bf.add_argument("--verbose", action="store_true")
+
+    # backfill-pr-author
+    p_bfa = sub.add_parser("backfill-pr-author", help="Backfill pr_author from BQ events, commits, and optionally GitHub API")
+    p_bfa.add_argument("--database-url")
+    p_bfa.add_argument("--limit", type=int, default=None, help="Limit PRs to process (for testing)")
+    p_bfa.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
+    p_bfa.add_argument("--use-api", action="store_true", help="Also fetch from GitHub API for unresolved PRs")
+    p_bfa.add_argument("--use-commits", action="store_true", help="Also try git commit author (low-confidence, off by default)")
+    p_bfa.add_argument("--verbose", action="store_true")
+
+    # backfill-metadata
+    p_bfm = sub.add_parser("backfill-metadata", help="Backfill pr_merged and repo_id from pr_api_raw and bq_events")
+    p_bfm.add_argument("--database-url")
+    p_bfm.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
+    p_bfm.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
+    p_bfm.add_argument("--verbose", action="store_true")
+
+    # backfill-api-raw
+    p_bar = sub.add_parser("backfill-api-raw", help="Fetch pr_api_raw from GitHub API for PRs missing it, sets pr_merged + repo_id")
+    p_bar.add_argument("--database-url")
+    p_bar.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
+    p_bar.add_argument("--status-filter", default="analyzed", help="Only fetch for PRs with this status (default: analyzed)")
+    p_bar.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
+    p_bar.add_argument("--verbose", action="store_true")
+
+    # backfill-engagement
+    p_bfe = sub.add_parser("backfill-engagement", help="Compute engagement_signals for assembled PRs missing them")
+    p_bfe.add_argument("--database-url")
+    p_bfe.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
+    p_bfe.add_argument("--batch-size", type=int, default=5000)
+    p_bfe.add_argument("--status-filter", default="analyzed", help="Only process PRs with this status (default: analyzed)")
+    p_bfe.add_argument("--dry-run", action="store_true")
+    p_bfe.add_argument("--verbose", action="store_true")
 
     # dashboard
     p_dash = sub.add_parser("dashboard", help="Launch Streamlit dashboard")
@@ -373,6 +438,28 @@ async def cmd_enrich(args: argparse.Namespace) -> None:
         await db.close()
 
 
+def _parse_time_bound(value: str | None) -> str | None:
+    """Parse a CLI time bound: relative ("7d") or absolute ("2026-02-05") -> ISO timestamp.
+
+    Returns None when value is falsy. Relative values are anchored to "now" (UTC).
+    Bare dates ("YYYY-MM-DD") are normalized to midnight UTC so asyncpg can bind
+    them to a timestamptz column — without this the bare-date form is forwarded
+    as a raw string and asyncpg raises DataError.
+    """
+    if not value:
+        return None
+    from datetime import datetime
+    from datetime import timedelta
+    import re
+
+    m = re.match(r"^(\d+)d$", value)
+    if m:
+        return (datetime.now(UTC) - timedelta(days=int(m.group(1)))).isoformat()
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        return f"{value}T00:00:00+00:00"
+    return value
+
+
 async def cmd_analyze(args: argparse.Namespace) -> None:
     from db.connection import DBAdapter
     from db.repository import PRRepository
@@ -386,16 +473,18 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
         logger.error("MARTIAN_API_KEY required")
         return
 
-    # Parse --since: supports relative ("7d") or absolute ("2026-02-05")
-    since = None
-    if args.since:
-        from datetime import datetime
-        from datetime import timedelta
-        import re
-
-        m = re.match(r"^(\d+)d$", args.since)
-        since = (datetime.now(UTC) - timedelta(days=int(m.group(1)))).isoformat() if m else args.since
-        logger.info(f"Filtering PRs reviewed since {since}")
+    since = _parse_time_bound(args.since)
+    until = _parse_time_bound(args.until)
+    sort_by = args.sort
+    if sort_by == "sweep":
+        if since or until:
+            logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
+        logger.info("Sweep mode: sorting by assembled_at DESC")
+    else:
+        if since:
+            logger.info(f"Filtering PRs reviewed since {since}")
+        if until:
+            logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -406,13 +495,21 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
         if args.all_chatbots:
             chatbots = await repo.get_all_chatbots()
             for bot in chatbots:
-                await analyze_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+                await analyze_prs(
+                    cfg, db, bot["id"], bot["github_username"],
+                    limit=args.limit, since=since, until=until,
+                    sort_by=sort_by,
+                )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
             if not bot:
                 logger.error(f"Chatbot '{args.chatbot}' not found.")
                 return
-            await analyze_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+            await analyze_prs(
+                cfg, db, bot["id"], bot["github_username"],
+                limit=args.limit, since=since, until=until,
+                sort_by=sort_by,
+            )
         else:
             logger.error("Specify --chatbot or --all")
     finally:
@@ -432,16 +529,18 @@ async def cmd_label(args: argparse.Namespace) -> None:
         logger.error("MARTIAN_API_KEY required")
         return
 
-    # Parse --since
-    since = None
-    if args.since:
-        from datetime import datetime
-        from datetime import timedelta
-        import re
-
-        m = re.match(r"^(\d+)d$", args.since)
-        since = (datetime.now(UTC) - timedelta(days=int(m.group(1)))).isoformat() if m else args.since
-        logger.info(f"Filtering PRs reviewed since {since}")
+    since = _parse_time_bound(args.since)
+    until = _parse_time_bound(args.until)
+    sort_by = args.sort
+    if sort_by == "sweep":
+        if since or until:
+            logger.warning("--since/--until are ignored in sweep mode (sweep processes all unlabeled PRs by analyzed_at)")
+        logger.info("Sweep mode: sorting by analyzed_at DESC")
+    else:
+        if since:
+            logger.info(f"Filtering PRs reviewed since {since}")
+        if until:
+            logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -452,13 +551,21 @@ async def cmd_label(args: argparse.Namespace) -> None:
         if args.all_chatbots:
             chatbots = await repo.get_all_chatbots()
             for bot in chatbots:
-                await label_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+                await label_prs(
+                    cfg, db, bot["id"], bot["github_username"],
+                    limit=args.limit, since=since, until=until,
+                    sort_by=sort_by,
+                )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
             if not bot:
                 logger.error(f"Chatbot '{args.chatbot}' not found.")
                 return
-            await label_prs(cfg, db, bot["id"], bot["github_username"], limit=args.limit, since=since)
+            await label_prs(
+                cfg, db, bot["id"], bot["github_username"],
+                limit=args.limit, since=since, until=until,
+                sort_by=sort_by,
+            )
         else:
             logger.error("Specify --chatbot or --all")
     finally:
@@ -472,7 +579,6 @@ async def cmd_volumes(args: argparse.Namespace) -> None:
     from db.connection import DBAdapter
     from db.repository import PRRepository
     from db.schema import create_tables
-    from pipeline.volumes import fetch_pr_volumes
 
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
@@ -499,8 +605,18 @@ async def cmd_volumes(args: argparse.Namespace) -> None:
         else:
             usernames = [args.chatbot]
 
-        logger.info(f"Fetching PR volumes for {len(usernames)} chatbot(s): {start_date} to {end_date}")
-        count = await fetch_pr_volumes(cfg, db, usernames, start_date, end_date)
+        source = args.source
+        logger.info(f"Fetching PR volumes ({source}) for {len(usernames)} chatbot(s): {start_date} to {end_date}")
+
+        if source == "search-api":
+            from pipeline.volumes import fetch_pr_volumes_search_api
+            count = await fetch_pr_volumes_search_api(
+                cfg, db, usernames, start_date, end_date, weekly=args.weekly,
+            )
+        else:
+            from pipeline.volumes import fetch_pr_volumes
+            count = await fetch_pr_volumes(cfg, db, usernames, start_date, end_date)
+
         logger.info(f"Done: {count} volume rows upserted")
     finally:
         await db.close()
@@ -537,6 +653,443 @@ async def cmd_backfill(args: argparse.Namespace) -> None:
                 break
         print()  # newline after progress bar
         logger.info(f"Backfill complete: {total} PRs updated")
+    finally:
+        await db.close()
+
+
+async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
+    from db.connection import DBAdapter
+    from db.schema import create_tables
+    from pipeline.backfill_pr_author import backfill_pr_author
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        stats = await backfill_pr_author(
+            cfg,
+            db,
+            limit=args.limit,
+            dry_run=args.dry_run,
+            use_api=args.use_api,
+            use_commits=args.use_commits,
+        )
+
+        mode = "DRY RUN" if args.dry_run else "DONE"
+        logger.info(
+            f"{mode} — backfill: total_missing={stats['total_missing']} "
+            f"from_bq={stats['updated_from_bq']} from_commits={stats['updated_from_commits']} "
+            f"from_api={stats['updated_from_api']} still_missing={stats['still_missing']} "
+            f"roles_updated={stats['roles_updated']}"
+        )
+    finally:
+        await db.close()
+
+
+async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
+    """Backfill pr_merged from pr_api_raw, repo_id from pr_api_raw, and fix assembled.pr_merged."""
+    import json as json_mod
+
+    from db.connection import DBAdapter
+    from db.schema import create_tables
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        limit_clause = f"LIMIT {args.limit}" if args.limit else ""
+        stats = {"merged_set": 0, "merged_corrected": 0, "assembled_fixed": 0, "repo_id_set": 0}
+
+        # Phase 1a: backfill pr_merged from pr_api_raw (NULL rows)
+        rows = await db.fetchall(f"""
+            SELECT id, repo_name, pr_number, pr_merged, pr_api_raw
+            FROM prs
+            WHERE pr_api_raw IS NOT NULL AND pr_merged IS NULL
+            ORDER BY id {limit_clause}
+        """)
+        logger.info(f"Phase 1a: {len(rows)} PRs with pr_api_raw but pr_merged IS NULL")
+        for i, row in enumerate(rows):
+            api_data = json_mod.loads(row["pr_api_raw"])
+            api_merged = api_data.get("merged")
+            if api_merged is not None:
+                if args.dry_run:
+                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): pr_merged=NULL -> {api_merged}")
+                else:
+                    await db.execute(*db._translate_params(
+                        "UPDATE prs SET pr_merged = $1 WHERE id = $2",
+                        (api_merged, row["id"]),
+                    ))
+                stats["merged_set"] += 1
+            if (i + 1) % 10_000 == 0:
+                logger.info(f"  Phase 1a progress: {i + 1}/{len(rows)}")
+
+        # Phase 1b: fix pr_merged=False that should be True (API is authoritative)
+        rows = await db.fetchall(f"""
+            SELECT id, repo_name, pr_number, pr_api_raw
+            FROM prs
+            WHERE pr_api_raw IS NOT NULL AND pr_merged = false
+            ORDER BY id {limit_clause}
+        """)
+        logger.info(f"Phase 1b: {len(rows)} PRs with pr_merged=False, checking against API")
+        for i, row in enumerate(rows):
+            api_data = json_mod.loads(row["pr_api_raw"])
+            if api_data.get("merged") is True:
+                if args.dry_run:
+                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): pr_merged=False -> True")
+                else:
+                    await db.execute(*db._translate_params(
+                        "UPDATE prs SET pr_merged = $1 WHERE id = $2",
+                        (True, row["id"]),
+                    ))
+                stats["merged_corrected"] += 1
+            if (i + 1) % 10_000 == 0:
+                logger.info(f"  Phase 1b progress: {i + 1}/{len(rows)}")
+
+        # Phase 2: fix assembled.pr_merged to match prs.pr_merged (patch assembled JSON)
+        # Process in batches to avoid OOM on large datasets
+        batch_size = 5_000
+        phase2_total = 0
+        last_id = 0
+        count_row = await db.fetchone(
+            "SELECT COUNT(*) as cnt FROM prs WHERE pr_merged IS NOT NULL AND assembled IS NOT NULL"
+        )
+        logger.info(f"Phase 2: ~{count_row['cnt']} assembled PRs to check assembled.pr_merged consistency")
+        while True:
+            batch_limit = f"LIMIT {min(batch_size, args.limit - phase2_total)}" if args.limit else f"LIMIT {batch_size}"
+            rows = await db.fetchall(f"""
+                SELECT id, repo_name, pr_number, pr_merged, assembled
+                FROM prs
+                WHERE pr_merged IS NOT NULL AND assembled IS NOT NULL AND id > {last_id}
+                ORDER BY id
+                {batch_limit}
+            """)
+            if not rows:
+                break
+            for row in rows:
+                assembled = json_mod.loads(row["assembled"])
+                if assembled.get("pr_merged") != row["pr_merged"]:
+                    assembled["pr_merged"] = row["pr_merged"]
+                    if args.dry_run:
+                        logger.info(
+                            f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): "
+                            f"assembled.pr_merged -> {row['pr_merged']}"
+                        )
+                    else:
+                        await db.execute(*db._translate_params(
+                            "UPDATE prs SET assembled = $1 WHERE id = $2",
+                            (json_mod.dumps(assembled), row["id"]),
+                        ))
+                    stats["assembled_fixed"] += 1
+                last_id = row["id"]
+            phase2_total += len(rows)
+            logger.info(f"  Phase 2 progress: {phase2_total}/{count_row['cnt']}")
+            if args.limit and phase2_total >= args.limit:
+                break
+
+        # Phase 3: backfill repo_id from pr_api_raw (base.repo.id)
+        phase3_total = 0
+        last_id = 0
+        count_row = await db.fetchone(
+            "SELECT COUNT(*) as cnt FROM prs WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL"
+        )
+        logger.info(f"Phase 3: {count_row['cnt']} PRs with pr_api_raw but no repo_id")
+        while True:
+            batch_limit = f"LIMIT {min(batch_size, args.limit - phase3_total)}" if args.limit else f"LIMIT {batch_size}"
+            rows = await db.fetchall(f"""
+                SELECT id, repo_name, pr_number, pr_api_raw
+                FROM prs
+                WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL AND id > {last_id}
+                ORDER BY id
+                {batch_limit}
+            """)
+            if not rows:
+                break
+            for row in rows:
+                api_data = json_mod.loads(row["pr_api_raw"])
+                repo_obj = api_data.get("base", {}).get("repo", {})
+                repo_id = repo_obj.get("id")
+                if repo_id:
+                    if args.dry_run:
+                        logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): repo_id={repo_id}")
+                    else:
+                        await db.execute(*db._translate_params(
+                            "UPDATE prs SET repo_id = $1 WHERE id = $2",
+                            (repo_id, row["id"]),
+                        ))
+                    stats["repo_id_set"] += 1
+                last_id = row["id"]
+            phase3_total += len(rows)
+            logger.info(f"  Phase 3 progress: {phase3_total}/{count_row['cnt']}")
+            if args.limit and phase3_total >= args.limit:
+                break
+
+        mode = "DRY RUN" if args.dry_run else "DONE"
+        logger.info(
+            f"{mode} — metadata backfill: "
+            f"merged_set={stats['merged_set']}, merged_corrected={stats['merged_corrected']}, "
+            f"assembled_fixed={stats['assembled_fixed']}, repo_id_set={stats['repo_id_set']}"
+        )
+
+        # Summary of what's still missing
+        still_null = await db.fetchone("SELECT COUNT(*) as cnt FROM prs WHERE pr_merged IS NULL")
+        no_repo_id = await db.fetchone("SELECT COUNT(*) as cnt FROM prs WHERE repo_id IS NULL")
+        logger.info(
+            f"Remaining gaps: pr_merged NULL={still_null['cnt']}, repo_id NULL={no_repo_id['cnt']} "
+            f"(these need API fetch or re-discover to resolve)"
+        )
+    finally:
+        await db.close()
+
+
+async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
+    """Fetch pr_api_raw from GitHub API for PRs missing it. Sets pr_merged + repo_id."""
+    import json as json_mod
+    import time as time_mod
+
+    from db.connection import DBAdapter
+    from db.schema import create_tables
+    from pipeline.enrich import RateLimitExhaustedError
+    from pipeline.enrich import TokenPool
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        limit_clause = f"LIMIT {args.limit}" if args.limit else ""
+        status_filter = args.status_filter
+
+        rows = await db.fetchall(
+            f"""
+            SELECT id, repo_name, pr_number
+            FROM prs
+            WHERE pr_api_raw IS NULL
+              AND status = '{status_filter}'
+            ORDER BY id
+            {limit_clause}
+            """
+        )
+        logger.info(f"Found {len(rows)} {status_filter} PRs missing pr_api_raw")
+
+        if not rows:
+            return
+
+        if args.dry_run:
+            for row in rows:
+                logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']})")
+            logger.info(f"[DRY RUN] Would fetch pr_api_raw for {len(rows)} PRs")
+            return
+
+        tokens = cfg.github_tokens if cfg.github_tokens else [cfg.github_token]
+        pool = TokenPool(tokens)
+        n_tokens = pool.size
+        n_workers = n_tokens * 10
+        logger.info(f"Using {n_tokens} token(s), {n_workers} workers")
+
+        queue: asyncio.Queue[dict | None] = asyncio.Queue()
+        stop_event = asyncio.Event()
+        updated = 0
+        skipped = 0
+
+        async def _worker(worker_id: int) -> None:
+            nonlocal updated, skipped
+            while True:
+                item = await queue.get()
+                if item is None:
+                    queue.task_done()
+                    break
+
+                pr_id = item["id"]
+                repo_name = item["repo_name"]
+                pr_number = item["pr_number"]
+
+                try:
+                    owner, repo = repo_name.split("/", 1)
+                except ValueError:
+                    skipped += 1
+                    queue.task_done()
+                    continue
+
+                gh = None
+                try:
+                    while True:
+                        gh = pool.get()
+                        if gh is None:
+                            wait = max(0, pool.earliest_reset() - time_mod.time()) + 5
+                            logger.warning(f"Worker {worker_id}: all tokens rate-limited, sleeping {wait:.0f}s")
+                            await asyncio.sleep(wait)
+                            continue
+                        try:
+                            resp = await gh.rest_get(f"/repos/{owner}/{repo}/pulls/{pr_number}")
+                            if resp is None:
+                                skipped += 1
+                                break
+
+                            data = resp.json()
+                            pr_merged = data.get("merged")
+                            repo_id = (data.get("base") or {}).get("repo", {}).get("id")
+
+                            await db.execute(*db._translate_params(
+                                "UPDATE prs SET pr_api_raw = $1, pr_merged = COALESCE($2, pr_merged), "
+                                "repo_id = COALESCE(repo_id, $3) WHERE id = $4",
+                                (json_mod.dumps(data), pr_merged, repo_id, pr_id),
+                            ))
+                            updated += 1
+                            break
+                        except RateLimitExhaustedError as e:
+                            pool.mark_limited(gh, e.reset_at)
+                            logger.info(f"Worker {worker_id}: token rate-limited, rotating ({pool.status_summary()})")
+                            gh = None
+                            continue
+                finally:
+                    if gh is not None:
+                        pool.release(gh)
+                    queue.task_done()
+
+        async def _progress_logger() -> None:
+            while not stop_event.is_set():
+                await asyncio.sleep(15)
+                total_done = updated + skipped
+                pct = total_done * 100 // len(rows) if rows else 0
+                logger.info(
+                    f"API progress: {total_done}/{len(rows)} ({pct}%) "
+                    f"[updated={updated} skipped={skipped}] "
+                    f"| Tokens: {pool.status_summary()}"
+                )
+
+        for row in rows:
+            await queue.put(row)
+        for _ in range(n_workers):
+            await queue.put(None)
+
+        workers = [asyncio.create_task(_worker(i)) for i in range(n_workers)]
+        progress_task = asyncio.create_task(_progress_logger())
+
+        await queue.join()
+        stop_event.set()
+        await asyncio.gather(*workers)
+        progress_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await progress_task
+
+        await pool.close()
+        logger.info(f"DONE — backfill-api-raw: updated={updated}, skipped={skipped}")
+    finally:
+        await db.close()
+
+
+async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
+    """Compute engagement_signals for assembled PRs that don't have them yet.
+
+    Uses cursor-based pagination (keyset on p.id) to avoid loading all assembled
+    JSON into memory at once.
+    """
+    import json as json_mod
+    import time
+
+    from db.connection import DBAdapter
+    from db.schema import create_tables
+    from pipeline.quality import compute_engagement_signals
+
+    cfg = DBConfig(verbose=args.verbose)
+    db_url = args.database_url or cfg.database_url
+    db = DBAdapter(db_url)
+    await db.connect()
+    await create_tables(db)
+
+    try:
+        status_filter = args.status_filter
+
+        # Get total count first (cheap — no assembled JSON loaded)
+        count_row = await db.fetchone(f"""
+            SELECT COUNT(*) as cnt FROM prs p
+            WHERE p.assembled IS NOT NULL AND p.engagement_signals IS NULL
+              AND p.status = '{status_filter}'
+        """)
+        total = count_row["cnt"] if count_row else 0
+        logger.info(f"Found {total} assembled PRs missing engagement_signals")
+
+        if total == 0:
+            return
+
+        batch_size = args.batch_size
+        updated = 0
+        last_id = 0
+        last_log = time.time()
+        limit = args.limit
+
+        while True:
+            if limit is not None and updated >= limit:
+                break
+
+            fetch_size = batch_size
+            if limit is not None:
+                fetch_size = min(batch_size, limit - updated)
+
+            rows = await db.fetchall(f"""
+                SELECT p.id, p.assembled, p.pr_author, c.github_username AS chatbot
+                FROM prs p
+                JOIN chatbots c ON c.id = p.chatbot_id
+                WHERE p.assembled IS NOT NULL
+                  AND p.engagement_signals IS NULL
+                  AND p.status = '{status_filter}'
+                  AND p.id > {last_id}
+                ORDER BY p.id
+                LIMIT {fetch_size}
+            """)
+
+            if not rows:
+                break
+
+            if args.dry_run:
+                for row in rows[:10]:
+                    assembled = json_mod.loads(row["assembled"])
+                    signals = compute_engagement_signals(
+                        assembled, row["chatbot"], pr_author=row.get("pr_author"),
+                    )
+                    logger.info(
+                        f"  [DRY] id={row['id']}: reviewers={signals['human_reviewer_count']} "
+                        f"comments={signals['human_comment_count']} "
+                        f"rounds={signals['back_and_forth_rounds']} "
+                        f"commits={signals['commits_after_review']} "
+                        f"engaged={signals['has_human_engagement']}"
+                    )
+                logger.info(f"DRY RUN — would process {total} PRs (showed first {min(10, len(rows))})")
+                return
+
+            for row in rows:
+                assembled = json_mod.loads(row["assembled"])
+                signals = compute_engagement_signals(
+                    assembled, row["chatbot"], pr_author=row.get("pr_author"),
+                )
+                signals_json = json_mod.dumps(signals)
+                await db.execute(
+                    *db._translate_params(
+                        "UPDATE prs SET engagement_signals = $1 WHERE id = $2",
+                        (signals_json, row["id"]),
+                    )
+                )
+                updated += 1
+
+            last_id = rows[-1]["id"]
+
+            now = time.time()
+            if now - last_log >= 15:
+                logger.info(f"  Progress: {updated}/{total}")
+                last_log = now
+
+        logger.info(f"DONE — backfill-engagement: {updated} PRs updated")
     finally:
         await db.close()
 
@@ -589,6 +1142,14 @@ def main() -> None:
         asyncio.run(cmd_volumes(args))
     elif args.command == "backfill":
         asyncio.run(cmd_backfill(args))
+    elif args.command == "backfill-pr-author":
+        asyncio.run(cmd_backfill_pr_author(args))
+    elif args.command == "backfill-metadata":
+        asyncio.run(cmd_backfill_metadata(args))
+    elif args.command == "backfill-api-raw":
+        asyncio.run(cmd_backfill_api_raw(args))
+    elif args.command == "backfill-engagement":
+        asyncio.run(cmd_backfill_engagement(args))
     elif args.command == "import":
         asyncio.run(cmd_import(args))
 

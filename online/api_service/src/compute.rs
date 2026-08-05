@@ -1,8 +1,41 @@
 use std::collections::{HashMap, HashSet};
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 use chrono::NaiveDate;
+use rand::seq::SliceRandom;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 
 use crate::model::*;
+
+/// Derive a deterministic seed from the filter parameters so the capping
+/// random sample is stable across repeated identical queries.
+fn params_seed(params: &FilterParams) -> u64 {
+    let mut h = DefaultHasher::new();
+    params.start_date.hash(&mut h);
+    params.end_date.hash(&mut h);
+    params.chatbots.hash(&mut h);
+    params.languages.hash(&mut h);
+    params.domains.hash(&mut h);
+    params.pr_types.hash(&mut h);
+    params.severities.hash(&mut h);
+    params.diff_lines_min.hash(&mut h);
+    params.diff_lines_max.hash(&mut h);
+    params.beta.to_bits().hash(&mut h);
+    params.min_prs_per_day.hash(&mut h);
+    params.min_total_prs.hash(&mut h);
+    params.include_ignored.hash(&mut h);
+    params.exclude_self_authored.hash(&mut h);
+    params.require_reviews.hash(&mut h);
+    params.exclude_bot_authored.hash(&mut h);
+    params.min_repo_contributors.hash(&mut h);
+    params.max_author_repo_prs.hash(&mut h);
+    params.require_human_engagement.hash(&mut h);
+    params.min_human_reviewers.hash(&mut h);
+    params.min_commits_after_review.hash(&mut h);
+    h.finish()
+}
 
 /// F-beta from precision and recall. Returns None if denominator is zero.
 pub fn f_beta(precision: f64, recall: f64, beta: f32) -> Option<f64> {
@@ -109,6 +142,50 @@ fn record_matches(record: &PrRecord, snapshot: &Snapshot, params: &FilterParams)
         }
     }
 
+    // Exclude self-authored PRs (bot reviewing its own PR)
+    if params.exclude_self_authored && record.self_authored {
+        return false;
+    }
+
+    // Require non-empty reviews
+    if params.require_reviews && !record.has_reviews {
+        return false;
+    }
+
+    // Exclude PRs where the author is a bot
+    if params.exclude_bot_authored && record.pr_author_is_bot {
+        return false;
+    }
+
+    // Minimum unique contributors in the repo
+    if let Some(min_contribs) = params.min_repo_contributors {
+        let count = snapshot.repo_contributor_counts
+            .get(&record.repo_name_idx)
+            .copied()
+            .unwrap_or(0);
+        if count < min_contribs {
+            return false;
+        }
+    }
+
+    // NOTE: max_author_repo_prs is handled in apply_filters via random sampling,
+    // not here, because it requires a pre-computed sampled set across all records.
+
+    // Engagement filters
+    if params.require_human_engagement && !record.has_human_engagement {
+        return false;
+    }
+    if let Some(min_rev) = params.min_human_reviewers {
+        if (record.human_reviewer_count as u32) < min_rev {
+            return false;
+        }
+    }
+    if let Some(min_commits) = params.min_commits_after_review {
+        if (record.commits_after_review as u32) < min_commits {
+            return false;
+        }
+    }
+
     true
 }
 
@@ -158,7 +235,25 @@ pub fn apply_filters<'a>(snapshot: &'a Snapshot, params: &FilterParams) -> Filte
         })
         .collect();
 
-    // 3. Collect records passing all filters
+    // 3. Pre-compute random sample for max_author_repo_prs cap.
+    //    For triples exceeding the cap, randomly pick `max` pr_ids to keep;
+    //    triples at or below the cap pass through entirely.
+    let capped_sample: Option<HashSet<i64>> = params.max_author_repo_prs.map(|max_prs| {
+        let mut rng = StdRng::seed_from_u64(params_seed(params));
+        let mut sampled = HashSet::new();
+        for (_, prs) in &snapshot.author_repo_prs {
+            if prs.len() as u32 > max_prs {
+                let mut shuffled = prs.clone();
+                shuffled.shuffle(&mut rng);
+                sampled.extend(shuffled.into_iter().take(max_prs as usize));
+            } else {
+                sampled.extend(prs.iter().copied());
+            }
+        }
+        sampled
+    });
+
+    // 4. Collect records passing all filters
     let mut records = Vec::new();
 
     let iter: Box<dyn Iterator<Item = (&NaiveDate, &Vec<PrRecord>)>> =
@@ -176,6 +271,11 @@ pub fn apply_filters<'a>(snapshot: &'a Snapshot, params: &FilterParams) -> Filte
             }
             if !record_matches(r, snapshot, params) {
                 continue;
+            }
+            if let Some(ref sampled) = capped_sample {
+                if r.author_idx != u32::MAX && !sampled.contains(&r.pr_id) {
+                    continue;
+                }
             }
             records.push((*date, r));
         }
@@ -221,8 +321,25 @@ pub fn daily_metrics(snapshot: &Snapshot, params: &FilterParams) -> DailyMetrics
         }
     }
 
+    // If min_scored_prs is set, compute total scored per bot and build exclusion set
+    let excluded_bots: HashSet<u8> = if params.min_scored_prs > 0 {
+        let mut totals: HashMap<u8, usize> = HashMap::new();
+        for ((_, idx), acc) in &buckets {
+            *totals.entry(*idx).or_default() += acc.precision_count;
+        }
+        totals.into_iter()
+            .filter(|(_, count)| *count < params.min_scored_prs)
+            .map(|(idx, _)| idx)
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
     let mut series: Vec<DailyMetricRow> = Vec::new();
     for ((date, chatbot_idx), acc) in &buckets {
+        if excluded_bots.contains(chatbot_idx) {
+            continue;
+        }
         if params.min_prs_per_day > 0 && acc.precision_count < params.min_prs_per_day {
             continue;
         }
@@ -310,6 +427,12 @@ pub fn leaderboard(snapshot: &Snapshot, params: &FilterParams) -> LeaderboardRes
     // Build rows for all chatbots that have at least one filtered record
     let mut rows: Vec<LeaderboardRow> = sampled_counts
         .iter()
+        .filter(|(&idx, _)| {
+            if params.min_scored_prs == 0 { return true; }
+            accums.get(&idx)
+                .map(|a| a.precision_count >= params.min_scored_prs)
+                .unwrap_or(false)
+        })
         .map(|(&idx, &sampled)| {
             let acc = accums.get(&idx);
             let (avg_p, avg_r, f_score, scored) = match acc {

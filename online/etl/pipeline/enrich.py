@@ -64,6 +64,15 @@ class RateLimitExhaustedError(Exception):
         super().__init__(f"Rate limit exhausted, resets at {reset_at}")
 
 
+class TokenInvalidError(Exception):
+    """Raised when a GitHub token is rejected with 401 — invalid, expired, or revoked."""
+
+
+class AllTokensInvalidError(Exception):
+    """Raised when every token in the pool has been permanently rejected.
+    Never causes a PR to be marked as error — the enrichment loop aborts instead."""
+
+
 class GitHubEnrichClient:
     """Async GitHub API client with rate limiting and retries — adapted from gh_enrich.py."""
 
@@ -116,6 +125,8 @@ class GitHubEnrichClient:
             for attempt in range(4):
                 try:
                     resp = await client.get(url, params=params)
+                    if resp.status_code == 401:
+                        raise TokenInvalidError(f"Token rejected (401) for {url}: {resp.text[:200]}")
                     if resp.status_code == 403:
                         if self._is_rate_limited(resp):
                             reset_time = resp.headers.get("X-RateLimit-Reset")
@@ -124,16 +135,17 @@ class GitHubEnrichClient:
                         logger.warning(f"403 Forbidden for {url} — skipping")
                         return None
                     await self._check_rate_limit(resp)
-                    if resp.status_code in (404, 422):
+                    # 404/410 Gone/422/451 Legal Reasons — content unavailable, skip
+                    if resp.status_code in (404, 410, 422, 451):
                         logger.warning(f"{resp.status_code} for {url} — skipping")
                         return None
                     if resp.status_code == 301:
-                        location = resp.headers.get("Location", "unknown")
-                        raise httpx.HTTPStatusError(
-                            f"301 Moved Permanently (repo likely renamed) → {location}",
-                            request=resp.request,
-                            response=resp,
-                        )
+                        location = resp.headers.get("Location")
+                        if location:
+                            logger.info(f"Following 301 redirect: {url} → {location}")
+                            url = location
+                            continue
+                        return None
                     if resp.status_code >= 500:
                         wait = 2**attempt
                         logger.warning(f"{resp.status_code} on {url}, retrying in {wait}s")
@@ -141,7 +153,7 @@ class GitHubEnrichClient:
                         continue
                     resp.raise_for_status()
                     return resp
-                except RateLimitExhaustedError:
+                except (RateLimitExhaustedError, TokenInvalidError):
                     raise
                 except httpx.HTTPError as e:
                     if attempt < 3:
@@ -180,6 +192,8 @@ class GitHubEnrichClient:
                         GRAPHQL_URL,
                         json={"query": query, "variables": variables},
                     )
+                    if resp.status_code == 401:
+                        raise TokenInvalidError(f"Token rejected (401) on GraphQL: {resp.text[:200]}")
                     if resp.status_code == 403:
                         if self._is_rate_limited(resp):
                             reset_time = resp.headers.get("X-RateLimit-Reset")
@@ -197,7 +211,7 @@ class GitHubEnrichClient:
                             return data["data"]
                         return None
                     return data.get("data")
-                except RateLimitExhaustedError:
+                except (RateLimitExhaustedError, TokenInvalidError):
                     raise
                 except httpx.HTTPError as e:
                     if attempt < 3:
@@ -211,8 +225,9 @@ class GitHubEnrichClient:
 # -- Enrichment sub-steps (return JSONB-ready data) ----------------------------
 
 
-async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> list[dict]:
-    path = f"/repos/{owner}/{repo}/pulls/{pr_number}/commits"
+async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = "") -> list[dict]:
+    base = repo_path or f"/repos/{owner}/{repo}"
+    path = f"{base}/pulls/{pr_number}/commits"
     raw = await gh.rest_get_paginated(path)
     return [
         {
@@ -225,8 +240,9 @@ async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_numbe
     ]
 
 
-async def _fetch_reviews(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> list[dict]:
-    path = f"/repos/{owner}/{repo}/pulls/{pr_number}/reviews"
+async def _fetch_reviews(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = "") -> list[dict]:
+    base = repo_path or f"/repos/{owner}/{repo}"
+    path = f"{base}/pulls/{pr_number}/reviews"
     raw = await gh.rest_get_paginated(path)
     return [
         {
@@ -287,8 +303,9 @@ async def _fetch_review_threads(gh: GitHubEnrichClient, owner: str, repo: str, p
     return all_threads
 
 
-async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str) -> dict:
-    resp = await gh.rest_get(f"/repos/{owner}/{repo}/commits/{sha}")
+async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:
+    base = repo_path or f"/repos/{owner}/{repo}"
+    resp = await gh.rest_get(f"{base}/commits/{sha}")
     if resp is None:
         return {"sha": sha, "files": []}
     data = resp.json()
@@ -306,19 +323,20 @@ async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: 
     return {"sha": sha, "files": files}
 
 
-async def _fetch_commit_details(gh: GitHubEnrichClient, owner: str, repo: str, commits: list[dict]) -> list[dict]:
+async def _fetch_commit_details(gh: GitHubEnrichClient, owner: str, repo: str, commits: list[dict], *, repo_path: str = "") -> list[dict]:
     if not commits:
         return []
-    tasks = [_fetch_one_commit(gh, owner, repo, c["sha"]) for c in commits]
+    tasks = [_fetch_one_commit(gh, owner, repo, c["sha"], repo_path=repo_path) for c in commits]
     return list(await asyncio.gather(*tasks))
 
 
 # -- PR summary (lightweight size check) ---------------------------------------
 
 
-async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> dict | None:
+async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = "") -> dict | None:
     """Fetch PR summary (1 API call) to check size before full enrichment."""
-    resp = await gh.rest_get(f"/repos/{owner}/{repo}/pulls/{pr_number}")
+    base = repo_path or f"/repos/{owner}/{repo}"
+    resp = await gh.rest_get(f"{base}/pulls/{pr_number}")
     if resp is None:
         return None
     data = resp.json()
@@ -327,6 +345,10 @@ async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_nu
         "deletions": data.get("deletions", 0),
         "commits": data.get("commits", 0),
         "changed_files": data.get("changed_files", 0),
+        "pr_author": (data.get("user") or {}).get("login"),
+        "merged": data.get("merged"),
+        "repo_id": (data.get("base") or {}).get("repo", {}).get("id"),
+        "raw": data,
     }
 
 
@@ -338,7 +360,8 @@ class TokenPool:
 
     def __init__(self, tokens: list[str], concurrency: int = 10):
         self._entries: list[dict] = [
-            {"client": GitHubEnrichClient(t, concurrency), "reset_at": 0, "active": 0} for t in tokens
+            {"client": GitHubEnrichClient(t, concurrency), "reset_at": 0, "active": 0, "invalid": False}
+            for t in tokens
         ]
 
     @property
@@ -348,12 +371,16 @@ class TokenPool:
     def get(self) -> GitHubEnrichClient | None:
         """Return the least-loaded non-rate-limited client, or None if all exhausted."""
         now = time.time()
-        available = [e for e in self._entries if e["reset_at"] <= now]
+        available = [e for e in self._entries if not e["invalid"] and e["reset_at"] <= now]
         if not available:
             return None
         best = min(available, key=lambda e: e["active"])
         best["active"] += 1
         return best["client"]
+
+    def all_invalid(self) -> bool:
+        """True when every token has been permanently rejected — pipeline cannot continue."""
+        return all(e["invalid"] for e in self._entries)
 
     def release(self, client: GitHubEnrichClient) -> None:
         """Decrement active count when a worker finishes using a client."""
@@ -369,14 +396,27 @@ class TokenPool:
                 e["active"] = 0
                 break
 
+    def mark_invalid(self, client: GitHubEnrichClient) -> None:
+        """Permanently remove a token from rotation (bad credentials, revoked, etc.)."""
+        for e in self._entries:
+            if e["client"] is client:
+                e["invalid"] = True
+                e["active"] = 0
+                logger.error(f"Token permanently disabled — {self.status_summary()}")
+                break
+
     def earliest_reset(self) -> float:
-        return min(e["reset_at"] for e in self._entries)
+        """Return the earliest reset time among rate-limited (non-invalid) tokens."""
+        limited = [e["reset_at"] for e in self._entries if not e["invalid"]]
+        return min(limited) if limited else float("inf")
 
     def status_summary(self) -> str:
         now = time.time()
         parts = []
         for i, e in enumerate(self._entries):
-            if e["reset_at"] > now:
+            if e["invalid"]:
+                parts.append(f"T{i}:invalid")
+            elif e["reset_at"] > now:
                 parts.append(f"T{i}:limited({int(e['reset_at'] - now)}s)")
             else:
                 parts.append(f"T{i}:active={e['active']}")
@@ -414,11 +454,27 @@ async def enrich_single_pr(
     step_idx = _step_index(current_step)
 
     owner, repo = repo_name.split("/", 1)
+    repo_id = pr_row.get("repo_id")
+    repo_path = f"/repositories/{repo_id}" if repo_id else f"/repos/{owner}/{repo}"
 
     # Size check: fetch PR summary and skip if too large
     if cfg is not None and step_idx < 1:
-        summary = await _fetch_pr_summary(gh, owner, repo, pr_number)
+        summary = await _fetch_pr_summary(gh, owner, repo, pr_number, repo_path=repo_path)
         if summary is not None:
+            # Backfill pr_author from GitHub API if missing from BQ events
+            if not pr_row.get("pr_author") and summary.get("pr_author"):
+                await repo_obj.update_pr_author(pr_id, summary["pr_author"])
+
+            # Store pr_api_raw, pr_merged, repo_id from the API response
+            await repo_obj.db.execute(
+                *repo_obj.db._translate_params(
+                    "UPDATE prs SET pr_api_raw = COALESCE(pr_api_raw, $1), "
+                    "pr_merged = COALESCE($2, pr_merged), "
+                    "repo_id = COALESCE(repo_id, $3) WHERE id = $4",
+                    (json.dumps(summary["raw"]), summary["merged"], summary["repo_id"], pr_id),
+                )
+            )
+
             total_lines = summary["additions"] + summary["deletions"]
             if summary["commits"] > cfg.max_pr_commits:
                 reason = f"Too many commits: {summary['commits']} > {cfg.max_pr_commits}"
@@ -433,13 +489,13 @@ async def enrich_single_pr(
 
     # Step: commits (index 1)
     if step_idx < 1:
-        commits = await _fetch_commits(gh, owner, repo, pr_number)
+        commits = await _fetch_commits(gh, owner, repo, pr_number, repo_path=repo_path)
         await repo_obj.update_commits(pr_id, commits)
         logger.debug(f"  {repo_name}#{pr_number}: commits done ({len(commits)})")
 
     # Step: reviews (index 2)
     if step_idx < 2:
-        reviews = await _fetch_reviews(gh, owner, repo, pr_number)
+        reviews = await _fetch_reviews(gh, owner, repo, pr_number, repo_path=repo_path)
         await repo_obj.update_reviews(pr_id, reviews)
         logger.debug(f"  {repo_name}#{pr_number}: reviews done ({len(reviews)})")
 
@@ -461,7 +517,7 @@ async def enrich_single_pr(
             commits_json = refreshed.get("commits") if refreshed else None
             commits_data = json.loads(commits_json) if commits_json else []
 
-        details = await _fetch_commit_details(gh, owner, repo, commits_data)
+        details = await _fetch_commit_details(gh, owner, repo, commits_data, repo_path=repo_path)
         await repo_obj.update_commit_details(pr_id, details)
         logger.debug(f"  {repo_name}#{pr_number}: commit details done")
 
@@ -510,6 +566,17 @@ async def enrich_loop(
     async def _worker(worker_id: int) -> None:
         nonlocal enriched_count, error_count
         while True:
+            # Stop early if the pool is dead or another worker requested shutdown —
+            # avoids locking more PRs we can't actually process.
+            if stop_event.is_set() or pool.all_invalid():
+                # Drain remaining items (including sentinels) so queue.join() unblocks
+                try:
+                    pr_row = queue.get_nowait()
+                    queue.task_done()
+                    continue
+                except asyncio.QueueEmpty:
+                    break
+
             pr_row = await queue.get()
             if pr_row is None:
                 queue.task_done()
@@ -526,6 +593,8 @@ async def enrich_loop(
                 gh = None
                 try:
                     while True:
+                        if pool.all_invalid():
+                            raise AllTokensInvalidError("All GitHub tokens are invalid — aborting enrichment")
                         gh = pool.get()
                         if gh is None:
                             wait = max(0, pool.earliest_reset() - time.time()) + 5
@@ -536,6 +605,11 @@ async def enrich_loop(
                             await enrich_single_pr(gh, repo_obj, pr_row, cfg)
                             enriched_count += 1
                             break
+                        except TokenInvalidError:
+                            pool.mark_invalid(gh)
+                            gh = None
+                            logger.warning(f"Worker {worker_id}: token invalid, rotating ({pool.status_summary()})")
+                            continue
                         except RateLimitExhaustedError as e:
                             pool.mark_limited(gh, e.reset_at)
                             logger.info(f"Worker {worker_id}: token rate-limited, rotating ({pool.status_summary()})")
@@ -544,6 +618,14 @@ async def enrich_loop(
                 finally:
                     if gh is not None:
                         pool.release(gh)
+            except AllTokensInvalidError:
+                # Don't mark the PR as error — release the lock so it's picked up
+                # immediately on the next run with valid tokens (instead of waiting
+                # for the stale-lock timeout). Signal all workers to stop.
+                logger.critical(f"Worker {worker_id}: all tokens invalid, stopping enrichment loop")
+                with contextlib.suppress(Exception):
+                    await repo_obj.unlock_pr(pr_id)
+                stop_event.set()
             except Exception as e:
                 logger.error(f"Worker {worker_id}: error enriching {pr_label}: {e}")
                 await repo_obj.mark_error(pr_id, str(e))

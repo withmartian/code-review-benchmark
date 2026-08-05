@@ -181,7 +181,7 @@ If you use this benchmark in your research or product evaluation, please cite:
 ```bibtex
 @misc{code_review_benchmark,
   title   = {Code Review Bench},
-  author  = {Aleksandr Zverianskii and Jacob Clyne and Antía Garcia and Fazl Barez and Shriyash Upadhyay},
+  author  = {Aleksandr Zverianskii and Ashley Zhang and Jacob Clyne and Antía Garcia and Fazl Barez and Shriyash Upadhyay},
   url     = {https://github.com/withmartian/code-review-benchmark},
   year    = {2026},
   license = {MIT}

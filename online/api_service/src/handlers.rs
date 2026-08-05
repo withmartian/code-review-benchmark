@@ -27,6 +27,15 @@ pub struct MetricsQuery {
     pub min_prs_per_day: Option<usize>,
     pub min_total_prs: Option<usize>,
     pub include_ignored: Option<bool>,
+    pub exclude_self_authored: Option<bool>,
+    pub require_reviews: Option<bool>,
+    pub exclude_bot_authored: Option<bool>,
+    pub min_repo_contributors: Option<u32>,
+    pub max_author_repo_prs: Option<u32>,
+    pub require_human_engagement: Option<bool>,
+    pub min_human_reviewers: Option<u32>,
+    pub min_commits_after_review: Option<u32>,
+    pub min_scored_prs: Option<usize>,
 }
 
 fn parse_date(s: &str) -> Option<NaiveDate> {
@@ -70,6 +79,15 @@ fn to_filter_params(q: &MetricsQuery) -> FilterParams {
         min_prs_per_day: q.min_prs_per_day.unwrap_or(0),
         min_total_prs: q.min_total_prs.unwrap_or(0),
         include_ignored: q.include_ignored.unwrap_or(false),
+        exclude_self_authored: q.exclude_self_authored.unwrap_or(false),
+        require_reviews: q.require_reviews.unwrap_or(false),
+        exclude_bot_authored: q.exclude_bot_authored.unwrap_or(false),
+        min_repo_contributors: q.min_repo_contributors,
+        max_author_repo_prs: q.max_author_repo_prs,
+        require_human_engagement: q.require_human_engagement.unwrap_or(false),
+        min_human_reviewers: q.min_human_reviewers,
+        min_commits_after_review: q.min_commits_after_review,
+        min_scored_prs: q.min_scored_prs.unwrap_or(0),
     }
 }
 

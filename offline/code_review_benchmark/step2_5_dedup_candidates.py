@@ -241,10 +241,18 @@ async def main() -> None:
         all_candidates: dict = json.load(f)
 
     # Load existing output for incremental runs
-    if output_file.exists() and not args.force:
+    if output_file.exists():
         with open(output_file) as f:
             all_groups: dict = json.load(f)
         print(f"Loaded {len(all_groups)} existing entries from {output_file}")
+        if args.force and args.tool:
+            # Only clear the specific tool being forced, preserve all others
+            for pr_url in all_groups:
+                all_groups[pr_url].pop(args.tool, None)
+            print(f"Cleared existing groups for tool: {args.tool}")
+        elif args.force:
+            all_groups = {}
+            print("Cleared all existing groups")
     else:
         all_groups = {}
 
@@ -288,7 +296,7 @@ async def main() -> None:
     failed = 0
     fallback = 0
 
-    for (golden_url, tool, texts), result in zip(work_items, results):
+    for (golden_url, tool, texts), result in zip(work_items, results, strict=True):
         if isinstance(result, Exception):
             print(f"  Exception for {tool} @ {golden_url}: {result}")
             result = None
@@ -314,7 +322,7 @@ async def main() -> None:
     with open(output_file, "w") as f:
         json.dump(all_groups, f, indent=2)
 
-    print(f"\nDone!")
+    print("\nDone!")
     print(f"  Succeeded : {success}")
     print(f"  Fallbacks : {fallback}  (all-singletons, no dedup applied)")
     print(f"  Errors    : {failed}")

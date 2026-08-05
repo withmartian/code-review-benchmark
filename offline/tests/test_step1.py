@@ -64,12 +64,13 @@ def test_find_golden_url():
 
 
 def test_fetch_review_comments(monkeypatch):
+    bot_user = {"login": "test-bot[bot]", "type": "Bot"}
     responses = [
         [
-            {"path": "file.py", "line": 10, "body": "inline", "created_at": "2024-01-01"}
+            {"path": "file.py", "line": 10, "body": "inline", "created_at": "2024-01-01", "user": bot_user}
         ],
-        [{"body": "top-level", "submitted_at": "2024-01-01"}],
-        [{"body": "issue", "created_at": "2024-01-01"}],
+        [{"body": "top-level", "submitted_at": "2024-01-01", "user": bot_user}],
+        [{"body": "issue", "created_at": "2024-01-01", "user": bot_user}],
     ]
 
     def fake_gh(_args):
@@ -89,7 +90,7 @@ def test_fetch_repo_data(monkeypatch):
     def stub_pr_metadata(_org, _repo, pr):
         return {"title": f"PR {pr}", "url": "https://github.com/org/repo/pull/1"}
 
-    def stub_review_comments(_org, _repo, _pr):
+    def stub_review_comments(_org, _repo, _pr, tool=""):  # noqa: ARG001
         return [{"path": "file.py", "line": 5, "body": "content", "created_at": "now"}]
 
     monkeypatch.setattr(step1, "fetch_pr_metadata", stub_pr_metadata)

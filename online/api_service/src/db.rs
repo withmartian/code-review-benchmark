@@ -15,18 +15,24 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
 
     let rows = sqlx::query_as::<_, RawRow>(
         r#"
-        SELECT la.chatbot_id,
+        SELECT p.id as pr_id,
+               la.chatbot_id,
                la.precision,
                la.recall,
                p.bot_reviewed_at,
                p.diff_lines,
+               p.pr_author,
+               p.repo_name,
                c.github_username,
                c.display_name,
-               pl.labels as pr_labels_json
+               pl.labels as pr_labels_json,
+               (p.reviews IS NOT NULL AND p.reviews != '[]') as has_reviews,
+               p.engagement_signals
         FROM llm_analyses la
         JOIN prs p ON la.pr_id = p.id
         JOIN chatbots c ON la.chatbot_id = c.id
         LEFT JOIN pr_labels pl ON pl.pr_id = la.pr_id AND pl.chatbot_id = la.chatbot_id
+        WHERE p.pr_merged = TRUE
         ORDER BY p.bot_reviewed_at ASC NULLS FIRST
         "#,
     )
@@ -65,14 +71,19 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
 
 #[derive(sqlx::FromRow)]
 struct RawRow {
+    pr_id: i32,
     chatbot_id: i32,
     precision: Option<f32>,
     recall: Option<f32>,
     bot_reviewed_at: Option<DateTime<Utc>>,
     diff_lines: Option<i32>,
+    pr_author: Option<String>,
+    repo_name: String,
     github_username: String,
     display_name: Option<String>,
     pr_labels_json: Option<String>,
+    has_reviews: Option<bool>,
+    engagement_signals: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -84,16 +95,64 @@ struct VolumeRawRow {
     display_name: Option<String>,
 }
 
+const GENERAL_BOT_NAMES: &[&str] = &[
+    "dependabot", "renovate", "github-actions", "codecov",
+    "mergify", "snyk-bot", "greenkeeper", "imgbot",
+    "stale", "allcontributors", "semantic-release-bot",
+    "github-advanced-security",
+    "llamapreview", "ai-coding-guardrails",
+    "qodo-free-for-open-source-projects", "amazon-q-developer",
+    "sourceryai", "github-code-quality", "copilot-pull-request-review",
+    "copilot-pull-request-reviewer", "raycastbot", "clawdbot",
+    "cometactions", "kilo-code-bot", "codecov-comment",
+];
+
+fn is_bot_username(username: &str, known_bots: &HashSet<String>) -> bool {
+    let lower = username.to_lowercase();
+    lower.ends_with("[bot]") || known_bots.contains(&lower)
+}
+
+/// Build set of known bot usernames from chatbot table + general bots.
+/// Includes both "name[bot]" and "name" variants since BQ actors may lack the suffix.
+fn build_known_bots(chatbot_usernames: &[String]) -> HashSet<String> {
+    let mut bots = HashSet::new();
+    for name in GENERAL_BOT_NAMES {
+        bots.insert(name.to_string());
+    }
+    for name in chatbot_usernames {
+        let lower = name.to_lowercase();
+        bots.insert(lower.trim_end_matches("[bot]").to_string());
+        bots.insert(lower);
+    }
+    bots
+}
+
 fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_usernames: &HashSet<String>) -> anyhow::Result<Snapshot> {
+    // Collect all chatbot usernames first to build comprehensive bot detection set
+    let chatbot_usernames: Vec<String> = rows.iter()
+        .map(|r| r.github_username.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+    let known_bots = build_known_bots(&chatbot_usernames);
+
     let mut chatbot_map: HashMap<i32, u8> = HashMap::new();
     let mut chatbots: Vec<ChatbotInfo> = Vec::new();
     let mut language_map: HashMap<String, u16> = HashMap::new();
     let mut languages: Vec<String> = Vec::new();
+    let mut repo_name_map: HashMap<String, u32> = HashMap::new();
+    let mut repo_names: Vec<String> = Vec::new();
+    let mut author_map: HashMap<String, u32> = HashMap::new();
 
     let mut by_date: BTreeMap<chrono::NaiveDate, Vec<PrRecord>> = BTreeMap::new();
     let mut no_date: Vec<PrRecord> = Vec::new();
 
-    for row in rows {
+    // Aggregate accumulators
+    let mut repo_contributors: HashMap<u32, HashSet<u32>> = HashMap::new();
+    // (repo_name_idx, author_idx, chatbot_idx) -> list of pr_ids
+    let mut author_repo_prs: HashMap<(u32, u32, u8), Vec<i64>> = HashMap::new();
+
+    for row in &rows {
         // Chatbot lookup
         let chatbot_idx = *chatbot_map.entry(row.chatbot_id).or_insert_with(|| {
             let idx = chatbots.len() as u8;
@@ -105,6 +164,15 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             idx
         });
 
+        // Repo name dedup
+        let repo_name_idx = {
+            let len = repo_names.len() as u32;
+            *repo_name_map.entry(row.repo_name.clone()).or_insert_with(|| {
+                repo_names.push(row.repo_name.clone());
+                len
+            })
+        };
+
         // Parse labels
         let (language, domain, pr_type, severity) = parse_labels(
             row.pr_labels_json.as_deref(),
@@ -112,7 +180,32 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             &mut languages,
         );
 
+        let self_authored = row.pr_author.as_ref()
+            .map(|a| a.eq_ignore_ascii_case(&row.github_username))
+            .unwrap_or(false);
+
+        let pr_author_is_bot = row.pr_author.as_ref()
+            .map(|a| is_bot_username(a, &known_bots))
+            .unwrap_or(false);
+
+        // Author dedup + aggregate accumulators
+        let author_idx = match row.pr_author.as_ref() {
+            Some(author) => {
+                let author_lower = author.to_lowercase();
+                let len = author_map.len() as u32;
+                let idx = *author_map.entry(author_lower).or_insert(len);
+                repo_contributors.entry(repo_name_idx).or_default().insert(idx);
+                author_repo_prs.entry((repo_name_idx, idx, chatbot_idx)).or_default().push(row.pr_id as i64);
+                idx
+            }
+            None => u32::MAX,
+        };
+
+        let (has_human_engagement, human_reviewer_count, commits_after_review) =
+            parse_engagement_signals(row.engagement_signals.as_deref());
+
         let record = PrRecord {
+            pr_id: row.pr_id as i64,
             chatbot_idx,
             bot_reviewed_at: row.bot_reviewed_at,
             precision: row.precision,
@@ -122,6 +215,14 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             domain,
             pr_type,
             severity,
+            self_authored,
+            has_reviews: row.has_reviews.unwrap_or(false),
+            pr_author_is_bot,
+            repo_name_idx,
+            author_idx,
+            has_human_engagement,
+            human_reviewer_count,
+            commits_after_review,
         };
 
         match row.bot_reviewed_at {
@@ -134,6 +235,12 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             }
         }
     }
+
+    // Finalize aggregate lookups: repo_name_idx -> unique contributor count
+    let repo_contributor_counts: HashMap<u32, u32> = repo_contributors
+        .into_iter()
+        .map(|(repo_idx, authors)| (repo_idx, authors.len() as u32))
+        .collect();
 
     let total_records: usize = by_date.values().map(|v| v.len()).sum::<usize>() + no_date.len();
     let has_domain: usize = by_date.values().flat_map(|v| v.iter()).chain(no_date.iter())
@@ -181,7 +288,24 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
         chatbots,
         languages,
         volumes,
+        repo_contributor_counts,
+        author_repo_prs,
     })
+}
+
+fn parse_engagement_signals(json_str: Option<&str>) -> (bool, u8, u16) {
+    let json_str = match json_str {
+        Some(s) if !s.is_empty() => s,
+        _ => return (false, 0, 0),
+    };
+    let obj: serde_json::Value = match serde_json::from_str(json_str) {
+        Ok(v) => v,
+        Err(_) => return (false, 0, 0),
+    };
+    let engaged = obj.get("has_human_engagement").and_then(|v| v.as_bool()).unwrap_or(false);
+    let reviewers = obj.get("human_reviewer_count").and_then(|v| v.as_u64()).unwrap_or(0) as u8;
+    let commits = obj.get("commits_after_review").and_then(|v| v.as_u64()).unwrap_or(0) as u16;
+    (engaged, reviewers, commits)
 }
 
 fn parse_labels(

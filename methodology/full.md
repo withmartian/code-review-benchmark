@@ -170,7 +170,7 @@ The judge uses the following prompt:
 
 Matches against the gold set are counted as true positives. Precision and recall are computed from these matches.
 
-The code to reproduce this is available at: https://github.com/withmartian/code_review_benchmark
+The code to reproduce this is available at: https://github.com/withmartian/code-review-benchmark
 
 ### Known limitations of the current implementation
 

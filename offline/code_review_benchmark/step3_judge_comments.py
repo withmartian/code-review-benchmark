@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 RESULTS_DIR = Path("results")
 BENCHMARK_DATA_FILE = RESULTS_DIR / "benchmark_data.json"
-BATCH_SIZE = 40
+BATCH_SIZE = 20
 LLM_CALL_TIMEOUT = 30  # seconds per individual LLM call
 REVIEW_TIMEOUT = 1800  # seconds per full review evaluation (30 min)
 
@@ -117,7 +117,7 @@ class LLMJudge:
         if structured_output:
             print("Structured output: enabled")
 
-    async def call_llm(self, prompt: str, max_retries: int = 3) -> dict:
+    async def call_llm(self, prompt: str, max_retries: int = 5) -> dict:
         for attempt in range(max_retries):
             try:
                 kwargs = {
@@ -176,9 +176,16 @@ class LLMJudge:
                 await asyncio.sleep(1)
 
             except Exception as e:
+                err_str = str(e).lower()
+                is_rate_limit = "429" in err_str or "rate" in err_str or "too many" in err_str
                 if attempt == max_retries - 1:
                     return {"error": str(e)}
-                await asyncio.sleep(2**attempt)
+                # Longer backoff for rate limits: 10s, 30s, 60s, 120s
+                if is_rate_limit:
+                    wait = min(10 * (3 ** attempt), 120)
+                    await asyncio.sleep(wait)
+                else:
+                    await asyncio.sleep(2**attempt)
 
         return {"error": "Max retries exceeded"}
 
@@ -251,7 +258,8 @@ async def evaluate_review(
             "true_positives": [],
             "false_positives": [],
             "false_negatives": [
-                {"golden_comment": gc["comment"], "severity": gc.get("severity")} for gc in golden_comments
+                {"golden_comment": gc["comment"], "severity": gc.get("severity"), "category": gc.get("category")}
+                for gc in golden_comments
             ],
             "errors": [],
             "total_candidates": 0,
@@ -287,6 +295,7 @@ async def evaluate_review(
     golden_matched = {
         gc["comment"]: {
             "severity": gc.get("severity"),
+            "category": gc.get("category"),
             "matched": False,
             "best_confidence": 0.0,
             "matched_candidate": None,
@@ -330,6 +339,7 @@ async def evaluate_review(
                 {
                     "golden_comment": golden,
                     "severity": info["severity"],
+                    "category": info["category"],
                     "matched_candidate": info["matched_candidate"],
                     "confidence": info["best_confidence"],
                     "reasoning": info.get("reasoning"),
@@ -340,6 +350,7 @@ async def evaluate_review(
                 {
                     "golden_comment": golden,
                     "severity": info["severity"],
+                    "category": info["category"],
                 }
             )
 

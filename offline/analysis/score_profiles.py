@@ -22,7 +22,7 @@ PROFILE_CATEGORIES: dict[str, frozenset[str]] = {
     "all": frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect", "style", "speculative"}),
 }
 
-# Tools excluded from scoring (same as dashboard)
+# Tools excluded from the dashboard (superseded versions, incomplete runs, etc.)
 _HIDDEN_TOOLS: frozenset[str] = frozenset({
     "qodo", "greptile", "linearb", "bito", "sentry", "vercel", "kodus",
     "cubic-dev", "cubic-v3", "greptile-v4", "mergemonkey", "qodo-v22",

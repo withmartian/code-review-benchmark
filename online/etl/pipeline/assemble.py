@@ -16,6 +16,7 @@ from typing import Any
 
 from db.connection import DBAdapter
 from db.repository import PRRepository
+from pipeline.actors import same_github_actor
 
 logger = logging.getLogger(__name__)
 
@@ -400,12 +401,14 @@ def _compute_stats(target_user: str, timeline: list[TimelineEvent], threads: lis
     stats.total_events = len(timeline)
     stats.total_commits = sum(1 for e in timeline if e.event_type == "commit")
     stats.total_review_comments_by_target = sum(
-        1 for e in timeline if e.event_type == "review_comment" and e.actor == target_user
+        1 for e in timeline if e.event_type == "review_comment" and same_github_actor(e.actor, target_user)
     )
     stats.total_review_threads = len(threads)
     stats.resolved_threads = sum(1 for t in threads if t.is_resolved)
     stats.target_user_comments_count = sum(
-        1 for e in timeline if e.actor == target_user and e.event_type in ("review_comment", "issue_comment", "review")
+        1
+        for e in timeline
+        if same_github_actor(e.actor, target_user) and e.event_type in ("review_comment", "issue_comment", "review")
     )
     return stats
 
@@ -413,10 +416,10 @@ def _compute_stats(target_user: str, timeline: list[TimelineEvent], threads: lis
 def _determine_roles(target_user: str, timeline: list[TimelineEvent], pr_author: str | None) -> list[str]:
     """Determine what roles the target user played in this PR."""
     roles: set[str] = set()
-    if pr_author == target_user:
+    if same_github_actor(pr_author, target_user):
         roles.add("author")
     for e in timeline:
-        if e.actor != target_user:
+        if not same_github_actor(e.actor, target_user):
             continue
         if e.event_type in ("review", "review_comment"):
             roles.add("reviewer")

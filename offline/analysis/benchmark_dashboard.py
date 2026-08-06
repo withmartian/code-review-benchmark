@@ -30,15 +30,107 @@ _HIDDEN_TOOLS: frozenset[str] = frozenset({
     "qodo-v22",
     "qodo-v2-2",
     "qodo-extended-summary",
+    "qodo-extended",
     "entelligence",
     "mesa",
     "codeant",
+    "propel",
+    "propel-v2",
+    "gemini",
+    "gitar",
+    "deepsource",
+    "copilot",
+    "greptile-v5",
 })
 _HIDDEN_PREFIXES: tuple[str, ...] = ("mra-",)
+
+# Category sets for each scoring profile.
+# Strict: only the most concrete defect categories.
+# Core: primary metric — real defects + adjacent quality issues.
+# All: everything including style/speculative (known to favor concise tools).
+PROFILE_CATEGORIES: dict[str, frozenset[str]] = {
+    "strict": frozenset({"bug", "security", "concurrency", "data", "api"}),
+    "core": frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect"}),
+    "all": frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect", "style", "speculative"}),
+}
+
+PROFILE_DESCRIPTIONS: dict[str, str] = {
+    "strict": "Bug, Security, Concurrency, Data, API",
+    "core": "Bug, Security, Concurrency, Data, API, Perf, Test Gap, Doc Defect",
+    "all": "All categories (includes Style, Speculative)",
+}
 
 
 def _is_hidden(tool: str) -> bool:
     return tool in _HIDDEN_TOOLS or any(tool.startswith(p) for p in _HIDDEN_PREFIXES)
+
+
+def _load_golden_categories(results_dir: Path) -> dict[str, str]:
+    """Build lookup from golden comment text to its category.
+
+    Checks golden_comments/*.json (sibling of results dir), falling back
+    to benchmark_data.json if golden_comments/ isn't found.
+    """
+    golden_dir = results_dir.parent / "golden_comments"
+    if not golden_dir.exists():
+        golden_dir = Path("golden_comments")
+
+    lookup: dict[str, str] = {}
+
+    if golden_dir.exists():
+        for json_file in golden_dir.glob("*.json"):
+            with open(json_file) as f:
+                data = json.load(f)
+            for entry in data if isinstance(data, list) else []:
+                for gc in entry.get("comments", []):
+                    comment = gc.get("comment", "")
+                    category = gc.get("category", "")
+                    if comment and category:
+                        lookup[comment] = category
+        if lookup:
+            return lookup
+
+    # Fallback: try benchmark_data.json
+    benchmark_path = results_dir / "benchmark_data.json"
+    if benchmark_path.exists():
+        with open(benchmark_path) as f:
+            bd = json.load(f)
+        for _url, entry in bd.items():
+            for gc in entry.get("golden_comments", []):
+                comment = gc.get("comment", "")
+                category = gc.get("category", "")
+                if comment and category:
+                    lookup[comment] = category
+
+    return lookup
+
+
+def _get_category(entry: dict, golden_categories: dict[str, str]) -> str:
+    """Get category from a TP/FN entry, falling back to golden_categories lookup."""
+    return entry.get("category") or golden_categories.get(entry.get("golden_comment", ""), "")
+
+
+def _compute_profile_metrics(
+    tool_eval: dict,
+    golden_categories: dict[str, str],
+) -> dict[str, dict[str, int]]:
+    """Compute per-profile {tp, fp, fn} for a single PR x tool evaluation.
+
+    FP is constant across profiles (candidates matching no golden comment).
+    TP and FN are filtered by whether the golden comment's category is in the profile.
+    TPs with category outside the profile become 'matched-excluded' (neither TP nor FP).
+    """
+    tps = tool_eval.get("true_positives", [])
+    fns = tool_eval.get("false_negatives", [])
+    fp_count = tool_eval.get("fp", 0)
+
+    result: dict[str, dict[str, int]] = {}
+    for profile_name, profile_cats in PROFILE_CATEGORIES.items():
+        tp_in = sum(1 for tp in tps if _get_category(tp, golden_categories) in profile_cats)
+        fn_in = sum(1 for fn in fns if _get_category(fn, golden_categories) in profile_cats)
+        result[profile_name] = {"tp": tp_in, "fp": fp_count, "fn": fn_in}
+
+    return result
 
 
 # Tool display configuration
@@ -56,15 +148,16 @@ TOOL_DISPLAY_NAMES = {
     "greptile": "Greptile",
     "kg": "KG",
     "entelligence": "Entelligence",
-    "cubic-dev": "Cubic",
+    "cubic-v2": "Cubic",
     "sourcery": "Sourcery",
     "mesa": "Mesa",
-    "codeant": "CodeAnt",
-    "codeant-v2": "CodeAnt v2",
+    "codeant-v2": "CodeAnt",
     "claude-code": "Claude Code (CLI)",
     "devin": "Devin",
     "kodus-v2": "Kodus",
-    "greptile-v4": "Greptile v4",
+    "greptile-v4-1": "Greptile v4",
+    "gemini-v2": "Gemini",
+    "gitlab": "GitLab Duo Code Review",
     "qodo-v2": "Qodo v2",
     "qodo-extended-v2": "Qodo Extended",
     "macroscope": "Macroscope",
@@ -134,19 +227,23 @@ def get_available_models(results_dir: Path) -> list[str]:
     return sorted(models)
 
 
-def prepare_model_data(evaluations: dict, labels: dict) -> dict:
-    """Prepare data structure for a single model."""
+def prepare_model_data(evaluations: dict, labels: dict, golden_categories: dict[str, str]) -> dict:
+    """Prepare data structure for a single model.
+
+    tool_metrics per PR are stored as {profile: {tp, fp, fn}} to support
+    client-side profile switching and F-beta computation.
+    """
     prs = []
-    all_tools = set()
-    languages = set()
-    pr_sizes = set()
-    domains = set()
-    change_types = set()
-    complexities = set()
-    difficulties = set()
-    risk_levels = set()
-    context_levels = set()
-    concerns = set()
+    all_tools: set[str] = set()
+    languages: set[str] = set()
+    pr_sizes: set[str] = set()
+    domains: set[str] = set()
+    change_types: set[str] = set()
+    complexities: set[str] = set()
+    difficulties: set[str] = set()
+    risk_levels: set[str] = set()
+    context_levels: set[str] = set()
+    concerns: set[str] = set()
 
     for pr_url, pr_evals in evaluations.items():
         pr_labels = labels.get(pr_url, {})
@@ -174,16 +271,24 @@ def prepare_model_data(evaluations: dict, labels: dict) -> dict:
         context_levels.add(context)
         concerns.add(concern)
 
-        tool_metrics = {}
+        tool_metrics: dict[str, dict] = {}
         for tool_name, tool_eval in pr_evals.items():
             if _is_hidden(tool_name):
                 continue
+            if tool_eval.get("skipped"):
+                continue
             all_tools.add(tool_name)
-            tool_metrics[tool_name] = {
-                "tp": tool_eval.get("tp", 0),
-                "fp": tool_eval.get("fp", 0),
-                "fn": tool_eval.get("fn", 0),
-            }
+
+            if golden_categories:
+                tool_metrics[tool_name] = _compute_profile_metrics(tool_eval, golden_categories)
+            else:
+                # No category data — all profiles get the same counts
+                base = {
+                    "tp": tool_eval.get("tp", 0),
+                    "fp": tool_eval.get("fp", 0),
+                    "fn": tool_eval.get("fn", 0),
+                }
+                tool_metrics[tool_name] = {p: dict(base) for p in PROFILE_CATEGORIES}
 
         prs.append({
             "url": pr_url,
@@ -200,7 +305,7 @@ def prepare_model_data(evaluations: dict, labels: dict) -> dict:
             "tool_metrics": tool_metrics,
         })
 
-    tool_metrics = calculate_aggregate_metrics(prs, list(all_tools))
+    overall_metrics = calculate_aggregate_metrics(prs, list(all_tools))
 
     return {
         "prs": prs,
@@ -216,39 +321,49 @@ def prepare_model_data(evaluations: dict, labels: dict) -> dict:
             "context": ["local", "file", "cross_file", "system"],
             "concern": sorted(concerns - {"unknown"}),
         },
-        "overall_metrics": tool_metrics,
+        "overall_metrics": overall_metrics,
     }
 
 
 def calculate_aggregate_metrics(prs: list, tools: list) -> dict:
-    """Calculate aggregate precision/recall/F1 for each tool across PRs."""
-    metrics = {}
+    """Calculate aggregate metrics for each tool across PRs, per profile.
+
+    Returns {tool: {profile: {precision, recall, f1, f2, tp, fp, fn, num_prs}}}.
+    """
+    metrics: dict[str, dict] = {}
 
     for tool in tools:
-        total_tp = 0
-        total_fp = 0
-        total_fn = 0
+        profile_metrics: dict[str, dict] = {}
+        num_prs = len([p for p in prs if tool in p["tool_metrics"]])
 
-        for pr in prs:
-            if tool in pr["tool_metrics"]:
-                tm = pr["tool_metrics"][tool]
-                total_tp += tm["tp"]
-                total_fp += tm["fp"]
-                total_fn += tm["fn"]
+        for profile_name in PROFILE_CATEGORIES:
+            total_tp = total_fp = total_fn = 0
 
-        precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
-        recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+            for pr in prs:
+                if tool in pr["tool_metrics"]:
+                    pm = pr["tool_metrics"][tool].get(profile_name, {})
+                    total_tp += pm.get("tp", 0)
+                    total_fp += pm.get("fp", 0)
+                    total_fn += pm.get("fn", 0)
 
-        metrics[tool] = {
-            "precision": round(precision * 100, 1),
-            "recall": round(recall * 100, 1),
-            "f1": round(f1 * 100, 1),
-            "tp": total_tp,
-            "fp": total_fp,
-            "fn": total_fn,
-            "num_prs": len([p for p in prs if tool in p["tool_metrics"]]),
-        }
+            precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
+            recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
+            f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+            # F2 (beta=2): recall weighted 4x more
+            f2 = 5 * precision * recall / (4 * precision + recall) if (precision + recall) > 0 else 0
+
+            profile_metrics[profile_name] = {
+                "precision": round(precision * 100, 1),
+                "recall": round(recall * 100, 1),
+                "f1": round(f1 * 100, 1),
+                "f2": round(f2 * 100, 1),
+                "tp": total_tp,
+                "fp": total_fp,
+                "fn": total_fn,
+                "num_prs": num_prs,
+            }
+
+        metrics[tool] = profile_metrics
 
     return metrics
 
@@ -265,10 +380,17 @@ def load_all_models(results_dir: Path) -> dict:
     else:
         print("  No central labels found (run step5_label_prs.py first)")
 
+    # Load golden comment categories for profile-based scoring
+    golden_categories = _load_golden_categories(results_dir)
+    if golden_categories:
+        print(f"  Loaded {len(golden_categories)} golden comment categories")
+    else:
+        print("  No golden categories found — all profiles will show identical metrics")
+
     for model in models:
         try:
             evaluations = load_model_data(results_dir, model, central_labels)
-            all_data[model] = prepare_model_data(evaluations, central_labels)
+            all_data[model] = prepare_model_data(evaluations, central_labels, golden_categories)
             print(f"  Loaded: {model}")
         except Exception as e:
             print(f"  Error loading {model}: {e}")
@@ -498,14 +620,14 @@ def generate_predefined_filters(all_models_data: dict) -> list[dict]:
          "description": "Tools ranked by precision - fewer false positives, more reliable findings"},
         {"id": "high_recall", "label": "Highest Recall", "filters": {}, "sort": "recall",
          "description": "Tools ranked by recall - catches more issues, may have more noise"},
-        {"id": "high_f1", "label": "Highest F1", "filters": {}, "sort": "f1",
-         "description": "Tools ranked by F1 score - balanced precision and recall"},
+        {"id": "high_f1", "label": "Highest Score", "filters": {}, "sort": "f1",
+         "description": "Tools ranked by F-beta score (default F2, recall-weighted)"},
     ])
 
     return filters
 
 
-def calculate_filtered_metrics(model_data: dict, filters: dict) -> tuple[dict, int]:
+def calculate_filtered_metrics(model_data: dict, filters: dict, profile: str = "core") -> tuple[dict, int]:
     """Calculate aggregated metrics for a model given specific filters.
 
     Returns (metrics_dict, num_prs) tuple.
@@ -527,16 +649,16 @@ def calculate_filtered_metrics(model_data: dict, filters: dict) -> tuple[dict, i
     if not filtered_prs:
         return {}, 0
 
-    # Calculate metrics
+    # Calculate metrics using the specified profile
     metrics = {}
     for tool in tools:
         tp = fp = fn = 0
         for pr in filtered_prs:
             if tool in pr["tool_metrics"]:
-                tm = pr["tool_metrics"][tool]
-                tp += tm["tp"]
-                fp += tm["fp"]
-                fn += tm["fn"]
+                pm = pr["tool_metrics"][tool].get(profile, {})
+                tp += pm.get("tp", 0)
+                fp += pm.get("fp", 0)
+                fn += pm.get("fn", 0)
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0
@@ -1159,6 +1281,29 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                 </select>
             </div>
 
+            <div class="filter-section model-selector">
+                <div class="filter-title">Scoring Profile</div>
+                <select id="profile-select" onchange="changeProfile(this.value)">
+                    <option value="core" selected>Core (default)</option>
+                    <option value="strict">Strict</option>
+                    <option value="all">All</option>
+                </select>
+                <div style="font-size: 11px; color: #999; margin-top: 4px; line-height: 1.4;" id="profile-desc">
+                    Bug, Security, Concurrency, Data, API, Perf, Test Gap, Doc Defect
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">F-beta (&beta; = <span id="beta-display">2.0</span>)</div>
+                <input type="range" id="beta-slider" min="0.5" max="3" step="0.5" value="2"
+                       oninput="changeBeta(this.value)"
+                       style="width: 100%; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #999; margin-top: 2px;">
+                    <span>Precision-heavy</span>
+                    <span>Recall-heavy</span>
+                </div>
+            </div>
+
             <div class="filter-section">
                 <div class="filter-title">Language</div>
                 <div class="filter-options" id="language-filters">
@@ -1232,7 +1377,7 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                     </label>
                     <label class="checkbox-item">
                         <input type="checkbox" id="show-f1" checked onchange="updateChart()">
-                        F1 Score
+                        F-beta Score
                     </label>
                 </div>
             </div>
@@ -1265,7 +1410,7 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                             <th onclick="sortTable('tool')">Tool</th>
                             <th onclick="sortTable('precision')">Precision (%)</th>
                             <th onclick="sortTable('recall')">Recall (%)</th>
-                            <th onclick="sortTable('f1')">F1 Score (%)</th>
+                            <th onclick="sortTable('fbeta')" id="fbeta-header">F2 Score (%)</th>
                             <th onclick="sortTable('tp')">True Positives</th>
                             <th onclick="sortTable('num_prs')">PRs Evaluated</th>
                         </tr>
@@ -1284,13 +1429,41 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
         const predefinedFilters = {json.dumps(predefined_filters)};
 
         let currentModel = '{default_model}';
+        let currentProfile = 'core';
+        let currentBeta = 2.0;
         let currentFilters = {{
             language: [], pr_size: [], domain: [],
             complexity: [], difficulty: [], risk: [],
             context: [], concern: [], change_type: []
         }};
-        let currentSort = {{ column: 'f1', direction: 'desc' }};
+        let currentSort = {{ column: 'fbeta', direction: 'desc' }};
         let activePredefinedFilter = null;
+
+        const profileDescriptions = {{
+            strict: 'Bug, Security, Concurrency, Data, API',
+            core: 'Bug, Security, Concurrency, Data, API, Perf, Test Gap, Doc Defect',
+            all: 'All categories (includes Style, Speculative)'
+        }};
+
+        function computeFbeta(precision, recall, beta) {{
+            const beta2 = beta * beta;
+            return (precision + recall) > 0
+                ? (1 + beta2) * precision * recall / (beta2 * precision + recall)
+                : 0;
+        }}
+
+        function metricsFromCounts(tp, fp, fn, numPrs) {{
+            const precision = (tp + fp) > 0 ? (tp / (tp + fp)) * 100 : 0;
+            const recall = (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0;
+            const fbeta = computeFbeta(precision, recall, currentBeta);
+            return {{
+                precision: Math.round(precision * 10) / 10,
+                recall: Math.round(recall * 10) / 10,
+                fbeta: Math.round(fbeta * 10) / 10,
+                tp, fp, fn,
+                num_prs: numPrs
+            }};
+        }}
 
         function getCurrentData() {{
             return allModelsData[currentModel];
@@ -1311,6 +1484,22 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
 
         function changeModel(modelName) {{
             currentModel = modelName;
+            updateChart();
+            updateTable();
+        }}
+
+        function changeProfile(profile) {{
+            currentProfile = profile;
+            document.getElementById('profile-desc').textContent = profileDescriptions[profile] || '';
+            updateChart();
+            updateTable();
+        }}
+
+        function changeBeta(value) {{
+            currentBeta = parseFloat(value);
+            document.getElementById('beta-display').textContent = currentBeta.toFixed(1);
+            const label = currentBeta === 1 ? 'F1' : 'F' + currentBeta;
+            document.getElementById('fbeta-header').textContent = label + ' Score (%)';
             updateChart();
             updateTable();
         }}
@@ -1357,7 +1546,8 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
             }}
 
             if (filter.sort) {{
-                currentSort = {{ column: filter.sort, direction: 'desc' }};
+                const col = filter.sort === 'f1' ? 'fbeta' : filter.sort;
+                currentSort = {{ column: col, direction: 'desc' }};
             }}
 
             activePredefinedFilter = filterId;
@@ -1406,7 +1596,15 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
             const hasFilters = Object.values(currentFilters).some(arr => arr.length > 0);
 
             if (!hasFilters) {{
-                return data.overall_metrics;
+                // Use pre-computed overall metrics for current profile, recompute F-beta
+                const result = {{}};
+                for (const [tool, profileMetrics] of Object.entries(data.overall_metrics)) {{
+                    const pm = profileMetrics[currentProfile];
+                    if (pm) {{
+                        result[tool] = metricsFromCounts(pm.tp, pm.fp, pm.fn, pm.num_prs);
+                    }}
+                }}
+                return result;
             }}
 
             const filteredPRs = data.prs.filter(pr => {{
@@ -1426,27 +1624,16 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
             for (const tool of data.tools) {{
                 let tp = 0, fp = 0, fn = 0, numPrs = 0;
                 for (const pr of filteredPRs) {{
-                    if (pr.tool_metrics[tool]) {{
-                        tp += pr.tool_metrics[tool].tp;
-                        fp += pr.tool_metrics[tool].fp;
-                        fn += pr.tool_metrics[tool].fn;
+                    const tm = pr.tool_metrics[tool];
+                    if (tm && tm[currentProfile]) {{
+                        tp += tm[currentProfile].tp;
+                        fp += tm[currentProfile].fp;
+                        fn += tm[currentProfile].fn;
                         numPrs++;
                     }}
                 }}
 
-                const precision = (tp + fp) > 0 ? (tp / (tp + fp)) * 100 : 0;
-                const recall = (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0;
-                const f1 = (precision + recall) > 0 ? (2 * precision * recall / (precision + recall)) : 0;
-
-                metrics[tool] = {{
-                    precision: Math.round(precision * 10) / 10,
-                    recall: Math.round(recall * 10) / 10,
-                    f1: Math.round(f1 * 10) / 10,
-                    tp: tp,
-                    fp: fp,
-                    fn: fn,
-                    num_prs: numPrs
-                }};
+                metrics[tool] = metricsFromCounts(tp, fp, fn, numPrs);
             }}
 
             return metrics;
@@ -1456,7 +1643,8 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
             const data = getCurrentData();
             const metrics = getFilteredMetrics();
 
-            const x = [], y = [], text = [], colors = [];
+            const x = [], y = [], text = [], colors = [], hoverText = [];
+            const betaLabel = currentBeta === 1 ? 'F1' : 'F' + currentBeta;
 
             for (const tool of data.tools) {{
                 const m = metrics[tool];
@@ -1465,6 +1653,13 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                     y.push(m.recall);
                     text.push(toolDisplayNames[tool] || tool);
                     colors.push(toolColors[tool] || '#666');
+                    hoverText.push(
+                        '<b>' + (toolDisplayNames[tool] || tool) + '</b>' +
+                        '<br>Precision: ' + m.precision.toFixed(1) + '%' +
+                        '<br>Recall: ' + m.recall.toFixed(1) + '%' +
+                        '<br>' + betaLabel + ': ' + m.fbeta.toFixed(1) + '%' +
+                        '<br>Profile: ' + currentProfile
+                    );
                 }}
             }}
 
@@ -1472,6 +1667,7 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                 x: x,
                 y: y,
                 text: text,
+                hovertext: hoverText,
                 mode: 'markers+text',
                 type: 'scatter',
                 textposition: 'top right',
@@ -1481,7 +1677,7 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                     color: colors,
                     line: {{ color: '#fff', width: 2 }}
                 }},
-                hovertemplate: '<b>%{{text}}</b><br>Precision: %{{x:.1f}}%<br>Recall: %{{y:.1f}}%<extra></extra>'
+                hovertemplate: '%{{hovertext}}<extra></extra>'
             }};
 
             const layout = {{
@@ -1557,9 +1753,9 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                     <td>
                         <div class="metric-bar">
                             <div class="metric-bar-fill">
-                                <div class="metric-bar-value" style="width: ${{row.f1}}%"></div>
+                                <div class="metric-bar-value" style="width: ${{row.fbeta}}%"></div>
                             </div>
-                            <span class="metric-value">${{row.f1.toFixed(1)}}%</span>
+                            <span class="metric-value">${{row.fbeta.toFixed(1)}}%</span>
                         </div>
                     </td>
                     <td>${{row.tp}}</td>
@@ -1614,6 +1810,12 @@ def generate_json_data(all_models_data: dict, default_model: str) -> dict:
         "tool_colors": TOOL_COLORS,
         "default_model": default_model,
         "min_prs_threshold": MIN_PRS_FOR_FILTER,
+        "profiles": {
+            name: {"categories": sorted(cats), "description": PROFILE_DESCRIPTIONS[name]}
+            for name, cats in PROFILE_CATEGORIES.items()
+        },
+        "default_profile": "core",
+        "default_beta": 2.0,
     }
 
 
@@ -1668,12 +1870,12 @@ def main():
     print("=" * 60)
 
     # Get all tools
-    all_tools = set()
+    all_tools: set[str] = set()
     for model_data in all_models_data.values():
         all_tools.update(model_data.get("tools", []))
 
     # Find first filter for each tool
-    tool_filters = {}
+    tool_filters: dict[str, dict] = {}
     for f in json_data["predefined_filters"]:
         tool = f.get("best_tool")
         if tool and tool not in tool_filters:
@@ -1687,6 +1889,18 @@ def main():
             print(f"  {display_name:20s} -> {f['label']}")
         else:
             print(f"  {display_name:20s} -> (no winning filter found)")
+
+    # Print per-profile aggregate for the default model
+    default_data = all_models_data[default_model]
+    print(f"\nDefault model: {default_model}")
+    for profile_name in PROFILE_CATEGORIES:
+        print(f"\n  Profile: {profile_name}")
+        print(f"  {'Tool':<20s} {'Prec':>6s} {'Recall':>7s} {'F1':>6s} {'F2':>6s}")
+        print("  " + "-" * 45)
+        for tool in sorted(all_tools):
+            pm = default_data["overall_metrics"].get(tool, {}).get(profile_name)
+            if pm:
+                print(f"  {TOOL_DISPLAY_NAMES.get(tool, tool):<20s} {pm['precision']:>5.1f}% {pm['recall']:>6.1f}% {pm['f1']:>5.1f}% {pm['f2']:>5.1f}%")
 
     print("=" * 60)
 

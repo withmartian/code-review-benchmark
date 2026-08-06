@@ -7,30 +7,52 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | Tool | Type |
 |---|---|
 | [Augment](https://www.augmentcode.com/) | AI code review |
+| [Baz](https://www.baz.co/) | AI code review |
 | [Claude Code](https://claude.ai) | AI assistant |
+| [CodeAnt](https://www.codeant.ai/) | AI code review |
 | [CodeRabbit](https://www.coderabbit.ai/) | AI code review |
-| [Codex](https://openai.com/codex) | AI assistant |
 | [Cursor Bugbot](https://cursor.com) | AI code review |
+| [Cubic](https://cubic.dev/) | AI code review |
+| [Devin](https://devin.ai/) | AI assistant |
 | [Gemini](https://gemini.google.com/) | AI assistant |
 | [GitHub Copilot](https://github.com/features/copilot) | AI code review |
+| [GitLab Duo](https://about.gitlab.com/gitlab-duo/) | AI code review |
 | [Graphite](https://graphite.dev/) | AI code review |
 | [Greptile](https://www.greptile.com/) | AI code review |
 | [Propel](https://propelauth.com/) | AI code review |
+| [KG](https://kg.dev/) | AI code review |
+| [Kodus](https://kodus.io/) | AI code review |
+| [Macroscope](https://www.macroscope.com/) | AI code review |
 | [Qodo](https://www.qodo.ai/) | AI code review |
+| [Sourcery](https://sourcery.ai/) | AI code review |
 
 Adding a new tool requires forking the benchmark PRs and collecting the tool's reviews — see Steps 0 and 1 below.
 
 ## Methodology
 
-Each of the 50 benchmark PRs has a set of **golden comments**: real issues that a human reviewer identified, with severity labels (Low / Medium / High / Critical). These are the ground truth.
+Each of the 50 benchmark PRs has a set of **golden comments**: real issues that a human reviewer identified, with severity labels (Low / Medium / High / Critical) and category tags (bug, security, concurrency, etc.). These are the ground truth.
 
 For each tool, the pipeline:
 1. **Extracts** individual issues from the tool's review comments (line-specific comments become candidates directly; general comments are sent to an LLM to extract distinct issues)
 2. **Deduplicates** candidates — tools that post the same issue in both a summary comment and as inline comments would otherwise be penalised for the duplicate. An LLM groups candidates that express the same underlying concern; sibling duplicates are not counted as false positives in step 3.
 3. **Judges** each candidate against each golden comment using an LLM: "Do these describe the same underlying issue?"
-4. **Computes** precision (what fraction of the tool's comments matched real issues?) and recall (what fraction of real issues did the tool find?)
+4. **Scores** using category-based profiles and F-beta to compute precision, recall, and composite scores.
 
 The judge accepts semantic matches — different wording is fine as long as the underlying issue is the same.
+
+### Scoring profiles
+
+Golden comments are grouped by category. Three scoring profiles control which categories count toward the score:
+
+| Profile | Categories | Golden Count |
+|---|---|---|
+| **Strict** | bug, security, concurrency, data, api | 139 |
+| **Core** (default) | Strict + perf, test_gap, doc_defect | 158 |
+| **All** | Core + style, speculative | 173 |
+
+When a tool matches a golden comment whose category is *excluded* by the active profile, that match is **matched-excluded** — neither rewarded nor penalized. This prevents verbose tools from being punished for catching real-but-minor issues.
+
+The dashboard supports F-beta scoring (β = 0.5 to 3.0). F1 weights precision and recall equally; F2 weights recall 4x more, reflecting the real-world cost asymmetry where missed bugs are worse than false alarms.
 
 ### Judge models used
 
@@ -42,7 +64,7 @@ Results are stored per judge model so you can compare how different judges score
 ## Known limitations
 
 - **Static dataset** — PRs are from well-known repos; tools may have seen them during training (training data leakage). See [`online/`](../online/) for a benchmark that avoids this.
-- **Golden comments are human-curated** but may miss edge cases or disagree with other reviewers.
+- **Golden comments are human-curated** but may miss edge cases or disagree with other reviewers. The golden set has sparse coverage of style/nit issues (~10 across 50 PRs), so tools that flag many correct style issues will still see some counted as false positives.
 - **LLM judge introduces model-dependent variance** — different judge models may score differently. We mitigate this by using consistent prompts and reporting the judge model used.
 
 ---
@@ -191,7 +213,13 @@ uv run python analysis/benchmark_dashboard.py
 
 **Output:** `analysis/benchmark_dashboard.json` and `analysis/benchmark_dashboard.html`
 
-Open `analysis/benchmark_dashboard.html` in a browser to view results. Run this after adding new tools or re-running the judge to update the dashboard.
+Open `analysis/benchmark_dashboard.html` in a browser to view results. The dashboard includes:
+- Scoring profile selector (Strict / Core / All)
+- F-beta slider (0.5–3.0) for weighting precision vs. recall
+- Dimension filters (language, PR size, domain, complexity, etc.)
+- Scatter plot and sortable table
+
+Run this after adding new tools or re-running the judge to update the dashboard.
 
 ### 5. Summary table
 
@@ -224,6 +252,17 @@ uv run python -m code_review_benchmark.step4_export_by_tool --tool greptile
 
 **Output:** `results/{tool}_reviews.xlsx`
 
+### Speed analysis
+
+Compute review latency per tool from GitHub PR timelines:
+
+```bash
+uv run python -m code_review_benchmark.step_speed_analysis \
+  --org code-review-benchmark --output results/speed_analysis.json
+```
+
+**Output:** `results/speed_analysis.json`
+
 ---
 
 ## Data format
@@ -238,12 +277,15 @@ uv run python -m code_review_benchmark.step4_export_by_tool --tool greptile
     "comments": [
       {
         "comment": "This lock acquisition can deadlock if the worker is interrupted between acquiring lock A and lock B",
-        "severity": "High"
+        "severity": "High",
+        "category": "concurrency"
       }
     ]
   }
 ]
 ```
+
+Categories: `bug`, `security`, `concurrency`, `data`, `api`, `perf`, `test_gap`, `doc_defect`, `style`, `speculative`.
 
 Source files: `sentry.json`, `grafana.json`, `keycloak.json`, `discourse.json`, `cal_dot_com.json`
 
@@ -280,11 +322,24 @@ Source files: `sentry.json`, `grafana.json`, `keycloak.json`, `discourse.json`, 
     "claude": {
       "precision": 0.75,
       "recall": 0.6,
-      "true_positives": 3,
-      "false_positives": 1,
-      "false_negatives": 2,
-      "matches": ["..."],
-      "false_negatives_detail": ["..."]
+      "tp": 3,
+      "fp": 1,
+      "fn": 2,
+      "total_candidates": 4,
+      "total_golden": 5,
+      "true_positives": [
+        {
+          "golden_comment": "...",
+          "matched_candidate": "...",
+          "severity": "High",
+          "confidence": "high",
+          "reasoning": "..."
+        }
+      ],
+      "false_negatives": [
+        {"golden_comment": "...", "severity": "Medium"}
+      ],
+      "false_positives": ["unmatched candidate text"]
     }
   }
 }

@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 RESULTS_DIR = Path("results")
 BENCHMARK_DATA_FILE = RESULTS_DIR / "benchmark_data.json"
-BATCH_SIZE = 40
+BATCH_SIZE = 20
 LLM_CALL_TIMEOUT = 30  # seconds per individual LLM call
 REVIEW_TIMEOUT = 1800  # seconds per full review evaluation (30 min)
 
@@ -117,7 +117,7 @@ class LLMJudge:
         if structured_output:
             print("Structured output: enabled")
 
-    async def call_llm(self, prompt: str, max_retries: int = 3) -> dict:
+    async def call_llm(self, prompt: str, max_retries: int = 5) -> dict:
         for attempt in range(max_retries):
             try:
                 kwargs = {
@@ -176,9 +176,16 @@ class LLMJudge:
                 await asyncio.sleep(1)
 
             except Exception as e:
+                err_str = str(e).lower()
+                is_rate_limit = "429" in err_str or "rate" in err_str or "too many" in err_str
                 if attempt == max_retries - 1:
                     return {"error": str(e)}
-                await asyncio.sleep(2**attempt)
+                # Longer backoff for rate limits: 10s, 30s, 60s, 120s
+                if is_rate_limit:
+                    wait = min(10 * (3 ** attempt), 120)
+                    await asyncio.sleep(wait)
+                else:
+                    await asyncio.sleep(2**attempt)
 
         return {"error": "Max retries exceeded"}
 
@@ -251,7 +258,8 @@ async def evaluate_review(
             "true_positives": [],
             "false_positives": [],
             "false_negatives": [
-                {"golden_comment": gc["comment"], "severity": gc.get("severity")} for gc in golden_comments
+                {"golden_comment": gc["comment"], "severity": gc.get("severity"), "category": gc.get("category")}
+                for gc in golden_comments
             ],
             "errors": [],
             "total_candidates": 0,
@@ -287,6 +295,7 @@ async def evaluate_review(
     golden_matched = {
         gc["comment"]: {
             "severity": gc.get("severity"),
+            "category": gc.get("category"),
             "matched": False,
             "best_confidence": 0.0,
             "matched_candidate": None,
@@ -330,6 +339,7 @@ async def evaluate_review(
                 {
                     "golden_comment": golden,
                     "severity": info["severity"],
+                    "category": info["category"],
                     "matched_candidate": info["matched_candidate"],
                     "confidence": info["best_confidence"],
                     "reasoning": info.get("reasoning"),
@@ -340,6 +350,7 @@ async def evaluate_review(
                 {
                     "golden_comment": golden,
                     "severity": info["severity"],
+                    "category": info["category"],
                 }
             )
 
@@ -381,8 +392,13 @@ async def main():
     parser.add_argument(
         "--dedup-groups",
         metavar="FILE",
-        help="Path to dedup_groups_strict.json (or loose) from step2_5. "
-             "Duplicate candidates in the same group will not be counted as FPs.",
+        help="Path to dedup_groups.json from step2_5. "
+             "Defaults to {model_dir}/dedup_groups.json if it exists.",
+    )
+    parser.add_argument(
+        "--no-dedup",
+        action="store_true",
+        help="Disable dedup even if dedup_groups.json exists in the model directory.",
     )
     parser.add_argument(
         "--evaluations-file",
@@ -416,16 +432,21 @@ async def main():
             all_candidates = json.load(f)
         print(f"Loaded candidates from {candidates_file}")
 
-    # Load dedup groups if provided
+    # Load dedup groups: explicit path > auto-detect in model dir > disabled
     all_dedup_groups: dict = {}
-    if args.dedup_groups:
-        dedup_path = Path(args.dedup_groups)
-        if not dedup_path.exists():
+    if args.no_dedup:
+        print("Dedup: disabled (--no-dedup)")
+    else:
+        dedup_path = Path(args.dedup_groups) if args.dedup_groups else model_dir / "dedup_groups.json"
+        if dedup_path.exists():
+            with open(dedup_path) as f:
+                all_dedup_groups = json.load(f)
+            print(f"Loaded dedup groups from {dedup_path}")
+        elif args.dedup_groups:
             print(f"Error: dedup groups file not found: {dedup_path}")
             return
-        with open(dedup_path) as f:
-            all_dedup_groups = json.load(f)
-        print(f"Loaded dedup groups from {dedup_path}")
+        else:
+            print("Dedup: no dedup_groups.json found in model dir, running without dedup")
 
     # Load state
     state = EvaluationState.load(evaluations_file)

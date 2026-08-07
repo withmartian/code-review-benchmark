@@ -24,14 +24,6 @@ from pipeline.actors import same_github_actor
 logger = logging.getLogger(__name__)
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-_DETAILS_RE = re.compile(r"<details\b[^>]*>.*?</details>", re.DOTALL | re.IGNORECASE)
-_SUB_RE = re.compile(r"<sub\b[^>]*>.*?</sub>", re.DOTALL | re.IGNORECASE)
-_PROMO_FOOTER_HINTS = (
-    "if you found this review helpful",
-    "coderabbit",
-    "review details",
-    "configuration used",
-)
 
 
 def _find_bot_review_commit(
@@ -154,21 +146,8 @@ def _format_commits_with_diffs(commits: list[dict], details_by_sha: dict[str, di
 
 
 def _clean_bot_comment_body(body: str) -> str:
-    """Remove hidden/generated Markdown that is not part of the review finding text."""
-    cleaned = _HTML_COMMENT_RE.sub("", body)
-    cleaned = _DETAILS_RE.sub("", cleaned)
-    cleaned = _SUB_RE.sub("", cleaned)
-
-    lines = cleaned.splitlines()
-    for idx, line in enumerate(lines):
-        if line.strip() != "---":
-            continue
-        tail = "\n".join(lines[idx + 1 :]).lower()
-        if any(hint in tail for hint in _PROMO_FOOTER_HINTS):
-            lines = lines[:idx]
-            break
-
-    return "\n".join(lines).strip()
+    """Remove hidden HTML comments that are not visible review content."""
+    return _HTML_COMMENT_RE.sub("", body).strip()
 
 
 def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:

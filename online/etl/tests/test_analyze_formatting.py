@@ -6,9 +6,16 @@ from pipeline.analyze import _clean_bot_comment_body
 from pipeline.analyze import _format_bot_comments
 
 
-def test_clean_bot_comment_body_removes_hidden_metadata() -> None:
+def test_clean_bot_comment_body_removes_hidden_html_comments() -> None:
     body = """<!-- hidden classifier notes -->
 Actual review finding.
+"""
+
+    assert _clean_bot_comment_body(body) == "Actual review finding."
+
+
+def test_clean_bot_comment_body_preserves_visible_markdown_blocks() -> None:
+    body = """Actual review finding.
 
 <details>
 <summary>Debug trace</summary>
@@ -18,17 +25,17 @@ Internal prompt text
 <sub>generated metadata</sub>
 """
 
-    assert _clean_bot_comment_body(body) == "Actual review finding."
+    assert _clean_bot_comment_body(body) == body.strip()
 
 
-def test_clean_bot_comment_body_removes_promotional_footer() -> None:
+def test_clean_bot_comment_body_preserves_footer_text() -> None:
     body = """Potential null dereference here.
 
 ---
 If you found this review helpful, react to this comment.
 """
 
-    assert _clean_bot_comment_body(body) == "Potential null dereference here."
+    assert _clean_bot_comment_body(body) == body.strip()
 
 
 def test_clean_bot_comment_body_preserves_configured_findings_after_separator() -> None:

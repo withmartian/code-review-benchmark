@@ -19,7 +19,10 @@ from pathlib import Path
 PROFILE_CATEGORIES: dict[str, frozenset[str]] = {
     "strict": frozenset({"bug", "security", "concurrency", "data", "api"}),
     "core": frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect"}),
-    "all": frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect", "style", "speculative"}),
+    "all": frozenset({
+        "bug", "security", "concurrency", "data", "api",
+        "perf", "test_gap", "doc_defect", "style", "speculative",
+    }),
 }
 
 # Tools excluded from the dashboard (superseded versions, incomplete runs, etc.)
@@ -136,7 +139,8 @@ def print_table(results: dict[str, dict], profile: str, beta: float) -> None:
     sorted_tools = sorted(results.keys(), key=lambda t: results[t]["fbeta"], reverse=True)
 
     print(f"\n{'=' * 75}")
-    print(f"  Profile: {profile.upper()}  |  {beta_label}  |  Categories: {', '.join(sorted(PROFILE_CATEGORIES[profile]))}")
+    categories = ", ".join(sorted(PROFILE_CATEGORIES[profile]))
+    print(f"  Profile: {profile.upper()}  |  {beta_label}  |  Categories: {categories}")
     print(f"{'=' * 75}")
     print(f"  {'Tool':<22s} {'Prec':>6s} {'Recall':>7s} {'F1':>6s} {beta_label:>6s}  {'TP':>4s} {'FP':>4s} {'FN':>4s}")
     print(f"  {'-' * 70}")

@@ -17,6 +17,7 @@ from typing import Any
 from db.connection import DBAdapter
 from db.repository import PRRepository
 from pipeline.actors import same_github_actor
+from pipeline.quality import serialize_engagement_signals
 
 logger = logging.getLogger(__name__)
 
@@ -448,17 +449,19 @@ def assemble_pr_from_row(pr_row: dict, chatbot_username: str) -> dict | None:
 
     Returns the assembled record as a dict, or None if required data is missing.
     """
-    bq_events = _json_load(pr_row.get("bq_events"))
+    bq_events = _json_load(pr_row.get("bq_events")) or []
     commits = _json_load(pr_row.get("commits"))
     reviews = _json_load(pr_row.get("reviews"))
     raw_threads = _json_load(pr_row.get("review_threads"))
     commit_details = _json_load(pr_row.get("commit_details"))
 
-    if bq_events is None:
-        logger.warning(f"No BQ events for PR {pr_row['repo_name']}#{pr_row['pr_number']} — skipping assembly")
-        return None
-
+    # BQ events may be empty for Search API discovered PRs — metadata
+    # falls back to the PR row columns populated during discovery/enrichment
     meta = _extract_pr_metadata(bq_events)
+    meta["pr_title"] = meta["pr_title"] or pr_row.get("pr_title", "")
+    meta["pr_author"] = meta["pr_author"] or pr_row.get("pr_author")
+    meta["pr_created_at"] = meta["pr_created_at"] or pr_row.get("pr_created_at")
+    meta["pr_merged"] = meta["pr_merged"] if meta["pr_merged"] is not None else pr_row.get("pr_merged")
     timeline = _build_timeline_events(bq_events, commits, commit_details, reviews)
     threads = _build_review_threads(raw_threads)
     _enrich_timeline_with_threads(timeline, raw_threads)
@@ -487,7 +490,6 @@ async def assemble_pr(
     chatbot_username: str,
 ) -> bool:
     """Assemble a single PR and save to DB. Returns True if successful."""
-    from pipeline.quality import serialize_engagement_signals
 
     record = assemble_pr_from_row(pr_row, chatbot_username)
     if record is None:

@@ -144,10 +144,16 @@ def build_parser() -> argparse.ArgumentParser:
     # Handled by checking if --user is in sys.argv
 
     # discover
-    p_disc = sub.add_parser("discover", help="Discover PRs from BigQuery into DB")
+    p_disc = sub.add_parser("discover", help="Discover PRs into DB (Search API or BigQuery)")
     p_disc.add_argument("--chatbot", help="GitHub username of the chatbot")
     p_disc.add_argument(
-        "--all", action="store_true", dest="all_chatbots", help="Discover for all registered chatbots (single BQ scan)"
+        "--all", action="store_true", dest="all_chatbots", help="Discover for all registered chatbots"
+    )
+    p_disc.add_argument(
+        "--source",
+        choices=["search-api", "bq"],
+        default="search-api",
+        help="Discovery source: 'search-api' (default, GitHub Search API) or 'bq' (BigQuery/GH Archive)",
     )
     p_disc.add_argument("--days-back", type=int, default=7)
     p_disc.add_argument("--start-date", help="YYYY-MM-DD")
@@ -298,6 +304,8 @@ async def cmd_discover(args: argparse.Namespace) -> None:
     from db.schema import create_tables
     from pipeline.discover import discover_prs
     from pipeline.discover import discover_prs_batch
+    from pipeline.discover import discover_prs_search_api
+    from pipeline.discover import discover_prs_search_api_batch
 
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
@@ -312,6 +320,9 @@ async def cmd_discover(args: argparse.Namespace) -> None:
         logger.error("Specify --chatbot or --all")
         return
 
+    use_search_api = args.source == "search-api"
+    logger.info(f"Discovery source: {'Search API' if use_search_api else 'BigQuery'}")
+
     db = DBAdapter(cfg.database_url)
     await db.connect()
     try:
@@ -322,26 +333,47 @@ async def cmd_discover(args: argparse.Namespace) -> None:
             db_usernames = {bot["github_username"] for bot in chatbots}
             usernames = sorted(db_usernames | set(DEFAULT_CHATBOT_USERNAMES))
             logger.info(f"Batch discovering PRs for {len(usernames)} chatbots")
-            await discover_prs_batch(
-                cfg,
-                db,
-                usernames,
-                start_date,
-                end_date,
-                min_pr_number=args.min_pr_number,
-                max_prs_per_day=args.max_prs_per_day,
-            )
+            if use_search_api:
+                await discover_prs_search_api_batch(
+                    cfg,
+                    db,
+                    usernames,
+                    start_date,
+                    end_date,
+                    max_prs_per_day=args.max_prs_per_day,
+                )
+            else:
+                await discover_prs_batch(
+                    cfg,
+                    db,
+                    usernames,
+                    start_date,
+                    end_date,
+                    min_pr_number=args.min_pr_number,
+                    max_prs_per_day=args.max_prs_per_day,
+                )
         else:
-            await discover_prs(
-                cfg,
-                db,
-                args.chatbot,
-                start_date,
-                end_date,
-                min_pr_number=args.min_pr_number,
-                max_prs_per_day=args.max_prs_per_day,
-                display_name=args.display_name,
-            )
+            if use_search_api:
+                await discover_prs_search_api(
+                    cfg,
+                    db,
+                    args.chatbot,
+                    start_date,
+                    end_date,
+                    max_prs_per_day=args.max_prs_per_day,
+                    display_name=args.display_name,
+                )
+            else:
+                await discover_prs(
+                    cfg,
+                    db,
+                    args.chatbot,
+                    start_date,
+                    end_date,
+                    min_pr_number=args.min_pr_number,
+                    max_prs_per_day=args.max_prs_per_day,
+                    display_name=args.display_name,
+                )
     finally:
         await db.close()
 

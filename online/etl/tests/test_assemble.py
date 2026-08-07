@@ -419,9 +419,23 @@ class TestDetermineRoles:
 
 
 class TestAssemblePrFromRow:
-    def test_returns_none_without_bq_events(self) -> None:
-        row = {"repo_name": "org/repo", "pr_number": 1, "pr_url": "https://x", "bq_events": None}
-        assert assemble_pr_from_row(row, "bot[bot]") is None
+    def test_assembles_without_bq_events(self) -> None:
+        """Search API discovered PRs have no bq_events — assembly should still work."""
+        row = {
+            "repo_name": "org/repo",
+            "pr_number": 1,
+            "pr_url": "https://x",
+            "bq_events": None,
+            "pr_title": "From Search API",
+            "pr_author": "alice",
+            "pr_created_at": "2026-08-06T00:00:00Z",
+            "pr_merged": True,
+        }
+        result = assemble_pr_from_row(row, "bot[bot]")
+        assert result is not None
+        assert result["pr_title"] == "From Search API"
+        assert result["pr_author"] == "alice"
+        assert result["pr_merged"] is True
 
     def test_basic_assembly(self) -> None:
         bq_events = [_make_pr_event(author="alice", title="Fix thing", action="closed", merged=True)]

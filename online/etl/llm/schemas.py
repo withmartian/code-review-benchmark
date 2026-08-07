@@ -7,8 +7,8 @@ from pydantic import Field
 
 
 class BotSuggestion(BaseModel):
-    issue_id: str = Field(description="Unique identifier for this suggestion (e.g. 'S1', 'S2')")
-    description: str = Field(description="What the bot suggested or flagged")
+    issue_id: str = Field(description="Unique identifier for this finding (e.g. 'S1', 'S2')")
+    description: str = Field(description="The issue or concern the bot flagged")
     category: str = Field(
         description="Category: 'bug', 'style', 'performance', 'security', 'refactor', 'documentation', 'other'"
     )
@@ -18,7 +18,7 @@ class BotSuggestion(BaseModel):
 
 
 class BotSuggestionsResponse(BaseModel):
-    suggestions: list[BotSuggestion] = Field(description="All actionable suggestions made by the bot")
+    suggestions: list[BotSuggestion] = Field(description="All concrete code-review findings flagged by the bot")
 
 
 class HumanAction(BaseModel):

@@ -554,10 +554,11 @@ async def _search_api_fetch_all(
     client: httpx.AsyncClient,
     query: str,
     total_count: int,
+    max_items: int = _SEARCH_MAX_RESULTS,
 ) -> list[dict]:
-    """Paginate through all results for a query (up to 1,000)."""
-    capped = min(total_count, _SEARCH_MAX_RESULTS)
-    pages_needed = (capped + _SEARCH_PER_PAGE - 1) // _SEARCH_PER_PAGE
+    """Paginate through results for a query, stopping at max_items or 1,000."""
+    target = min(total_count, _SEARCH_MAX_RESULTS, max_items)
+    pages_needed = (target + _SEARCH_PER_PAGE - 1) // _SEARCH_PER_PAGE
     all_items: list[dict] = []
 
     for page in range(1, pages_needed + 1):
@@ -567,7 +568,7 @@ async def _search_api_fetch_all(
             logger.warning(f"Stopping pagination at page {page} due to {result}")
             break
         all_items.extend(result)
-        if len(result) < _SEARCH_PER_PAGE:
+        if len(all_items) >= target or len(result) < _SEARCH_PER_PAGE:
             break
 
     return all_items
@@ -583,11 +584,14 @@ async def _fetch_window(
     search_username: str,
     window_start: datetime,
     window_end: datetime,
+    max_items: int = _SEARCH_MAX_RESULTS,
     depth: int = 0,
 ) -> list[dict]:
-    """Fetch all merged PRs reviewed by a bot in a time window.
+    """Fetch merged PRs reviewed by a bot in a time window.
 
-    Recursively bisects the window if total_count exceeds 1,000.
+    When total_count <= 1,000 or max_items <= 1,000: paginate directly.
+    When total_count > 1,000 and we need more than 1,000: bisect into
+    sub-windows so each fits under the API cap.
     """
     merged_range = f"merged:{_format_dt(window_start)}..{_format_dt(window_end)}"
     query = f"type:pr reviewed-by:{search_username} is:merged {merged_range}"
@@ -602,23 +606,24 @@ async def _fetch_window(
     if count == 0:
         return []
 
-    if count <= _SEARCH_MAX_RESULTS:
-        logger.debug(f"  Window {merged_range}: {count} results, fetching all")
-        return await _search_api_fetch_all(client, query, count)
+    # If we only need up to max_items and that fits in one query, just paginate
+    if count <= _SEARCH_MAX_RESULTS or max_items <= _SEARCH_MAX_RESULTS:
+        logger.debug(f"  Window {merged_range}: {count} total, fetching up to {max_items}")
+        return await _search_api_fetch_all(client, query, count, max_items=max_items)
 
-    # Bisect: window has >1,000 results
+    # Need >1,000 items from a >1,000 result set: bisect
     if depth > 8:
-        # Safety valve: stop recursing, take what we can get
         logger.warning(
             f"  Window {merged_range}: {count} results at max depth {depth}, "
-            f"fetching first {_SEARCH_MAX_RESULTS}"
+            f"fetching first {min(max_items, _SEARCH_MAX_RESULTS)}"
         )
-        return await _search_api_fetch_all(client, query, _SEARCH_MAX_RESULTS)
+        return await _search_api_fetch_all(client, query, count, max_items=max_items)
 
     mid = window_start + (window_end - window_start) / 2
+    half_target = max_items // 2 + 1  # slight overlap is fine, deduped later
     logger.debug(f"  Window {merged_range}: {count} results, bisecting at {_format_dt(mid)}")
-    left = await _fetch_window(client, search_username, window_start, mid, depth + 1)
-    right = await _fetch_window(client, search_username, mid, window_end, depth + 1)
+    left = await _fetch_window(client, search_username, window_start, mid, max_items=half_target, depth=depth + 1)
+    right = await _fetch_window(client, search_username, mid, window_end, max_items=half_target, depth=depth + 1)
     return left + right
 
 
@@ -684,7 +689,13 @@ async def discover_prs_search_api(
             window_start = datetime(current.year, current.month, current.day, tzinfo=timezone.utc)
             window_end = window_start + timedelta(days=1)
 
-            raw_items = await _fetch_window(client, search_username, window_start, window_end)
+            # Over-fetch by 2x to leave room for repo-cap filtering,
+            # but cap at 1,000 to avoid unnecessary bisection
+            fetch_limit = min(max_prs_per_day * 2, _SEARCH_MAX_RESULTS)
+            raw_items = await _fetch_window(
+                client, search_username, window_start, window_end,
+                max_items=fetch_limit,
+            )
 
             if not raw_items:
                 logger.debug(f"  {chatbot_username} on {current}: 0 PRs")

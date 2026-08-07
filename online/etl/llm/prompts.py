@@ -1,32 +1,47 @@
 """Prompt templates for the LLM analysis pipeline."""
 
-EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract all actionable suggestions made by a code review bot.
+EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.
 
 The bot's username is: {bot_username}
 
 Below you will see:
-1. The commits that were under review (the code state the bot saw), including full diffs
-2. The bot's review comments on those commits
+1. The bot's review comments on the commits
+2. The commits that were under review (the code state the bot saw), including full diffs
 
-For each actionable suggestion the bot made, extract:
+The Bot Review Comments section is a numbered list. Each entry is labeled as REVIEW_BODY,
+INLINE_REVIEW_COMMENT, or ISSUE_COMMENT. Process all numbered comments. Top-level inline
+review comments generally contain substantive findings; review bodies and issue comments may
+contain findings or summaries.
+
+Your job is to identify every distinct substantive finding the bot flagged. A finding can be a
+bug, defect, risk, incorrect behavior, missing validation, security concern, performance concern,
+maintainability issue, documentation problem, test gap, or other concrete code-review concern.
+
+Only extract findings grounded in the bot's comments. Do not invent findings solely from the
+commit diff. Use the commit diff only to understand code context for a comment.
+
+For each finding, extract:
 - A unique ID (S1, S2, ...)
-- A description of what was suggested
+- A concise description of the issue or concern the bot flagged
 - The category (bug, style, performance, security, refactor, documentation, other)
 - The file path and line number if available
 - Severity (low, medium, high, critical)
 
-Only include ACTIONABLE suggestions — skip generic praise, summaries, or "looks good" comments.
-Skip bot comments that are purely informational without suggesting any change.
+Skip generic praise, status/progress messages, quota/limit messages, pure summaries without a
+concrete finding, and "looks good" / "no issues found" comments. Also skip follow-up comments
+that merely confirm a fix, acknowledge a clarification, say a parent comment was wrong, too
+broad, pre-existing, already addressed, or out of scope, unless that same comment introduces a
+new distinct code issue.
 
 PR Title: {pr_title}
 PR Author: {pr_author}
 Repository: {repo_name}
 
-=== Commits Under Review (code the bot reviewed) ===
-{commits_under_review}
-
 === Bot Review Comments ===
 {bot_comments}
+
+=== Commits Under Review (code the bot reviewed) ===
+{commits_under_review}
 """
 
 EXTRACT_HUMAN_ACTIONS = """You are analyzing post-review commit diffs to extract every concrete code issue that was fixed or improved AFTER the bot reviewed the PR.

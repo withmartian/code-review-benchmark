@@ -456,11 +456,15 @@ def assemble_pr_from_row(pr_row: dict, chatbot_username: str) -> dict | None:
     commit_details = _json_load(pr_row.get("commit_details"))
 
     # BQ events may be empty for Search API discovered PRs — metadata
-    # falls back to the PR row columns populated during discovery/enrichment
+    # falls back to the PR row columns populated during discovery/enrichment.
+    # PostgreSQL returns timestamps as datetime objects; convert to ISO strings.
+    def _to_isoformat(val: Any) -> str | None:
+        return val.isoformat() if hasattr(val, "isoformat") else val
+
     meta = _extract_pr_metadata(bq_events)
     meta["pr_title"] = meta["pr_title"] or pr_row.get("pr_title", "")
     meta["pr_author"] = meta["pr_author"] or pr_row.get("pr_author")
-    meta["pr_created_at"] = meta["pr_created_at"] or pr_row.get("pr_created_at")
+    meta["pr_created_at"] = meta["pr_created_at"] or _to_isoformat(pr_row.get("pr_created_at"))
     meta["pr_merged"] = meta["pr_merged"] if meta["pr_merged"] is not None else pr_row.get("pr_merged")
     timeline = _build_timeline_events(bq_events, commits, commit_details, reviews)
     threads = _build_review_threads(raw_threads)

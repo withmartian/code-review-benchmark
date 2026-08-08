@@ -11,6 +11,8 @@ import json
 import logging
 import random
 
+import itertools
+
 import httpx
 
 from config import DBConfig
@@ -29,6 +31,41 @@ _SEARCH_MAX_RESULTS = 1_000
 _SEARCH_PER_PAGE = 100
 # Max PRs from a single repo in a daily sample (prevents repo dominance)
 _MAX_PRS_PER_REPO = 10
+
+_GITHUB_HEADERS = {
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+}
+
+
+class _SearchTokenPool:
+    """Round-robin pool of httpx clients, one per GitHub token.
+
+    Each token gets its own Search API rate limit (30 req/min),
+    so N tokens gives ~Nx throughput.
+    """
+
+    def __init__(self, tokens: list[str], timeout: float = 30.0):
+        self._clients = [
+            httpx.AsyncClient(
+                headers={"Authorization": f"Bearer {t}", **_GITHUB_HEADERS},
+                timeout=timeout,
+            )
+            for t in tokens
+        ]
+        self._cycle = itertools.cycle(range(len(self._clients)))
+
+    @property
+    def size(self) -> int:
+        return len(self._clients)
+
+    def next(self) -> httpx.AsyncClient:
+        """Return the next client in round-robin order."""
+        return self._clients[next(self._cycle)]
+
+    async def close(self) -> None:
+        for c in self._clients:
+            await c.aclose()
 
 # Same combined query from bq_extract.py, with per-day random sampling.
 # The all_target_prs CTE finds every PR the bot touched, grouped by first-seen day.
@@ -490,10 +527,11 @@ def _parse_search_item(item: dict) -> dict:
 
 
 async def _search_api_count(
-    client: httpx.AsyncClient,
+    pool: _SearchTokenPool | httpx.AsyncClient,
     query: str,
 ) -> SearchResult:
     """Get total_count for a search query. Returns int or SearchError."""
+    client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
     for attempt in range(3):
         try:
             resp = await client.get(
@@ -507,6 +545,8 @@ async def _search_api_count(
                 wait = int(retry_after) if retry_after else 60
                 logger.warning(f"Search API rate limited, waiting {wait}s (attempt {attempt + 1}/3)")
                 await asyncio.sleep(wait)
+                # Rotate to a different token on retry
+                client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
                 continue
             resp.raise_for_status()
             return resp.json().get("total_count", 0)
@@ -520,11 +560,12 @@ async def _search_api_count(
 
 
 async def _search_api_fetch_page(
-    client: httpx.AsyncClient,
+    pool: _SearchTokenPool | httpx.AsyncClient,
     query: str,
     page: int,
 ) -> list[dict] | SearchError:
     """Fetch a single page of search results."""
+    client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
     for attempt in range(3):
         try:
             resp = await client.get(
@@ -538,6 +579,7 @@ async def _search_api_fetch_page(
                 wait = int(retry_after) if retry_after else 60
                 logger.warning(f"Search API rate limited on page {page}, waiting {wait}s")
                 await asyncio.sleep(wait)
+                client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
                 continue
             resp.raise_for_status()
             return resp.json().get("items", [])
@@ -551,7 +593,7 @@ async def _search_api_fetch_page(
 
 
 async def _search_api_fetch_all(
-    client: httpx.AsyncClient,
+    pool: _SearchTokenPool | httpx.AsyncClient,
     query: str,
     total_count: int,
     max_items: int = _SEARCH_MAX_RESULTS,
@@ -562,8 +604,10 @@ async def _search_api_fetch_all(
     all_items: list[dict] = []
 
     for page in range(1, pages_needed + 1):
-        await asyncio.sleep(SEARCH_API_SLEEP)
-        result = await _search_api_fetch_page(client, query, page)
+        # With N tokens, we can reduce sleep proportionally
+        sleep = SEARCH_API_SLEEP / (pool.size if isinstance(pool, _SearchTokenPool) else 1)
+        await asyncio.sleep(sleep)
+        result = await _search_api_fetch_page(pool, query, page)
         if isinstance(result, SearchError):
             logger.warning(f"Stopping pagination at page {page} due to {result}")
             break
@@ -580,7 +624,7 @@ def _format_dt(dt: datetime) -> str:
 
 
 async def _fetch_window(
-    client: httpx.AsyncClient,
+    pool: _SearchTokenPool | httpx.AsyncClient,
     search_username: str,
     window_start: datetime,
     window_end: datetime,
@@ -596,8 +640,9 @@ async def _fetch_window(
     merged_range = f"merged:{_format_dt(window_start)}..{_format_dt(window_end)}"
     query = f"type:pr reviewed-by:{search_username} is:merged {merged_range}"
 
-    await asyncio.sleep(SEARCH_API_SLEEP)
-    count = await _search_api_count(client, query)
+    sleep = SEARCH_API_SLEEP / (pool.size if isinstance(pool, _SearchTokenPool) else 1)
+    await asyncio.sleep(sleep)
+    count = await _search_api_count(pool, query)
 
     if isinstance(count, SearchError):
         logger.warning(f"Search API error for {search_username} in {merged_range}: {count}")
@@ -609,7 +654,7 @@ async def _fetch_window(
     # If we only need up to max_items and that fits in one query, just paginate
     if count <= _SEARCH_MAX_RESULTS or max_items <= _SEARCH_MAX_RESULTS:
         logger.debug(f"  Window {merged_range}: {count} total, fetching up to {max_items}")
-        return await _search_api_fetch_all(client, query, count, max_items=max_items)
+        return await _search_api_fetch_all(pool, query, count, max_items=max_items)
 
     # Need >1,000 items from a >1,000 result set: bisect
     if depth > 8:
@@ -617,13 +662,13 @@ async def _fetch_window(
             f"  Window {merged_range}: {count} results at max depth {depth}, "
             f"fetching first {min(max_items, _SEARCH_MAX_RESULTS)}"
         )
-        return await _search_api_fetch_all(client, query, count, max_items=max_items)
+        return await _search_api_fetch_all(pool, query, count, max_items=max_items)
 
     mid = window_start + (window_end - window_start) / 2
     half_target = max_items // 2 + 1  # slight overlap is fine, deduped later
     logger.debug(f"  Window {merged_range}: {count} results, bisecting at {_format_dt(mid)}")
-    left = await _fetch_window(client, search_username, window_start, mid, max_items=half_target, depth=depth + 1)
-    right = await _fetch_window(client, search_username, mid, window_end, max_items=half_target, depth=depth + 1)
+    left = await _fetch_window(pool, search_username, window_start, mid, max_items=half_target, depth=depth + 1)
+    right = await _fetch_window(pool, search_username, mid, window_end, max_items=half_target, depth=depth + 1)
     return left + right
 
 
@@ -667,23 +712,19 @@ async def discover_prs_search_api(
     chatbot_id = await repo.upsert_chatbot(chatbot_username, display_name)
     search_username = SEARCH_API_USERNAME_MAP.get(chatbot_username, chatbot_username)
 
-    token = cfg.github_tokens[0] if cfg.github_tokens else cfg.github_token
-    if not token:
+    tokens = cfg.github_tokens or ([cfg.github_token] if cfg.github_token else [])
+    if not tokens:
         logger.error("No GitHub token available for Search API discovery")
         return 0
+
+    pool = _SearchTokenPool(tokens)
+    logger.info(f"Search API discovery using {pool.size} token(s)")
 
     start = date.fromisoformat(start_date)
     end = date.fromisoformat(end_date)
 
     inserted = 0
-    async with httpx.AsyncClient(
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-        timeout=30.0,
-    ) as client:
+    try:
         current = start
         while current <= end:
             window_start = datetime(current.year, current.month, current.day, tzinfo=timezone.utc)
@@ -693,7 +734,7 @@ async def discover_prs_search_api(
             # but cap at 1,000 to avoid unnecessary bisection
             fetch_limit = min(max_prs_per_day * 2, _SEARCH_MAX_RESULTS)
             raw_items = await _fetch_window(
-                client, search_username, window_start, window_end,
+                pool, search_username, window_start, window_end,
                 max_items=fetch_limit,
             )
 
@@ -737,6 +778,8 @@ async def discover_prs_search_api(
                         inserted += 1
 
             current += timedelta(days=1)
+    finally:
+        await pool.close()
 
     logger.info(f"Search API discovered {inserted} new PRs for {chatbot_username}")
     return inserted

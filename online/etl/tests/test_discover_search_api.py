@@ -18,6 +18,7 @@ from pipeline.discover import _format_dt
 from pipeline.discover import _parse_search_item
 from pipeline.discover import _sample_prs
 from pipeline.discover import _SEARCH_MAX_RESULTS
+from pipeline.discover import _SearchTokenPool
 
 
 # -- _parse_search_item -------------------------------------------------------
@@ -293,3 +294,76 @@ async def test_fetch_window_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     end = datetime(2026, 8, 7, tzinfo=timezone.utc)
     result = await _fetch_window(client, "testbot[bot]", start, end)
     assert result == []
+
+
+# -- _SearchTokenPool ----------------------------------------------------------
+
+
+class TestSearchTokenPool:
+    def test_round_robin_rotation(self) -> None:
+        pool = _SearchTokenPool(["token-a", "token-b", "token-c"], timeout=5.0)
+        clients = [pool.next() for _ in range(6)]
+        # Should cycle: a, b, c, a, b, c
+        assert clients[0] is clients[3]
+        assert clients[1] is clients[4]
+        assert clients[2] is clients[5]
+        assert clients[0] is not clients[1]
+        assert clients[1] is not clients[2]
+
+    def test_single_token_returns_same_client(self) -> None:
+        pool = _SearchTokenPool(["only-token"])
+        assert pool.size == 1
+        c1 = pool.next()
+        c2 = pool.next()
+        assert c1 is c2
+
+    def test_size(self) -> None:
+        assert _SearchTokenPool(["a", "b"]).size == 2
+        assert _SearchTokenPool(["a"]).size == 1
+
+
+@pytest.mark.asyncio
+async def test_fetch_window_rotates_tokens(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Multiple API calls within _fetch_window use different clients from the pool."""
+    monkeypatch.setattr("pipeline.discover.SEARCH_API_SLEEP", 0)
+
+    clients_used: list[int] = []
+
+    items = [
+        {"repository_url": "https://api.github.com/repos/a/b", "number": i,
+         "title": f"PR {i}", "user": {"login": "u"}, "created_at": "2026-08-06T00:00:00Z"}
+        for i in range(100)
+    ]
+
+    async def mock_get(url: str, params: dict | None = None, **kwargs) -> MagicMock:  # type: ignore[type-arg]
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.raise_for_status = MagicMock()
+        if params and params.get("per_page") == "1":
+            resp.json.return_value = {"total_count": 300, "items": []}
+        else:
+            resp.json.return_value = {"total_count": 300, "items": items}
+        return resp
+
+    # Create a pool with 3 real-ish clients, but mock their .get
+    pool = _SearchTokenPool(["t1", "t2", "t3"], timeout=5.0)
+    for i, c in enumerate(pool._clients):
+        original_get = c.get
+
+        # Track which client index was used
+        def make_tracked_get(idx: int):  # noqa: E301
+            async def tracked_get(*args, **kwargs):  # type: ignore[no-untyped-def]
+                clients_used.append(idx)
+                return await mock_get(*args, **kwargs)
+            return tracked_get
+
+        c.get = make_tracked_get(i)  # type: ignore[assignment]
+
+    start = datetime(2026, 8, 6, tzinfo=timezone.utc)
+    end = datetime(2026, 8, 7, tzinfo=timezone.utc)
+    result = await _fetch_window(pool, "testbot[bot]", start, end, max_items=300)
+
+    assert len(result) == 300
+    # Should have used multiple different clients
+    assert len(set(clients_used)) > 1, f"Only used client(s): {set(clients_used)}"
+    await pool.close()

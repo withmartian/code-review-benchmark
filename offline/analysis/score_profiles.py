@@ -16,6 +16,13 @@ import argparse
 import json
 from pathlib import Path
 
+try:
+    from analysis.golden_version import golden_set_version
+    from analysis.golden_version import resolve_golden_dir
+except ImportError:  # running as a script: python analysis/score_profiles.py
+    from golden_version import golden_set_version
+    from golden_version import resolve_golden_dir
+
 PROFILE_CATEGORIES: dict[str, frozenset[str]] = {
     "strict": frozenset({"bug", "security", "concurrency", "data", "api"}),
     "core": frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect"}),
@@ -188,6 +195,13 @@ def main() -> None:
 
     golden_categories = _load_golden_categories(args.results_dir)
     print(f"Golden categories loaded: {len(golden_categories)}")
+
+    golden_dir = resolve_golden_dir(args.results_dir)
+    golden_set = golden_set_version(golden_dir)
+    if golden_set:
+        print(f"Golden set: {golden_set['short']} ({golden_set['comments']} comments)")
+    else:
+        print(f"Golden set: not identified (no golden comment files in {golden_dir})")
 
     if args.all_profiles:
         for profile in PROFILE_CATEGORIES:

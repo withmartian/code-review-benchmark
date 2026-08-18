@@ -127,6 +127,13 @@ fn build_known_bots(chatbot_usernames: &[String]) -> HashSet<String> {
     bots
 }
 
+/// Bots that should be merged into another bot's entry for display.
+/// Maps secondary username → primary username (the one shown on the leaderboard).
+/// Data stays separate in the DB; merging is presentation-only.
+const MERGE_INTO: &[(&str, &str)] = &[
+    ("qodo-free-for-open-source-projects[bot]", "qodo-code-review[bot]"),
+];
+
 fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_usernames: &HashSet<String>) -> anyhow::Result<Snapshot> {
     // Collect all chatbot usernames first to build comprehensive bot detection set
     let chatbot_usernames: Vec<String> = rows.iter()
@@ -135,6 +142,13 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
         .into_iter()
         .collect();
     let known_bots = build_known_bots(&chatbot_usernames);
+
+    // Build merge map: secondary github_username → primary github_username
+    let merge_map: HashMap<String, String> = MERGE_INTO.iter()
+        .map(|(sec, pri)| (sec.to_string(), pri.to_string()))
+        .collect();
+    // Reverse lookup: primary github_username → chatbot_idx (filled lazily)
+    let mut primary_idx_map: HashMap<String, u8> = HashMap::new();
 
     let mut chatbot_map: HashMap<i32, u8> = HashMap::new();
     let mut chatbots: Vec<ChatbotInfo> = Vec::new();
@@ -153,14 +167,21 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
     let mut author_repo_prs: HashMap<(u32, u32, u8), Vec<i64>> = HashMap::new();
 
     for row in &rows {
-        // Chatbot lookup
         let chatbot_idx = *chatbot_map.entry(row.chatbot_id).or_insert_with(|| {
+            let effective_username = merge_map.get(&row.github_username)
+                .cloned()
+                .unwrap_or_else(|| row.github_username.clone());
+            // Reuse existing slot if this username (or its primary) was already seen
+            if let Some(&existing_idx) = primary_idx_map.get(&effective_username) {
+                return existing_idx;
+            }
             let idx = chatbots.len() as u8;
             chatbots.push(ChatbotInfo {
-                github_username: row.github_username.clone(),
-                display_name: row.display_name.clone().unwrap_or_else(|| row.github_username.clone()),
-                ignored: ignored_usernames.contains(&row.github_username),
+                github_username: effective_username.clone(),
+                display_name: row.display_name.clone().unwrap_or_else(|| effective_username.clone()),
+                ignored: ignored_usernames.contains(&effective_username),
             });
+            primary_idx_map.insert(effective_username, idx);
             idx
         });
 
@@ -256,12 +277,19 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             Err(_) => continue,
         };
         let chatbot_idx = *chatbot_map.entry(vrow.chatbot_id).or_insert_with(|| {
+            let effective_username = merge_map.get(&vrow.github_username)
+                .cloned()
+                .unwrap_or_else(|| vrow.github_username.clone());
+            if let Some(&existing_idx) = primary_idx_map.get(&effective_username) {
+                return existing_idx;
+            }
             let idx = chatbots.len() as u8;
             chatbots.push(ChatbotInfo {
-                github_username: vrow.github_username.clone(),
-                display_name: vrow.display_name.clone().unwrap_or_else(|| vrow.github_username.clone()),
-                ignored: ignored_usernames.contains(&vrow.github_username),
+                github_username: effective_username.clone(),
+                display_name: vrow.display_name.clone().unwrap_or_else(|| effective_username.clone()),
+                ignored: ignored_usernames.contains(&effective_username),
             });
+            primary_idx_map.insert(effective_username, idx);
             idx
         });
         volumes.entry(date).or_default().push(VolumeRecord {

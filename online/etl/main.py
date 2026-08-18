@@ -199,6 +199,10 @@ def build_parser() -> argparse.ArgumentParser:
         default="reviewed",
         help="Sort order: 'reviewed' (default, bot_reviewed_at DESC) or 'sweep' (assembled_at DESC, catches late-merged PRs).",
     )
+    p_ana.add_argument(
+        "--max-per-day", type=int, default=None,
+        help="Cap PRs per bot_reviewed_at date (random sample within each day). Requires --since.",
+    )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
 
@@ -224,6 +228,10 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["reviewed", "sweep"],
         default="reviewed",
         help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'sweep' (analyzed_at DESC, for catching stragglers).",
+    )
+    p_lbl.add_argument(
+        "--max-per-day", type=int, default=None,
+        help="Cap PRs per bot_reviewed_at date (random sample within each day). Requires --since.",
     )
     p_lbl.add_argument("--database-url")
     p_lbl.add_argument("--verbose", action="store_true")

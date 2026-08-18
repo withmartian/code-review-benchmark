@@ -516,6 +516,10 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     since = _parse_time_bound(args.since)
     until = _parse_time_bound(args.until)
     sort_by = args.sort
+    max_per_day: int | None = args.max_per_day
+    if max_per_day is not None and not since:
+        logger.error("--max-per-day requires --since")
+        return
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
@@ -525,6 +529,8 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
             logger.info(f"Filtering PRs reviewed since {since}")
         if until:
             logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
+    if max_per_day is not None:
+        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -538,7 +544,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
                 await analyze_prs(
                     cfg, db, bot["id"], bot["github_username"],
                     limit=args.limit, since=since, until=until,
-                    sort_by=sort_by,
+                    sort_by=sort_by, max_per_day=max_per_day,
                 )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
@@ -548,7 +554,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
             await analyze_prs(
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
-                sort_by=sort_by,
+                sort_by=sort_by, max_per_day=max_per_day,
             )
         else:
             logger.error("Specify --chatbot or --all")
@@ -572,6 +578,10 @@ async def cmd_label(args: argparse.Namespace) -> None:
     since = _parse_time_bound(args.since)
     until = _parse_time_bound(args.until)
     sort_by = args.sort
+    max_per_day: int | None = args.max_per_day
+    if max_per_day is not None and not since:
+        logger.error("--max-per-day requires --since")
+        return
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unlabeled PRs by analyzed_at)")
@@ -581,6 +591,8 @@ async def cmd_label(args: argparse.Namespace) -> None:
             logger.info(f"Filtering PRs reviewed since {since}")
         if until:
             logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
+    if max_per_day is not None:
+        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -594,7 +606,7 @@ async def cmd_label(args: argparse.Namespace) -> None:
                 await label_prs(
                     cfg, db, bot["id"], bot["github_username"],
                     limit=args.limit, since=since, until=until,
-                    sort_by=sort_by,
+                    sort_by=sort_by, max_per_day=max_per_day,
                 )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
@@ -604,7 +616,7 @@ async def cmd_label(args: argparse.Namespace) -> None:
             await label_prs(
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
-                sort_by=sort_by,
+                sort_by=sort_by, max_per_day=max_per_day,
             )
         else:
             logger.error("Specify --chatbot or --all")

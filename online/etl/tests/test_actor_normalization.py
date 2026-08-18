@@ -19,6 +19,16 @@ def test_normalizes_bot_suffix_for_github_app_actors() -> None:
     assert not same_github_actor("cubic-dev-ai", "coderabbitai[bot]")
 
 
+def test_copilot_aliases_resolve_to_same_actor() -> None:
+    assert same_github_actor("Copilot", "copilot-pull-request-reviewer[bot]")
+    assert same_github_actor("Copilot", "copilot-pull-request-reviewer")
+    assert same_github_actor("Copilot", "copilot-swe-agent[bot]")
+    assert same_github_actor("Copilot", "copilot-swe-agent")
+    assert normalize_github_actor("copilot-pull-request-reviewer[bot]") == "copilot"
+    assert normalize_github_actor("copilot-swe-agent") == "copilot"
+    assert not same_github_actor("Copilot", "coderabbitai[bot]")
+
+
 def test_analyze_includes_graphql_thread_comments_from_bot_slug() -> None:
     events = [
         {

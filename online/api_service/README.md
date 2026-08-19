@@ -58,6 +58,7 @@ docker run -e DATABASE_URL=postgresql://... -p 3000:3000 pr-review-api
 | `beta` | F-beta score beta parameter (default: 1.0) |
 | `min_total_prs` | Minimum total PRs to include a chatbot in leaderboard/scatter |
 | `min_prs_per_day` | Minimum PRs per day to include in time series |
+| `require_solo_bot` | If `true`, keep only PRs scored by exactly one tracked chatbot |
 
 ### `/api/volumes` Parameters
 

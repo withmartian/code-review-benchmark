@@ -23,6 +23,7 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
                p.diff_lines,
                p.pr_author,
                p.repo_name,
+               p.pr_number,
                c.github_username,
                c.display_name,
                pl.labels as pr_labels_json,
@@ -79,6 +80,7 @@ struct RawRow {
     diff_lines: Option<i32>,
     pr_author: Option<String>,
     repo_name: String,
+    pr_number: i32,
     github_username: String,
     display_name: Option<String>,
     pr_labels_json: Option<String>,
@@ -142,6 +144,22 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
         .into_iter()
         .collect();
     let known_bots = build_known_bots(&chatbot_usernames);
+
+    // Solo vs multi-bot: a GitHub PR is solo if exactly one original chatbot_id
+    // scored it. Display merge (MERGE_INTO) is ignored here — two Qodo accounts
+    // on the same PR still confuse the judge.
+    let mut bots_per_github_pr: HashMap<(&str, i32), HashSet<i32>> = HashMap::new();
+    for row in &rows {
+        bots_per_github_pr
+            .entry((row.repo_name.as_str(), row.pr_number))
+            .or_default()
+            .insert(row.chatbot_id);
+    }
+    let solo_github_prs: HashSet<(&str, i32)> = bots_per_github_pr
+        .iter()
+        .filter(|(_, bots)| bots.len() == 1)
+        .map(|(key, _)| *key)
+        .collect();
 
     // Build merge map: secondary github_username → primary github_username
     let merge_map: HashMap<String, String> = MERGE_INTO.iter()
@@ -244,6 +262,7 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             has_human_engagement,
             human_reviewer_count,
             commits_after_review,
+            is_solo_bot: solo_github_prs.contains(&(row.repo_name.as_str(), row.pr_number)),
         };
 
         match row.bot_reviewed_at {

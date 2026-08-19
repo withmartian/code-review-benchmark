@@ -56,6 +56,7 @@ tr:hover td{background:#f9f9f9}
   <h3>Quality Filters</h3>
   <label><input type="checkbox" id="exclude-self-authored"> Exclude self-authored</label>
   <label><input type="checkbox" id="exclude-bot-authored"> Exclude bot-authored</label>
+  <label title="Drop PRs that more than one tracked review bot scored. Judge matching is noisier when multiple bots comment on the same PR."><input type="checkbox" id="require-solo-bot"> Solo-bot PRs only</label>
   <label><input type="checkbox" id="require-reviews"> Require reviews</label>
   <label>Min repo contributors</label>
   <input type="number" id="min-repo-contributors" value="" min="0" step="1" placeholder="e.g. 2">
@@ -142,7 +143,7 @@ async function init(){
   $('#end-date').value=d.end;
   // Build initial color map from all chatbots
   assignColors(o.chatbots);
-  for(const id of['start-date','end-date','beta','min-prs-total','min-scored-prs','min-prs','diff-min','diff-max','exclude-self-authored','exclude-bot-authored','require-reviews','include-ignored','min-repo-contributors','max-author-repo-prs','require-human-engagement','min-human-reviewers','min-commits-after-review'])
+  for(const id of['start-date','end-date','beta','min-prs-total','min-scored-prs','min-prs','diff-min','diff-max','exclude-self-authored','exclude-bot-authored','require-solo-bot','require-reviews','include-ignored','min-repo-contributors','max-author-repo-prs','require-human-engagement','min-human-reviewers','min-commits-after-review'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
 }
@@ -164,6 +165,7 @@ function qs(){
   if(dmax) p.set('diff_lines_max',dmax);
   if($('#exclude-self-authored').checked) p.set('exclude_self_authored','true');
   if($('#exclude-bot-authored').checked) p.set('exclude_bot_authored','true');
+  if($('#require-solo-bot').checked) p.set('require_solo_bot','true');
   if($('#require-reviews').checked) p.set('require_reviews','true');
   const mrc=$('#min-repo-contributors').value;
   if(mrc&&mrc!=='0') p.set('min_repo_contributors',mrc);

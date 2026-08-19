@@ -34,6 +34,7 @@ fn params_seed(params: &FilterParams) -> u64 {
     params.require_human_engagement.hash(&mut h);
     params.min_human_reviewers.hash(&mut h);
     params.min_commits_after_review.hash(&mut h);
+    params.require_solo_bot.hash(&mut h);
     h.finish()
 }
 
@@ -184,6 +185,11 @@ fn record_matches(record: &PrRecord, snapshot: &Snapshot, params: &FilterParams)
         if (record.commits_after_review as u32) < min_commits {
             return false;
         }
+    }
+
+    // Drop PRs that multiple tracked review bots scored (judge matching is noisier)
+    if params.require_solo_bot && !record.is_solo_bot {
+        return false;
     }
 
     true

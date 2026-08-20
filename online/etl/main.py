@@ -299,6 +299,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Recompute even when engagement_signals is already set (needed after actor-alias fixes)",
     )
+    p_bfe.add_argument("--since", help="Inclusive lower bound on bot_reviewed_at (e.g. '60d', '2026-06-20')")
+    p_bfe.add_argument("--until", help="Exclusive upper bound on bot_reviewed_at (e.g. '2026-08-21')")
     p_bfe.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
     p_bfe.add_argument("--batch-size", type=int, default=5000)
     p_bfe.add_argument("--status-filter", default="analyzed", help="Only process PRs with this status (default: analyzed)")
@@ -1078,6 +1080,14 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
         if args.chatbot:
             params.append(args.chatbot)
             where.append(f"c.github_username = ${len(params)}")
+        since = _parse_time_bound(args.since)
+        until = _parse_time_bound(args.until)
+        if since:
+            params.append(since)
+            where.append(f"p.bot_reviewed_at >= ${len(params)}")
+        if until:
+            params.append(until)
+            where.append(f"p.bot_reviewed_at < ${len(params)}")
         where_sql = " AND ".join(where)
 
         count_row = await db.fetchone(
@@ -1092,7 +1102,10 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
         total = count_row["cnt"] if count_row else 0
         scope = "recompute" if args.force else "missing"
         bot = args.chatbot or "all bots"
-        logger.info(f"Found {total} assembled PRs ({scope}) for {bot}")
+        window = ""
+        if since or until:
+            window = f" [{since or '...'} .. {until or '...'}]"
+        logger.info(f"Found {total} assembled PRs ({scope}) for {bot}{window}")
 
         if total == 0:
             return

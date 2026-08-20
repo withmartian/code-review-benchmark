@@ -288,8 +288,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_bar.add_argument("--verbose", action="store_true")
 
     # backfill-engagement
-    p_bfe = sub.add_parser("backfill-engagement", help="Compute engagement_signals for assembled PRs missing them")
+    p_bfe = sub.add_parser(
+        "backfill-engagement",
+        help="Compute engagement_signals for assembled PRs (missing by default, or all with --force)",
+    )
     p_bfe.add_argument("--database-url")
+    p_bfe.add_argument("--chatbot", help="Only this github_username (e.g. Copilot)")
+    p_bfe.add_argument(
+        "--force",
+        action="store_true",
+        help="Recompute even when engagement_signals is already set (needed after actor-alias fixes)",
+    )
     p_bfe.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
     p_bfe.add_argument("--batch-size", type=int, default=5000)
     p_bfe.add_argument("--status-filter", default="analyzed", help="Only process PRs with this status (default: analyzed)")
@@ -1042,10 +1051,11 @@ async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
 
 
 async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
-    """Compute engagement_signals for assembled PRs that don't have them yet.
+    """Compute engagement_signals from assembled timelines.
 
-    Uses cursor-based pagination (keyset on p.id) to avoid loading all assembled
-    JSON into memory at once.
+    Default: only PRs with NULL engagement_signals.
+    --force: recompute existing rows (needed after actor-alias fixes so Copilot
+    reviews from copilot-pull-request-reviewer are recognized).
     """
     import json as json_mod
     import time
@@ -1061,22 +1071,35 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
     await create_tables(db)
 
     try:
-        status_filter = args.status_filter
+        where = ["p.assembled IS NOT NULL", "p.status = $1"]
+        params: list[object] = [args.status_filter]
+        if not args.force:
+            where.append("p.engagement_signals IS NULL")
+        if args.chatbot:
+            params.append(args.chatbot)
+            where.append(f"c.github_username = ${len(params)}")
+        where_sql = " AND ".join(where)
 
-        # Get total count first (cheap — no assembled JSON loaded)
-        count_row = await db.fetchone(f"""
-            SELECT COUNT(*) as cnt FROM prs p
-            WHERE p.assembled IS NOT NULL AND p.engagement_signals IS NULL
-              AND p.status = '{status_filter}'
-        """)
+        count_row = await db.fetchone(
+            f"""
+            SELECT COUNT(*) as cnt
+            FROM prs p
+            JOIN chatbots c ON c.id = p.chatbot_id
+            WHERE {where_sql}
+            """,
+            tuple(params),
+        )
         total = count_row["cnt"] if count_row else 0
-        logger.info(f"Found {total} assembled PRs missing engagement_signals")
+        scope = "recompute" if args.force else "missing"
+        bot = args.chatbot or "all bots"
+        logger.info(f"Found {total} assembled PRs ({scope}) for {bot}")
 
         if total == 0:
             return
 
         batch_size = args.batch_size
         updated = 0
+        skipped = 0
         last_id = 0
         last_log = time.time()
         limit = args.limit
@@ -1089,17 +1112,21 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
             if limit is not None:
                 fetch_size = min(batch_size, limit - updated)
 
-            rows = await db.fetchall(f"""
+            fetch_params = [*params, last_id, fetch_size]
+            id_placeholder = f"${len(params) + 1}"
+            limit_placeholder = f"${len(params) + 2}"
+            rows = await db.fetchall(
+                f"""
                 SELECT p.id, p.assembled, p.pr_author, c.github_username AS chatbot
                 FROM prs p
                 JOIN chatbots c ON c.id = p.chatbot_id
-                WHERE p.assembled IS NOT NULL
-                  AND p.engagement_signals IS NULL
-                  AND p.status = '{status_filter}'
-                  AND p.id > {last_id}
+                WHERE {where_sql}
+                  AND p.id > {id_placeholder}
                 ORDER BY p.id
-                LIMIT {fetch_size}
-            """)
+                LIMIT {limit_placeholder}
+                """,
+                tuple(fetch_params),
+            )
 
             if not rows:
                 break
@@ -1121,7 +1148,12 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
                 return
 
             for row in rows:
-                assembled = json_mod.loads(row["assembled"])
+                try:
+                    assembled = json_mod.loads(row["assembled"])
+                except (TypeError, json_mod.JSONDecodeError):
+                    skipped += 1
+                    last_id = row["id"]
+                    continue
                 signals = compute_engagement_signals(
                     assembled, row["chatbot"], pr_author=row.get("pr_author"),
                 )
@@ -1133,15 +1165,14 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
                     )
                 )
                 updated += 1
-
-            last_id = rows[-1]["id"]
+                last_id = row["id"]
 
             now = time.time()
             if now - last_log >= 15:
                 logger.info(f"  Progress: {updated}/{total}")
                 last_log = now
 
-        logger.info(f"DONE — backfill-engagement: {updated} PRs updated")
+        logger.info(f"DONE — backfill-engagement: {updated} PRs updated, {skipped} skipped")
     finally:
         await db.close()
 

@@ -115,3 +115,32 @@ def test_engagement_signals_start_after_bot_slug_review() -> None:
 
     assert signals["has_human_engagement"] is True
     assert signals["human_comment_count"] == 1
+
+
+def test_engagement_signals_detect_copilot_reviewer_alias() -> None:
+    """Copilot reviews land as copilot-pull-request-reviewer; chatbot name is Copilot.
+
+    Engagement used to miss the first review (bot_first_ts=None → not engaged)
+    even when later commits existed. Aliases must make this count as engaged.
+    """
+    assembled = {
+        "events": [
+            {
+                "timestamp": "2026-06-18T10:00:00Z",
+                "event_type": "review",
+                "actor": "copilot-pull-request-reviewer[bot]",
+                "data": {"body": "Please add a null check."},
+            },
+            {
+                "timestamp": "2026-06-18T10:10:00Z",
+                "event_type": "commit",
+                "actor": "alice",
+                "data": {"sha": "abc"},
+            },
+        ],
+    }
+
+    signals = compute_engagement_signals(assembled, "Copilot", pr_author="alice")
+
+    assert signals["has_human_engagement"] is True
+    assert signals["commits_after_review"] == 1

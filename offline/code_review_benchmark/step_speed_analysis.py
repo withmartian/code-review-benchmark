@@ -55,6 +55,7 @@ TRIGGER_COMMENT_TOOLS = frozenset(
         "qodo-extended-v2",
         "sourcery",
         "codeant-v2",
+        "gitar",
     }
 )
 

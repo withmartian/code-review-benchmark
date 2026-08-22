@@ -19,6 +19,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | [GitLab Duo](https://about.gitlab.com/gitlab-duo/) | AI code review |
 | [Graphite](https://graphite.dev/) | AI code review |
 | [Greptile](https://www.greptile.com/) | AI code review |
+| [gx](https://gx.run) | AI code review |
 | [Propel](https://propelauth.com/) | AI code review |
 | [KG](https://kg.dev/) | AI code review |
 | [Kodus](https://kodus.io/) | AI code review |

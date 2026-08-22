@@ -108,7 +108,7 @@ def _is_bot(user: dict | None) -> bool:
 
 # Tools that post their review comments as a human GitHub account rather than a bot.
 # For these, bot filtering is skipped and all human comments are collected.
-_NON_BOT_TOOLS: frozenset[str] = frozenset({"claude"})
+_NON_BOT_TOOLS: frozenset[str] = frozenset({"claude", "gx", "gx-pro"})
 
 
 def fetch_review_comments(org: str, repo: str, pr: int, tool: str = "") -> list[dict]:

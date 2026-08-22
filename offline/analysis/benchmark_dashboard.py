@@ -135,6 +135,8 @@ def _compute_profile_metrics(
 
 # Tool display configuration
 TOOL_DISPLAY_NAMES = {
+    "gx": "gx",
+    "gx-pro": "gx Pro",
     "graphite": "Graphite",
     "qodo": "Qodo",
     "gemini": "Gemini",
@@ -165,6 +167,8 @@ TOOL_DISPLAY_NAMES = {
 }
 
 TOOL_COLORS = {
+    "gx": "#e11d48",
+    "gx-pro": "#9f1239",
     "graphite": "#6366f1",
     "qodo": "#8b5cf6",
     "gemini": "#06b6d4",

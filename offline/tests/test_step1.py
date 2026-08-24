@@ -86,6 +86,28 @@ def test_fetch_review_comments(monkeypatch):
     ]
 
 
+def test_shipwright_download_config_collects_only_bot_reviews(monkeypatch):
+    shipwright_bot = {"login": "shipwright-agent[bot]", "type": "Bot"}
+    human = {"login": "benchmark-operator", "type": "User"}
+    responses = [
+        [
+            {"path": "app.py", "line": 7, "body": "finding", "created_at": "now", "user": shipwright_bot},
+            {"path": "app.py", "line": 8, "body": "trigger", "created_at": "now", "user": human},
+        ],
+        [],
+        [],
+    ]
+
+    monkeypatch.setattr(step1, "gh", lambda _args: responses.pop(0))
+
+    comments = step1.fetch_review_comments("org", "repo", 1, tool="shipwright")
+
+    assert step1._TOOL_DOWNLOAD_CONFIG["shipwright"] == {"require_bot": True}
+    assert comments == [
+        {"path": "app.py", "line": 7, "body": "finding", "created_at": "now"}
+    ]
+
+
 def test_fetch_repo_data(monkeypatch):
     def stub_pr_metadata(_org, _repo, pr):
         return {"title": f"PR {pr}", "url": "https://github.com/org/repo/pull/1"}

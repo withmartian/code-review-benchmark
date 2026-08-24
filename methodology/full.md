@@ -145,13 +145,16 @@ We plot these statistics over time to track trends in tool performance and usage
 
 ### Offline benchmark
 
-We build on the Augment/Greptile dataset. For each PR in the dataset, we:
+We build on the Augment/Greptile dataset, with a curated gold set of **173 golden comments** across 50 PRs. Each golden comment has a severity level and an issue-type category.
+
+For each PR in the dataset, we:
 
 1. Fork a copy of the repository for each code review tool being evaluated.
 2. Open a PR that includes the description from the original human-authored PR.
 3. Trigger the code review tool in the forked repo on GitHub.
 4. Collect all issues identified by the tool, splitting multi-issue comments into individual issues.
-5. Run a judge to evaluate which tool-identified issues correspond to issues in the gold set.
+5. Deduplicate candidates, grouping those that express the same underlying concern so duplicate mentions are not penalized.
+6. Run a judge to evaluate which tool-identified issues correspond to issues in the gold set.
 
 The judge uses the following prompt:
 
@@ -168,19 +171,19 @@ The judge uses the following prompt:
 >
 > Respond with ONLY a JSON object: {"reasoning": "brief explanation", "match": true/false, "confidence": 0.0-1.0}
 
-Matches against the gold set are counted as true positives. Precision and recall are computed from these matches.
+Matches against the gold set are counted as true positives. Precision and recall are computed from these matches, with category-based scoring profiles and F-beta weighting available in the dashboard. Results are evaluated with three independent judge models (Claude Opus 4.5, GPT-5.2, Claude Sonnet 4.5); the top 5 tools are identical across all three judges.
 
 The code to reproduce this is available at: https://github.com/withmartian/code-review-benchmark
 
 ### Known limitations of the current implementation
 
-The current implementation is deliberately minimal — a starting point we can measure and improve against. The main limitations, each addressed by a subsequent section of this document:
+The current implementation is under active improvement but retains significant limitations, each addressed by a subsequent section of this document:
 
-- Bug definitions are implicit in the gold set rather than explicit or conditioned on user preferences (§5).
+- Bug definitions are semi-explicit through categories but not conditioned on user preferences (§5).
 - Recall is capped by the gold set, which is itself capped by human performance (§6).
-- Precision treats all non-action as false positives (§7).
+- Scoring profiles reduce false positive penalties for style/speculative findings, but the gold set has sparse coverage of style issues, so some correct style findings are still penalized (§7).
 - The dataset is static and based on older PRs, with contamination risk (§8).
-- The judge is a single LLM with a single prompt, with no calibration against human annotations (§9).
+- The judge uses three models with consistent rankings, but has not been formally calibrated against human annotations (§9).
 - There is no standardized harness — we're measuring product performance, not model performance (§9).
 
 ---

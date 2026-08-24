@@ -42,9 +42,9 @@ Without shared evals for these tools, every company grades its own homework. You
 | [Discourse](https://github.com/discourse/discourse) | Ruby | Forum platform |
 | [Keycloak](https://github.com/keycloak/keycloak) | Java | Authentication |
 
-Each PR has curated golden comments with severity labels (Low / Medium / High / Critical). An LLM judge matches each tool's review against the golden comments and computes precision and recall.
+Each PR has curated golden comments (173 total) with severity labels (Low / Medium / High / Critical) and category tags (bug, security, concurrency, data, api, perf, test_gap, doc_defect, style, speculative). An LLM judge matches each tool's review against the golden comments using three judge models (Claude Opus 4.5, GPT-5.2, Claude Sonnet 4.5). Category-based scoring profiles (Strict / Core / All) control which issue types count toward the score, and F-beta weighting lets users prioritize recall over precision.
 
-**Tools evaluated**: Augment, Claude Code, CodeRabbit, Codex, Cursor Bugbot, Gemini, GitHub Copilot, Graphite, Greptile, Propel, Qodo, and more. Adding a new tool takes an afternoon — fork the benchmark PRs, trigger the tool, run the pipeline.
+**Tools evaluated**: Augment, Baz, Claude Code, CodeAnt, CodeRabbit, Cubic, Cursor Bugbot, Devin, Gemini, GitHub Copilot, GitLab Duo, Graphite, Greptile, KG, Kodus, Macroscope, Qodo, Sourcery, and more. Adding a new tool takes an afternoon — fork the benchmark PRs, trigger the tool, run the pipeline.
 
 > **Known limitation**: Static datasets risk training data leakage — tools may have seen these PRs during training. That's why we also run the online benchmark.
 
@@ -84,14 +84,15 @@ Both benchmarks use an LLM-as-judge approach, but with different methodologies s
 
 | | Offline | Online |
 |---|---|---|
-| **Ground truth** | Human-curated golden comments | Developer's post-review fixes |
+| **Ground truth** | Human-curated golden comments (173, categorized) | Developer's post-review fixes |
 | **Precision** | Tool comments that match a golden comment / total tool comments | Bot suggestions matched to real fixes / total suggestions |
-| **Recall** | Golden comments found by the tool / total golden comments | Real fixes caught by the bot / total fixes made |
+| **Recall** | Golden comments in active profile found by the tool / total golden in profile | Real fixes caught by the bot / total fixes made |
+| **Scoring** | Category-based profiles (Strict/Core/All) + F-beta (0.5–3.0) | F-beta with adjustable weighting |
 | **Judge input** | Golden comment + tool candidate | Full PR timeline: diff, bot comments, post-review commits |
 
 In both cases, the judge prompt asks "do these describe the same underlying issue?" — different wording is fine, only the substance matters.
 
-**Judge model variance**: Different LLM judges can score differently. We mitigate this by storing results per judge model and reporting which model was used. The offline benchmark has been evaluated with Claude Opus 4.5, Claude Sonnet 4.5, and GPT-5.2.
+**Judge model variance**: Different LLM judges can score differently. We mitigate this by storing results per judge model and reporting which model was used. The offline benchmark has been evaluated with Claude Opus 4.5, Claude Sonnet 4.5, and GPT-5.2 — the top 5 tools are identical across all three judges, with most tools varying by at most 2 rank positions.
 
 ## Repository structure
 
@@ -135,7 +136,7 @@ uv run python -m code_review_benchmark.step2_5_dedup_candidates
 
 # Run the LLM judge (pass dedup groups to avoid penalising duplicate candidates)
 uv run python -m code_review_benchmark.step3_judge_comments \
-  --dedup-groups results/$(MARTIAN_MODEL)/dedup_groups.json
+  --dedup-groups results/${MARTIAN_MODEL}/dedup_groups.json
 
 # View results
 open analysis/benchmark_dashboard.html

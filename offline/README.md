@@ -24,6 +24,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | [Kodus](https://kodus.io/) | AI code review |
 | [Macroscope](https://www.macroscope.com/) | AI code review |
 | [Qodo](https://www.qodo.ai/) | AI code review |
+| [Shipwright](https://github.com/kpuru88/shipwright-agent) | AI code review |
 | [Sourcery](https://sourcery.ai/) | AI code review |
 
 Adding a new tool requires forking the benchmark PRs and collecting the tool's reviews — see Steps 0 and 1 below.

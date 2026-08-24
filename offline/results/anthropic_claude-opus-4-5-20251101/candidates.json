@@ -1256,6 +1256,35 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 448,
+        "path": "services/src/main/java/org/keycloak/services/resources/admin/UsersResource.java",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "In UsersResource.searchForUser(), the previous `.filter(usersEvaluator::canView)` post-filter on the searched user stream was removed. Now, if an admin has no `canView()` (users) and no group-based view permission (getGroupIdsWithViewPermission() returns an empty set, which happens whenever the admin has zero group-level view/manage-members grants, e.g. when access is granted via a user-specific permission instead of a group permission), the `session.setAttribute(UserModel.GROUPS, ...)` restriction is never applied and the raw, unfiltered `searchForUserStream` result is returned to the caller with no per-user authorization check at all. This is an authorization bypass: such an admin will see every user in the realm instead of only the users they are permitted to view. Location: services/src/main/java/org/keycloak/services/resources/admin/UsersResource.java:448"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 56,
+        "path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionsV2.java",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "In the new GroupPermissionsV2, the global (no-arg) canManage() incorrectly evaluates `hasPermission(null, AdminPermissionsSchema.VIEW, AdminPermissionsSchema.MANAGE)` \u2014 identical to canView(). This means an admin who only holds the VIEW scope permission on the 'all groups' resource (and not MANAGE) will have canManage() return true, which is used by requireManage()/GroupsResource create-group and other manage-gated endpoints, granting create/update/delete capability on groups to a user who was only granted read access. The per-group overload canManage(GroupModel) correctly checks only AdminPermissionsSchema.MANAGE, confirming the global variant is an introduced copy/paste bug. Location: services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionsV2.java:56"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 102,
+        "path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionsV2.java",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "In GroupPermissionsV2.getGroupIdsWithViewPermission(), the code iterates Groups-type Resources and adds `groupResource.getId()` to the granted set. However, per AdminPermissionsSchema.getOrCreateResource()/resolveGroup() and this same class's hasPermission() (which looks up group resources via `resourceStore.findByName(server, groupId)`), the actual group ID is stored as the Resource's *name*, not its internal store id. Collecting `.getId()` instead of `.getName()` returns internal authorization-resource UUIDs that never match any real GroupModel id. The resulting set is later used as `session.setAttribute(UserModel.GROUPS, groupIds)` to restrict user search results by group membership, so this bug makes the entire group-based partial-view feature non-functional (it will filter against nonexistent group ids, effectively returning no users instead of the intended restricted set). Location: services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionsV2.java:102"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -2521,6 +2550,35 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 58,
+        "path": "common/src/main/java/org/keycloak/common/crypto/CryptoIntegration.java",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "CryptoIntegration.detectProvider() previously threw an IllegalStateException whenever more than one CryptoProvider was found on the classpath, which acted as a fail-fast guard against classpath misconfiguration (e.g., both FIPS and non-FIPS crypto providers present). The new code sorts by order() and silently picks the first, only logging at debug level. Since DefaultCryptoProvider, WildFlyElytronProvider and FIPS1402Provider are all now assigned the same order() value (200), if more than one of these 'real' providers ends up on the classpath together (the exact misconfiguration the old check protected against), the selection between them becomes non-deterministic and only surfaces via a debug log line, silently risking selection of the wrong (e.g. non-FIPS) crypto provider instead of failing loudly as before. Location: common/src/main/java/org/keycloak/common/crypto/CryptoIntegration.java:58"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 68,
+        "path": "common/src/main/java/org/keycloak/common/crypto/CryptoIntegration.java",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The ignored-providers message is built dynamically from provider class names and passed directly as the format string to logger.debugf(String), which interprets its argument as a printf-style format string. If any loaded provider's class/package name were to contain a '%' character, this would throw an IllegalFormatException at runtime instead of just logging a message. Location: common/src/main/java/org/keycloak/common/crypto/CryptoIntegration.java:68"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 45,
+        "path": "authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/AuthzClientCryptoProvider.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "AuthzClientCryptoProvider.getBouncyCastleProvider() is documented/named to return the Bouncy Castle security Provider (per the CryptoProvider interface contract used by other implementations, which return BouncyIntegration.PROVIDER), but this implementation instead returns the Provider of the default KeyStore type (e.g. JKS/PKCS12's provider), which is unrelated to Bouncy Castle. This is misleading and functionally incorrect relative to the method's name/contract. Location: authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/AuthzClientCryptoProvider.java:45"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -3518,6 +3576,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "test_gap",
+        "line": 154,
+        "path": "tests/base/src/test/java/org/keycloak/tests/admin/group/GroupTest.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The background reader thread loop `while (!deletedAll.get())` is never joined before the test asserts `caughtExceptions` is empty. Since `deletedAll.set(true)` is called immediately followed by the assertion, the thread may still be mid-iteration and catch (or fail to catch and report) an exception after the check has already passed, making the test racy and able to silently miss the very NPE it is meant to detect. Location: tests/base/src/test/java/org/keycloak/tests/admin/group/GroupTest.java:154"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 149,
+        "path": "tests/base/src/test/java/org/keycloak/tests/admin/group/GroupTest.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The reader thread's termination flag `deletedAll` is only set to true after the `groupUuuids.forEach(...).remove()` loop completes without exception. If any group deletion throws (e.g. network error, 404, etc.), `deletedAll.set(true)` is never reached, leaving the background thread in an infinite polling loop for the lifetime of the test JVM (no try/finally to guarantee thread shutdown), causing a thread/resource leak and continued unwanted server calls after the test fails. Location: tests/base/src/test/java/org/keycloak/tests/admin/group/GroupTest.java:149"
       }
     ]
   },
@@ -4520,6 +4598,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 204,
+        "path": "testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/webauthn/passwordless/PasskeysOrganizationAuthenticationTest.java",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "Both usages of `Assert.assertThrows(NoSuchElementException.class, ...)` were removed in this diff (replaced with `assertThat(...).notNullValue()`), but the `NoSuchElementException` import is not removed. If this was the only usage of that class in the file, the import becomes unused, which will fail Keycloak's strict checkstyle build (no-unused-imports rule). Location: testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/webauthn/passwordless/PasskeysOrganizationAuthenticationTest.java:204"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 36,
+        "path": "testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/webauthn/passwordless/PasskeysUsernamePasswordFormTest.java",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "`import org.keycloak.models.credential.PasswordCredentialModel;` was added to this test file, but the diff does not show any usage of `PasswordCredentialModel` anywhere in the file's added/changed code (unlike the sibling test `PasskeysUsernameFormTest`, where the same import is actually used to filter credentials). This looks like an unused import copied from the other test class, which would fail an unused-import checkstyle check. Location: testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/webauthn/passwordless/PasskeysUsernamePasswordFormTest.java:36"
       }
     ]
   },
@@ -5582,6 +5680,44 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 345,
+        "path": "src/sentry/spans/consumers/process/flusher.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In SpanFlusher.join(), the per-process wait/terminate loop now does `break` as soon as the deadline is exceeded before entering the wait-loop for a given process. This exits the entire `for process_index, process in self.processes.items()` loop, so `process.terminate()` is never called for the current process nor for any remaining processes in the dict. The original single-process implementation always called `self.process.terminate()` unconditionally after the wait loop regardless of deadline status. This change can leave orphaned multiprocessing child processes running after `join()` returns when a timeout is supplied and multiple flusher processes exist. Location: src/sentry/spans/consumers/process/flusher.py:345"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 57,
+        "path": "src/sentry/spans/consumers/process/flusher.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "`self.max_processes = max_processes or len(buffer.assigned_shards)` treats an explicitly passed `max_processes=0` the same as `None` (falls back to shard count) instead of honoring the literal value 0, due to using `or` instead of an explicit `is None` check. Location: src/sentry/spans/consumers/process/flusher.py:57"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 190,
+        "path": "src/sentry/spans/consumers/process/flusher.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "Metric tag keys for shard grouping are inconsistent within the same `main()` method: `spans.buffer.flusher.produce` and `spans.buffer.segment_size_bytes` use tag key `shard` (holding a comma-joined multi-shard string), while `spans.buffer.flusher.wait_produce` uses tag key `shards` for the same comma-joined value, and `spans.buffer.flusher_unhealthy` uses `shard` with a single integer value per shard. This inconsistency produces mismatched/incompatible metric labels for what should be the same dimension across the same code path. Location: src/sentry/spans/consumers/process/flusher.py:190"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "test_gap",
+        "line": 63,
+        "path": "tests/sentry/spans/consumers/process/test_consumer.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The added `time.sleep(0.1)` call intended to \"Give flusher threads time to process after drift change\" is a no-op because the test earlier does `monkeypatch.setattr(\"time.sleep\", lambda _: None)`, which patches the global `time.sleep` used by the newly added `import time` in this test file as well. The comment is therefore misleading and the wait does not actually occur, making the test rely on timing that isn't actually being introduced. Location: tests/sentry/spans/consumers/process/test_consumer.py:63"
       }
     ]
   },
@@ -7304,6 +7440,35 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 135,
+        "path": "src/sentry/replays/endpoints/project_replay_summarize_breadcrumbs.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In fetch_error_details, error_ids are paired with nodestore results via `zip(error_ids, events.values())`. `nodestore.backend.get_multi(node_ids)` is not guaranteed to return a dict whose values() are in the same order as the input error_ids (it may omit missing entries or reorder), so this positional zip can associate the wrong error_id/title/message/timestamp with an event, corrupting the error context fed into the AI summarizer. Location: src/sentry/replays/endpoints/project_replay_summarize_breadcrumbs.py:135"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 52,
+        "path": "src/sentry/issues/endpoints/browser_reporting_collector.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "validate_timestamp/validate_age use truthy checks (`self.initial_data.get(\"age\")` / `self.initial_data.get(\"timestamp\")`) to detect whether the other field is present. Since 0 is a valid timestamp/age value (timestamp has min_value=0), a report where both age and timestamp are 0 will bypass the mutual-exclusion validation entirely (both checks evaluate falsy), letting an invalid mixed report through undetected. Location: src/sentry/issues/endpoints/browser_reporting_collector.py:52"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 80,
+        "path": "src/sentry/preprod/api/endpoints/organization_preprod_artifact_assemble.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "analytics.record(\"preprod_artifact.api.assemble\", ...) is emitted before the `features.has(\"organizations:preprod-artifact-assemble\", ...)` guard, so the analytics event fires even for organizations without the feature enabled (or otherwise rejected requests), inflating/skewing analytics with events for requests that never actually assemble an artifact. Location: src/sentry/preprod/api/endpoints/organization_preprod_artifact_assemble.py:80"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1": {
@@ -8758,6 +8923,53 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 875,
+        "path": "src/sentry/api/paginator.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "OptimizedCursorPaginator's negative-offset branch (triggered when enable_advanced_features and cursor.offset<0) slices a Django QuerySet with a negative start index (`queryset[start_offset:stop]`). Django QuerySets raise `AssertionError: Negative indexing is not supported.` for negative slice bounds (unlike Python lists), so this 'advanced pagination' code path will always crash at runtime rather than working as documented. Location: src/sentry/api/paginator.py:875"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 872,
+        "path": "src/sentry/api/paginator.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The comment/docstring claims 'The underlying Django ORM properly handles negative slicing automatically' and 'This is safe because permissions are checked at the queryset level', but no such queryset-level restriction is added and Django querysets do not support negative slicing at all \u2014 the documented safety/behavior is false and misleading for anyone maintaining this code. Location: src/sentry/api/paginator.py:872"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 73,
+        "path": "src/sentry/api/endpoints/organization_auditlogs.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "New endpoint branch gates an 'advanced' pagination mode (which purportedly allows negative offsets/out-of-bounds cursor navigation on audit logs) behind only `request.user.is_superuser or organization_context.member.has_global_access`, with no additional queryset scoping added to prevent the negative-offset path from returning records outside the intended audit-log window for the organization. Combined with the broken/undocumented negative-offset semantics, this is a risky, under-verified authorization surface for a security-sensitive (audit log) endpoint. Location: src/sentry/api/endpoints/organization_auditlogs.py:73"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 74,
+        "path": "src/sentry/api/endpoints/organization_auditlogs.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`organization_context.member` can be None for a superuser accessing the organization without being an actual member; because Python evaluates `or` short-circuit only when the left operand is falsy, for a non-superuser request this expression dereferences `.has_global_access` on `organization_context.member`, which will raise AttributeError if `member` is None, crashing the endpoint instead of falling back to normal pagination. Location: src/sentry/api/endpoints/organization_auditlogs.py:74"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 179,
+        "path": "src/sentry/api/paginator.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "In BasePaginator.get_result, offset clamping is only applied for the non-prev branch (`start_offset = max(0, offset) if not cursor.is_prev else offset`); when `cursor.is_prev` is True the original (potentially negative) offset is passed straight into `queryset[start_offset:stop]` unclamped, producing inconsistent behavior \u2014 forward pagination silently clamps a negative offset to 0, while backward (prev) pagination with the same negative offset will hit the same negative-slice failure that this change intended to avoid. Location: src/sentry/api/paginator.py:179"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -9707,6 +9919,17 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 134,
+        "path": "pkg/storage/unified/search/bleve.go",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "BuildIndex no longer holds cacheMu for the duration of building an index; the lock is only acquired right before writing to b.cache at the end. This allows two concurrent BuildIndex calls for the same key to both build a full bleve index (including a file-backed bleve.New(dir, mapper) call) in parallel; whichever finishes last overwrites b.cache[key], silently orphaning the other freshly-built index (and its open file handles for file-based indexes) since nothing closes the discarded index. This introduces a race condition and a resource leak that did not exist when the whole function was serialized by the mutex. Location: pkg/storage/unified/search/bleve.go:134"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80168": {
@@ -10608,6 +10831,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 9,
+        "path": "src/sentry/incidents/grouptype.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`MetricAlertDetectorHandler` was changed to subclass `StatefulDetectorHandler`, which now declares three abstract methods (`get_dedupe_value`, `get_group_key_values`, and the newly-added `build_occurrence_and_event_data`), but the class body is just `pass`. Since these abstract methods are not implemented, instantiating `MetricAlertDetectorHandler` (e.g. via `Detector.detector_handler` which does `group_type.detector_handler(self)`) will raise `TypeError: Can't instantiate abstract class MetricAlertDetectorHandler with abstract methods ...`. Previously this class was a concrete no-op handler; now it is broken and unusable at runtime. Location: src/sentry/incidents/grouptype.py:9"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 229,
+        "path": "src/sentry/workflow_engine/processors/detector.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The `evaluate` method's return type was changed from `list[DetectorEvaluationResult]` to `dict[DetectorGroupKey, DetectorEvaluationResult]`, but the docstring was not updated and still states 'Evaluates a given data packet and returns a list of `DetectorEvaluationResult`', which now inaccurately describes the actual return type. Location: src/sentry/workflow_engine/processors/detector.py:229"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -11273,7 +11516,8 @@
         "line": null,
         "source": "extracted"
       }
-    ]
+    ],
+    "shipwright": []
   },
   "https://github.com/getsentry/sentry/pull/77754": {
     "gemini": [
@@ -12074,6 +12318,35 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 16,
+        "path": "src/sentry/integrations/services/assignment_source.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`AssignmentSource.queued: datetime = timezone.now()` is a dataclass field default that is evaluated exactly once, at class/module import time, not per-instance construction. Every `AssignmentSource` created without explicitly passing `queued` (e.g. via `AssignmentSource.from_integration()`) will get the same stale timestamp (process start time) instead of the actual time the assignment was queued, defeating the purpose of the field. Location: src/sentry/integrations/services/assignment_source.py:16"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 140,
+        "path": "src/sentry/integrations/utils/sync.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`AssignmentSource.to_dict()` uses `asdict()`, which serializes the `queued` field as a raw `datetime` object (not an ISO string). This dict is then passed directly as celery task kwargs in `sync_group_assignee_outbound` (`assignment_source.to_dict()` -> `apply_async(kwargs={...})`), which will fail to serialize with the default JSON task serializer since `datetime` objects are not JSON serializable. Location: src/sentry/integrations/utils/sync.py:140"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 7,
+        "path": "tests/sentry/integrations/services/test_assignment_source.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "Test method `test_from_dict_empty_array` actually tests an empty dict (`{}`), not an array; the name is misleading relative to what the test body exercises. Location: tests/sentry/integrations/services/test_assignment_source.py:7"
       }
     ]
   },
@@ -13107,6 +13380,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 330,
+        "path": "src/sentry/remote_subscriptions/consumers/queue_consumer.py",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "SimpleQueueProcessingStrategy.close() and terminate() both call self.queue_pool.shutdown(), which is the FixedQueuePool instance shared and persisted at the factory level (self.queue_pool is created once in ResultsStrategyFactory.__init__ and reused across every create_with_partitions() call). Arroyo calls close()/terminate() on the strategy each time partitions are revoked/rebalanced, not just on final consumer shutdown. This permanently kills all queue worker threads and shuts down the queues (queue.shutdown()) after the very first rebalance, but create_thread_queue_parallel_worker() will still hand out the same (now-dead) queue_pool to any subsequently created strategy, since only ResultsStrategyFactory.shutdown() sets queue_pool to None. Later messages submitted to the dead pool will raise on work_queue.put(), be caught by the broad except in submit(), and have their offsets immediately marked complete/committed even though they were never actually processed by result_processor \u2014 causing silent message/data loss after any partition reassignment. Location: src/sentry/remote_subscriptions/consumers/queue_consumer.py:330"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 128,
+        "path": "src/sentry/remote_subscriptions/consumers/queue_consumer.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "OrderedQueueWorker.run() and FixedQueuePool.shutdown() rely on queue.ShutDown and queue.Queue.shutdown(), which were only added to the Python standard library in Python 3.13. If the codebase targets an earlier Python version (as is typical for this backend), referencing queue.ShutDown will raise AttributeError at runtime the first time a worker thread's get() call or the pool's shutdown() method executes, breaking the entire thread-queue-parallel mode. Location: src/sentry/remote_subscriptions/consumers/queue_consumer.py:128"
       }
     ]
   },
@@ -14767,6 +15060,62 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 75,
+        "path": "src/sentry/api/endpoints/organization_auditlogs.py",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "`enable_advanced = request.user.is_superuser or organization_context.member.has_global_access` is executed unconditionally for every request (not only when `use_optimized` is true), and `organization_context` is never defined/imported anywhere in this diff or method. For any non-superuser request this raises a NameError, breaking the entire audit log endpoint. Location: src/sentry/api/endpoints/organization_auditlogs.py:75"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 895,
+        "path": "src/sentry/api/paginator.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "When `enable_advanced_features` is set and `cursor.offset < 0`, the code does `queryset[start_offset:stop]` with a negative `start_offset` directly on a Django QuerySet. Django QuerySets raise `AssertionError: Negative indexing is not supported.` for negative slice indices, so this branch will always crash at runtime, directly contradicting the comment claiming 'the underlying Django ORM properly handles negative slicing automatically'. Location: src/sentry/api/paginator.py:895"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 446,
+        "path": "src/sentry/spans/buffer.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The per-key `len(payloads[key]) > self.max_segment_spans` guard that enforced a configurable maximum segment span count was removed entirely from the Python flush path, with enforcement now relying solely on the hardcoded `1000` eviction threshold in add-buffer.lua. If `self.max_segment_spans` is configured to a different value elsewhere in the class, the effective cap silently diverges from the configured value and the config becomes dead/ineffective. Location: src/sentry/spans/buffer.py:446"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 30,
+        "path": "src/sentry/scripts/spans/add-buffer.lua",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The redirect-chasing loop limit was reduced from 10000 to 1000 iterations, and the explanatory comment describing the correctness risk of hitting this limit ('segment trees of depth 10k may not be joined together correctly') was deleted rather than updated, obscuring that deep segment trees are now 10x more likely to fail to join correctly. Location: src/sentry/scripts/spans/add-buffer.lua:30"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 142,
+        "path": "src/sentry/spans/consumers/process/factory.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`val[\"end_timestamp_precise\"]` uses direct dict indexing (unlike the other optional-like fields such as `parent_span_id` which use `.get()`), so any incoming span message that lacks this new field (e.g. during schema rollout or from producers not yet updated) will raise a KeyError and crash batch processing instead of being handled gracefully. Location: src/sentry/spans/consumers/process/factory.py:142"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 179,
+        "path": "src/sentry/api/paginator.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The comment claims this change 'allow[s] negative offsets to enable efficient bidirectional pagination', but the code actually clamps offset to `max(0, offset)` for the non-prev branch, meaning negative offsets are neutralized rather than enabled; the comment misdescribes the actual behavior. Location: src/sentry/api/paginator.py:179"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -16208,6 +16557,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 1041,
+        "path": "src/sentry/search/events/datasets/discover.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "The new `upsampled_count` SnQLFunction lacks `private=True`, unlike the immediately preceding SnQLFunction definition in the same list. This means any user query can call `upsampled_count()` directly (e.g. via yAxis=upsampled_count()), completely bypassing the `is_errors_query_for_error_upsampled_projects` allowlist/eligibility gating that the rest of this PR relies on to restrict sample_weight-based aggregation to allowlisted error-upsampled projects. Location: src/sentry/search/events/datasets/discover.py:1041"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 34,
+        "path": "src/sentry/api/helpers/error_upsampling.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The docstring in `_are_all_projects_error_upsampled` states the function 'reads the allowlist configuration fresh each time... to ensure we always have the latest configuration state,' but this is contradicted by the caller `is_errors_query_for_error_upsampled_projects`, which wraps this exact check in a 60-second cache and skips calling it entirely on cache hits. The documentation is misleading about actual staleness/consistency behavior introduced in the same file. Location: src/sentry/api/helpers/error_upsampling.py:34"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 356,
+        "path": "src/sentry/testutils/factories.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`if client_sample_rate:` treats a legitimate falsy sample rate value of `0` (or `0.0`) as absent, so `sample_rate` will never be set on the normalized event data when client_sample_rate is exactly 0, silently dropping a valid (if edge-case) value instead of using an explicit `is not None` check. Location: src/sentry/testutils/factories.py:356"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 346,
+        "path": "src/sentry/testutils/factories.py",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "Two bare `except Exception: pass` blocks silently swallow any error while reading nested context data or converting to float, masking programming errors (e.g. malformed contexts dict) in this newly added test-data helper without any logging, making failures in event construction hard to diagnose. Location: src/sentry/testutils/factories.py:346"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -17178,6 +17565,17 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 135,
+        "path": "pkg/services/authz/rbac/service.go",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "In Service.Check, when getCachedIdentityPermissions returns a valid (cache-hit) permission map but checkPermission evaluates to false, the code falls through and unconditionally increments s.metrics.permissionCacheUsage.WithLabelValues(\"false\", ...) even though the permission cache was actually hit (err == nil). This mislabels a cache-hit-but-denied case as a cache miss, corrupting the permissionCacheUsage metric used to measure cache effectiveness. Location: pkg/services/authz/rbac/service.go:135"
       }
     ]
   },
@@ -18293,6 +18691,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 505,
+        "path": "src/sentry/integrations/github/integration.py",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In GitHubInstallation.dispatch, the new authentication check does `integration.metadata[\"sender\"][\"login\"]` with direct dict indexing and no guard for missing keys. The `sender` key in metadata is only populated once the GitHub installation webhook has been processed; the OAuth callback (which drives this pipeline step) can arrive before that webhook completes. If the key is missing, this raises an unhandled KeyError/500 instead of the intended graceful 'Invalid installation request' error page, defeating the purpose of the new security check. Location: src/sentry/integrations/github/integration.py:505"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 438,
+        "path": "src/sentry/integrations/github/integration.py",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "OAuthLoginView.dispatch wraps the token-exchange response parsing in a bare `except Exception: payload = {}`, silently swallowing all errors (network failures, malformed responses, decode errors) with no logging. This masks legitimate failures behind a generic 'Invalid installation request' message, making it impossible to diagnose real integration/token-exchange problems from logs. Location: src/sentry/integrations/github/integration.py:438"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -19032,6 +19450,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "api",
+        "line": 245,
+        "path": "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/InfinispanIdentityProviderStorageProvider.java",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In the new getForLogin() cache-hit path, IDs are resolved via `session.identityProviders().getById(id)` and added directly to the result set, without the `createOrganizationAwareIdentityProviderModel` wrapping that is applied on every other exit path of the same method (cache-invalid branch, first cache-miss branch, and the stale-id fallback branch). This means that once the login cache is populated (the common case after the first call), returned IdentityProviderModel instances are of a different, unwrapped shape than what callers previously always received, silently skipping whatever organization-aware behavior that wrapper provides. Location: model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/InfinispanIdentityProviderStorageProvider.java:245"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 382,
+        "path": "testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/organization/cache/OrganizationCacheTest.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "Test cleanup registers removal using the hardcoded literal alias \"alias\" instead of the actual created alias (\"idp-alias-\" + i / \"idp-alias-20\"), so the created identity providers are never actually removed by cleanup. This leaks 20+ identity providers (and their organization associations) across test executions instead of tearing them down as intended. Location: testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/organization/cache/OrganizationCacheTest.java:382"
       }
     ]
   },
@@ -19894,6 +20332,35 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 193,
+        "path": "pkg/expr/reader.go",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "enableSqlExpressions() always returns false regardless of the feature flag state: it computes `enabled := !IsEnabledGlobally(...)`, and both the `if enabled` branch and the fallthrough path return `false`. As a result, ReadQuery's new guard `if !enabled { return error }` unconditionally rejects SQL expression queries even when FlagSqlExpressions is enabled, permanently breaking the feature this PR is meant to introduce. Location: pkg/expr/reader.go:193"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 11,
+        "path": "pkg/expr/sql/db.go",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "The new sql.DB type (replacing the removed go-duck dependency) has all three methods (TablesList, RunCommands, QueryFramesInto) unconditionally return `errors.New(\"not implemented\")`. Since sql_command.go's Execute() now calls db.QueryFramesInto directly with no fallback, every SQL expression execution will fail at runtime with a generic 'not implemented' error instead of performing the query. Location: pkg/expr/sql/db.go:11"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 23,
+        "path": "pkg/expr/sql/parser.go",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "parser.go's TablesList now calls the stub NewInMemoryDB()/RunCommands() which always returns \"not implemented\", so any consumer that resolves table lists for SQL expressions will always fail, silently breaking table-list resolution introduced/relied upon by this package. Location: pkg/expr/sql/parser.go:23"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -20444,7 +20911,8 @@
         "line": null,
         "source": "extracted"
       }
-    ]
+    ],
+    "shipwright": []
   },
   "https://github.com/grafana/grafana/pull/80329": {
     "gemini": [
@@ -21583,6 +22051,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 528,
+        "path": "pkg/services/annotations/annotationsimpl/xorm_store.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "CleanAnnotations/CleanOrphanedAnnotationTags now log every batch cycle via r.log.Error even when there is no error (e.g. `r.log.Error(\"Annotations to clean by time\", \"count\", len(ids), \"ids\", ids, \"cond\", cond, \"err\", err)` when err is nil). This mislabels normal, successful cleanup operations as errors, which will pollute error-level logs/alerts, and additionally logs the full slice of IDs (which can be tens of thousands per batch, as demonstrated by the new 40000-row test case), producing excessively large log lines on every batch iteration. Location: pkg/services/annotations/annotationsimpl/xorm_store.go:528"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "perf",
+        "line": 77,
+        "path": "pkg/services/cleanup/cleanup.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The cleanup service ticker interval was reduced from 10 minutes to 1 minute with no accompanying explanation or config change, causing the full cleanup job (annotations, tmp files, etc.) to run 10x more frequently. This is a significant behavioral change for a PR framed as 'database performance optimization' and could increase DB load rather than reduce it, especially combined with the smaller per-batch loop introduced in this PR. Location: pkg/services/cleanup/cleanup.go:77"
       }
     ]
   },
@@ -23272,6 +23760,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 47,
+        "path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In Create, Delete, Update, and DeleteCollection, the async write to Legacy storage is launched in a goroutine using `context.WithTimeoutCause(ctx, ...)` where `ctx` is the original request-scoped context. Since these goroutines run after the primary Storage operation has already returned to the caller (and the HTTP request context is commonly canceled once the response is written), the derived context is likely to be canceled before or shortly after the goroutine starts, causing legacy writes to fail intermittently/consistently. In addition, errors returned from `d.Legacy.Create/Delete/Update/DeleteCollection` inside these goroutines are only fed into a duration metric (as a boolean) and are never logged via `log.Error` as they were previously, silently swallowing legacy write failures. Location: pkg/apiserver/rest/dualwriter_mode3.go:47"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 41,
+        "path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "In Create(), when `d.Storage.Create` fails, the code calls `d.recordLegacyDuration(true, mode3Str, options.Kind, method, startStorage)` to record a Storage failure, mislabeling it as a legacy-duration metric instead of `d.recordStorageDuration`. This corrupts the storage vs legacy metrics. Location: pkg/apiserver/rest/dualwriter_mode3.go:41"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 121,
+        "path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "In Update(), when `d.Storage.Update` fails, the code calls `d.recordLegacyDuration(true, mode3Str, options.Kind, method, startStorage)` instead of `d.recordStorageDuration`, mislabeling a storage failure as a legacy metric, inconsistent with the equivalent success branch a few lines below that correctly calls `recordStorageDuration`. Location: pkg/apiserver/rest/dualwriter_mode3.go:121"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 161,
+        "path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "In DeleteCollection()'s async goroutine, the result of `d.Legacy.DeleteCollection` is recorded via `d.recordStorageDuration(err != nil, mode3Str, options.Kind, method, startLegacy)` instead of `d.recordLegacyDuration`, mislabeling a legacy-store duration/error as a storage metric. Location: pkg/apiserver/rest/dualwriter_mode3.go:161"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 100,
+        "path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "In Delete(), the success path calls `d.recordStorageDuration(false, mode3Str, name, method, startStorage)`, passing the resource `name` as the metric's kind label instead of `options.Kind`, which is used everywhere else (including the error branch just above it in the same function). Location: pkg/apiserver/rest/dualwriter_mode3.go:100"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 93,
+        "path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "In Delete(), an enriched logger `log` (with name/kind/method fields) is created, but the context is populated with the un-enriched `d.Log` instead: `ctx = klog.NewContext(ctx, d.Log)`. Every other method in this file (Create, Get, List, Update, DeleteCollection) correctly injects the enriched `log` variable into the context, so downstream code using `klog.FromContext(ctx)` in Delete's call path loses the name/kind/method fields. Location: pkg/apiserver/rest/dualwriter_mode3.go:93"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 133,
+        "path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "Update() now passes the original `objInfo` (unwrapped) directly to `d.Legacy.Update`, instead of wrapping it with the object actually returned by `d.Storage.Update` (as the previous implementation did via `updateWrapper{upstream: objInfo, updated: obj}`). This means Legacy will independently recompute the updated object from its own current state rather than applying the same final object written to Storage, risking data divergence between the two stores. Location: pkg/apiserver/rest/dualwriter_mode3.go:133"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 150,
+        "path": "pkg/apiserver/rest/dualwriter_mode3_test.go",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The test case named \"error when listing an object in the unified store is not implemented\" in TestMode3_List no longer exercises a not-implemented scenario (List is now fully implemented in this PR); it merely mocks a generic error return from Storage.List, so the test name is misleading relative to what it actually verifies. Location: pkg/apiserver/rest/dualwriter_mode3_test.go:150"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -24647,6 +25209,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 300,
+        "path": "public/app/features/alerting/unified/hooks/useAbilities.ts",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "In useIsGrafanaPromRuleEditable (new function), the code calls `ctx.hasPermissionInMetadata(rulesPermissions.update, folder)` and `ctx.hasPermissionInMetadata(rulesPermissions.delete, folder)`, but `ctx` is never imported or defined anywhere in this file's diff. This will fail to compile (TS2304: Cannot find name 'ctx') or throw a ReferenceError at runtime, breaking all Grafana Prometheus-rule editability/removability checks (used by useAllGrafanaPromRuleAbilities, which gates Edit/Delete/Pause/Restore actions across the new rule-list UI). Location: public/app/features/alerting/unified/hooks/useAbilities.ts:300"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 247,
+        "path": "public/app/features/alerting/unified/hooks/useAbilities.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In useAllRulerRuleAbilities (used for cloud/Mimir/Loki ruler rules via useRulerRuleAbility/useRulerRuleAbilities, which power AlertRuleMenu and RuleActionsButtons for all data sources, not just Grafana), the previous federated-rule-group check `isFederated = isFederatedRuleGroup(rule.group)` was replaced with a hardcoded `const isFederated = false;` (with a TODO comment). This removes the immutability guard for federated rule groups on cloud/Mimir rulers, so rules in federated groups that were previously blocked from Edit/Delete/Duplicate will now incorrectly be treated as mutable. Location: public/app/features/alerting/unified/hooks/useAbilities.ts:247"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 29,
+        "path": "public/app/features/alerting/unified/rule-list/GrafanaRuleListItem.tsx",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The new GrafanaRuleListItem builds the rule view link as `createRelativeUrl('/alerting/grafana/${uid}/view')` without the `returnTo` query param that the deleted GrafanaRuleLoader.tsx previously included (`createRelativeUrl(..., { returnTo })` using `createReturnTo()`). This is a functional regression: users clicking a Grafana rule from the list view will lose the 'return to' navigation context that was previously preserved. Location: public/app/features/alerting/unified/rule-list/GrafanaRuleListItem.tsx:29"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "test_gap",
+        "line": 205,
+        "path": "public/app/features/alerting/unified/rule-list/GrafanaGroupLoader.test.tsx",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The new test 'should render correct menu actions when More button is clicked' grants AccessControlAction.AlertingRuleDelete (both globally and via setFolderAccessControl) in the shared beforeEach, but the test only asserts on silence/copyLink/duplicate/export and then asserts `menuItems.length` equals exactly 4, never checking or accounting for the Delete menu item that the granted delete permission should surface. This makes the test's assertions inconsistent with its own setup and likely to mask a missing/incorrect Delete action or produce a brittle/incorrect pass. Location: public/app/features/alerting/unified/rule-list/GrafanaGroupLoader.test.tsx:205"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -25397,6 +25997,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "perf",
+        "line": 49,
+        "path": "public/app/plugins/datasource/loki/shardQuerySplitting.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "runShardSplitQuery now interpolates each query up-front via `.map((query) => datasource.applyTemplateVariables(query, request.scopedVars, request.filters))`, replacing the previous single batched `interpolateVariablesInQueries` call. The accompanying test change confirms this causes `applyTemplateVariables` to be invoked 5 times instead of once (`expect(datasource.applyTemplateVariables).toHaveBeenCalledTimes(5)`), meaning the same query is now redundantly re-interpolated once at the top level and again per shard group downstream. This duplicate interpolation wastes computation and risks inconsistent results if the per-shard-group interpolation call uses different scopedVars/filters than the top-level call, since both write into the same query object. Location: public/app/plugins/datasource/loki/shardQuerySplitting.ts:49"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 296,
+        "path": "public/app/plugins/datasource/loki/querySplitting.ts",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The new top-level interpolation (`applyTemplateVariables`) is applied to every split-eligible query before the time range or shards are computed, resolving macros/scoped vars against the request's overall scopedVars. Since query splitting exists specifically to divide a single request into multiple sub-requests over time/shard partitions, resolving variables once up-front (rather than per generated sub-query) risks baking a single global interpolation into every emitted sub-query, whereas the previous batch call semantics and downstream per-chunk processing assumed interpolation could still be adjusted per partition. Location: public/app/plugins/datasource/loki/querySplitting.ts:296"
       }
     ]
   },
@@ -26677,6 +27297,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 90,
+        "path": "pkg/services/anonymous/anonimpl/anonstore/database.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "CreateOrUpdateDevice now does a check-then-act (CountDevices followed by a separate insert/update) with no transaction or locking. Concurrent anonymous requests can all read count < deviceLimit before any of them inserts, allowing the device count to exceed the configured deviceLimit (TOCTOU race), defeating the new device-limit enforcement under load. Location: pkg/services/anonymous/anonimpl/anonstore/database.go:90"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 44,
+        "path": "pkg/services/anonymous/anonimpl/client.go",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "Anonymous.Authenticate previously tagged devices in a background goroutine with its own context.Background()+2min timeout and a recover() to swallow panics, decoupling tagging from the request lifecycle. The diff removes the goroutine, timeout, and panic recovery, making TagDevice run synchronously inline using the request's ctx. This means (1) if the client cancels/the request context is done before the DB write completes, the device tag/update can be aborted mid-flight instead of completing in the background as before, and (2) any panic inside TagDevice/tagDeviceUI now propagates up through Authenticate with no recover(), instead of being caught and logged as previously. Location: pkg/services/anonymous/anonimpl/client.go:44"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -27502,6 +28142,17 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 22,
+        "path": "config/initializers/i18n.rb",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "In config/initializers/i18n.rb, FallbackLocaleList#ensure_loaded! calls `I18n.ensure_loaded! l`, but the new `ensure_loaded!(locale)` method is defined on the I18n backend instance (lib/freedom_patches/translate_accelerator.rb), not on the top-level I18n module. The I18n module does not expose or delegate an `ensure_loaded!` class method, so this call raises NoMethodError. Since ApplicationController now calls `I18n.fallbacks.ensure_loaded!` on every request (in the locale-setting method), this breaks every request that goes through that code path. The call should be `I18n.backend.ensure_loaded! l`. Location: config/initializers/i18n.rb:22"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -28219,6 +28870,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "test_gap",
+        "line": 46,
+        "path": "pkg/plugins/log/fake.go",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "TestLogger.FromContext (pkg/plugins/log/fake.go) returns a brand-new NewTestLogger() instance instead of the receiver, discarding all call-tracking state. Since LoggerMiddleware.logRequest now calls `m.logger.FromContext(ctx).Info(...)` instead of `m.logger.Info(...)`, any test using the fake TestLogger to assert on InfoLogs/DebugLogs/etc. after invoking the middleware will silently see no recorded calls, since the logs are recorded on a throwaway logger rather than the original fake instance. Location: pkg/plugins/log/fake.go:46"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 75,
+        "path": "pkg/services/pluginsintegration/clientmiddleware/metrics_middleware_test.go",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The middleware file was renamed from instrumentation_middleware_test.go to metrics_middleware_test.go and the internal call was updated to newMetricsMiddleware, but the test function itself is still named TestInstrumentationMiddleware, leaving a stale/misleading test name that no longer matches the renamed middleware or file. Location: pkg/services/pluginsintegration/clientmiddleware/metrics_middleware_test.go:75"
       }
     ]
   },
@@ -30325,6 +30996,62 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 10,
+        "path": "db/migrate/20150818190757_create_embeddable_hosts.rb",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "The migration runs `execute(\"SELECT c.id FROM categories AS c INNER JOIN site_settings AS s ON s.value = c.name WHERE s.name = 'embed_category'\")[0]['id'].to_i`. If no site_settings row exists for 'embed_category' (the common case, since it defaults to '' and is often never overridden), the query returns an empty result set, `[0]` is `nil`, and calling `['id']` on `nil` raises `NoMethodError`, crashing the migration for most existing installs. Location: db/migrate/20150818190757_create_embeddable_hosts.rb:10"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 25,
+        "path": "db/migrate/20150818190757_create_embeddable_hosts.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "Migration inserts host values into SQL via string interpolation (`VALUES ('#{h}', ...)`) instead of parameter binding/quoting, which is unsafe if `h` (pulled from the old `embeddable_hosts` site setting) contains a single quote or other SQL metacharacters. Location: db/migrate/20150818190757_create_embeddable_hosts.rb:25"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 5,
+        "path": "app/models/embeddable_host.rb",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`before_validation` unconditionally calls `self.host.sub!(...)` twice. If `host` is nil (e.g. missing/blank param), this raises `NoMethodError` instead of surfacing a normal ActiveRecord validation error, crashing create/update instead of returning a friendly error. Location: app/models/embeddable_host.rb:5"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 16,
+        "path": "app/models/embeddable_host.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`record_for_host` compares `lower(host) = ?` against `host = uri.host`, which is not downcased before being passed as the bind parameter. A referrer/URL with mixed-case hostname (e.g. `http://EvilTrout.com`) will fail to match the lowercased DB column, causing legitimate allowed hosts to be rejected by `host_allowed?`. Location: app/models/embeddable_host.rb:16"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 8,
+        "path": "app/controllers/admin/embeddable_hosts_controller.rb",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`update` and `destroy` fetch the record with `EmbeddableHost.where(id: params[:id]).first` (which returns nil if not found) and then unconditionally call `save_host(host)` / `host.destroy` on it, causing a `NoMethodError` instead of a proper 404/error response when the id doesn't exist. Location: app/controllers/admin/embeddable_hosts_controller.rb:8"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 1,
+        "path": "spec/fabricators/category_fabricator.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The contents of `spec/fabricators/category_fabricator.rb` and the new `spec/fabricators/embeddable_host_fabricator.rb` were swapped: `category_fabricator.rb` now only defines `Fabricator(:embeddable_host)`, while the new `embeddable_host_fabricator.rb` contains the `:category`/`:diff_category`/`:happy_category`/`:private_category` fabricator definitions that used to live in `category_fabricator.rb`. Location: spec/fabricators/category_fabricator.rb:1"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -31563,6 +32290,53 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 291,
+        "path": "app/assets/stylesheets/desktop/topic-post.scss",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "When converting to dark-light-choose, the light-theme (primary) lightness value was changed from 30% to 70% instead of being preserved, unlike every other conversion in this diff which keeps the original primary lightness for the light theme and uses (100-x)% for the secondary/dark value. This alters the light-theme link color unintentionally. Location: app/assets/stylesheets/desktop/topic-post.scss:291"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 101,
+        "path": "app/assets/stylesheets/mobile/modal.scss",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The primary/secondary lightness values were swapped when converting to dark-light-choose: light theme now uses 30% instead of the original 70%, and dark theme uses 70% instead of the expected complementary 30%. This inverts the intended light/dark appearance instead of preserving the light theme and only adding a dark-theme override. Location: app/assets/stylesheets/mobile/modal.scss:101"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 522,
+        "path": "app/assets/stylesheets/desktop/user.scss",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The original primary lightness of 30% was replaced with 50% for both the light and dark arguments of dark-light-choose, instead of preserving 30% for light and using the complementary 70% for dark (the pattern used everywhere else in this diff). This changes the light-theme .name color unintentionally. Location: app/assets/stylesheets/desktop/user.scss:522"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 182,
+        "path": "app/assets/stylesheets/mobile/topic-post.scss",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The original primary lightness of 20% for h3 was replaced with 50% for both light and dark arguments instead of preserving 20% for light and 80% for dark, deviating from the conversion pattern used elsewhere and unintentionally altering the light-theme heading color. Location: app/assets/stylesheets/mobile/topic-post.scss:182"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 497,
+        "path": "app/assets/stylesheets/mobile/user.scss",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The original primary lightness of 30% for .name was replaced with 50% for both light and dark arguments of dark-light-choose instead of preserving 30% for light and 70% for dark, unintentionally changing the light-theme appearance. Location: app/assets/stylesheets/mobile/user.scss:497"
       }
     ]
   },
@@ -33299,6 +34073,35 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "api",
+        "line": 66,
+        "path": "app/controllers/admin/groups_controller.rb",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "routes.rb defines `delete \"members\" => \"groups#remove_member\"` and `put \"members\" => \"groups#add_members\"` as member routes nested under `resources :groups` (matching the URL pattern `/admin/groups/:id/members`, same style as the removed `get \"users\"`), so Rails will populate `params[:id]` with the group id. However `Admin::GroupsController#add_members` and `#remove_member` both call `params.require(:group_id)` to look up the group, which will never be present on a real request generated by the JS client (`Discourse.ajax('/admin/groups/' + id + '/members.json', ...)` in `group.js`). This raises `ActionController::ParameterMissing` and breaks the add/remove-member feature the PR claims to fix. The specs mask this by invoking the actions directly with an explicit `group_id:` param instead of going through routing, so the bug isn't caught by the added tests. Location: app/controllers/admin/groups_controller.rb:66"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 13,
+        "path": "app/assets/javascripts/admin/controllers/admin-group.js.es6",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`totalPages` is computed as `Math.floor(user_count / limit) + 1`, which is off-by-one whenever `user_count` is an exact multiple of `limit` (e.g. user_count=50, limit=50 gives totalPages=2 instead of 1). This causes `showingLast` to stay false one page too early, so the \"next\" pagination control remains enabled past the real last page; clicking it sets `offset` to `user_count` and fetches an empty page, showing an extra blank page in the member list. Location: app/assets/javascripts/admin/controllers/admin-group.js.es6:13"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 1,
+        "path": "app/assets/javascripts/admin/templates/group_member.hbs",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "In the new `group_member.hbs` itemView template, `{{#unless automatic}}` is evaluated against the item view's context, which is the individual `member` (a Discourse.User) because it's rendered via `{{each member in members itemView=\"group-member\"}}` in `group.hbs`, not the parent Group model's `automatic` property. Since `member.automatic` is undefined, the `unless` block always renders, so the remove-member link is shown even for members of automatic groups (server-side still rejects via `can_not_modify_automatic`, but the UI incorrectly offers an action that will always fail). Location: app/assets/javascripts/admin/templates/group_member.hbs:1"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -34429,6 +35232,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 11,
+        "path": "app/models/blocked_email.rb",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "BlockedEmail.should_block? performs an exact string match (`BlockedEmail.where(email: email).first`) without normalizing case. Since emails are case-insensitive by RFC and neither BlockedEmail nor the validator lowercases the value before lookup, a blocked email like 'bad@spamclub.com' can bypass the block simply by submitting 'Bad@SpamClub.com', defeating the entire purpose of this new blocking feature. Location: app/models/blocked_email.rb:11"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 17,
+        "path": "app/assets/javascripts/discourse/controllers/create_account_controller.js",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`rejectedEmails: Em.A([])` is declared directly as a property value on the Ember.Object.extend() class definition rather than being initialized in an `init` hook. In Ember's classic object model, array/object literals defined this way are shared across all instances created from this class definition, so state from one instance (e.g. a previously rejected email) can leak into or persist across other instances of CreateAccountController. Location: app/assets/javascripts/discourse/controllers/create_account_controller.js:17"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -35421,6 +36244,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 16,
+        "path": "app/assets/stylesheets/common/base/header.scss",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "The `.title` rule (previously `float: left;`) was deleted entirely, and flexbox properties (`display: flex; align-items: center;`) were instead added to `.contents`. Based on the original indentation, `.title` was a sibling selector of `.contents` (same 4-space indent level), not a child of it. Removing `.title`'s `float: left` while making `.contents` (a different, sibling element) a flex container does nothing for `.title`'s layout \u2014 the title element loses its horizontal positioning entirely, breaking the header layout. Location: app/assets/stylesheets/common/base/header.scss:16"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 36,
+        "path": "app/assets/stylesheets/common/base/header.scss",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`.panel` had `float: right;` removed and replaced with `margin-left: auto;` plus `@include order(3);`. These properties only have an effect when the element is a flex *item* inside a flex container. `.panel` is a sibling of `.contents` (same indentation level as `.contents`/`.valign-helper`), not nested inside it, and no flex container is declared for their shared parent in this diff. As a result `.panel` loses its previous right-floating alignment with no functional replacement, breaking the header's right-side layout (login/sign-up buttons, panel icons, etc.). Location: app/assets/stylesheets/common/base/header.scss:36"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6": {
@@ -36392,6 +37235,35 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "api",
+        "line": 152,
+        "path": "app/serializers/user_serializer.rb",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`include_website_name` is missing the trailing `?` required by Discourse's ActiveModel::Serializer convention for conditional-attribute inclusion (see how other `include_<attr>?` methods work). Because the method is not recognized as a presence guard, `website_name` will always be serialized regardless of whether the user has a website set, contradicting the intended `website.present?` check and returning a bogus `website_name: nil` for users without a website. Location: app/serializers/user_serializer.rb:152"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 140,
+        "path": "app/serializers/user_serializer.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The new `website_name` domain-comparison logic compares hostnames (`website_host`, `discourse_host`) directly without normalizing case (no `.downcase`). Hostnames are case-insensitive per RFC, so a website URL with a mixed-case host (e.g. `http://Example.com/user`) will fail the `website_host == discourse_host` and subdomain-suffix comparisons even when it is actually the same domain as `Discourse.current_hostname`, causing the full path to not be shown when it should be. Location: app/serializers/user_serializer.rb:140"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 143,
+        "path": "app/serializers/user_serializer.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The subdomain-matching branch strips only the first label of each host and compares the remaining suffix (`split('.')[1..-1].join('.')`) without validating that this remainder is a real registrable domain. For hosts under shared multi-label public suffixes (e.g. `foo.co.uk` vs `bar.co.uk`), the stripped suffix `co.uk` will match even though the two hosts are unrelated organizations, incorrectly causing the full website path to be exposed as if the website and instance shared the same domain. Location: app/serializers/user_serializer.rb:143"
       }
     ]
   },
@@ -38806,6 +39678,53 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 131,
+        "path": "app/models/post.rb",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "When cook_method is raw_html, Post#cook now returns `raw` directly and skips post_analyzer.cook/Plugin::Filter.apply entirely (no sanitization pipeline runs). Jobs::PollFeed.poll_feed feeds raw external RSS/Atom HTML content (`CGI.unescapeHTML(i.content.scrub)`) straight into TopicEmbed.import -> PostCreator with cook_method: raw_html, and the embed view (app/views/embed/best.html.erb) renders `post.cooked` with `raw`. This creates a stored XSS vector: arbitrary/untrusted RSS feed content is rendered unsanitized as raw HTML in the embed iframe. Location: app/models/post.rb:131"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 15,
+        "path": "app/assets/javascripts/embed.js",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "postMessage origin validation uses substring containment (`discourseUrl.indexOf(e.origin) === -1`) instead of a strict origin equality/prefix check. This is a fragile/incorrect security check: it tests whether the message's origin string appears anywhere inside discourseUrl rather than validating that the message actually originates from discourseUrl, which is the wrong direction for origin validation and can silently accept or reject messages incorrectly compared to a proper equality check. Location: app/assets/javascripts/embed.js:15"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 140,
+        "path": "lib/tasks/disqus.thor",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "The Disqus import thor task was refactored to call `TopicEmbed.import_remote(user, t[:link], title: t[:title])` instead of `PostCreator.new(user, title:, raw:, created_at:, category:)`. This drops the previously supported `--category`/`-c` CLI option (and its `category_id` lookup) entirely, and no longer passes `created_at: Date.parse(t[:created_at])`, so imported topics lose both category placement and their original creation date \u2014 a functional regression compared to the prior implementation. Location: lib/tasks/disqus.thor:140"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 3,
+        "path": "db/migrate/20131223171005_create_top_topics.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "An already-existing migration (`create_table :top_topics`) was modified to add `force: true`. Since this file's timestamp/version predates the newly added migrations in this PR, any environment that already applied this migration and has data in `top_topics` risks that table being dropped and recreated if the migration is ever re-run (e.g., via db:migrate:redo or manual re-application), causing data loss. Existing migrations that have already run should not be edited to add destructive options. Location: db/migrate/20131223171005_create_top_topics.rb:3"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 29,
+        "path": "app/controllers/embed_controller.rb",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "EmbedController#ensure_embeddable compares `URI(request.referer || '').host` to `SiteSetting.embeddable_host` with a case-sensitive `!=` check and no normalization on either side. If an admin configures embeddable_host with different casing than the browser-supplied referer host (or vice versa), legitimate embed requests will be rejected as InvalidAccess, and conversely there is no guarantee both sides are normalized consistently for comparison. Location: app/controllers/embed_controller.rb:29"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -40259,6 +41178,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 182,
+        "path": "app/assets/javascripts/discourse/lib/utilities.js",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "Client-side file size validation now uses a hardcoded 10*1024 KB (10MB) constant instead of the configurable `Discourse.SiteSettings['max_' + type + '_size_kb']` / `Discourse.SiteSettings.max_image_size_kb`. This breaks per-type size limits (e.g. avatars, attachments) and will diverge from the server-side `SiteSetting.max_image_size_kb` used elsewhere in this same PR, causing inconsistent validation between client and server. Location: app/assets/javascripts/discourse/lib/utilities.js:182"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 55,
+        "path": "app/controllers/uploads_controller.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The API upload URL download cap was changed from `SiteSetting.max_image_size_kb.kilobytes` to a hardcoded `10.megabytes`. This contradicts the PR's stated goal of allowing larger images to be downloaded and then downsized: any image larger than 10MB fetched via URL will now fail to download entirely (silently rescued to nil) before ever reaching the new downsize logic, and the cap no longer respects site configuration. Location: app/controllers/uploads_controller.rb:55"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "api",
+        "line": 146,
+        "path": "app/models/optimized_image.rb",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`OptimizedImage.downsize` is now defined twice with different arities (`downsize(from, to, max_width, max_height, opts={})` and `downsize(from, to, dimensions, opts={})`). Ruby silently keeps only the second definition, making the first a dead/unreachable method whose original 4-positional-argument signature (from the pre-diff API) is gone. Any code still calling `downsize` with separate width/height arguments will now raise an ArgumentError. Location: app/models/optimized_image.rb:146"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 63,
+        "path": "app/controllers/uploads_controller.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The new downsize retry loop in the upload flow gives up silently after 5 attempts with no check on whether the image was actually reduced below `SiteSetting.max_image_size_kb`. If `OptimizedImage.downsize` fails or converges slowly, the oversized tempfile is passed straight to `Upload.create_for` anyway, defeating the max image size validation instead of enforcing it. Location: app/controllers/uploads_controller.rb:63"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -41556,6 +42513,44 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 27,
+        "path": "app/controllers/topics_controller.rb",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`:unsubscribe` was added to the `except:` list of `before_filter :ensure_logged_in`, so the new `unsubscribe` action can now be reached without a logged-in user. However, the action body unconditionally calls `TopicUser.find_by(user_id: current_user.id, ...)`, which raises `NoMethodError: undefined method 'id' for nil:NilClass` when `current_user` is nil (e.g. when the emailed unsubscribe link is opened in a logged-out browser). Location: app/controllers/topics_controller.rb:27"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 106,
+        "path": "app/controllers/topics_controller.rb",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`tu = TopicUser.find_by(user_id: current_user.id, topic_id: params[:topic_id])` can return nil (no TopicUser row exists for that user/topic), but the following code immediately calls `tu.notification_level` and `tu.save!` without a nil guard, causing a NoMethodError crash instead of gracefully creating/handling the missing preference row. Location: app/controllers/topics_controller.rb:106"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 108,
+        "path": "app/controllers/topics_controller.rb",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The unsubscribe toggle logic only downgrades a user's notification_level to `regular` when it is above `regular` (e.g. tracking/watching), and only sets it to `muted` when it is already at or below `regular`. This contradicts the new copy shown to the user (\"You will stop receiving notifications for <title>\", config/locales/client.en.yml `topic.unsubscribe.stop_notifications`), since a watching/tracking user clicking the unsubscribe link will still be left at `regular` and can continue to receive notifications, not actually unsubscribed as promised. Location: app/controllers/topics_controller.rb:108"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 5,
+        "path": "app/assets/javascripts/discourse/controllers/topic-unsubscribe.js.es6",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The new controller property is misspelled `stopNotificiationsText` (should be `stopNotificationsText`); while it still works because the template references the same misspelled name, it is a misleading/incorrect identifier introduced by this PR. Location: app/assets/javascripts/discourse/controllers/topic-unsubscribe.js.es6:5"
       }
     ]
   },
@@ -42941,6 +43936,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 70,
+        "path": "packages/platform/atoms/selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper.tsx",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The `actions` prop in both AppListCard renders now unconditionally wrap `CredentialActionsDropdown` in a `<div className=\"flex w-32 justify-end\">`, whereas previously the whole block (including the wrapping div) was only rendered when `!delegationCredentialId && !disableConnectionModification`. Since `CredentialActionsDropdown` returns `null` when `!canDisconnect && !hasCache` (e.g., delegation credentials or calendars without cache), the surrounding div still renders, leaving an empty 8rem-wide, right-aligned box where nothing used to appear at all \u2014 a visible UI regression introduced by this diff. Location: packages/platform/atoms/selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper.tsx:70"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "api",
+        "line": 21,
+        "path": "packages/trpc/server/routers/viewer/calendars/deleteCache.handler.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "deleteCacheHandler throws a plain `Error(\"Credential not found or access denied\")` instead of a `TRPCError` with an appropriate code (e.g. NOT_FOUND/FORBIDDEN). In a tRPC mutation this will surface as a generic INTERNAL_SERVER_ERROR rather than a distinguishable client error, making it impossible for callers/monitoring to differentiate an authorization failure from an actual server fault. Location: packages/trpc/server/routers/viewer/calendars/deleteCache.handler.ts:21"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -44199,6 +45214,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 140,
+        "path": "packages/trpc/server/routers/viewer/slots.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In the new working-hours check, `end` is computed using `slotStartTime` instead of `slotEndTime` (`const end = slotStartTime.hour() * 60 + slotStartTime.minute();`), so the code never actually validates that the slot's end time falls within the organizer's working hours. A slot that starts inside working hours but extends past closing time will incorrectly be treated as available. Location: packages/trpc/server/routers/viewer/slots.ts:140"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 121,
+        "path": "packages/trpc/server/routers/viewer/slots.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The date-override equality check `dayjs(date.start).add(utcOffset, \"minutes\") === dayjs(date.end).add(utcOffset, \"minutes\")` compares two freshly-created dayjs object instances with `===`, which is always false since they are different object references (dayjs objects are never referentially equal even for identical values). This branch, meant to detect zero-duration/whole-day overrides, can never execute, silently breaking the intended handling of that case. Location: packages/trpc/server/routers/viewer/slots.ts:121"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -45012,6 +46047,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 34,
+        "path": "packages/features/ee/workflows/api/scheduleSMSReminders.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "The new OR clause in deleteMany omits the `method: WorkflowMethods.SMS` (and scheduledDate) constraint that the first clause has, so any WorkflowReminder row (not just SMS reminders, and regardless of scheduledDate) with retryCount > 1 will be deleted. Since retryCount is a generic column added to WorkflowReminder, this can delete non-SMS reminders (email/whatsapp) that happen to have retryCount incremented elsewhere, unintentionally purging reminders unrelated to the SMS retry logic this PR is meant to implement. Location: packages/features/ee/workflows/api/scheduleSMSReminders.ts:34"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 181,
+        "path": "packages/features/ee/workflows/api/scheduleSMSReminders.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "retryCount is incremented via a non-atomic read-modify-write (`retryCount: reminder.retryCount + 1`) using a value fetched earlier in the same handler invocation, rather than Prisma's atomic `{ increment: 1 }`. If this cron/handler runs concurrently (e.g., overlapping invocations processing the same reminder), updates can race and increments can be lost, undermining the retry-count-based cleanup this PR introduces. Location: packages/features/ee/workflows/api/scheduleSMSReminders.ts:181"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/22345": {
@@ -45810,7 +46865,8 @@
         "line": null,
         "source": "extracted"
       }
-    ]
+    ],
+    "shipwright": []
   },
   "https://github.com/calcom/cal.com/pull/11059": {
     "gemini": [
@@ -48219,6 +49275,53 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 97,
+        "path": "packages/app-store/googlecalendar/lib/CalendarService.ts",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "parseRefreshTokenResponse's return value (a safeParse-style {success, data} object) is now stored directly as the credential `key` instead of the actual parsed token data: `const key = parseRefreshTokenResponse(googleCredentials, googleCredentialSchema); ... data: { key }`. Previously `googleCredentialSchema.parse(...)` returned the flat token object; now the credential.key JSON will be `{success, data}` wrapper, corrupting the stored Google Calendar OAuth credentials and breaking subsequent calendar API calls. Location: packages/app-store/googlecalendar/lib/CalendarService.ts:97"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 24,
+        "path": "packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "When the refreshed token response lacks a `refresh_token` field, the code sets it to the literal string \"refresh_token\" instead of preserving the previous refresh token or leaving it undefined: `refreshTokenResponse.data.refresh_token = \"refresh_token\";`. This overwrites/corrupts the stored refresh token with an unusable placeholder value, breaking future token refresh attempts for any provider that omits refresh_token on refresh (a common OAuth behavior). Location: packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts:24"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 9,
+        "path": "packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "The computed property keys `[z.string().toString()]` and `[z.string().optional().toString()]` do not create dynamic/wildcard validators as the comments claim; `.toString()` is called on the Zod schema object (not a string), producing a fixed literal key (e.g. \"[object Object]\") for both entries, with the second silently overwriting the first. As a result, `minimumTokenResponseSchema` only actually validates `access_token`, and all other real response fields (expiry, scope, refresh_token, etc.) are stripped out of `.data` by zod's default unknown-key stripping when APP_CREDENTIAL_SHARING_ENABLED is on, causing loss of critical token metadata. Location: packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts:9"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "api",
+        "line": 6,
+        "path": "packages/app-store/_utils/oauth/refreshOAuthTokens.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`refreshOAuthTokens` returns a raw, unparsed `fetch` Response when credential sync is enabled, but returns provider-specific parsed shapes in the local-refresh branch (e.g. `fetchTokens.res` with a `.data` property for Google, or the `HubspotToken` object for Hubspot). Callers such as GoogleCalendarService (`const token = res?.data;`) and HubspotCalendarService (typed as `HubspotToken`) assume a single shape and will fail/throw at runtime (e.g. `token.access_token` on undefined) when APP_CREDENTIAL_SHARING_ENABLED and CALCOM_CREDENTIAL_SYNC_ENDPOINT are set. Location: packages/app-store/_utils/oauth/refreshOAuthTokens.ts:6"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 21,
+        "path": "apps/web/pages/api/webhook/app-credential.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The webhook secret is compared using strict inequality (`!==`) rather than a constant-time comparison, making the credential-sync webhook endpoint vulnerable to timing attacks that could help an attacker guess CALCOM_WEBHOOK_SECRET. Location: apps/web/pages/api/webhook/app-credential.ts:21"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -49750,6 +50853,44 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 213,
+        "path": "packages/features/ee/workflows/lib/reminders/emailReminderManager.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "When `immediateDelete` is true and a `referenceId` exists, `deleteScheduledEmailReminder` only calls the SendGrid cancel API and returns \u2014 it never deletes or updates (sets `cancelled: true`) the `WorkflowReminder` row. This function is called with `immediateDelete=true` from `handleNewBooking.ts` (reschedule cleanup) and `workflows.tsx` (step/workflow deletion), so those WorkflowReminder rows become orphaned in the DB with `scheduled: true`/`cancelled: null` forever, even though the underlying email was actually canceled, which can cause `scheduleEmailReminders.ts`'s cancellation cron (which filters on `cancelled: true`) to never clean them up and can confuse any code that treats these rows as still-active/scheduled reminders. Location: packages/features/ee/workflows/lib/reminders/emailReminderManager.ts:213"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 497,
+        "path": "packages/trpc/server/routers/viewer/bookings.tsx",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "The reschedule mutation dropped the `await Promise.all(remindersToDelete)` call that previously awaited the actual deletion of old WorkflowReminder rows. The new code only fires `deleteScheduledEmailReminder`/`deleteScheduledSMSReminder` inside a `forEach` without awaiting them, so the mutation proceeds to create the new booking and schedule new workflow reminders before the old reminders are guaranteed to be cleaned up/canceled, introducing a race condition and swallowing any errors from the cleanup. Location: packages/trpc/server/routers/viewer/bookings.tsx:497"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 378,
+        "path": "packages/trpc/server/routers/viewer/workflows.tsx",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The previous `deleteMany` for reminders belonging to disabled event types explicitly scoped deletion to `booking: { userId: ctx.user.id }}`, providing an ownership check. The refactor removes this scoping entirely and instead calls `deleteScheduledEmailReminder`/`deleteScheduledSMSReminder`, whose underlying Prisma calls only filter by `id: reminderId` with no ownership/ownership-booking check, weakening the authorization guard that was present before this diff. Location: packages/trpc/server/routers/viewer/workflows.tsx:378"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 484,
+        "path": "packages/features/bookings/lib/handleCancelBooking.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The guard `if (reminder.scheduled && reminder.referenceId)` and the batched `prisma.workflowReminder.deleteMany` (previously part of the awaited `prismaPromises`) were removed. Reminder cleanup now only happens via unawaited, fire-and-forget calls to `deleteScheduledEmailReminder`/`deleteScheduledSMSReminder` inside the `forEach`, so the cancel-booking handler's response can return to the client before the WorkflowReminder rows are actually canceled/deleted, and any errors from that cleanup are silently swallowed instead of surfacing via `Promise.all`. Location: packages/features/bookings/lib/handleCancelBooking.ts:484"
       }
     ]
   },
@@ -51435,6 +52576,53 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 58,
+        "path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "Blacklisted guest emails are lowercased when read from env, but the incoming `guest` email is compared against the blacklist without normalization (`!blacklistedGuestEmails.includes(guest)`). A blacklisted email submitted with different casing (e.g. Foo@Bar.com) will bypass the blacklist filter entirely. Location: packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts:58"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 33,
+        "path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "Authorization check uses `&&` instead of `||` between isTeamAdmin and isTeamOwner, requiring a user to be BOTH a team admin AND the team owner to be granted access via this path, rather than either role. This incorrectly denies legitimate team admins (who are not also the owner) permission to add guests. Location: packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts:33"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 27,
+        "path": "packages/emails/templates/organizer-add-guests-email.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "`this.calEvent.attendees[0].name` is accessed without verifying the attendees array is non-empty, which will throw if a booking somehow has no attendees when this template is rendered. Location: packages/emails/templates/organizer-add-guests-email.ts:27"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 168,
+        "path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "Errors from sendAddGuestsEmails are silently swallowed with a bare console.log instead of using the application logger, hiding email delivery failures from monitoring/observability after guests are added. Location: packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts:168"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 29,
+        "path": "apps/web/components/dialog/AddGuestsDialog.tsx",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The onError handler builds `message` as a template string (\"${err.data?.code}: ${t(err.message)}\") which is always truthy, so the fallback `t('unable_to_add_guests')` in `showToast(message || t('unable_to_add_guests'), 'error')` is unreachable dead code and never displays a translated fallback message. Location: apps/web/components/dialog/AddGuestsDialog.tsx:29"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -53018,6 +54206,35 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 6,
+        "path": "apps/web/components/auth/BackupCode.tsx",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "BackupCode.tsx exports a function named `TwoFactor` (identical to the actual TwoFactor.tsx component) instead of `BackupCode`. This is misleading and could easily be confused with the real TwoFactor component when imported elsewhere, especially since both default-export the same identifier name. Location: apps/web/components/auth/BackupCode.tsx:6"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 151,
+        "path": "packages/features/auth/lib/next-auth-options.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "Backup code verification in the credentials authorize() flow reads the user's encrypted backupCodes, validates the supplied code against an in-memory array, mutates that array (`backupCodes[index] = null`) and only then persists the change via `prisma.user.update`. Two concurrent login attempts using the same backup code will both read the original (unmodified) encrypted array before either write completes, so both requests will find the code valid and succeed, defeating the intended one-time-use semantics of backup codes and allowing bypass/detection avoidance. Location: packages/features/auth/lib/next-auth-options.ts:151"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "perf",
+        "line": 100,
+        "path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "A Blob URL is created via `URL.createObjectURL(textBlob)` for the backup-codes download link and stored in `backupCodesUrl`. It is only revoked the next time `handleSetup` runs (`if (backupCodesUrl) URL.revokeObjectURL(backupCodesUrl)`), but `resetState()` \u2014 called both when the user cancels the flow and when the user clicks \"Close\" after viewing/downloading the backup codes \u2014 never revokes this URL. As a result, every completed 2FA setup leaks one Blob URL for the lifetime of the page. Location: apps/web/components/settings/EnableTwoFactorModal.tsx:100"
       }
     ]
   },
@@ -55137,6 +56354,53 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 118,
+        "path": "packages/core/EventManager.ts",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "After destructuring `const [mainHostDestinationCalendar] = evt.destinationCalendar ?? [];`, the code calls `mainHostDestinationCalendar.integration` without any null-check. Since many callers now pass `destinationCalendar: []` (e.g. handleCancelBooking.ts, webhook.ts, paypal-webhook.ts) when there is no destination calendar, `mainHostDestinationCalendar` will be `undefined` and this line throws `TypeError: Cannot read properties of undefined (reading 'integration')` whenever `evt.location === MeetLocationType` and no destination calendar exists. Location: packages/core/EventManager.ts:118"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 255,
+        "path": "packages/app-store/googlecalendar/lib/CalendarService.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "In `updateEvent` the fallback branch computes `event.destinationCalendar?.find((cal) => cal.externalId === externalCalendarId)?.externalId` but this code only runs when `externalCalendarId` is falsy (it's the else-branch of `externalCalendarId ? externalCalendarId : ...`). Comparing `cal.externalId === externalCalendarId` against a falsy value will essentially never match a real calendar entry, so `selectedCalendar` will always resolve to `undefined` instead of falling back to the destination calendar's externalId, breaking calendar update routing. Location: packages/app-store/googlecalendar/lib/CalendarService.ts:255"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 316,
+        "path": "packages/app-store/googlecalendar/lib/CalendarService.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "Same broken fallback pattern as updateEvent: `deleteEvent` computes `calendarId` via `event.destinationCalendar?.find((cal) => cal.externalId === externalCalendarId)?.externalId` inside the branch where `externalCalendarId` is falsy, so the find predicate compares against a falsy value and will never match, making the destination-calendar fallback for delete always resolve to `undefined`. Location: packages/app-store/googlecalendar/lib/CalendarService.ts:316"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 1083,
+        "path": "packages/features/bookings/lib/handleNewBooking.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "`evt.destinationCalendar` is typed to be `null` when neither `eventType.destinationCalendar` nor `organizerUser.destinationCalendar` exist. The subsequent `evt.destinationCalendar?.push(...teamDestinationCalendars)` uses optional chaining, so when `evt.destinationCalendar` is `null` the push silently no-ops and all collected team member destination calendars are dropped, defeating the PR's stated purpose of supporting multiple hosts' destination calendars for collective events. Location: packages/features/bookings/lib/handleNewBooking.ts:1083"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "api",
+        "line": 221,
+        "path": "packages/types/Calendar.d.ts",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The `Calendar` interface's `createEvent` signature was changed to require a second `credentialId: number` parameter, but only `GoogleCalendarService.createEvent` was updated to accept/use it. `LarkCalendarService.createEvent`, `Office365CalendarService.createEvent`, and the abstract `BaseCalendarService` in packages/lib/CalendarService.ts were not updated, so those providers cannot use the new per-credential destinationCalendar selection this PR introduces, leaving the multi-host destinationCalendar feature only partially implemented across calendar providers. Location: packages/types/Calendar.d.ts:221"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -56504,6 +57768,35 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 125,
+        "path": "packages/app-store/vital/lib/reschedule.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "The bookingRefsFiltered.forEach() callback was converted to `async (bookingRef) => {...}` to allow `await getCalendar(...)`, but Array.prototype.forEach does not await its callback. The enclosing try/catch block therefore no longer catches errors thrown inside the async callback (they become unhandled promise rejections), and the surrounding function returns before the calendar deleteEvent/deleteMeeting operations actually complete, creating a race condition when rescheduling. Location: packages/app-store/vital/lib/reschedule.ts:125"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 125,
+        "path": "packages/app-store/wipemycalother/lib/reschedule.ts",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "Same fire-and-forget bug as in vital/reschedule.ts: forEach was made async to support `await getCalendar(...)`, but forEach ignores the returned promises, so the try/catch around it no longer catches rejected promises and the function proceeds without waiting for the calendar/meeting deletions to finish. Location: packages/app-store/wipemycalother/lib/reschedule.ts:125"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "concurrency",
+        "line": 553,
+        "path": "packages/trpc/server/routers/viewer/bookings.tsx",
+        "severity": "high",
+        "source": "shipwright.review",
+        "text": "bookingRefsFiltered.forEach() was changed to take an async callback to await getCalendar(...), but forEach does not await async callbacks. This makes calendar/meeting deletion during reschedule fire-and-forget: the handler can proceed (and respond) before old bookings' calendar events are actually deleted, and any thrown errors become unhandled promise rejections instead of being surfaced/caught. Location: packages/trpc/server/routers/viewer/bookings.tsx:553"
       }
     ]
   },
@@ -57997,6 +59290,53 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 101,
+        "path": "themes/src/main/resources-community/theme/base/account/messages/messages_lt.properties",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "totpStep1 value was replaced with Italian text (\"Installa una delle seguenti applicazioni sul tuo cellulare:\") in the Lithuanian (lt) properties file, so Lithuanian users will see Italian text instead of a Lithuanian translation. Location: themes/src/main/resources-community/theme/base/account/messages/messages_lt.properties:101"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 71,
+        "path": "themes/src/main/resources-community/theme/base/login/messages/messages_lt.properties",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "loginTotpStep1 value was replaced with Italian text (\"Installa una delle seguenti applicazioni sul tuo cellulare:\") in the Lithuanian (lt) login properties file, producing incorrect/foreign-language UI text for Lithuanian users. Location: themes/src/main/resources-community/theme/base/login/messages/messages_lt.properties:71"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 112,
+        "path": "themes/src/main/resources-community/theme/base/account/messages/messages_zh_CN.properties",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "totpStep1 was rewritten using Traditional Chinese characters (\u624b\u6a5f, \u61c9\u7528\u7a0b\u5f0f) in the Simplified Chinese (zh_CN) properties file, which should use Simplified Chinese forms (\u624b\u673a, \u5e94\u7528\u7a0b\u5e8f), causing an inconsistent/incorrect translation for zh_CN users. Location: themes/src/main/resources-community/theme/base/account/messages/messages_zh_CN.properties:112"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 140,
+        "path": "misc/theme-verifier/src/main/java/org/keycloak/themeverifier/VerifyMessageProperties.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "ANCHOR_PATTERN regex `</?a[^>]*>` is not properly boundary-anchored to the tag name 'a'; it will also match any tag whose name starts with 'a' (e.g. <abbr>, <article>, <aside>), causing santizeAnchors to misidentify unrelated tags as anchors and potentially emit false \"Didn't find anchor tag\" verifier errors or incorrectly strip unrelated tags. Location: misc/theme-verifier/src/main/java/org/keycloak/themeverifier/VerifyMessageProperties.java:140"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 144,
+        "path": "misc/theme-verifier/src/main/java/org/keycloak/themeverifier/VerifyMessageProperties.java",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "Method name `santizeAnchors` is a typo for `sanitizeAnchors`, a misleading identifier introduced by this diff for the new anchor-sanitization logic. Location: misc/theme-verifier/src/main/java/org/keycloak/themeverifier/VerifyMessageProperties.java:144"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -59218,6 +60558,35 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "bug",
+        "line": 73,
+        "path": "services/src/main/java/org/keycloak/protocol/oidc/encode/AccessTokenContext.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "In AccessTokenContext's constructor, the null-check meant for `rawTokenId` mistakenly re-checks `grantType` twice: `Objects.requireNonNull(grantType, \"Null grantType not allowed\"); Objects.requireNonNull(grantType, \"Null rawTokenId not allowed\");`. As a result, a null `rawTokenId` is never rejected (NPE deferred to later usage, e.g. when concatenated in encodeTokenId) and the error message for the missing rawTokenId check is wrong (it will never fire, and if it did it would report the wrong field). Location: services/src/main/java/org/keycloak/protocol/oidc/encode/AccessTokenContext.java:73"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "test_gap",
+        "line": 476,
+        "path": "testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/AssertEvents.java",
+        "severity": "critical",
+        "source": "shipwright.review",
+        "text": "isAccessTokenId() has two bugs that make it not test what it claims: (1) it extracts the grant-type shortcut with `substring(3, 5)` but per the actual encoding format (sessionType[0-2] + tokenType[2-4] + grantType[4-6], as verified by DefaultTokenContextEncoderProviderTest, e.g. \"trltcc:1234\"), the grant shortcut is at index 4-6, not 3-5 \u2014 this reads one character from tokenType and one from grantType. (2) The matching condition is inverted: `if (items[0].substring(3, 5).equals(expectedGrantShortcut)) return false;` returns false (no match) when the substring equals the expected shortcut, and falls through to the UUID check (ignoring the grant check) when it does not equal \u2014 the exact opposite of the intended assertion. This will cause the updated event assertions (expectCodeToToken, expectRefresh, expectDeviceCodeToToken, expectAuthReqIdToToken) to fail for correctly-encoded tokens and to silently ignore the grant type check for incorrect ones. Location: testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/AssertEvents.java:476"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "test_gap",
+        "line": 66,
+        "path": "services/src/test/java/org/keycloak/protocol/oidc/encode/DefaultTokenContextEncoderProviderTest.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "testIncorrectGrantType() only manually sets `grantsByShortcuts`/`grantsToShortcuts` in @Before and never calls `factory.postInit(...)`, leaving `sessionFactory` null. When decoding the unregistered shortcut \"ac\", `getGrantTypeByShortcut` falls into the refresh branch and calls `sessionFactory.getProviderFactoriesStream(...)` on a null `sessionFactory`, throwing a NullPointerException rather than the intended `IllegalArgumentException` from the \"Unknown value for grant type\" validation path. The test passes only because it catches the overly broad `RuntimeException`, so it does not actually exercise the described \"incorrect grant type\" validation logic. Location: services/src/test/java/org/keycloak/protocol/oidc/encode/DefaultTokenContextEncoderProviderTest.java:66"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -60348,6 +61717,17 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "security",
+        "line": 333,
+        "path": "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/BackwardsCompatibilityUserStorage.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "The new RecoveryAuthnCodesCredentialModel.TYPE branch added to BackwardsCompatibilityUserStorage.isValid() checks whether the submitted code exists in the stored code list via generatedKeys.stream().anyMatch(...), but never removes/marks the matched code as used and never persists an updated credential. This breaks the fundamental one-time-use guarantee of recovery/backup codes: a user (or attacker who intercepted a code) can replay the same recovery code indefinitely to authenticate, since the stored code list is never mutated after a successful match. This file is the PR's reference example of how a custom UserStorageProvider should implement recovery-code support, so the missing invalidation is a concrete, security-relevant logic gap introduced by this diff. Location: testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/BackwardsCompatibilityUserStorage.java:333"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
@@ -61027,6 +62407,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "data",
+        "line": 117,
+        "path": "operator/src/test/java/org/keycloak/operator/testsuite/integration/UpgradeTest.java",
+        "severity": "medium",
+        "source": "shipwright.review",
+        "text": "In createKeycloak's update-strategy helper, `kc.getSpec().getFeatureSpec().setEnabledFeatures(List.of(Profile.Feature.ROLLING_UPDATES.getKey()))` is called unconditionally, even when `getFeatureSpec()` was already non-null (i.e., pre-existing). This unconditionally overwrites any previously configured enabled features on the CR with a list containing only `rolling-updates`, silently discarding other features that may have been enabled earlier by the same or reused Keycloak spec object (the old code only touched the spec when `getUnsupported()` was null and never replaced its contents). Location: operator/src/test/java/org/keycloak/operator/testsuite/integration/UpgradeTest.java:117"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "style",
+        "line": 33,
+        "path": "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/compatibility/CompatibilityResult.java",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "New constant `FEATURE_DISABLED` breaks the naming convention of its sibling constants `ROLLING_UPGRADE_EXIT_CODE` and `RECREATE_UPGRADE_EXIT_CODE` (both suffixed with `_EXIT_CODE`), making it unclear from the name alone that this value is also used as a CLI exit code (it's passed to `picocli.exit(...)`). Location: quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/compatibility/CompatibilityResult.java:33"
       }
     ]
   },
@@ -62171,6 +63571,26 @@
         "path": null,
         "line": null,
         "source": "extracted"
+      }
+    ],
+    "shipwright": [
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 76,
+        "path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionEvaluator.java",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The Javadoc added for the void methods `requireView()` and `requireViewClientScopes()` incorrectly describes them as returning a boolean (\"Returns {@code true} if {@link #canView()} returns {@code true}.\"), copy-pasted from the boolean-returning `canView()`/`canViewClientScopes()` docs. Every other `require*` method in this interface correctly documents \"Throws ForbiddenException if ... returns false\", so this is an inconsistent/misleading doc for these two methods. Location: services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionEvaluator.java:76"
+      },
+      {
+        "check_id": "benchmark.review",
+        "kind": "doc_defect",
+        "line": 57,
+        "path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionEvaluator.java",
+        "severity": "low",
+        "source": "shipwright.review",
+        "text": "The newly added Javadoc for `canList()` on `ClientPermissionEvaluator` states the caller can list clients if they have the `AdminRoles#QUERY_USERS` role (in addition to QUERY_CLIENTS). QUERY_USERS is a user-management role and has no documented relation to client listing; this looks like a copy-paste error from the user permission evaluator documentation and misleads reviewers/consumers about the actual authorization requirement for listing clients. Location: services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionEvaluator.java:57"
       }
     ]
   }

@@ -645,6 +645,17 @@
       [
         8
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ]
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -1285,6 +1296,17 @@
       [
         6
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1": {
@@ -1806,6 +1828,14 @@
       ],
       [
         2
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
       ]
     ]
   },
@@ -2356,6 +2386,20 @@
       ],
       [
         6
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
       ]
     ]
   },
@@ -3242,6 +3286,17 @@
       [
         15
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1": {
@@ -3965,6 +4020,23 @@
       ],
       [
         2
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
       ]
     ]
   },
@@ -5252,6 +5324,14 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2": {
@@ -6125,6 +6205,26 @@
       [
         8
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ],
+      [
+        5
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -6894,6 +6994,20 @@
       ],
       [
         5
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
       ]
     ]
   },
@@ -7947,6 +8061,14 @@
       [
         5
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/grafana/grafana/pull/94942": {
@@ -8330,6 +8452,15 @@
         2,
         3,
         4
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1,
+        2
       ]
     ]
   },
@@ -9182,6 +9313,30 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        7
+      ]
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -9902,6 +10057,20 @@
       [
         5
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ]
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -10251,6 +10420,14 @@
       ],
       [
         6
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
       ]
     ]
   },
@@ -11370,6 +11547,26 @@
       [
         7
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ],
+      [
+        5
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -11996,6 +12193,23 @@
       ],
       [
         7
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
       ]
     ]
   },
@@ -12910,6 +13124,17 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -13502,6 +13727,14 @@
       [
         6
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -13971,6 +14204,14 @@
       ],
       [
         3
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
       ]
     ]
   },
@@ -14462,6 +14703,17 @@
       ],
       [
         1
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
       ]
     ]
   },
@@ -15734,6 +15986,23 @@
       [
         13
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -16403,6 +16672,20 @@
       ]
     ],
     "mra-claude": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ]
+    ],
+    "shipwright": [
       [
         0
       ],
@@ -17152,6 +17435,14 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -17821,6 +18112,14 @@
       [
         5
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -18198,6 +18497,14 @@
       ]
     ],
     "mra-claude": [
+      [
+        0
+      ],
+      [
+        1
+      ]
+    ],
+    "shipwright": [
       [
         0
       ],
@@ -19793,6 +20100,23 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ]
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -20548,6 +20872,20 @@
       ],
       [
         4
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
       ]
     ]
   },
@@ -21453,6 +21791,23 @@
       ]
     ],
     "mra-claude": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ]
+    ],
+    "shipwright": [
       [
         0
       ],
@@ -22537,6 +22892,21 @@
       [
         11
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ]
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -23161,6 +23531,17 @@
       ],
       [
         4
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
       ]
     ]
   },
@@ -23810,6 +24191,17 @@
       [
         6
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ]
     ]
   },
   "https://github.com/keycloak/keycloak/pull/36880": {
@@ -24401,6 +24793,14 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -24841,6 +25241,14 @@
       [
         7
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -25210,6 +25618,14 @@
       ],
       [
         3
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
       ]
     ]
   },
@@ -25873,6 +26289,14 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -26534,6 +26958,20 @@
       ],
       [
         5
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
       ]
     ]
   },
@@ -27367,6 +27805,17 @@
       [
         7
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ]
     ]
   },
   "https://github.com/grafana/grafana/pull/80329": {
@@ -27944,6 +28393,14 @@
       ],
       [
         4
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
       ]
     ]
   },
@@ -28664,6 +29121,23 @@
       ],
       [
         3
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
       ]
     ]
   },
@@ -29675,6 +30149,14 @@
       [
         5
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/getsentry/sentry/pull/77754": {
@@ -30052,6 +30534,17 @@
       ],
       [
         5
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
       ]
     ]
   },
@@ -30952,6 +31445,14 @@
       [
         4
       ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
+      ]
     ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -31298,6 +31799,14 @@
       ],
       [
         2
+      ]
+    ],
+    "shipwright": [
+      [
+        0
+      ],
+      [
+        1
       ]
     ]
   }

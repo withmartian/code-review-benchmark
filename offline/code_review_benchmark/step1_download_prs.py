@@ -106,9 +106,12 @@ def _is_bot(user: dict | None) -> bool:
     return login.endswith("[bot]")
 
 
-# Tools that post their review comments as a human GitHub account rather than a bot.
-# For these, bot filtering is skipped and all human comments are collected.
-_NON_BOT_TOOLS: frozenset[str] = frozenset({"claude"})
+# Per-tool author filtering used when downloading reviews from benchmark forks.
+# Unlisted tools retain the benchmark's bot-only default.
+_TOOL_DOWNLOAD_CONFIG: dict[str, dict[str, bool]] = {
+    "claude": {"require_bot": False},
+    "shipwright": {"require_bot": True},
+}
 
 
 def fetch_review_comments(org: str, repo: str, pr: int, tool: str = "") -> list[dict]:
@@ -116,10 +119,10 @@ def fetch_review_comments(org: str, repo: str, pr: int, tool: str = "") -> list[
 
     For most tools only bot-authored comments are collected, preventing human
     trigger commands (e.g. '/propel review') from polluting candidate extraction.
-    Tools listed in _NON_BOT_TOOLS post reviews under a human account; for those
-    all human comments are collected as-is.
+    Tools configured with ``require_bot=False`` post reviews under a human
+    account; for those all human comments are collected as-is.
     """
-    require_bot = tool not in _NON_BOT_TOOLS
+    require_bot = _TOOL_DOWNLOAD_CONFIG.get(tool, {"require_bot": True})["require_bot"]
     comments = []
 
     def _include(user: dict | None) -> bool:

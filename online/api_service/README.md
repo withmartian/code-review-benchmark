@@ -74,7 +74,7 @@ See [`../FILTERS.md`](../FILTERS.md) for the full spec with scopes, defaults, an
 
 ### `/api/volumes` Parameters
 
-Returns the number of unique PRs each tool first interacted with per day. Each PR is counted exactly once on the earliest day the bot touched it, so summing daily counts gives the true unique total (no double-counting PRs that span multiple days). Only date range and chatbot filters apply — label filters are not relevant since this is raw count data, not analyzed data. Days where a bot had no activity are zero-filled in the response so the chart shows gaps correctly. Volume data is populated by the ETL `volumes` command (GitHub Search API by default, BigQuery as fallback).
+Returns PR volume counts per tool per day. When populated via the GitHub Search API (default), counts are attributed to the PR's **creation date**. When populated via BigQuery (`--source bq`), counts are attributed to the first day the bot touched the PR. Only date range and chatbot filters apply — label filters are not relevant since this is raw count data, not analyzed data. Days where a bot had no activity are zero-filled in the response so the chart shows gaps correctly.
 
 | Parameter | Description |
 |---|---|

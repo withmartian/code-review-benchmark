@@ -86,6 +86,32 @@ def test_fetch_review_comments(monkeypatch):
     ]
 
 
+def test_deputydev_v1_collects_human_account_reviews(monkeypatch):
+    deputydev_user = {"login": "deputydev-reviewer", "type": "User"}
+    responses = [
+        [
+            {
+                "path": "file.py",
+                "line": 10,
+                "body": "finding",
+                "created_at": "2024-01-01",
+                "user": deputydev_user,
+            }
+        ],
+        [],
+        [],
+    ]
+
+    monkeypatch.setattr(step1, "gh", lambda _args: responses.pop(0))
+
+    comments = step1.fetch_review_comments("org", "repo", 1, tool="deputydev-v1")
+
+    assert "deputydev-v1" in step1._NON_BOT_TOOLS
+    assert comments == [
+        {"path": "file.py", "line": 10, "body": "finding", "created_at": "2024-01-01"}
+    ]
+
+
 def test_fetch_repo_data(monkeypatch):
     def stub_pr_metadata(_org, _repo, pr):
         return {"title": f"PR {pr}", "url": "https://github.com/org/repo/pull/1"}

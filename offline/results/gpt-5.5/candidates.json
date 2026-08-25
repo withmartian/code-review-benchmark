@@ -1,0 +1,2217 @@
+{
+  "https://github.com/keycloak/keycloak/pull/37429": {
+    "deputydev-v1": [
+      {
+        "text": "VerifyMessageProperties initializes immutable HTML policy factories and recompiles the reusable HTML_TAGS regex for every instance even though they do not depend on instance state, so creating a verifier per properties file repeatedly rebuilds the same policies and pattern instead of declaring them private static final constants.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "misc/theme-verifier/src/main/java/org/keycloak/themeverifier/VerifyMessageProperties.java",
+        "source_comment_line": 58
+      },
+      {
+        "text": "The anchor-mismatch diagnostic does not include the property key or file, so builds processing many resource bundles cannot identify which translated property produced the missing-anchor message, unlike the nearby illegal-HTML diagnostic.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "misc/theme-verifier/src/main/java/org/keycloak/themeverifier/VerifyMessageProperties.java",
+        "source_comment_line": 157
+      },
+      {
+        "text": "messages_lt.properties assigns the Italian sentence \"Installa una delle seguenti applicazioni sul tuo cellulare:\" to loginTotpStep1, so Lithuanian users would see Italian text during TOTP setup instead of an appropriate Lithuanian translation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "themes/src/main/resources-community/theme/base/login/messages/messages_lt.properties",
+        "source_comment_line": 71
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/37634": {
+    "deputydev-v1": [
+      {
+        "text": "The grant shortcut documentation must specify an exactly two-character shortcut rather than a three-letter shortcut; the token-context decoder expects a six-character prefix composed of three two-character segments, so following the current Javadoc would produce an incompatible grant shortcut.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "server-spi-private/src/main/java/org/keycloak/protocol/oidc/grants/OAuth2GrantTypeFactory.java",
+        "source_comment_line": 30
+      },
+      {
+        "text": "The constructor repeats the null check for `grantType` while the error message refers to `rawTokenId`, so `rawTokenId` is stored without validation and an `AccessTokenContext` can be constructed with that required field unset.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "services/src/main/java/org/keycloak/protocol/oidc/encode/AccessTokenContext.java",
+        "source_comment_line": 73
+      },
+      {
+        "text": "The lazy cache lookup in `getShortcutByGrantType` uses a non-atomic get/null-check/discovery/put sequence, so concurrent misses for the same grant can repeat `getProviderFactory` calls before either caller populates the `ConcurrentHashMap`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "services/src/main/java/org/keycloak/protocol/oidc/encode/DefaultTokenContextEncoderProviderFactory.java",
+        "source_comment_line": 108
+      },
+      {
+        "text": "The lazy cache lookup in `getGrantTypeByShortcut` uses a non-atomic get/null-check/discovery/put sequence, so concurrent misses for the same shortcut can repeat the full provider stream scan before either caller populates the `ConcurrentHashMap`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "services/src/main/java/org/keycloak/protocol/oidc/encode/DefaultTokenContextEncoderProviderFactory.java",
+        "source_comment_line": 108
+      },
+      {
+        "text": "The newly introduced `TokenContextEncoderProvider` contract methods lack method-level Javadoc defining `rawTokenId` versus `encodedTokenId`, the returned context, and relevant failure behavior, leaving callers and implementations without a specified encoding contract.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "services/src/main/java/org/keycloak/protocol/oidc/encode/TokenContextEncoderProvider.java",
+        "source_comment_line": 33
+      },
+      {
+        "text": "The event matcher extracts the grant shortcut from the wrong substring and uses the equality check with the wrong polarity; it should compare `items[0].substring(4, 6)` against `expectedGrantShortcut` and return false when they differ, otherwise it reads across the token-type/grant-type boundary and rejects matching shortcuts.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/AssertEvents.java",
+        "source_comment_line": 483
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/38446": {
+    "deputydev-v1": [
+      {
+        "text": "`getCredentials` dereferences the result of `getMyUser(user)` without checking for null; if the user is absent from the internal users map, `getMyUser(user)` returns null and accessing `myUser.recoveryCodes` throws a `NullPointerException` instead of returning an empty credential stream.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/BackwardsCompatibilityUserStorage.java",
+        "source_comment_line": 232
+      },
+      {
+        "text": "Successful federated recovery-code authentication only checks that the submitted code is present in the stored list and does not remove or persist removal of the matched code, leaving the same recovery code valid for indefinite replay instead of enforcing one-time use.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/BackwardsCompatibilityUserStorage.java",
+        "source_comment_line": 340
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/36882": {
+    "deputydev-v1": [
+      {
+        "text": "The feature-disabled test for the update metadata invocation asserts only the error text and does not assert exit code 4, so a regression returning a different exit code would still pass even though automation relies on the documented feature-disabled exit-code contract.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "quarkus/tests/integration/src/test/java/org/keycloak/it/cli/dist/UpdateCommandDistTest.java",
+        "source_comment_line": 49
+      },
+      {
+        "text": "There is no disabled-feature test coverage for the UpdateCompatibilityCheck sub-command; only the metadata sub-command is launched, so removing or breaking the equivalent feature gate in the check sub-command would not be detected.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "quarkus/tests/integration/src/test/java/org/keycloak/it/cli/dist/UpdateCommandDistTest.java",
+        "source_comment_line": 47
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/36880": {
+    "deputydev-v1": [
+      {
+        "text": "When V2 admin permissions are active, the client-removal listener can call `clients().setPermissionsEnabled(client, false)`, which routes through `management(...)` to `MgmtPermissionsV2` and then `ClientPermissionsV2.setPermissionsEnabled`, a method that unconditionally throws `UnsupportedOperationException`; as a result, deleting a client in V2 fails during event processing unless the cleanup is restricted to V1 or implemented with a V2-compatible deletion path.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/AdminPermissions.java",
+        "source_comment_line": 91
+      },
+      {
+        "text": "The Javadocs for `requireView()` and `requireViewClientScopes()` incorrectly describe boolean return values even though both methods return `void`; their contracts should instead state that they throw `ForbiddenException` when `canView()` or `canViewClientScopes()` returns `false`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionEvaluator.java",
+        "source_comment_line": 98
+      },
+      {
+        "text": "Existing client management-permissions REST endpoints can select the V2 implementation, but `ClientPermissionsV2.isPermissionsEnabled`, `setPermissionsEnabled`, `resource`, and `getPermissions` all unconditionally throw `UnsupportedOperationException`, so GET or update requests to those public endpoints produce unhandled 500 errors in V2 unless the V1 endpoints are prevented from routing to this implementation or meaningful V2 behavior is provided.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java",
+        "source_comment_line": 193
+      },
+      {
+        "text": "The private `getEvaluationContext(ClientModel, AccessToken)` method in `ClientPermissionsV2` has no callers while the actual `hasPermission` paths call `root.evaluatePermission(...)` directly, making the method dead code that misleadingly suggests a client-specific evaluation context is used.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java",
+        "source_comment_line": 262
+      },
+      {
+        "text": "`ClientPermissionsV2` contains an unused static import of `AdminPermissionManagement.TOKEN_EXCHANGE`; the constant is never referenced in the class and the import should be removed.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java",
+        "source_comment_line": 46
+      },
+      {
+        "text": "Both `hasPermission` overloads in `ClientPermissionsV2` allocate `Arrays.asList(scope)` only to test membership against a single scope value, causing unnecessary allocation on every invocation; they should compare directly with `scope.equals(s)` as `hasGrantedPermission` already does.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/ClientPermissionsV2.java",
+        "source_comment_line": 225
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/37038": {
+    "deputydev-v1": [
+      {
+        "text": "The Javadoc for `requireManageMembers(GroupModel)` is copy-pasted from `requireManageMembership` and incorrectly references `canManageMembership(GroupModel)` instead of the semantically correct `canManageMembers(GroupModel)`, misleading API consumers and implementors about which permission check the method enforces.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionEvaluator.java",
+        "source_comment_line": 133
+      },
+      {
+        "text": "The Javadoc for `getGroupIdsWithViewPermission()` describes the return value as a stream even though the method signature returns `Set<String>`, giving callers an incorrect API contract instead of documenting a set of group IDs.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionEvaluator.java",
+        "source_comment_line": 142
+      },
+      {
+        "text": "`GroupPermissionsV2.canManage()` passes both `VIEW` and `MANAGE` scopes to `hasPermission`, whose loop succeeds if any requested scope is granted, so a caller with only all-groups `VIEW` permission can pass a manage authorization gate; the check should require `AdminPermissionsSchema.MANAGE` only.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionsV2.java",
+        "source_comment_line": 70
+      },
+      {
+        "text": "The callback passes `groupResource.getId()` to `hasPermission`, but that value is the authorization resource UUID rather than the group model ID stored in `groupResource.getName()`, causing `findByName` to miss the group-specific permission resource and fall back to all-groups evaluation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionsV2.java",
+        "source_comment_line": 122
+      },
+      {
+        "text": "The callback adds `groupResource.getId()` to the returned `granted` set, but that value is the authorization resource UUID rather than the group model ID stored in `groupResource.getName()`, so provider-side user filtering receives invalid group IDs.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "services/src/main/java/org/keycloak/services/resources/admin/permissions/GroupPermissionsV2.java",
+        "source_comment_line": 122
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/33832": {
+    "deputydev-v1": [
+      {
+        "text": "The added Hamcrest test dependency in authz/client/pom.xml is unused because the module's tests use org.junit.Assert.assertArrayEquals and have no Hamcrest imports or matcher usage, so it adds unnecessary build configuration.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "authz/client/pom.xml",
+        "source_comment_line": 68
+      },
+      {
+        "text": "ASN1Decoder.readLength() returns -1 for indefinite-length encodings, but the code enters a while (length > 0) path that skips parsing and returns an empty sequence instead of rejecting the unsupported DER encoding, causing malformed indefinite-length input to fail later with a misleading sequence-size error.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/ASN1Decoder.java",
+        "source_comment_line": 55
+      },
+      {
+        "text": "AuthzClientCryptoProvider.getBouncyCastleProvider() returns the provider backing the JDK default keystore type instead of an actual BouncyCastle provider or an explicit unsupported signal, so callers expecting BouncyCastle can receive an unrelated JDK keystore provider and fail on provider-specific algorithm lookups.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/AuthzClientCryptoProvider.java",
+        "source_comment_line": 61
+      },
+      {
+        "text": "The two standalone ASN1Encoder.create().write(...) calls in AuthzClientCryptoProvider discard their results and are immediately repeated in the return expression, so they have no effect on the output and cause redundant allocations and DER encoding work on every invocation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/AuthzClientCryptoProvider.java",
+        "source_comment_line": 114
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/40940": {
+    "deputydev-v1": [
+      {
+        "text": "GroupAdapter.getSubGroupsCount() returns null when modelSupplier.get() is absent, violating the GroupModel.getSubGroupsCount() contract that it never returns null and allowing null propagation to representations or unboxing failures in callers; it should return a non-null fallback such as 0L.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java",
+        "source_comment_line": 275
+      },
+      {
+        "text": "The adjacent getSubGroupsStream(...) overloads still directly dereference modelSupplier.get(), so if the supplied model is null during concurrent deletion they can throw an NPE; they should guard the null model case and return an empty stream.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java",
+        "source_comment_line": 274
+      },
+      {
+        "text": "The test checks caughtExceptions without retaining and joining the reader thread, so the reader may still be inside groups() and append an exception after the assertion has already passed, causing false passes.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "tests/base/src/test/java/org/keycloak/tests/admin/group/GroupTest.java",
+        "source_comment_line": 155
+      },
+      {
+        "text": "The test does not synchronize or record that at least one reader call completed during the deletion loop, so the deletions can finish without actually exercising the concurrent-read regression path.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "tests/base/src/test/java/org/keycloak/tests/admin/group/GroupTest.java",
+        "source_comment_line": 155
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1": {
+    "deputydev-v1": [
+      {
+        "text": "In `UsernameForm.java`, the newly added zero-argument call to `isConditionalPasskeysEnabled()` does not compile because the available inherited method requires a `UserModel` argument; pass the already-checked user, e.g. `isConditionalPasskeysEnabled(context.getUser())`, when `context.getUser() != null`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "services/src/main/java/org/keycloak/authentication/authenticators/browser/UsernameForm.java",
+        "source_comment_line": 47
+      }
+    ]
+  },
+  "https://github.com/getsentry/sentry/pull/93824": {
+    "deputydev-v1": [
+      {
+        "text": "The restart limit guard uses `>` before incrementing `self.process_restarts[process_index]`, so a worker whose restart count already equals `MAX_PROCESS_RESTARTS` is restarted one extra time and the RuntimeError is only raised after the following failure; the check should use `>= MAX_PROCESS_RESTARTS`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/spans/consumers/process/flusher.py",
+        "source_comment_line": 247
+      },
+      {
+        "text": "The `SpanFlusher` docstring incorrectly says it creates one process per shard, but `num_processes` is capped by `max_processes` and the round-robin mapping can assign multiple shards to each worker, so the documentation contradicts the implemented capped shared-shard worker model.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/spans/consumers/process/flusher.py",
+        "source_comment_line": 31
+      },
+      {
+        "text": "The `spans.buffer.flusher.wait_produce` timer uses the tag key `shards` while neighboring metrics use `shard` for the same `shard_tag` value, creating an inconsistent metric dimension that causes queries and dashboards filtering on `shard` to omit this timer.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "src/sentry/spans/consumers/process/flusher.py",
+        "source_comment_line": 199
+      },
+      {
+        "text": "Negative `max_processes` values are accepted and remain truthy, causing `num_processes` to become negative and leaving no valid process entries for shard assignment; the constructor should reject `max_processes < 1` before building the worker-to-shard mapping.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "src/sentry/spans/consumers/process/flusher.py",
+        "source_comment_line": 51
+      },
+      {
+        "text": "When `produce_to_pipe` is set, the worker is a `threading.Thread`, but the restart cleanup only handles multiprocessing workers before starting a replacement, so a hung thread can remain alive while another worker is started for the same shards across repeated restarts.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "src/sentry/spans/consumers/process/flusher.py",
+        "source_comment_line": 254
+      },
+      {
+        "text": "The comment describes an individual-shard health check, but the code reads a single `process_healthy_since[process_index]` timestamp and marks the entire worker as hung, so the comment should describe a process-level hang check instead of shard-specific health evaluation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "src/sentry/spans/consumers/process/flusher.py",
+        "source_comment_line": 235
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5": {
+    "deputydev-v1": [
+      {
+        "text": "The age/timestamp mutual-exclusivity validation uses truthiness checks instead of presence checks, so zero-valued fields such as age=0 with timestamp or timestamp=0 with age can bypass validation and allow both mutually exclusive fields in the same payload.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/issues/endpoints/browser_reporting_collector.py",
+        "source_comment_line": 52
+      },
+      {
+        "text": "The code pairs error_ids with events.values() by position even though nodestore get_multi may return a dictionary in a different order or omit entries, which can attach an event's title, message, and timestamp to the wrong error ID; returned events should be associated by node_id using a node_id-to-event_id mapping.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/replays/endpoints/project_replay_summarize_breadcrumbs.py",
+        "source_comment_line": 118
+      },
+      {
+        "text": "When the use-table-widget-visualization feature is enabled, the code passes empty columns, data, fields, and units to TableWidgetVisualization instead of using result.data and result.meta, causing organizations with the feature enabled to render a blank table regardless of available query results.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "static/app/views/dashboards/widgetCard/chart.tsx",
+        "source_comment_line": 164
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1": {
+    "deputydev-v1": [
+      {
+        "text": "The audit-log endpoint has two branches that duplicate the same `self.paginate()` arguments and differ only in `paginator_cls` and `enable_advanced_features`, creating two locations where shared request, queryset, ordering, and serialization arguments can diverge during future changes.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/api/endpoints/organization_auditlogs.py",
+        "source_comment_line": 73
+      },
+      {
+        "text": "`OptimizedCursorPaginator.get_item_key` passes the ordering value directly to `math.floor` or `math.ceil`, but the audit-log endpoint configures it with `order_by=\"-datetime\"`, so the value is a `datetime` and optimized cursor generation raises `TypeError` on every response unless datetime keys are converted to the numeric representation used by the existing datetime paginator.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/api/paginator.py",
+        "source_comment_line": 840
+      },
+      {
+        "text": "The optimized paginator branch for `cursor.offset < 0` assigns the negative offset to `start_offset` and uses it as the start of a Django QuerySet slice, but Django rejects negative QuerySet indices, causing optimized requests with such cursors to raise an unhandled exception instead of returning a page.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "src/sentry/api/paginator.py",
+        "source_comment_line": 882
+      },
+      {
+        "text": "The paginator comment incorrectly states that negative offsets are safe because the underlying queryset handles boundary conditions, but Django QuerySets reject negative slice indices, so the documentation should remove that safety claim or document the required non-negative offset invariant.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "src/sentry/api/paginator.py",
+        "source_comment_line": 179
+      },
+      {
+        "text": "`OptimizedCursorPaginator.get_result` duplicates the base paginator's cursor initialization, hit counting, boundary trimming, reversal, cursor construction, and post-query filtering even though only offset selection differs, so fixes or cursor-handling changes made to the base pagination flow may not reach the optimized paginator and the implementations can diverge.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "src/sentry/api/paginator.py",
+        "source_comment_line": 821
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/97529": {
+    "deputydev-v1": [
+      {
+        "text": "In `NewResourceServer`, logging the error returned by `s.Init(ctx)` is redundant because `server.Init` already logs `s.log.Error(\"error initializing resource server\", \"error\", s.initErr)` before returning the same failure, causing two identical \"error initializing resource server\" log lines for a single initialization failure.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/storage/unified/resource/server.go",
+        "source_comment_line": 258
+      }
+    ]
+  },
+  "https://github.com/getsentry/sentry/pull/80168": {
+    "deputydev-v1": [
+      {
+        "text": "`MetricAlertDetectorHandler` now extends `StatefulDetectorHandler` without implementing its abstract hooks, including `build_occurrence_and_event_data`, so Python treats the handler as abstract and raises `TypeError` when it is instantiated, blocking any path that resolves this detector handler.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/incidents/grouptype.py",
+        "source_comment_line": 12
+      },
+      {
+        "text": "The `evaluate` docstring still says the method returns a list even though its annotation and implementation now return a `dict[DetectorGroupKey, DetectorEvaluationResult]`, causing the documentation to directly contradict the code.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/workflow_engine/processors/detector.py",
+        "source_comment_line": 226
+      }
+    ]
+  },
+  "https://github.com/getsentry/sentry/pull/80528": {
+    "deputydev-v1": [
+      {
+        "text": "`create_incident_occurrence` is called for every check-in in `incidents.py`, causing `monitor_env.get_last_successful_checkin()` to be fetched repeatedly for the same monitor environment; incidents containing multiple check-ins perform the same last-successful-check-in lookup once per occurrence instead of once per monitor environment, so the value should be fetched once before the loop and passed in.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/monitors/logic/incident_occurrence.py",
+        "source_comment_line": 46
+      },
+      {
+        "text": "The function copies the monitor config and replaces `schedule_type` with its display value, but returns `monitor_environment.monitor.config` instead of the local transformed `config`, discarding the transformation and exposing the original `schedule_type` value in the returned monitor context.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/monitors/logic/incident_occurrence.py",
+        "source_comment_line": 168
+      },
+      {
+        "text": "`get_human_failure_reason` has no branch for a zero total, so when the input is empty or every status is excluded by `HUMAN_FAILURE_STATUS_MAP`, `get_text_list([])` produces an empty value and the function returns the malformed user-facing string `\" check-ins detected\"` instead of the documented fallback.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "src/sentry/monitors/logic/incident_occurrence.py",
+        "source_comment_line": 145
+      }
+    ]
+  },
+  "https://github.com/getsentry/sentry/pull/77754": {
+    "deputydev-v1": [
+      {
+        "text": "`timezone.now()` is evaluated once when `AssignmentSource` is defined, so every instance that omits `queued` receives the same stale module-import timestamp instead of a fresh timestamp; use `field(default_factory=timezone.now)` for the `queued` dataclass field.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/integrations/services/assignment_source.py",
+        "source_comment_line": 18
+      },
+      {
+        "text": "The test name incorrectly describes its input as an array even though it passes an empty dictionary; rename it to `test_from_dict_empty_dict` so the test name accurately reflects the tested input.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "tests/sentry/integrations/services/test_assignment_source.py",
+        "source_comment_line": 8
+      },
+      {
+        "text": "The test name `test_from_dict_inalid_data` contains a typo; rename it to `test_from_dict_invalid_data` so the identifier is readable and appears correctly in test reports.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "tests/sentry/integrations/services/test_assignment_source.py",
+        "source_comment_line": 13
+      }
+    ]
+  },
+  "https://github.com/getsentry/sentry/pull/95633": {
+    "deputydev-v1": [
+      {
+        "text": "The worker unconditionally marks an offset complete in the finally block even when result_processor raises and the exception is swallowed, making the failed message eligible for commit and preventing redelivery despite the strategy's guarantee that offsets are committed only after successful processing.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/remote_subscriptions/consumers/queue_consumer.py",
+        "source_comment_line": 148
+      },
+      {
+        "text": "The work queue is unbounded, so if producers submit messages faster than workers process them, queued WorkItems retain full messages and can cause unbounded heap growth instead of applying backpressure.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/remote_subscriptions/consumers/queue_consumer.py",
+        "source_comment_line": 185
+      },
+      {
+        "text": "shutdown sets each worker's shutdown flag before gracefully shutting down the queues, so workers exit after their current item instead of draining the queued backlog, leaving remaining offsets outstanding and defeating shutdown(immediate=False).",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "src/sentry/remote_subscriptions/consumers/queue_consumer.py",
+        "source_comment_line": 233
+      },
+      {
+        "text": "The exception log for queue worker processing failures includes only the worker ID and omits the available partition and offset, making it impossible to identify which Kafka message failed from the log context.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "src/sentry/remote_subscriptions/consumers/queue_consumer.py",
+        "source_comment_line": 145
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2": {
+    "deputydev-v1": [
+      {
+        "text": "`OptimizedCursorPaginator.get_result` duplicates the base paginator flow for cursor initialization, hit counting, slicing, previous-page handling, cursor construction, and post-query filtering, so fixes or changes to the base implementation can silently diverge; factor the shared flow into the inheritance path and override only the differing offset behavior.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/api/paginator.py",
+        "source_comment_line": 821
+      },
+      {
+        "text": "The comment claims negative offsets are safe because the queryset handles boundary conditions, but the code clamps non-previous offsets to avoid invalid negative queryset slicing; update the documentation to describe the actual clamping behavior instead of misrepresenting queryset negative-index support.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/api/paginator.py",
+        "source_comment_line": 182
+      },
+      {
+        "text": "With advanced pagination enabled, a negative previous-page cursor offset is assigned directly to `start_offset` and used in `queryset[start_offset:stop]`; Django querysets do not support negative slice indices, so such requests will raise at runtime instead of paginating unless the offset is clamped or the branch is removed.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "src/sentry/api/paginator.py",
+        "source_comment_line": 880
+      },
+      {
+        "text": "The Lua buffering script now applies sorted-set commands such as `zcard` and `zunionstore` to keys that previously held Redis Sets, so existing keys or keys written by old instances during a rolling deployment can trigger `WRONGTYPE` and abort the script; add a migration or use a new key namespace to prevent Set and Sorted Set data from overlapping.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "src/sentry/scripts/spans/add-buffer.lua",
+        "source_comment_line": 47
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
+    "deputydev-v1": [
+      {
+        "text": "The comment claims aliasing `should_upsample` as `upsampling_enabled` provides query optimization and caching, but the assignment only renames the eligibility result and adds no optimization or caching behavior; remove the unsupported claim and either use `should_upsample` directly or assign the eligibility result directly to `upsampling_enabled`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/api/endpoints/organization_events_stats.py",
+        "source_comment_line": 226
+      },
+      {
+        "text": "Enabling the `upsampled_count()` rewrite for the errors dataset can emit `upsampled_count() as count` for an errors-dataset request containing `count()`, but `upsampled_count` is only registered in Discover and not in the errors dataset function converter, so the errors query builder cannot resolve the generated function; register `upsampled_count` for the errors dataset or keep this branch disabled until that registration exists.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/api/helpers/error_upsampling.py",
+        "source_comment_line": 112
+      },
+      {
+        "text": "Using a raw substring check for `event.type:error` falsely matches negated, quoted, or mixed event-type queries such as `!event.type:error`, `NOT event.type:error`, or quoted text containing that string, causing the error-only upsampled aggregation transformation to be applied to queries that exclude errors or include non-error events; replace it with query classification that confirms a positive `event.type:error` filter and rejects negated, quoted, or mixed-type cases.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "src/sentry/api/helpers/error_upsampling.py",
+        "source_comment_line": 137
+      },
+      {
+        "text": "The factory checks `client_sample_rate` by truthiness before assigning `sample_rate`, so a numeric `client_sample_rate` of `0.0` is treated as absent and skipped even though it is present and convertible; check explicitly for `None` before converting to preserve the zero sample-rate edge case.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "src/sentry/testutils/factories.py",
+        "source_comment_line": 353
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/103633": {
+    "deputydev-v1": [
+      {
+        "text": "A cached denial in `permDenialCache` is returned before consulting the positive permission cache or database, so after a permission is later granted, the stale denial can continue returning `Allowed: false` until `shortCacheTTL` expires; this also affects action-level checks whose denial key has empty name and parent segments.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/services/authz/rbac/service.go",
+        "source_comment_line": 117
+      }
+    ]
+  },
+  "https://github.com/getsentry/sentry/pull/67876": {
+    "deputydev-v1": [
+      {
+        "text": "The call to `get_user_info(payload[\"access_token\"])` is outside any exception handler even though `get_user_info` raises for non-2xx GitHub responses via `raise_for_status`, so invalid tokens, rate limits, or GitHub failures can escape `OAuthLoginView.dispatch` as an unhandled 500 instead of showing the intended installation error page.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "src/sentry/integrations/github/integration.py",
+        "source_comment_line": 434
+      },
+      {
+        "text": "The OAuth token validation only checks whether the `access_token` key exists, so a parsed response containing an empty `access_token=` passes the condition and sends an empty credential to `get_user_info`; the code should validate that the token value is non-empty.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "src/sentry/integrations/github/integration.py",
+        "source_comment_line": 431
+      },
+      {
+        "text": "The new synchronous `get_user_info` request uses an underlying `session.get` without an explicit timeout, so an unresponsive or degraded GitHub API can hold the installation request worker indefinitely.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "src/sentry/integrations/github/integration.py",
+        "source_comment_line": 434
+      },
+      {
+        "text": "The same `Integration` row is queried twice on the path where an integration exists without an `OrganizationIntegration`; the code should retain and reuse the `Integration` loaded for the organization-membership check and inspect its `status` to avoid the extra database round trip.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "src/sentry/integrations/github/integration.py",
+        "source_comment_line": 494
+      },
+      {
+        "text": "`safe_urlopen` is called before the surrounding `try` block, so connection, TLS, timeout, or other network failures while opening the OAuth token endpoint escape as a 500 instead of being converted into the controlled installation error.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "src/sentry/integrations/github/integration.py",
+        "source_comment_line": 423
+      },
+      {
+        "text": "When `Integration.DoesNotExist` is hit, the code advances a new installation before verifying that `github_authenticated_user` matches the GitHub user who installed the app, allowing a supplied installation ID with no existing record to bypass the only authenticated-user versus sender identity check.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "src/sentry/integrations/github/integration.py",
+        "source_comment_line": 482
+      },
+      {
+        "text": "The code directly accesses nested `integration.metadata[\"sender\"][\"login\"]` even though `sender` is only conditionally populated, so an existing integration missing `sender` or `login` raises `KeyError` instead of returning the controlled validation error.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "src/sentry/integrations/github/integration.py",
+        "source_comment_line": 503
+      }
+    ]
+  },
+  "https://github.com/keycloak/keycloak/pull/32918": {
+    "deputydev-v1": [
+      {
+        "text": "Cleanup is registered with the literal alias \"alias\" instead of the actual IDP aliases created by the test (\"idp-alias-\" + i and \"idp-alias-20\"), so the cleanup callbacks target non-existent providers and leave the created identity providers in the test realm, potentially contaminating subsequent tests.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/organization/cache/OrganizationCacheTest.java",
+        "source_comment_line": 381
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/94942": {
+    "deputydev-v1": [
+      {
+        "text": "`enableSqlExpressions` performs a feature-flag lookup but returns `false` on both paths, making the lookup dead code and misleadingly suggesting the SQL-expression security kill switch can be enabled; this obscures that the permanent disablement is intentional and increases the risk that a future maintainer accidentally re-enables the path.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/expr/reader.go",
+        "source_comment_line": 194
+      },
+      {
+        "text": "`pkg/expr/sql` exposes a `DB` API whose operations are only failing `not implemented` stubs, but the package lacks documentation explaining that this is an intentional disabled stub and security boundary; without that context, the code looks like unfinished scaffolding and makes accidental later implementation more likely.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "pkg/expr/sql/db.go",
+        "source_comment_line": 1
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/90939": {
+    "deputydev-v1": [
+      {
+        "text": "In non-Dev environments, callers that observe `entryPointAssetsCache == nil` under the read lock do not re-check the cache after acquiring the write lock, so multiple concurrent callers can serially repeat the expensive filesystem or CDN initialization even after the first caller has populated the cache, overwriting the cached result.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/api/webassets/webassets.go",
+        "source_comment_line": 48
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/80329": {
+    "deputydev-v1": [
+      {
+        "text": "In cleanup_test.go, the subtest registers t.Cleanup only after creating test annotations and running initial assertions; because the subtests share fakeSQL, if createTestAnnotations or an initial assertion calls t.Fatal before cleanup is registered, teardown is skipped and leftover annotation rows can pollute subsequent subtests.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/services/annotations/annotationsimpl/cleanup_test.go",
+        "source_comment_line": 116
+      },
+      {
+        "text": "In xorm_store.go, the SQLite delete path rebuilds the complete values string with fmt.Sprintf on every iteration, repeatedly copying the growing ID list; for large batches such as 32,767 IDs this causes O(n²) copying and allocations, hurting performance.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "pkg/services/annotations/annotationsimpl/xorm_store.go",
+        "source_comment_line": 609
+      },
+      {
+        "text": "In xorm_store.go cleanup diagnostics, successful cleanup batches are logged with Error-level calls and pre-delete logs include the complete ids slice and raw condition; configured batches can contain tens of thousands of IDs, causing oversized false error events, log noise, and exposure of row IDs and query details even when no error occurred.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "pkg/services/annotations/annotationsimpl/xorm_store.go",
+        "source_comment_line": 534
+      },
+      {
+        "text": "In cleanup.go, changing the shared cleanup ticker from every 10 minutes to every minute makes every cleanup job—not only annotation cleanup—eligible to run up to ten times as often, increasing database work across snapshots, dashboard versions, images, annotations, and other cleanup jobs.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "pkg/services/cleanup/cleanup.go",
+        "source_comment_line": 77
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/90045": {
+    "deputydev-v1": [
+      {
+        "text": "The asynchronous legacy writes in Create, Delete, Update, and DeleteCollection derive their 10-second timeout context from the request context, so request completion or cancellation can cancel the fire-and-forget legacy operation before its timeout and leave legacy storage stale; the timeout should be based on a context detached from request cancellation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 51
+      },
+      {
+        "text": "The asynchronous d.Legacy.DeleteCollection call is measured with startLegacy but recorded via recordStorageDuration, which misroutes legacy latency and failures into the storage histogram and leaves the legacy DeleteCollection metric series incomplete; it should use recordLegacyDuration.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 166
+      },
+      {
+        "text": "The Delete method lacks a leading comment describing that it deletes from Storage synchronously and schedules the LegacyStorage deletion asynchronously, making it inconsistent with the documentation pattern used by the other DualWriterMode3 methods.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 94
+      },
+      {
+        "text": "The asynchronous legacy writes in Create, Delete, Update, and DeleteCollection capture returned errors but only record them as metric labels, discarding them without logging; legacy divergence can therefore occur without a corresponding production log entry.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 55
+      },
+      {
+        "text": "The d.Storage.Update error path uses startStorage but records the failure through recordLegacyDuration, misattributing storage failures and latency to the legacy histogram; it should use recordStorageDuration.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 129
+      },
+      {
+        "text": "Create, Delete, Update, and DeleteCollection launch asynchronous legacy-write goroutines without any shared concurrency limit, so bursts of successful write requests can create many concurrent legacy calls and retain request objects and callbacks until the calls finish or time out; concurrency should be bounded with a semaphore or worker queue.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 50
+      },
+      {
+        "text": "Delete enriches a log variable with name, kind, and method fields but then stores the base d.Log in the context, so downstream logging that retrieves its logger from ctx loses those fields; the enriched log should be placed into the context.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 97
+      },
+      {
+        "text": "The d.Storage.Create error path uses startStorage but records the failure through recordLegacyDuration, creating a legacy metric observation even though no legacy operation ran; it should use recordStorageDuration.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 7,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 45
+      },
+      {
+        "text": "The Delete success path passes the per-object name as the third metric argument even though that argument maps to the kind label, creating a separate histogram series for each deleted object and preventing kind-level aggregation; it should pass options.Kind.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 8,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3.go",
+        "source_comment_line": 106
+      },
+      {
+        "text": "The Create, Delete, Update, and DeleteCollection tests do not synchronize with the asynchronous legacy operation or assert mock expectations before returning, so a legacy goroutine that never runs can still leave the tests passing and the mode-3 legacy-write behavior unverified.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 9,
+        "source_comment_path": "pkg/apiserver/rest/dualwriter_mode3_test.go",
+        "source_comment_line": 63
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/106778": {
+    "deputydev-v1": [
+      {
+        "text": "In AlertRuleMenu.tsx, the Prometheus ability path can set canPause or canDelete to true when only promRule is available, but the menu rendering guards still require rulerRule: Pause checks rulerRuleType.grafana.rule(rulerRule), and Delete checks canDelete && rulerRule. As a result, Pause and Delete are treated as available by permissions but are not exposed for prom-only rules in the new list path.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "public/app/features/alerting/unified/components/rule-viewer/AlertRuleMenu.tsx",
+        "source_comment_line": 87
+      },
+      {
+        "text": "In useAbilities.ts, the `// duplicate` comment above `const { isEditable, isRemovable, loading } = useIsGrafanaPromRuleEditable(rule);` is unclear because it does not identify what is duplicated or explain any intended follow-up, obscuring the purpose of the permission check for future maintainers.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "public/app/features/alerting/unified/hooks/useAbilities.ts",
+        "source_comment_line": 289
+      },
+      {
+        "text": "In useAbilities.ts, `useAllGrafanaPromRuleAbilities` subscribes to the same folder twice for each rule row: `useIsGrafanaPromRuleEditable(rule)` calls `useFolder(folderUid)`, and `useCanSilenceInFolder(folderUid)` reaches another `useFolder(folderUid)` through `useFolderPermissions`. This creates redundant per-row folder subscriptions and unnecessary work in the rule list.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "public/app/features/alerting/unified/hooks/useAbilities.ts",
+        "source_comment_line": 293
+      },
+      {
+        "text": "In RuleActionsButtons.V2.tsx, the warning emitted when identifier construction fails is identical for every failure and does not include context from `groupIdentifier`, `rule`, or `promRule`, so production logs cannot identify which rule or group caused the conversion failure.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "public/app/features/alerting/unified/rule-list/components/RuleActionsButtons.V2.tsx",
+        "source_comment_line": 146
+      },
+      {
+        "text": "In the new list path, `RuleActionsButtons` receives only `promRule`, so `rulerRuleType.grafana.alertingRule(rule)` is false. Although the menu can grant the Silence action through the Prometheus ability and set `showSilenceDrawer`, the drawer is guarded by the ruler-only condition and also requires a ruler DTO, so the visible Silence action becomes clickable but opens no UI for prom-only rules.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": null,
+        "source_comment_line": null
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/107534": {
+    "deputydev-v1": []
+  },
+  "https://github.com/grafana/grafana/pull/79265": {
+    "deputydev-v1": [
+      {
+        "text": "`RowsAffected() == 0` after the UPDATE is treated as proof that a new device is blocked by the device limit, but the UPDATE also filters on `updated_at BETWEEN ...`; an existing device with a stored timestamp outside that window affects zero rows and is incorrectly denied with `ErrDeviceLimitReached`, causing authentication denial. The code should distinguish an unknown device from a timestamp mismatch, or update any row matching the existing `device_id`, and only return the limit error when the device is genuinely absent while the configured limit is full.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/services/anonymous/anonimpl/anonstore/database.go",
+        "source_comment_line": 96
+      },
+      {
+        "text": "`anonymousDeviceExpiration` is independently defined as 30 days in both the API package and `anonstore`, even though the values govern the same expiration policy for device listing and device-limit enforcement; changing only one constant would silently make the listing window and limit-enforcement window inconsistent. The expiration should be defined once and reused in both packages.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "pkg/services/anonymous/anonimpl/api/api.go",
+        "source_comment_line": 18
+      },
+      {
+        "text": "`tagDeviceUI` writes the device marker to the local cache before calling `CreateOrUpdateDevice`; if `CreateOrUpdateDevice` returns `ErrDeviceLimitReached`, the request is blocked but the cache entry remains, so the next request for the same device succeeds from the cache without checking the store and bypasses device-limit enforcement. The device should only be cached after `CreateOrUpdateDevice` succeeds.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "pkg/services/anonymous/anonimpl/impl.go",
+        "source_comment_line": 147
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
+    "deputydev-v1": [
+      {
+        "text": "`FallbackLocaleList` subclasses `Hash` while overriding `[]` to always compute a fallback locale list instead of reading Hash storage, so values stored through inherited Hash operations cannot be retrieved through lookup; this breaks Hash semantics and makes inherited storage operations inconsistent with `[]`, so it should be a plain class exposing only the required `[]` and `ensure_loaded!` methods.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "config/initializers/i18n.rb",
+        "source_comment_line": 12
+      }
+    ]
+  },
+  "https://github.com/grafana/grafana/pull/76186": {
+    "deputydev-v1": [
+      {
+        "text": "`TestLogger.FromContext` returns a fresh `TestLogger`, so calls such as `m.logger.FromContext(ctx).Info(...)` write to a throwaway logger instead of the injected test logger, preventing assertions on the original logger's `InfoLogs`, `WarnLogs`, and other stores from observing context-derived log calls.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "pkg/plugins/log/fake.go",
+        "source_comment_line": 47
+      },
+      {
+        "text": "The new contextual logger middleware has no unit tests covering the endpoint attributes added by each instrumented method, optional user and datasource fields, or delegation behavior when optional `PluginContext` fields are nil.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "pkg/services/pluginsintegration/clientmiddleware/contextual_logger_middleware.go",
+        "source_comment_line": 1
+      },
+      {
+        "text": "`logRequest` relies on `ctx` having already been enriched by `ContextualLoggerMiddleware`, but this implicit middleware-order dependency is undocumented; if the ordering is wrong, emitted log entries lack plugin, endpoint, datasource, and user attributes that were previously added directly in `logRequest`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "pkg/services/pluginsintegration/clientmiddleware/logger_middleware.go",
+        "source_comment_line": 36
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/10": {
+    "deputydev-v1": [
+      {
+        "text": "In `update`, an unknown or already-deleted `params[:id]` makes `EmbeddableHost.where(id: params[:id]).first` return `nil`, and passing that nil host into `save_host` dereferences it, causing a `NoMethodError`/500 instead of a not-found response.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/controllers/admin/embeddable_hosts_controller.rb",
+        "source_comment_line": 10
+      },
+      {
+        "text": "In `destroy`, an unknown or already-deleted `params[:id]` makes `EmbeddableHost.where(id: params[:id]).first` return `nil`, and calling `nil.destroy` causes a `NoMethodError`/500 instead of a not-found response.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/controllers/admin/embeddable_hosts_controller.rb",
+        "source_comment_line": 10
+      },
+      {
+        "text": "`record_for_host` lowercases the stored `host` value but not the supplied `uri.host` parameter, so under a case-sensitive comparison a mixed-case URL host fails to match an otherwise allowed host and valid hosts are rejected.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/models/embeddable_host.rb",
+        "source_comment_line": 17
+      },
+      {
+        "text": "The `before_validation` host-normalization callback calls `sub!` on `self.host` without checking that it is present, so saving an `EmbeddableHost` without a host raises `NoMethodError` before format validation can return a normal validation error.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/models/embeddable_host.rb",
+        "source_comment_line": 6
+      },
+      {
+        "text": "The migration interpolates host values from the free-text site setting directly into a raw SQL `INSERT`; a stored host containing a single quote can break the query and alter the SQL being executed, so each host value must be database-quoted or bound.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "db/migrate/20150818190757_create_embeddable_hosts.rb",
+        "source_comment_line": 25
+      },
+      {
+        "text": "The migration accesses `result[0]['id']` without checking whether the category lookup returned a row; if the `embed_category` setting is absent or matches no category, `result[0]` is nil and the migration raises `NoMethodError` before reaching the uncategorized fallback.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "db/migrate/20150818190757_create_embeddable_hosts.rb",
+        "source_comment_line": 9
+      },
+      {
+        "text": "`EmbeddableHost.record_for_host` repeatedly queries with `WHERE lower(host) = ?`, but the table has no matching functional index on `lower(host)`, so each host authorization lookup scans the table.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "db/migrate/20150818190757_create_embeddable_hosts.rb",
+        "source_comment_line": 3
+      },
+      {
+        "text": "The controller spec only asserts inheritance and does not exercise the newly added CRUD behavior or error paths, leaving create, update, destroy, validation failures, authorization, and missing-record responses untested.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "spec/controllers/admin/embeddable_hosts_controller_spec.rb",
+        "source_comment_line": 5
+      },
+      {
+        "text": "The fabricator definitions are in files named for the opposite model: `category_fabricator.rb` now defines only an embeddable host after removing the category definitions, making fabricators difficult to locate and breaking the existing file organization.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 7,
+        "source_comment_path": "spec/fabricators/category_fabricator.rb",
+        "source_comment_line": 1
+      },
+      {
+        "text": "The deleted `embeddable_hosts` and `embed_category` setting keys still have translations in non-English server locale files such as `server.es.yml` and `server.fi.yml`, leaving orphaned locale entries that should be removed.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 8,
+        "source_comment_path": null,
+        "source_comment_line": null
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
+    "deputydev-v1": [
+      {
+        "text": "The documentation comment in `app/assets/stylesheets/common/base/discourse.scss` still describes the old table-cell coldmap default as `scale-color($primary, $lightness: 50%)` instead of the new theme-aware `dark-light-choose(...)` value, so it documents the wrong default expression.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/assets/stylesheets/common/base/discourse.scss",
+        "source_comment_line": 73
+      },
+      {
+        "text": "The `.topic-meta-data h5 a` color migration changes the light-theme branch from the original `scale-color($primary, $lightness: 30%)` to `70%`; because `dark-light-choose` uses the first branch on light themes, this makes the link substantially lighter than before and reduces its previous contrast instead of limiting the change to dark-theme rendering.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/assets/stylesheets/desktop/topic-post.scss",
+        "source_comment_line": 291
+      },
+      {
+        "text": "The `.group-member-info .name` color replacement in desktop and mobile user styles changes the light-theme value from the original `30%` to `50%`, making member names the same lightness as the adjacent `.title` and removing the previous visual hierarchy between name and title.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/assets/stylesheets/desktop/user.scss",
+        "source_comment_line": 522
+      },
+      {
+        "text": "The mobile `.custom-message-length` color conversion replaces the original light-theme first branch `70%` with `30%`; because that branch controls light themes, the text becomes much darker and more prominent than before and diverges from the equivalent desktop rule that preserves `70%`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "app/assets/stylesheets/mobile/modal.scss",
+        "source_comment_line": 102
+      },
+      {
+        "text": "The mobile topic-post `h3` color migration changes the light-theme first branch from the original `20%` lightness to `50%`, making the heading substantially lighter on light themes, removing its previous emphasis, and diverging from the equivalent desktop rule that keeps `20%`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "app/assets/stylesheets/mobile/topic-post.scss",
+        "source_comment_line": 182
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/8": {
+    "deputydev-v1": [
+      {
+        "text": "`Math.floor(user_count / limit) + 1` overcounts total pages when the member count is an exact multiple of the page size, creating a phantom empty page such as 50 members with a limit of 50 producing two pages; use `Math.ceil(user_count / limit)` instead.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/assets/javascripts/admin/controllers/admin-group.js.es6",
+        "source_comment_line": 13
+      },
+      {
+        "text": "`removeMember` is called without handling its returned promise, so server-side deletion failures are discarded and the confirmation closes without notifying the administrator that the member was not removed.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/assets/javascripts/admin/controllers/admin-group.js.es6",
+        "source_comment_line": 56
+      },
+      {
+        "text": "`addMembers` is called without a rejection handler, so network or server-side failures receive no user-facing handling and leave the entered usernames in place without explaining that no members were added.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/assets/javascripts/admin/controllers/admin-group.js.es6",
+        "source_comment_line": 64
+      },
+      {
+        "text": "The loop calls `User.find_by_username` once for every submitted username, causing N separate user SELECT queries instead of resolving the submitted usernames with one bulk query before adding the users to the group.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "app/controllers/admin/groups_controller.rb",
+        "source_comment_line": 71
+      },
+      {
+        "text": "The caller-provided `limit` is passed directly to the query without a maximum, so a request such as `limit=100000` can fetch and serialize a very large group in one response, imposing excessive database, memory, and serialization work.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "app/controllers/groups_controller.rb",
+        "source_comment_line": 22
+      },
+      {
+        "text": "The controller spec uses PUT for `remove_member` even though the production route exposes the action through DELETE, so the test can pass by invoking the named action directly without exercising the route's DELETE method contract.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "spec/controllers/admin/groups_controller_spec.rb",
+        "source_comment_line": 115
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
+    "deputydev-v1": [
+      {
+        "text": "`rejectedEmails` is initialized as a mutable array on the controller prototype, so controller instances share rejected-address state; an email pushed by one instance can leak to another and cause that other instance to reject it.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/assets/javascripts/discourse/controllers/create_account_controller.js",
+        "source_comment_line": 17
+      },
+      {
+        "text": "The blocklist lookup compares the raw email string directly, so case-sensitive comparison can let differently cased versions of a blocked address, such as `BAD@spamclub.com` versus stored `bad@spamclub.com`, bypass the block.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/models/blocked_email.rb",
+        "source_comment_line": 12
+      },
+      {
+        "text": "The `match_count` update uses a non-atomic read-modify-write, so concurrent requests can both read the same count, save the same incremented value, and lose one recorded match.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/models/blocked_email.rb",
+        "source_comment_line": 14
+      },
+      {
+        "text": "`BlockedEmail.should_block?` updates `match_count` and `last_match_at` when called from `validate_each`, so repeated validations during one account creation attempt can mutate statistics multiple times and overcount actual registration attempts.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "lib/validators/email_validator.rb",
+        "source_comment_line": 13
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
+    "deputydev-v1": [
+      {
+        "text": "Converting `.small-action` to a flex container makes the existing `float: left` on the direct `.topic-avatar` child and `float: right` on the direct `button` child ineffective, so these declarations no longer control avatar or button placement; remove the dead floats and use flex layout such as `margin-left: auto` if the button must remain flush right.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/assets/stylesheets/common/base/topic-post.scss",
+        "source_comment_line": 264
+      },
+      {
+        "text": "The `//Flexbox` section header in `app/assets/stylesheets/common/foundation/mixins.scss` is missing the space used by the file's other section comments, such as `// Text`, and should be changed to `// Flexbox` for consistency.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/assets/stylesheets/common/foundation/mixins.scss",
+        "source_comment_line": 98
+      },
+      {
+        "text": "`-ms-align-items` in the `align-items` mixin is not a valid CSS property and is ignored; since the valid prefixed declaration `-ms-flex-align` is already present, every use of the mixin emits a dead invalid vendor-prefixed property that should be removed.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/assets/stylesheets/common/foundation/mixins.scss",
+        "source_comment_line": 121
+      },
+      {
+        "text": "The `align-items` mixin is formatted inconsistently with adjacent mixins by using four-space indentation and omitting the space after the colon in `align-items:$alignment`; format the block consistently with the rest of the file.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "app/assets/stylesheets/common/foundation/mixins.scss",
+        "source_comment_line": 117
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6": {
+    "deputydev-v1": [
+      {
+        "text": "Each user serialization redundantly parses the same website URL once before branching and again in branches that append the path, causing unnecessary URI parsing and allocations from unchanged input.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/serializers/user_serializer.rb",
+        "source_comment_line": 138
+      },
+      {
+        "text": "The sibling-subdomain logic repeatedly calls split on the same website and Discourse host values while comparing component lengths and suffixes, causing unnecessary allocation of equivalent host-component arrays on each serialization.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/serializers/user_serializer.rb",
+        "source_comment_line": 138
+      },
+      {
+        "text": "The equal-depth sibling-subdomain branch is untested: current serializer specs cover unrelated domains, exact matches, and parent domains, but do not exercise the elsif path where suffix comparison matches or does not match, leaving both return paths unprotected.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "spec/serializers/user_serializer_spec.rb",
+        "source_comment_line": 76
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/4": {
+    "deputydev-v1": [
+      {
+        "text": "The message sender is validated with `discourseUrl.indexOf(e.origin)` instead of strict equality against the exact origin derived from `discourseUrl`, so a non-equal origin whose serialized value appears as a substring of `discourseUrl` can pass the check and set the iframe height.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/assets/javascripts/embed.js",
+        "source_comment_line": 17
+      },
+      {
+        "text": "`i.content` is used without being guarded before calling `scrub`; feed items that omit `content` raise `NoMethodError`, abort processing of the remaining items, and the polling job has retries disabled.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/jobs/scheduled/poll_feed.rb",
+        "source_comment_line": 35
+      },
+      {
+        "text": "Feed item HTML is passed to `TopicEmbed.import` after only `CGI.unescapeHTML`, which decodes entities but does not sanitize; because the imported value is later stored as `raw_html` with validations skipped and rendered with `raw`, attacker-controlled scripts or event-handler attributes from the feed can persist and render.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/jobs/scheduled/poll_feed.rb",
+        "source_comment_line": 35
+      },
+      {
+        "text": "`url` is fetched with unrestricted `open` after only a host check, without validating resolved addresses or redirect destinations against private, loopback, and link-local ranges or restricting scheme and redirects, so the server-side fetch can reach internal endpoints.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "app/models/topic_embed.rb",
+        "source_comment_line": 48
+      },
+      {
+        "text": "`url` is interpolated unescaped into the imported-from link's `href` attribute and link text; the HTTP-prefix check does not exclude quote characters, so a crafted URL can break out of the single-quoted `href` and inject attributes or markup that is stored as raw HTML and later rendered with `raw`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "app/models/topic_embed.rb",
+        "source_comment_line": 13
+      },
+      {
+        "text": "`open(url).read` performs an unbounded remote read without explicit open/read timeouts or a maximum response size, buffering the full response before Readability processes it, so a slow or very large response can occupy the worker and consume excessive memory.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "app/models/topic_embed.rb",
+        "source_comment_line": 48
+      },
+      {
+        "text": "The template uses `<%- end if %>` with a trailing `if` that has no modifier condition, generating invalid Ruby and causing the embed template to raise a syntax error instead of rendering the embedded topic view.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "app/views/embed/best.html.erb",
+        "source_comment_line": 6
+      },
+      {
+        "text": "The full `request.referer` is interpolated directly into a JavaScript string for the `postMessage` target origin; a full path is not a valid target origin, and an unescaped quote in the referer can break out of the string, which can prevent resize-message delivery or inject JavaScript into the iframe response.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 7,
+        "source_comment_path": "app/views/layouts/embed.html.erb",
+        "source_comment_line": 11
+      },
+      {
+        "text": "The throttle key is set with `setnx` and then expired in a separate command; if the process stops after `setnx` succeeds but before `expire`, the key remains without an expiration and that URL is throttled permanently.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 8,
+        "source_comment_path": "lib/topic_retriever.rb",
+        "source_comment_line": 27
+      },
+      {
+        "text": "`TopicRetriever` directly executes the scheduled `PollFeed` job on an unknown embed URL when feed polling is enabled, synchronously downloading and parsing the entire feed and importing every item, which blocks the retrieval worker with network and database work.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 9,
+        "source_comment_path": "lib/topic_retriever.rb",
+        "source_comment_line": 41
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
+    "deputydev-v1": [
+      {
+        "text": "Replacing the previous per-type upload size checks with a uniform 10 MB limit means configured limits such as max_<type>_size_kb no longer drive client validation, so attachment and avatar uploads with lower configured limits can be allowed through and the existing test that sets max_image_size_kb to 5 KB no longer rejects a 10 KB file as expected.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/assets/javascripts/discourse/lib/utilities.js",
+        "source_comment_line": 182
+      },
+      {
+        "text": "The upload controller ignores the return value of OptimizedImage.downsize and does not verify the final file size before calling Upload.create_for, so failed or insufficient ImageMagick conversions can be treated as successful, repeated unnecessarily, and an image that remains above max_image_size_kb can continue into upload creation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/controllers/uploads_controller.rb",
+        "source_comment_line": 67
+      },
+      {
+        "text": "Defining self.downsize a second time in Ruby replaces the existing five-argument downsize(from, to, max_width, max_height, opts={}) method, so the existing resize_emoji.rb caller that still invokes OptimizedImage.downsize(path, path, 100, 100, opts) will raise ArgumentError at runtime because the surviving method accepts at most four arguments.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/models/optimized_image.rb",
+        "source_comment_line": 149
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
+    "deputydev-v1": [
+      {
+        "text": "The controller/template binding uses the misspelled identifier `stopNotificiationsText`; because the controller defines it and the Handlebars template references it verbatim, this typo becomes the property name consumers must use and will require a coordinated rename later. Rename it to `stopNotificationsText` in both places.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "app/assets/javascripts/discourse/controllers/topic-unsubscribe.js.es6",
+        "source_comment_line": 5
+      },
+      {
+        "text": "`TopicUser.find_by(user_id: current_user.id, topic_id: params[:topic_id])` can return `nil`, but the result is dereferenced with `tu.notification_level` unconditionally, causing a `NoMethodError` and a 500 response when the user/topic pair has no `TopicUser` row. Handle the missing `TopicUser` before reading `tu.notification_level`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "app/controllers/topics_controller.rb",
+        "source_comment_line": 105
+      },
+      {
+        "text": "The `%{respond_instructions}` footer is rendered inside the `context_posts.present?` block and also rendered unconditionally later in the template, so emails with context posts receive duplicate response instructions. Remove the placeholder from the `context_posts` block.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "app/views/email/notification.html.erb",
+        "source_comment_line": 6
+      },
+      {
+        "text": "The unsubscribe endpoint performs a persistent notification-state mutation via GET even though the URL is included in notification emails; automated link followers such as mail scanners or preview tools can therefore change a user's notification level without user intent. Use GET only for a confirmation page and perform the mutation via POST or PATCH.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "config/routes.rb",
+        "source_comment_line": 440
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/22532": {
+    "deputydev-v1": [
+      {
+        "text": "`updateManyByCredentialId` forwards an empty update object directly to Prisma's `updateMany`, so no field is written and `@updatedAt` is not bumped, leaving `SelectedCalendar.updatedAt` stale after availability is refreshed instead of recording the cache-refresh timestamp.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "packages/app-store/googlecalendar/lib/CalendarService.ts",
+        "source_comment_line": 1024
+      },
+      {
+        "text": "After deleting the cache, `viewer.calendars.connectedCalendars` is not invalidated, so the cached tRPC query result can continue showing the deleted `cacheUpdatedAt` value and stale cache status, unlike the disconnect mutation which explicitly invalidates the query.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/features/apps/components/CredentialActionsDropdown.tsx",
+        "source_comment_line": 42
+      },
+      {
+        "text": "The missing or inaccessible credential path throws a plain `Error`, which tRPC reports as `INTERNAL_SERVER_ERROR`, so an expected ownership lookup failure is exposed to the client with incorrect HTTP/tRPC semantics instead of an explicit `NOT_FOUND` or `UNAUTHORIZED` `TRPCError`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "packages/trpc/server/routers/viewer/calendars/deleteCache.handler.ts",
+        "source_comment_line": 25
+      },
+      {
+        "text": "The script uses BSD/macOS-specific `sed -i ''` syntax when updating an existing `GOOGLE_WEBHOOK_URL`, which GNU sed on Linux interprets incorrectly and can terminate the script instead of updating the environment file.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "scripts/test-gcal-webhooks.sh",
+        "source_comment_line": 68
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/8330": {
+    "deputydev-v1": [
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 114, the zero-length date override guard compares two separately constructed Dayjs objects with `===`: `dayjs(date.start).add(...) === dayjs(date.end).add(...)`. Because JavaScript object equality checks identity rather than timestamp value, this condition is always false for distinct Dayjs instances, making the zero-duration override branch unreachable and causing zero-length overrides to be silently ignored; use Dayjs value comparison such as `.isSame()` instead.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 114
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 142, the working-hours fallback computes `end` from `slotStartTime` instead of `slotEndTime`, making `start` and `end` identical. As a result, `end > workingHour.endTime` checks the slot start rather than the actual slot end, so slots that start within working hours but finish after the working-hours boundary are incorrectly allowed.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 142
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 114, the zero-length date override check uses `===` between two separate Dayjs instances. Since distinct objects are never referentially equal even when they represent the same instant, the zero-length override exclusion branch is permanently unreachable, causing zero-length overrides to be ignored; compare the Dayjs values with `.isSame()` instead.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 114
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 142, `const end` in the `checkIfIsAvailable` working-hours fallback is calculated with `slotStartTime` rather than `slotEndTime`. This makes both `start` and `end` represent the slot start, so the `end > workingHour.endTime` guard fails to reject slots whose actual end time extends past the working-hours window.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 142
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts`, the flattened `dateOverrides` array containing overrides for all hosts is passed into `checkIfIsAvailable`, but the date-override predicate does not filter overrides by the current user being checked. In multi-host scenarios such as collective or round-robin events, a date override belonging to host A can incorrectly suppress or activate availability for host B, producing incorrect slot availability results.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 79
+      },
+      {
+        "text": "In `apps/web/test/lib/getSchedule.test.ts` line 798, the assertion comment `// it should return the same as this is the utc time` is misleading because the test is actually verifying that UTC slot times remain invariant across attendee timezones for date override boundaries. The vague comment obscures the timezone-offset invariant being tested and may cause future maintainers to misread the test as a no-op UTC assertion.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "apps/web/test/lib/getSchedule.test.ts",
+        "source_comment_line": 798
+      },
+      {
+        "text": "In `packages/lib/slots.ts` line 218, `getSlots` repeatedly constructs identical Dayjs values inside the `activeOverrides.flatMap` callback: `dayjs(override.start).utc().add(offset, \"minute\")` is computed twice for `startTime`, and `dayjs(override.end).utc().add(offset, \"minute\")` is computed twice for `endTime`. This creates avoidable parsing/wrapping/allocation overhead for every override across scheduling loops; cache the adjusted start and end Dayjs values once per override.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "packages/lib/slots.ts",
+        "source_comment_line": 218
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 106, the `dateOverrides.find()` callback in `checkIfIsAvailable` repeatedly constructs the same adjusted Dayjs values for each override during every slot availability check. `dayjs(date.start).add(utcOffset, \"minutes\")` is computed up to three times and `dayjs(date.end).add(utcOffset, \"minutes\")` up to two times per iteration, with a timezone lookup also repeated, creating avoidable O(slots × hosts × overrides) allocation and parsing cost; cache the adjusted start and end values inside the callback.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 7,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 106
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 142, the working-hours fallback assigns both `start` and `end` using the same `slotStartTime.hour() * 60 + slotStartTime.minute()` expression. This duplicates computation and, more importantly, never uses `slotEndTime`, so the end-time boundary is not actually checked and slots that extend beyond working hours can be accepted.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 8,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 142
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 114, the equality check `dayjs(date.start).add(...) === dayjs(date.end).add(...)` compares Dayjs object references instead of their time values. Because the two Dayjs instances are separately created, the branch intended to detect zero-length overrides is unreachable, leading to unexpected availability behavior; use `.isSame()` for value comparison.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 9,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 114
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 142, `const end` in the working-hours fallback is incorrectly calculated from `slotStartTime` rather than `slotEndTime`. This makes the end boundary check compare the slot start against `workingHour.endTime`, so a slot whose start is within working hours but whose actual end exceeds the working-hours boundary will not be excluded.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 10,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 142
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 87, the `checkIfIsAvailable` `dateOverrides` parameter type only declares `{ start: Date; end: Date }[]` even though the flattened array passed at runtime includes per-user `userId` and `timeZone` fields. Because the function iterates the full flattened array without filtering by the current host/user, an override belonging to one user can incorrectly affect another user's availability in fixed-host or other multi-user scheduling paths.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 11,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 87
+      },
+      {
+        "text": "In `packages/trpc/server/routers/viewer/slots.ts` line 87, the `checkIfIsAvailable` `dateOverrides` type omits the `timeZone` and `userId` fields that are added to the flattened date override entries in `getSchedule`. This makes the type out of sync with the actual data shape and prevents the predicate from using per-override timezone or user information for correct conversion and filtering.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 12,
+        "source_comment_path": "packages/trpc/server/routers/viewer/slots.ts",
+        "source_comment_line": 87
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/14943": {
+    "deputydev-v1": [
+      {
+        "text": "In `scheduleSMSReminders.ts`, the retry-count branch of `prisma.workflowReminder.deleteMany` lacks `method: WorkflowMethods.SMS`, so it deletes any `WorkflowReminder` with `retryCount > 1` regardless of delivery method; this can incorrectly delete reminders belonging to non-SMS workflows even though the surrounding cleanup and scheduling logic is SMS-specific.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "packages/features/ee/workflows/api/scheduleSMSReminders.ts",
+        "source_comment_line": 39
+      },
+      {
+        "text": "The retry count update uses `reminder.retryCount + 1` based on a value fetched before processing, including in the catch path, so overlapping cron executions can read the same stale retry count and overwrite each other with the same incremented value; this lost increment can delay retry-based cleanup because multiple failures are not all recorded.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/features/ee/workflows/api/scheduleSMSReminders.ts",
+        "source_comment_line": 184
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/22345": {
+    "deputydev-v1": [
+      {
+        "text": "`getAuthorizationConditions()` returns a non-nullable `Prisma.Sql`, so `authConditions` is always truthy; the current `getBaseConditions()` control flow includes filter-only and final `NOTHING_CONDITION` branches that are unreachable under the method contract, misleadingly advertising states that cannot occur and should be simplified to only branch on `filterConditions`.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "packages/lib/server/service/insightsBooking.ts",
+        "source_comment_line": 72
+      },
+      {
+        "text": "Caching regression coverage was removed even though `InsightsBookingService` still memoizes authorization and filter conditions via `cachedAuthConditions` and `cachedFilterConditions`; without equivalent tests using strict reference equality on consecutive calls to the new `Prisma.Sql` results, regressions that rebuild conditions instead of returning the cached object would no longer be detected.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": null,
+        "source_comment_line": null
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/11059": {
+    "deputydev-v1": [
+      {
+        "text": "The user and app existence checks in the app credential webhook are awaited sequentially even though neither query depends on the other, adding unnecessary serial database latency to every credential sync invocation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "apps/web/pages/api/webhook/app-credential.ts",
+        "source_comment_line": 34
+      },
+      {
+        "text": "The webhook handler calls `schema.parse(req.body)`, so malformed or missing request bodies throw an unhandled Zod exception and escape as a 500 instead of returning a controlled 400 validation response.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "apps/web/pages/api/webhook/app-credential.ts",
+        "source_comment_line": 31
+      },
+      {
+        "text": "The decrypted credential payload is passed to `JSON.parse` without error handling, so malformed decrypted JSON can cause an uncontrolled exception.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "apps/web/pages/api/webhook/app-credential.ts",
+        "source_comment_line": 57
+      },
+      {
+        "text": "The decrypted credential payload is persisted to `credential.key` after any successful JSON parse without validating that it matches the selected app's expected credential structure, allowing structurally invalid credentials to be stored.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "apps/web/pages/api/webhook/app-credential.ts",
+        "source_comment_line": 57
+      },
+      {
+        "text": "The Zod schema uses computed keys with `toString()`, which creates fixed property names rather than wildcard fields, so it does not validate arbitrary numeric expiry fields or preserve arbitrary token fields as intended in sync mode.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts",
+        "source_comment_line": 5
+      },
+      {
+        "text": "When the OAuth refresh response omits `refresh_token`, the parser substitutes the literal string `\"refresh_token\"`, allowing callers to persist that placeholder over a valid stored refresh token and causing later provider refreshes to fail.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "packages/app-store/_utils/oauth/parseRefreshTokenResponse.ts",
+        "source_comment_line": 26
+      },
+      {
+        "text": "The credential-sync POST identifies a Cal.com user and app but sends no authorization or shared-secret information, leaving the external endpoint without an application-level way to verify that the request originated from this service.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "packages/app-store/_utils/oauth/refreshOAuthTokens.ts",
+        "source_comment_line": 8
+      },
+      {
+        "text": "The OAuth refresh path awaits the external credential-sync `fetch` without an abort timeout, so an unresponsive sync endpoint can indefinitely stall calendar or video operations waiting for token refresh.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "packages/app-store/_utils/oauth/refreshOAuthTokens.ts",
+        "source_comment_line": 8
+      },
+      {
+        "text": "In sync mode, `refreshOAuthTokens` returns a raw Fetch `Response` even though callers expect provider-specific token objects, causing sync-mode refreshes to produce undefined fields or runtime errors when callers read shapes such as `.data` or `HubspotToken` fields.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 7,
+        "source_comment_path": "packages/app-store/_utils/oauth/refreshOAuthTokens.ts",
+        "source_comment_line": 14
+      },
+      {
+        "text": "The credential-sync helper returns the Fetch response without checking `response.ok`, so HTTP 4xx or 5xx responses are treated as successful token refreshes and only fail later while parsing or using the response.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 8,
+        "source_comment_path": "packages/app-store/_utils/oauth/refreshOAuthTokens.ts",
+        "source_comment_line": 14
+      },
+      {
+        "text": "Google Calendar assigns the entire `{ success: true, data: ... }` result from `parseRefreshTokenResponse` directly to the credential `key`, causing Prisma to persist the validation wrapper instead of the Google credential object.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 9,
+        "source_comment_path": "packages/app-store/googlecalendar/lib/CalendarService.ts",
+        "source_comment_line": 97
+      },
+      {
+        "text": "The Salesforce refresh code contains a failure branch for a `parseRefreshTokenResponse` result even though the helper throws on validation failure and only returns successful results, making that branch unreachable and inconsistent with the helper contract.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 10,
+        "source_comment_path": "packages/app-store/salesforce/lib/CalendarService.ts",
+        "source_comment_line": 92
+      },
+      {
+        "text": "Zoho Bigin passes `credentialId` as the helper's third argument, which is serialized as `calcomUserId`, so sync-mode requests send a credential row ID in the field reserved for the Cal.com user ID and identify the wrong user.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 11,
+        "source_comment_path": "packages/app-store/zoho-bigin/lib/CalendarService.ts",
+        "source_comment_line": 93
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/7232": {
+    "deputydev-v1": [
+      {
+        "text": "In `handleCancelBooking.ts`, reminder cancellations are started inside nested `forEach` loops without awaiting the asynchronous `deleteScheduledEmailReminder` and `deleteScheduledSMSReminder` calls, so the booking cancellation handler can continue and respond before reminder rows have been cancelled or deleted.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "packages/features/bookings/lib/handleCancelBooking.ts",
+        "source_comment_line": 485
+      },
+      {
+        "text": "In `handleNewBooking.ts`, the reschedule flow uses `forEach` without awaiting the asynchronous reminder-cancellation helpers, so the surrounding `try/catch` can finish immediately and the reschedule can proceed while the previous booking's email or SMS reminders remain active.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/features/bookings/lib/handleNewBooking.ts",
+        "source_comment_line": 966
+      },
+      {
+        "text": "In `scheduleEmailReminders.ts`, wrapping the entire reminder-cancellation loop in one `try/catch` means a single `client.request` failure aborts the rest of the batch, leaves later reminders active, and prevents already accumulated database deletions from being awaited.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "packages/features/ee/workflows/api/scheduleEmailReminders.ts",
+        "source_comment_line": 53
+      },
+      {
+        "text": "In `WorkflowStepContainer.tsx`, the phone verification placeholder `\"Verification code\"` and button label `\"Verify\"` are hard-coded instead of using the `t(...)` i18n function, so those user-facing strings will always appear in English regardless of the user's locale.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "packages/features/ee/workflows/components/WorkflowStepContainer.tsx",
+        "source_comment_line": 439
+      },
+      {
+        "text": "In `emailReminderManager.ts`, the `immediateDelete` branch cancels the SendGrid batch and then returns without deleting or updating the local `workflowReminder` row, leaving stale reminder records after an immediate deletion request.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "packages/features/ee/workflows/lib/reminders/emailReminderManager.ts",
+        "source_comment_line": 222
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/14740": {
+    "deputydev-v1": [
+      {
+        "text": "`ZAddGuestsInputSchema` is defined inside `AddGuestsDialog` even though it has no dependency on component state or props, causing the same static Zod schema object to be reconstructed on every render instead of being hoisted to module scope.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "apps/web/components/dialog/AddGuestsDialog.tsx",
+        "source_comment_line": 26
+      },
+      {
+        "text": "The authorization check combines `isTeamAdmin` and `isTeamOwner` with `&&`, but `isTeamAdmin` already accepts ADMIN and OWNER while `isTeamOwner` accepts only OWNER, so ADMIN-only members who are neither organizer nor attendee are incorrectly denied permission to add guests.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "source_comment_line": 47
+      },
+      {
+        "text": "`guest` is not normalized before checking against lowercase blacklisted guest emails or existing attendees, so case variants can bypass the blacklist and case variants of existing attendee emails can be inserted as duplicate attendees.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "source_comment_line": 77
+      },
+      {
+        "text": "The organizer translation is awaited only after all attendee translations complete even though the operations are independent, adding avoidable serial translation latency and delaying calendar processing.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "source_comment_line": 120
+      },
+      {
+        "text": "`sendAddGuestsEmails` is called with the original `guests` input instead of `uniqueGuests`, so email-template routing can classify an already-existing submitted attendee as newly added and send the full booking-confirmation template instead of the guests-added notification.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "source_comment_line": 168
+      },
+      {
+        "text": "The email-delivery catch block logs only a context-free message and discards the caught error, leaving no stack, error details, booking ID, or user context to diagnose a swallowed `sendAddGuestsEmails` failure.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "packages/trpc/server/routers/viewer/bookings/addGuests.handler.ts",
+        "source_comment_line": 170
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/10600": {
+    "deputydev-v1": [
+      {
+        "text": "In `apps/web/components/settings/EnableTwoFactorModal.tsx`, the Copy button calls `navigator.clipboard.writeText()` without awaiting or catching the returned Promise, so the success toast is shown even when clipboard copying fails due to an unavailable Clipboard API, non-HTTPS context, denied permission, or another rejection, misleading users into believing their backup codes were copied.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+        "source_comment_line": 278
+      },
+      {
+        "text": "In `packages/features/auth/lib/next-auth-options.ts`, password verification is skipped whenever `credentials.totpCode` is non-empty because the password check is gated by `if (user.password && !credentials.totpCode)`. If an attacker submits both `totpCode` and `backupCode`, the presence of `totpCode` skips the password check while the backup-code branch can still grant access, allowing a crafted login request to bypass password verification.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/features/auth/lib/next-auth-options.ts",
+        "source_comment_line": 131
+      },
+      {
+        "text": "In `apps/web/components/auth/BackupCode.tsx`, the default-exported component is declared as `TwoFactor` even though the file and imports identify it as `BackupCode`, making the component purpose unclear and causing confusing IDE name resolution or stack traces.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "apps/web/components/auth/BackupCode.tsx",
+        "source_comment_line": 7
+      },
+      {
+        "text": "In `apps/web/pages/api/auth/two-factor/totp/disable.ts`, the `console.error` message says it \"cannot proceed with backup code login\" even though the endpoint is disabling 2FA, which can mislead engineers triaging logs for this endpoint.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "apps/web/pages/api/auth/two-factor/totp/disable.ts",
+        "source_comment_line": 50
+      },
+      {
+        "text": "In `apps/web/components/settings/EnableTwoFactorModal.tsx`, `URL.createObjectURL` is used to create a backup-code download URL after setup, but the URL is only revoked on the next setup attempt and not when the modal is closed, canceled, reset, or unmounted, so the Blob URL and backup-code text remain in memory for the lifetime of the page and can accumulate across modal openings.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+        "source_comment_line": 99
+      },
+      {
+        "text": "The duplicated `apps/web/components/security/TwoFactorAuthAPI.ts` still exposes the old two-argument `disable(password, code)` signature while `apps/web/components/settings/TwoFactorAuthAPI.ts` was updated to accept a backup code, so the security-page disable flow cannot send `backupCode` to the API and users there cannot disable 2FA with a backup code.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "apps/web/components/settings/TwoFactorAuthAPI.ts",
+        "source_comment_line": 22
+      },
+      {
+        "text": "The duplicated `apps/web/components/security/DisableTwoFactorModal.tsx` remains separate from the updated settings modal and still calls `TwoFactorAuthAPI.disable(password, totpCode)` without backup-code support, creating a maintenance hazard where security-critical 2FA changes must be applied to multiple divergent component copies.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "apps/web/components/settings/TwoFactorAuthAPI.ts",
+        "source_comment_line": 22
+      },
+      {
+        "text": "In `apps/web/components/settings/EnableTwoFactorModal.tsx`, `backupCodes` is initialized with `useState([])` instead of an explicit `useState<string[]>([])`, which removes or weakens TypeScript safety for downstream uses such as `backupCodes.map(formatBackupCode)` and clipboard serialization, allowing API response shape or value mismatches to go uncaught by the compiler.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+        "source_comment_line": 64
+      },
+      {
+        "text": "In `apps/web/components/settings/EnableTwoFactorModal.tsx`, `resetState()` resets the password, error message, and step but does not clear `backupCodes`, so after closing and reopening the modal while it remains mounted, stale backup codes from a previous setup session can remain in state and be displayed.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 7,
+        "source_comment_path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+        "source_comment_line": 71
+      },
+      {
+        "text": "In `apps/web/components/settings/EnableTwoFactorModal.tsx`, `resetState()` does not revoke or clear `backupCodesUrl`, so the object URL created for backup-code download is not released when the modal is closed without a new setup attempt, leaking the Blob URL and its backup-code data.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 7,
+        "source_comment_path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+        "source_comment_line": 71
+      },
+      {
+        "text": "In `apps/web/components/settings/EnableTwoFactorModal.tsx`, the Copy button ignores the Promise returned by `navigator.clipboard.writeText()` and always shows the success toast, so if clipboard access is denied, unavailable, blocked in an iframe, or otherwise rejects, users are falsely told their backup codes were copied.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 8,
+        "source_comment_path": "apps/web/components/settings/EnableTwoFactorModal.tsx",
+        "source_comment_line": 276
+      },
+      {
+        "text": "The duplicated `apps/web/components/security/DisableTwoFactorModal.tsx` and `apps/web/components/security/TwoFactorAuthAPI.ts` were not migrated to the new backup-code disable flow and still use the old two-argument `TwoFactorAuthAPI.disable(password, totpCode)` call, so users accessing 2FA disable through the security settings page cannot send a backup code and cannot use backup codes to disable 2FA.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 9,
+        "source_comment_path": null,
+        "source_comment_line": null
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/10967": {
+    "deputydev-v1": [
+      {
+        "text": "When `externalCalendarId` is falsy, the Google Calendar fallback searches using the absent `externalCalendarId` instead of selecting the event's destination calendar, so `updateEvent` can pass an undefined calendar ID to Google and deletes can fall back to `primary` rather than the stored destination calendar.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "packages/app-store/googlecalendar/lib/CalendarService.ts",
+        "source_comment_line": 256
+      },
+      {
+        "text": "If a calendar reference credential is missing from `this.calendarCredentials` and the database lookup does not return a usable credential, `credential` remains undefined but `updateEvent` is still called, causing the update path to fail when it accesses credential data.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/core/EventManager.ts",
+        "source_comment_line": 542
+      },
+      {
+        "text": "When `evt.destinationCalendar` is null, undefined, or empty, `mainHostDestinationCalendar` is undefined and accessing `.integration` crashes Google Meet booking creation before the Daily fallback can run.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "packages/core/EventManager.ts",
+        "source_comment_line": 119
+      },
+      {
+        "text": "Creating an event for multiple destination calendars with credentials missing from `this.calendarCredentials` awaits `findUnique` inside the loop, causing N uncached host credentials to incur N sequential database round trips.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "packages/core/EventManager.ts",
+        "source_comment_line": 344
+      },
+      {
+        "text": "Updating calendar references with credentials missing from `this.calendarCredentials` awaits `findUnique` inside the loop, so a collective reschedule with N uncached credentials incurs N sequential database round trips.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "packages/core/EventManager.ts",
+        "source_comment_line": 517
+      },
+      {
+        "text": "Cancelling a collective booking awaits a credential lookup inside the loop over calendar references, so every credential missing from `bookingToDelete.user.credentials` adds one sequential database round trip and increases cancellation latency.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 5,
+        "source_comment_path": "packages/features/bookings/lib/handleCancelBooking.ts",
+        "source_comment_line": 433
+      },
+      {
+        "text": "When neither the event type nor organizer has a destination calendar, `evt.destinationCalendar` is initialized to null and optional chaining skips appending team destination calendars, causing collective events to silently omit all team-host destination calendars.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 6,
+        "source_comment_path": "packages/features/bookings/lib/handleNewBooking.ts",
+        "source_comment_line": 1078
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/8087": {
+    "deputydev-v1": [
+      {
+        "text": "In packages/app-store/vital/lib/reschedule.ts at line 125, `forEach` is used with an async callback for calendar/video deletions, so the returned deletion promises are discarded; `Reschedule` can return success before cleanup completes, and rejections from the callbacks bypass the surrounding `try/catch` and may become unhandled.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 0,
+        "source_comment_path": "packages/app-store/vital/lib/reschedule.ts",
+        "source_comment_line": 125
+      },
+      {
+        "text": "In packages/app-store/wipemycalother/lib/reschedule.ts at line 125, `forEach` is used with an async callback for calendar/video deletions, so the deletion promises are not awaited; `Reschedule` can proceed or complete before cleanup finishes, and rejected callback promises bypass the surrounding `try/catch` and remain unobserved.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 1,
+        "source_comment_path": "packages/app-store/wipemycalother/lib/reschedule.ts",
+        "source_comment_line": 125
+      },
+      {
+        "text": "In packages/core/videoClient.ts at line 24, awaiting each app module resolution inside a `for...of` loop serializes independent video credential processing; users with multiple video credentials incur the sum of all module-resolution delays instead of resolving them concurrently.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 2,
+        "source_comment_path": "packages/core/videoClient.ts",
+        "source_comment_line": 24
+      },
+      {
+        "text": "In packages/features/bookings/lib/handleCancelBooking.ts at line 460, an async `forEach` for recurring calendar cleanup is not awaited, so callbacks can pause at `getCalendar` while downstream `Promise.all(apiDeletes)` runs before those callbacks have pushed their deletion promises; cancellation can proceed without waiting for recurring calendar deletions, and failures from those deletions are not observed in the handler.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 3,
+        "source_comment_path": "packages/features/bookings/lib/handleCancelBooking.ts",
+        "source_comment_line": 460
+      },
+      {
+        "text": "In packages/trpc/server/routers/viewer/bookings.tsx at line 553, `forEach` discards async callback promises for calendar/video deletion, so the mutation can send the reschedule email and return success before old integration events are removed, and rejected deletion promises are not propagated through the mutation.",
+        "path": null,
+        "line": null,
+        "source": "extracted",
+        "source_comment_index": 4,
+        "source_comment_path": "packages/trpc/server/routers/viewer/bookings.tsx",
+        "source_comment_line": 553
+      }
+    ]
+  }
+}

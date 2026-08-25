@@ -162,6 +162,7 @@ TOOL_DISPLAY_NAMES = {
     "qodo-extended-v2": "Qodo Extended",
     "macroscope": "Macroscope",
     "cubic-v2": "Cubic v2",
+    "deputydev-v1": "DeputyDev v1",
 }
 
 TOOL_COLORS = {
@@ -192,6 +193,7 @@ TOOL_COLORS = {
     "qodo-extended-v2": "#6d28d9",
     "macroscope": "#0891b2",
     "cubic-v2": "#c026d3",
+    "deputydev-v1": "#2563eb",
 }
 
 

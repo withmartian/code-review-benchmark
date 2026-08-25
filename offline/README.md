@@ -13,6 +13,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | [CodeRabbit](https://www.coderabbit.ai/) | AI code review |
 | [Cursor Bugbot](https://cursor.com) | AI code review |
 | [Cubic](https://cubic.dev/) | AI code review |
+| [DeputyDev](https://deputydev.ai/) | AI code review |
 | [Devin](https://devin.ai/) | AI assistant |
 | [Gemini](https://gemini.google.com/) | AI assistant |
 | [GitHub Copilot](https://github.com/features/copilot) | AI code review |

@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-from datetime import timezone
+import itertools
 import json
 import logging
 import random
-
-import itertools
 
 import httpx
 
@@ -733,7 +732,7 @@ async def discover_prs_search_api(
     try:
         current = start
         while current <= end:
-            window_start = datetime(current.year, current.month, current.day, tzinfo=timezone.utc)
+            window_start = datetime(current.year, current.month, current.day, tzinfo=UTC)
             window_end = window_start + timedelta(days=1)
 
             # Over-fetch by 2x to leave room for repo-cap filtering,

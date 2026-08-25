@@ -2,24 +2,22 @@
 
 from __future__ import annotations
 
+from datetime import UTC
 from datetime import datetime
-from datetime import timezone
 from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
 
 import httpx
-import pytest
 from hypothesis import given
 from hypothesis import settings
 from hypothesis import strategies as st
+import pytest
 
 from pipeline.discover import _fetch_window
 from pipeline.discover import _format_dt
 from pipeline.discover import _parse_search_item
 from pipeline.discover import _sample_prs
-from pipeline.discover import _SEARCH_MAX_RESULTS
 from pipeline.discover import _SearchTokenPool
-
 
 # -- _parse_search_item -------------------------------------------------------
 
@@ -148,7 +146,7 @@ class TestSamplePrs:
 
 
 def test_format_dt() -> None:
-    dt = datetime(2026, 8, 6, 14, 30, 0, tzinfo=timezone.utc)
+    dt = datetime(2026, 8, 6, 14, 30, 0, tzinfo=UTC)
     assert _format_dt(dt) == "2026-08-06T14:30:00"
 
 
@@ -168,7 +166,7 @@ async def test_fetch_window_simple(monkeypatch: pytest.MonkeyPatch) -> None:
 
     call_count = 0
 
-    async def mock_get(url: str, params: dict | None = None, **kwargs) -> MagicMock:  # type: ignore[type-arg]
+    async def mock_get(_url: str, params: dict | None = None, **_kwargs) -> MagicMock:  # type: ignore[type-arg]
         nonlocal call_count
         call_count += 1
         resp = MagicMock()
@@ -183,8 +181,8 @@ async def test_fetch_window_simple(monkeypatch: pytest.MonkeyPatch) -> None:
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = mock_get
 
-    start = datetime(2026, 8, 6, tzinfo=timezone.utc)
-    end = datetime(2026, 8, 7, tzinfo=timezone.utc)
+    start = datetime(2026, 8, 6, tzinfo=UTC)
+    end = datetime(2026, 8, 7, tzinfo=UTC)
     result = await _fetch_window(client, "testbot[bot]", start, end)
 
     assert len(result) == 3
@@ -198,7 +196,7 @@ async def test_fetch_window_bisects_when_count_exceeds_max_items(monkeypatch: py
 
     call_queries: list[str] = []
 
-    async def mock_get(url: str, params: dict | None = None, **kwargs) -> MagicMock:  # type: ignore[type-arg]
+    async def mock_get(_url: str, params: dict | None = None, **_kwargs) -> MagicMock:  # type: ignore[type-arg]
         resp = MagicMock()
         resp.status_code = 200
         resp.raise_for_status = MagicMock()
@@ -224,8 +222,8 @@ async def test_fetch_window_bisects_when_count_exceeds_max_items(monkeypatch: py
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = mock_get
 
-    start = datetime(2026, 8, 6, tzinfo=timezone.utc)
-    end = datetime(2026, 8, 7, tzinfo=timezone.utc)
+    start = datetime(2026, 8, 6, tzinfo=UTC)
+    end = datetime(2026, 8, 7, tzinfo=UTC)
     # count (500) > max_items (200) triggers bisection
     result = await _fetch_window(client, "testbot[bot]", start, end, max_items=200)
 
@@ -241,7 +239,7 @@ async def test_fetch_window_skips_bisection_when_count_fits(monkeypatch: pytest.
 
     call_queries: list[str] = []
 
-    async def mock_get(url: str, params: dict | None = None, **kwargs) -> MagicMock:  # type: ignore[type-arg]
+    async def mock_get(_url: str, params: dict | None = None, **_kwargs) -> MagicMock:  # type: ignore[type-arg]
         resp = MagicMock()
         resp.status_code = 200
         resp.raise_for_status = MagicMock()
@@ -263,8 +261,8 @@ async def test_fetch_window_skips_bisection_when_count_fits(monkeypatch: pytest.
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = mock_get
 
-    start = datetime(2026, 8, 6, tzinfo=timezone.utc)
-    end = datetime(2026, 8, 7, tzinfo=timezone.utc)
+    start = datetime(2026, 8, 6, tzinfo=UTC)
+    end = datetime(2026, 8, 7, tzinfo=UTC)
     # count (150) <= max_items (200) — should NOT bisect
     result = await _fetch_window(client, "testbot[bot]", start, end, max_items=200)
 
@@ -281,7 +279,7 @@ async def test_fetch_window_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     """Window with 0 results returns empty list."""
     monkeypatch.setattr("pipeline.discover.SEARCH_API_SLEEP", 0)
 
-    async def mock_get(url: str, params: dict | None = None, **kwargs) -> MagicMock:  # type: ignore[type-arg]
+    async def mock_get(_url: str, _params: dict | None = None, **_kwargs) -> MagicMock:  # type: ignore[type-arg]
         resp = MagicMock()
         resp.status_code = 200
         resp.raise_for_status = MagicMock()
@@ -291,8 +289,8 @@ async def test_fetch_window_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = mock_get
 
-    start = datetime(2026, 8, 6, tzinfo=timezone.utc)
-    end = datetime(2026, 8, 7, tzinfo=timezone.utc)
+    start = datetime(2026, 8, 6, tzinfo=UTC)
+    end = datetime(2026, 8, 7, tzinfo=UTC)
     result = await _fetch_window(client, "testbot[bot]", start, end)
     assert result == []
 
@@ -336,7 +334,7 @@ async def test_fetch_window_rotates_tokens(monkeypatch: pytest.MonkeyPatch) -> N
         for i in range(100)
     ]
 
-    async def mock_get(url: str, params: dict | None = None, **kwargs) -> MagicMock:  # type: ignore[type-arg]
+    async def mock_get(_url: str, params: dict | None = None, **_kwargs) -> MagicMock:  # type: ignore[type-arg]
         resp = MagicMock()
         resp.status_code = 200
         resp.raise_for_status = MagicMock()
@@ -349,10 +347,9 @@ async def test_fetch_window_rotates_tokens(monkeypatch: pytest.MonkeyPatch) -> N
     # Create a pool with 3 real-ish clients, but mock their .get
     pool = _SearchTokenPool(["t1", "t2", "t3"], timeout=5.0)
     for i, c in enumerate(pool._clients):
-        original_get = c.get
 
         # Track which client index was used
-        def make_tracked_get(idx: int):  # noqa: E301
+        def make_tracked_get(idx: int):
             async def tracked_get(*args, **kwargs):  # type: ignore[no-untyped-def]
                 clients_used.append(idx)
                 return await mock_get(*args, **kwargs)
@@ -360,8 +357,8 @@ async def test_fetch_window_rotates_tokens(monkeypatch: pytest.MonkeyPatch) -> N
 
         c.get = make_tracked_get(i)  # type: ignore[assignment]
 
-    start = datetime(2026, 8, 6, tzinfo=timezone.utc)
-    end = datetime(2026, 8, 7, tzinfo=timezone.utc)
+    start = datetime(2026, 8, 6, tzinfo=UTC)
+    end = datetime(2026, 8, 7, tzinfo=UTC)
     result = await _fetch_window(pool, "testbot[bot]", start, end, max_items=300)
 
     assert len(result) == 300

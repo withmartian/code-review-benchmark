@@ -7,20 +7,21 @@ The online benchmark solves this by **continuously sampling fresh PRs from GitHu
 ## How it works
 
 ```
-GitHub Archive (BigQuery)
+GitHub Search API
         │
         ▼
     ┌────────┐     ┌─────────┐     ┌──────────┐     ┌─────────┐     ┌────┐     ┌───────────┐
     │Discover│────▶│ Enrich  │────▶│ Assemble │────▶│ Analyze │────▶│ DB │────▶│ Dashboard │
     └────────┘     └─────────┘     └──────────┘     └─────────┘     └────┘     └───────────┘
-   BigQuery scan   GitHub API     Build unified    LLM 3-step     Postgres    Interactive
-   finds bot PRs   fetches full   PR timeline      extraction &   or SQLite   filters &
-                   PR context                      matching                   time series
+   Search API      GitHub API     Build unified    LLM 3-step     Postgres    Interactive
+   finds merged    fetches full   PR timeline      extraction &   or SQLite   filters &
+   bot-reviewed    PR context                      matching                   time series
+   PRs
 ```
 
 ### 1. Discover
 
-A BigQuery scan of [GitHub Archive](https://www.gharchive.org/) finds PRs where tracked code review bots left comments. Sampling is deterministic (FARM_FINGERPRINT-based) so runs are reproducible. Up to 500 PRs per bot per day.
+The GitHub Search API (`reviewed-by:<bot> is:merged`) finds merged PRs where tracked code review bots left reviews. For high-volume bots that exceed the 1,000-result API cap, adaptive time bisection splits the query window until each chunk fits. PRs are randomly sampled and capped per-repo to prevent any single project from dominating. Up to 500 PRs per bot per day. A BigQuery / [GitHub Archive](https://www.gharchive.org/) fallback is available via `--source bq`.
 
 ### 2. Enrich
 
@@ -60,14 +61,16 @@ The dashboard shows tool performance over time with filters for:
 - **Severity**: low, medium, high, critical
 - **Diff size**: min/max lines changed
 - **F-beta**: adjustable weighting between precision and recall
+- **Engagement**: require human engagement (comments/commits after the bot's review), solo-bot PRs, minimum reviewer count
+- **Sample controls**: min scored PRs, min PRs per day, max PRs per (repo, author, bot) triple
 
-Visualizations include time series of F-beta scores, precision/recall scatter plots, and a filterable leaderboard.
+Visualizations include time series of F-beta scores, precision/recall scatter plots, and a filterable leaderboard. See [`FILTERS.md`](FILTERS.md) for the full filter spec.
 
 ## Components
 
 | Directory | What | Stack |
 |---|---|---|
-| [`etl/`](etl/) | Data pipeline: discover, enrich, analyze, label | Python, asyncio, BigQuery, OpenAI API |
+| [`etl/`](etl/) | Data pipeline: discover, enrich, analyze, label | Python, asyncio, GitHub Search API, OpenAI API |
 | [`api_service/`](api_service/) | Public dashboard server | Rust, Axum, Plotly.js |
 
 See each subdirectory's README for setup and usage details.

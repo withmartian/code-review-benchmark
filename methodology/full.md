@@ -119,11 +119,9 @@ This section describes what we've built and deployed today. The methodology sect
 
 ### Online benchmark
 
-Each day, we collect events from code review tools using the GHArchive dump, searching for events containing the agent ID associated with each tool. We group these events into PRs.
+Each day, we discover merged PRs where tracked bots left reviews, using the GitHub Search API. We restrict to merged PRs because unmerged PRs rarely have enough post-review signal to score meaningfully. For each tool, we randomly sample PRs and cap per-repo to prevent any single project from dominating the sample. High-volume bots may produce more PRs than the API can return in a single query; we handle this transparently so the sample remains representative.
 
-We filter to projects with more than 1,000 PRs, to avoid low-volume projects where behavioral signals are likely to be noisier. We plan to revisit this threshold — smaller projects may still provide useful data, but we need to examine where they do and don't before including them.
-
-For each tool, we randomly sample PRs each day. If the sample size required to compute a statistically significant mean would exceed 10% of the population, we compute the population mean directly by pulling all examples.
+For each PR, we fetch the full context — commits, reviews, threaded discussions, and per-commit diffs — and assemble a unified chronological timeline. An LLM then performs a three-step analysis: extract what the bot suggested, extract what the developer actually changed after the review, and judge which suggestions correspond to real fixes.
 
 We compute the following metrics for each tool:
 
@@ -139,9 +137,13 @@ We compute the following metrics for each tool:
 - Total comments acted on
 
 *Distributional controls:*
-- Distribution of diff size, repo size, language, backend vs. frontend, and other repository and PR characteristics across tools, to identify whether tools are operating on comparable datasets
+- Distribution of diff size, language, project domain, PR type, issue severity, and other repository and PR characteristics across tools, to identify whether tools are operating on comparable datasets
 
 We plot these statistics over time to track trends in tool performance and usage patterns.
+
+Not all PRs are equally informative. A PR where no human ever looked at the review — no comments, no follow-up commits — tells us little about whether the bot's suggestions were useful. We compute engagement signals for each PR: whether humans commented or pushed commits after the bot's first review, how many distinct reviewers participated, and how many back-and-forth rounds occurred. These signals power a set of quality filters that let us progressively restrict to higher-signal subsets. By default, we exclude bot-authored PRs (where the "developer response" is another bot) and self-reviews (the bot reviewing its own PR). Users can also restrict to solo-bot PRs — where only one bot reviewed — to simplify attribution of human follow-up.
+
+Each of these filters is exposed individually in the dashboard, so users can combine them based on what they care about — requiring human engagement, capping per-author-per-repo contributions, setting minimum contributor diversity, and so on. Stricter filter combinations trade coverage for signal quality: fewer PRs, but more reliable scores.
 
 ### Offline benchmark
 

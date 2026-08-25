@@ -55,15 +55,16 @@ See [`offline/README.md`](offline/README.md) for setup and usage.
 The online benchmark continuously samples **fresh real-world PRs from GitHub** where code review bots left comments. Because the PRs are recent, tools can't have memorized them during training.
 
 ```
-GitHub Archive (BigQuery)
+GitHub Search API
         │
         ▼
     ┌────────┐     ┌─────────┐     ┌─────────┐     ┌────┐     ┌───────────┐
     │Discover│────▶│ Enrich  │────▶│ Analyze │────▶│ DB │────▶│ Dashboard │
     └────────┘     └─────────┘     └─────────┘     └────┘     └───────────┘
-   BigQuery scan   GitHub API     LLM 3-step      Postgres    Interactive
-   finds bot PRs   fetches full   extraction &    or SQLite   filters &
-                   PR context     matching                    time series
+   Search API      GitHub API     LLM 3-step      Postgres    Interactive
+   finds merged    fetches full   extraction &    or SQLite   filters &
+   bot-reviewed    PR context     matching                    time series
+   PRs
 ```
 
 **How analysis works**:
@@ -74,7 +75,7 @@ GitHub Archive (BigQuery)
 
 **Bots tracked**: CodeRabbit, GitHub Copilot, Claude, Cursor, Augment, Codex, Gemini, Greptile, Graphite, Qodo, Propel, and others.
 
-**Dashboard features**: Filter by language, project domain, PR type, issue severity, diff size. Track performance over time. Adjustable F-beta weighting.
+**Dashboard features**: Filter by language, project domain, PR type, issue severity, diff size, engagement signals (human comments/commits after bot review), solo-bot PRs, and sample controls. Track performance over time. Adjustable F-beta weighting. See [`online/FILTERS.md`](online/FILTERS.md) for the full filter spec.
 
 See [`online/README.md`](online/README.md) for architecture and setup.
 

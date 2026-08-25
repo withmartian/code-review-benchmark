@@ -192,8 +192,8 @@ async def test_fetch_window_simple(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_fetch_window_bisects_when_max_items_exceeds_cap(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Window with count > 1000 AND max_items > 1000 triggers bisection."""
+async def test_fetch_window_bisects_when_count_exceeds_max_items(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Window with count > max_items triggers bisection for unbiased sampling."""
     monkeypatch.setattr("pipeline.discover.SEARCH_API_SLEEP", 0)
 
     call_queries: list[str] = []
@@ -207,18 +207,18 @@ async def test_fetch_window_bisects_when_max_items_exceeds_cap(monkeypatch: pyte
         call_queries.append(query)
 
         if params and params.get("per_page") == "1":
-            # Full day returns >1000, half-days return <=1000
+            # Full day returns >max_items, half-days return <=max_items
             if "T12:00:00" in query or "T00:00:00..2026-08-06T12:00:00" in query:
-                resp.json.return_value = {"total_count": 500, "items": []}
+                resp.json.return_value = {"total_count": 100, "items": []}
             else:
-                resp.json.return_value = {"total_count": 1500, "items": []}
+                resp.json.return_value = {"total_count": 500, "items": []}
         else:
             items = [
                 {"repository_url": "https://api.github.com/repos/a/b", "number": i,
                  "title": f"PR {i}", "user": {"login": "u"}, "created_at": "2026-08-06T00:00:00Z"}
                 for i in range(5)
             ]
-            resp.json.return_value = {"total_count": 500, "items": items}
+            resp.json.return_value = {"total_count": 100, "items": items}
         return resp
 
     client = AsyncMock(spec=httpx.AsyncClient)
@@ -226,8 +226,8 @@ async def test_fetch_window_bisects_when_max_items_exceeds_cap(monkeypatch: pyte
 
     start = datetime(2026, 8, 6, tzinfo=timezone.utc)
     end = datetime(2026, 8, 7, tzinfo=timezone.utc)
-    # Request more than 1,000 items to force bisection
-    result = await _fetch_window(client, "testbot[bot]", start, end, max_items=1500)
+    # count (500) > max_items (200) triggers bisection
+    result = await _fetch_window(client, "testbot[bot]", start, end, max_items=200)
 
     # Should have bisected: 1 count for full day, then 2 counts + 2 fetches for halves
     assert len(result) == 10  # 5 from each half
@@ -235,8 +235,8 @@ async def test_fetch_window_bisects_when_max_items_exceeds_cap(monkeypatch: pyte
 
 
 @pytest.mark.asyncio
-async def test_fetch_window_skips_bisection_with_low_max_items(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Window with count > 1000 but max_items <= 1000 paginates directly."""
+async def test_fetch_window_skips_bisection_when_count_fits(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Window with count <= max_items paginates directly without bisection."""
     monkeypatch.setattr("pipeline.discover.SEARCH_API_SLEEP", 0)
 
     call_queries: list[str] = []
@@ -250,14 +250,14 @@ async def test_fetch_window_skips_bisection_with_low_max_items(monkeypatch: pyte
         call_queries.append(query)
 
         if params and params.get("per_page") == "1":
-            resp.json.return_value = {"total_count": 5000, "items": []}
+            resp.json.return_value = {"total_count": 150, "items": []}
         else:
             items = [
                 {"repository_url": "https://api.github.com/repos/a/b", "number": i,
                  "title": f"PR {i}", "user": {"login": "u"}, "created_at": "2026-08-06T00:00:00Z"}
                 for i in range(100)
             ]
-            resp.json.return_value = {"total_count": 5000, "items": items}
+            resp.json.return_value = {"total_count": 150, "items": items}
         return resp
 
     client = AsyncMock(spec=httpx.AsyncClient)
@@ -265,13 +265,14 @@ async def test_fetch_window_skips_bisection_with_low_max_items(monkeypatch: pyte
 
     start = datetime(2026, 8, 6, tzinfo=timezone.utc)
     end = datetime(2026, 8, 7, tzinfo=timezone.utc)
-    # Only need 200 items — should NOT bisect despite 5000 total
+    # count (150) <= max_items (200) — should NOT bisect
     result = await _fetch_window(client, "testbot[bot]", start, end, max_items=200)
 
+    # Mock returns 100 per page x 2 pages; real API would return 50 on page 2
     assert len(result) == 200
     # No bisection: no T12:00:00 midpoint queries
     assert not any("T12:00:00" in q for q in call_queries)
-    # 1 count query + 2 page fetches (200 items / 100 per page)
+    # 1 count query + 2 page fetches (ceil(150/100) pages)
     assert len(call_queries) == 3
 
 

@@ -43,6 +43,44 @@ This is the core of the benchmark — a three-step LLM analysis:
 - **Recall** = matched actions / total actions ("what % of real issues did the bot catch?")
 - **F-beta** = adjustable harmonic mean (F1 when beta=1)
 
+#### Honoring tools' own provenance labels
+
+A code review bot is often more than a code reviewer. The same bot account may
+also post check-run results, PR assistant chatter, approvability verdicts, or
+release notices. Those are distinct product surfaces from code review, and
+scoring them as review suggestions is a category error: a style/convention check
+run is rarely "fixed" by a developer, so counting it in the precision denominator
+unfairly drags the tool's precision.
+
+When a tool tells us which surface produced a comment, the benchmark honors it.
+Macroscope stamps every PR comment with a hidden HTML marker recording the
+comment's provenance:
+
+```html
+<!-- macroscope-meta kind=code_review -->
+```
+
+The `kind` distinguishes real review (`code_review`) from non-review surfaces
+(`check_run`, `pr_assistant`, `approvability`, `notice`, and any added later).
+The benchmark scores **only `code_review`**. Every other kind is *segmented* — recorded
+separately as a custom-check comment and excluded from the review-precision
+denominator, not silently dropped (see `custom_check` in
+`pipeline/analyze.py::_format_bot_comments`).
+
+Two details matter:
+
+- The marker is detected on the **raw comment body**, before hidden HTML comments
+  are stripped for the LLM prompt — the marker itself is an HTML comment, so
+  checking the cleaned body would never see it.
+- Exclusion keys on `kind != code_review` rather than an allowlist of known
+  non-review kinds, so a new non-review surface is excluded automatically without
+  a benchmark change.
+
+This is a per-tool convention: any bot that labels its own non-review comments can
+be scored the same way. The `code_review`-only rule is safe against a tool
+labelling its false positives away, because excluded comments are *segmented and
+recorded*, not dropped — the exclusions remain auditable.
+
 ### 5. Label (optional)
 
 An LLM classifies each PR by language, domain (frontend/backend/infra), PR type (feature/bugfix/refactor), issue severity, and more. These labels power the dashboard filters.

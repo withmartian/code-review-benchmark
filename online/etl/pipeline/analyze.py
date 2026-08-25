@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
+from dataclasses import field
 import json
 import logging
 import re
@@ -24,6 +26,17 @@ from pipeline.actors import same_github_actor
 logger = logging.getLogger(__name__)
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+# Macroscope stamps every PR comment with a hidden provenance marker whose `kind`
+# identifies the product surface that produced it: `code_review` for real review,
+# and other kinds (check_run, pr_assistant, approvability, notice, ...) for
+# non-review surfaces. We score only `code_review`; everything else is segmented
+# out of the precision denominator. Keying on `kind != code_review` (rather than
+# an allowlist of non-review kinds) means new non-review surfaces are excluded
+# automatically. The pattern tolerates optional quoting and trailing attributes.
+_MACROSCOPE_META_RE = re.compile(r'<!--\s*macroscope-meta\s+kind=["\']?(?P<kind>[a-z_]+)')
+
+_CODE_REVIEW_KIND = "code_review"
 
 
 def _find_bot_review_commit(
@@ -150,13 +163,45 @@ def _clean_bot_comment_body(body: str) -> str:
     return _HTML_COMMENT_RE.sub("", body).strip()
 
 
-def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
-    """Format bot's review/review_comment/issue_comment events with full context.
+def _macroscope_kind(raw_body: str) -> str | None:
+    """Return the macroscope-meta `kind` stamped on a raw comment body, if present.
 
-    Skips review_comment replies (in_reply_to_id set) — these are responses
-    to other commenters' threads, not original review suggestions.
+    The check MUST run on the RAW body, before `_clean_bot_comment_body` strips
+    HTML comments — the marker lives inside an HTML comment and cleaning would
+    erase it, silently letting non-review surfaces back into the precision
+    denominator.
+    """
+    match = _MACROSCOPE_META_RE.search(raw_body or "")
+    return match.group("kind") if match else None
+
+
+@dataclass
+class BotCommentSegments:
+    """Bot comments split by provenance for the analyze step.
+
+    `review` is the formatted text of `code_review` (and untagged) comments that
+    feeds EXTRACT_BOT_SUGGESTIONS — i.e. the precision denominator. `custom_check`
+    holds the comments segmented out by their macroscope-meta kind: recorded here
+    so they are auditable rather than silently dropped, but excluded from scoring.
+    """
+
+    review: str
+    custom_check: list[dict] = field(default_factory=list)
+
+
+def _format_bot_comments(events: list[dict], chatbot_username: str) -> BotCommentSegments:
+    """Split and format the bot's review/review_comment/issue_comment events.
+
+    Skips review_comment replies (in_reply_to_id set) — these are responses to
+    other commenters' threads, not original review suggestions.
+
+    Comments carrying a macroscope-meta marker whose kind is not `code_review`
+    (check runs, PR assistant, approvability, notices, and any future non-review
+    surface) are segmented into `custom_check` and kept out of the returned review
+    text, so they never inflate the precision denominator.
     """
     lines = []
+    custom_check = []
     comment_num = 1
     for e in events:
         if not same_github_actor(e.get("actor"), chatbot_username):
@@ -170,15 +215,21 @@ def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
             continue
 
         ts = e.get("timestamp", "")
+        raw_body = data.get("body") or ""
 
+        # Provenance check on the RAW body, before HTML-comment cleaning.
+        kind = _macroscope_kind(raw_body)
+        if kind is not None and kind != _CODE_REVIEW_KIND:
+            custom_check.append({"kind": kind, "event_type": etype, "timestamp": ts})
+            continue
+
+        body = _clean_bot_comment_body(raw_body)
         if etype == "review":
             state = data.get("state", "")
-            body = _clean_bot_comment_body(data.get("body") or "")
             lines.append(f"COMMENT C{comment_num} [REVIEW_BODY state={state} timestamp={ts}]")
             if body:
                 lines.append(body)
-        elif etype in ("review_comment", "issue_comment"):
-            body = _clean_bot_comment_body(data.get("body") or "")
+        else:
             path = data.get("path") or ""
             line = data.get("line") or ""
             diff_hunk = data.get("diff_hunk") or ""
@@ -196,7 +247,7 @@ def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
                 lines.append(body)
         lines.append("")
         comment_num += 1
-    return "\n".join(lines) if lines else "(no bot comments)"
+    return BotCommentSegments(review="\n".join(lines) if lines else "(no bot comments)", custom_check=custom_check)
 
 
 def _format_post_review_activity(
@@ -342,6 +393,12 @@ async def analyze_single_pr(
     # Format inputs for LLM
     commits_under_review = _format_commits_with_diffs(pre_commits, details_by_sha)
     bot_comments = _format_bot_comments(events, chatbot_username)
+    if bot_comments.custom_check:
+        logger.debug(
+            f"{pr_row['repo_name']}#{pr_row['pr_number']}: segmented "
+            f"{len(bot_comments.custom_check)} non-review comment(s) out of the precision denominator "
+            f"(kinds={sorted({c['kind'] for c in bot_comments.custom_check})})"
+        )
     post_review_activity = _format_post_review_activity(post_commits, details_by_sha, events, chatbot_username, hash_x)
 
     pr_title = assembled.get("pr_title", "")
@@ -355,7 +412,7 @@ async def analyze_single_pr(
         pr_author=pr_author,
         repo_name=repo_name,
         commits_under_review=commits_under_review,
-        bot_comments=bot_comments,
+        bot_comments=bot_comments.review,
     )
     suggestions_resp = await llm.structured_completion(prompt1, BotSuggestionsResponse)
     suggestions = [s.model_dump() for s in suggestions_resp.suggestions]
@@ -447,7 +504,10 @@ async def analyze_prs(
     """
     repo = PRRepository(db)
     prs = await repo.get_assembled_not_analyzed(
-        chatbot_id=chatbot_id, limit=limit, since=since, until=until,
+        chatbot_id=chatbot_id,
+        limit=limit,
+        since=since,
+        until=until,
         sort_by=sort_by,
     )
 

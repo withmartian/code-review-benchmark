@@ -83,9 +83,126 @@ def test_format_bot_comments_labels_and_numbers_comments() -> None:
         },
     ]
 
-    formatted = _format_bot_comments(events, "reviewer[bot]")
+    formatted = _format_bot_comments(events, "reviewer[bot]").review
 
     assert "COMMENT C1 [INLINE_REVIEW_COMMENT path=src/app.py:42 timestamp=2026-07-01T12:00:00Z]" in formatted
     assert "Code context:\n```diff\n@@ -1 +1 @@\n-old\n+new\n```" in formatted
     assert "COMMENT C2 [REVIEW_BODY state=commented timestamp=2026-07-01T12:02:00Z]" in formatted
     assert "Fixed now." not in formatted
+
+
+def _macroscope_event(kind: str | None, body_text: str, ts: str) -> dict:
+    """Build an issue_comment event, optionally stamped with a macroscope-meta marker.
+
+    Mirrors how Macroscope emits comments: the provenance marker is a hidden HTML
+    comment prepended to the visible body.
+    """
+    marker = f"<!-- macroscope-meta kind={kind} -->\n" if kind is not None else ""
+    return {
+        "actor": "macroscopeapp[bot]",
+        "event_type": "issue_comment",
+        "timestamp": ts,
+        "data": {"body": f"{marker}{body_text}"},
+    }
+
+
+def test_format_bot_comments_segments_non_code_review_kinds_out_of_review_text() -> None:
+    """Requirement: a comment marked with a non-code_review kind must not feed the
+    precision denominator.
+
+    EXTRACT_BOT_SUGGESTIONS is built from the returned `review` text, so a check_run
+    (or any non-review surface) comment must be absent from it and instead recorded
+    in `custom_check`. Otherwise convention/style/policy check-run comments — rarely
+    "fixed" by developers — would drag Macroscope's precision unfairly.
+    """
+    events = [
+        _macroscope_event("code_review", "Possible null dereference here.", "2026-07-01T12:00:00Z"),
+        _macroscope_event("check_run", "Naming convention: use snake_case.", "2026-07-01T12:01:00Z"),
+    ]
+
+    segments = _format_bot_comments(events, "macroscopeapp[bot]")
+
+    assert "Possible null dereference here." in segments.review
+    assert "Naming convention: use snake_case." not in segments.review
+    assert [c["kind"] for c in segments.custom_check] == ["check_run"]
+
+
+def test_format_bot_comments_keys_on_not_code_review_so_future_kinds_are_excluded() -> None:
+    """Requirement: exclusion keys on `kind != code_review`, not an allowlist of
+    known non-review kinds.
+
+    A brand-new surface (here `pr_assistant`) that Martian has never heard of must
+    be excluded automatically, without another benchmark change.
+    """
+    events = [
+        _macroscope_event("pr_assistant", "Want me to summarize this PR?", "2026-07-01T12:00:00Z"),
+        _macroscope_event("approvability", "This PR looks safe to merge.", "2026-07-01T12:01:00Z"),
+    ]
+
+    segments = _format_bot_comments(events, "macroscopeapp[bot]")
+
+    assert segments.review == "(no bot comments)"
+    assert sorted(c["kind"] for c in segments.custom_check) == ["approvability", "pr_assistant"]
+
+
+def test_format_bot_comments_keeps_code_review_and_untagged_comments() -> None:
+    """Requirement: real review (kind=code_review) and legacy untagged comments are
+    unaffected — they still feed the precision denominator.
+
+    Untagged comments (comments predating the marker, or from bots that never emit
+    it) must keep the pre-change behavior of being scored.
+    """
+    events = [
+        _macroscope_event("code_review", "Tagged review finding.", "2026-07-01T12:00:00Z"),
+        _macroscope_event(None, "Untagged review finding.", "2026-07-01T12:01:00Z"),
+    ]
+
+    segments = _format_bot_comments(events, "macroscopeapp[bot]")
+
+    assert "Tagged review finding." in segments.review
+    assert "Untagged review finding." in segments.review
+    assert segments.custom_check == []
+    assert "COMMENT C1 " in segments.review
+    assert "COMMENT C2 " in segments.review
+
+
+def test_format_bot_comments_detects_marker_on_raw_body_before_html_cleaning() -> None:
+    """Requirement (the raw-vs-cleaned gotcha): the marker must be detected on the
+    RAW body, before `_clean_bot_comment_body` strips HTML comments.
+
+    The marker lives inside an HTML comment, which cleaning removes. If detection
+    ran on the cleaned body the kind would be invisible and the comment would leak
+    back into the precision denominator. This asserts the marked comment is excluded
+    even though the marker is exactly the kind of HTML comment cleaning strips.
+    """
+    stripped_marker = "<!-- macroscope-meta kind=check_run -->"
+    assert _clean_bot_comment_body(stripped_marker) == ""  # cleaning erases the marker entirely
+
+    events = [_macroscope_event("check_run", "Style nit.", "2026-07-01T12:00:00Z")]
+
+    segments = _format_bot_comments(events, "macroscopeapp[bot]")
+
+    assert segments.review == "(no bot comments)"
+    assert [c["kind"] for c in segments.custom_check] == ["check_run"]
+
+
+def test_format_bot_comments_marker_tolerates_quotes_and_trailing_attributes() -> None:
+    """Requirement: the marker regex tolerates optional quoting and trailing
+    attributes, so `kind="check_run"` with extra metadata still segments out.
+
+    Macroscope may extend the marker with additional attributes over time; the kind
+    detection must not become brittle to that.
+    """
+    events = [
+        {
+            "actor": "macroscopeapp[bot]",
+            "event_type": "issue_comment",
+            "timestamp": "2026-07-01T12:00:00Z",
+            "data": {"body": '<!-- macroscope-meta kind="check_run" id=abc123 version=2 -->\nStyle nit.'},
+        },
+    ]
+
+    segments = _format_bot_comments(events, "macroscopeapp[bot]")
+
+    assert segments.review == "(no bot comments)"
+    assert [c["kind"] for c in segments.custom_check] == ["check_run"]

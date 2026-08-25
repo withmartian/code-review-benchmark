@@ -29,7 +29,7 @@ def test_analyze_includes_graphql_thread_comments_from_bot_slug() -> None:
         }
     ]
 
-    formatted = _format_bot_comments(events, "cubic-dev-ai[bot]")
+    formatted = _format_bot_comments(events, "cubic-dev-ai[bot]").review
 
     assert "Fix the missing null check." in formatted
     assert "main.py:42" in formatted

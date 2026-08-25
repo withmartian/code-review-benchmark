@@ -520,8 +520,12 @@ def _parse_search_item(item: dict) -> dict:
         "pr_author": (item.get("user") or {}).get("login"),
         "pr_created_at": item.get("created_at"),
         "pr_merged": True,  # query uses is:merged
-        # merged_at is the best proxy for bot_reviewed_at from search results;
-        # the bot must have reviewed before the merge happened
+        # TODO: merged_at is an imprecise proxy for bot_reviewed_at — the bot
+        # reviewed before the merge, potentially days/weeks earlier.  The real
+        # review timestamp (submitted_at) becomes available after enrich, but
+        # we don't currently backfill bot_reviewed_at from it.  This means
+        # Search API-discovered PRs are grouped under the merge date for
+        # --since/--until, --max-per-day, and dashboard date filters.
         "bot_reviewed_at": pr_data.get("merged_at"),
     }
 
@@ -651,12 +655,14 @@ async def _fetch_window(
     if count == 0:
         return []
 
-    # If we only need up to max_items and that fits in one query, just paginate
-    if count <= _SEARCH_MAX_RESULTS or max_items <= _SEARCH_MAX_RESULTS:
-        logger.debug(f"  Window {merged_range}: {count} total, fetching up to {max_items}")
+    # If the full result set fits in the API cap, just paginate
+    if count <= max_items:
+        logger.debug(f"  Window {merged_range}: {count} total, fetching all")
         return await _search_api_fetch_all(pool, query, count, max_items=max_items)
 
-    # Need >1,000 items from a >1,000 result set: bisect
+    # Result set is larger than what we need — bisect to spread the candidate
+    # pool across the full time window rather than taking the API's default
+    # prefix (biased toward recently-created PRs).
     if depth > 8:
         logger.warning(
             f"  Window {merged_range}: {count} results at max depth {depth}, "

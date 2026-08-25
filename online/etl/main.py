@@ -340,6 +340,9 @@ async def cmd_discover(args: argparse.Namespace) -> None:
         return
 
     use_search_api = args.source == "search-api"
+    if use_search_api and args.min_pr_number > 0:
+        logger.error("--min-pr-number is not supported with --source search-api (Search API cannot filter by PR number)")
+        return
     logger.info(f"Discovery source: {'Search API' if use_search_api else 'BigQuery'}")
 
     db = DBAdapter(cfg.database_url)

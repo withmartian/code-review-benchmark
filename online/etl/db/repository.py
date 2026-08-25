@@ -160,10 +160,10 @@ class PRRepository:
         if max_per_day is not None and since:
             if chatbot_id is not None:
                 return await self.db.fetchall(
-                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_PER_DAY, (chatbot_id, since, max_per_day)
+                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_PER_DAY, (chatbot_id, since, until, max_per_day)
                 )
             return await self.db.fetchall(
-                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_PER_DAY, (since, max_per_day)
+                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_PER_DAY, (since, until, max_per_day)
             )
         if sort_by == "sweep":
             if chatbot_id is not None:
@@ -339,10 +339,10 @@ class PRRepository:
         if max_per_day is not None and since:
             if chatbot_id is not None:
                 return await self.db.fetchall(
-                    q.GET_ANALYZED_NOT_LABELED_PER_DAY, (chatbot_id, since, max_per_day)
+                    q.GET_ANALYZED_NOT_LABELED_PER_DAY, (chatbot_id, since, until, max_per_day)
                 )
             return await self.db.fetchall(
-                q.GET_ALL_ANALYZED_NOT_LABELED_PER_DAY, (since, max_per_day)
+                q.GET_ALL_ANALYZED_NOT_LABELED_PER_DAY, (since, until, max_per_day)
             )
         if sort_by == "sweep":
             if chatbot_id is not None:

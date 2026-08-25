@@ -531,6 +531,9 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     if max_per_day is not None and not since:
         logger.error("--max-per-day requires --since")
         return
+    if max_per_day is not None and sort_by == "sweep":
+        logger.error("--max-per-day is incompatible with --sort sweep")
+        return
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
@@ -541,7 +544,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
         if until:
             logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
     if max_per_day is not None:
-        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day")
+        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day (--limit ignored)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -566,7 +569,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
                 sort_by=sort_by, max_per_day=max_per_day,
-            )
+                )
         else:
             logger.error("Specify --chatbot or --all")
     finally:
@@ -593,6 +596,9 @@ async def cmd_label(args: argparse.Namespace) -> None:
     if max_per_day is not None and not since:
         logger.error("--max-per-day requires --since")
         return
+    if max_per_day is not None and sort_by == "sweep":
+        logger.error("--max-per-day is incompatible with --sort sweep")
+        return
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unlabeled PRs by analyzed_at)")
@@ -603,7 +609,7 @@ async def cmd_label(args: argparse.Namespace) -> None:
         if until:
             logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
     if max_per_day is not None:
-        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day")
+        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day (--limit ignored)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()

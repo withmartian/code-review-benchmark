@@ -159,7 +159,7 @@ GET_ASSEMBLED_PRS_NOT_ANALYZED_PER_DAY = """
     SELECT * FROM (
         SELECT p.*,
                ROW_NUMBER() OVER (
-                   PARTITION BY p.bot_reviewed_at::date
+                   PARTITION BY DATE(p.bot_reviewed_at)
                    ORDER BY random()
                ) AS rn
         FROM prs p
@@ -169,8 +169,9 @@ GET_ASSEMBLED_PRS_NOT_ANALYZED_PER_DAY = """
           AND la.id IS NULL
           AND p.pr_merged = TRUE
           AND p.bot_reviewed_at >= $2
+          AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
     ) sub
-    WHERE rn <= $3
+    WHERE rn <= $4
     ORDER BY bot_reviewed_at DESC NULLS LAST
 """
 
@@ -178,7 +179,7 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_PER_DAY = """
     SELECT * FROM (
         SELECT p.*,
                ROW_NUMBER() OVER (
-                   PARTITION BY p.chatbot_id, p.bot_reviewed_at::date
+                   PARTITION BY p.chatbot_id, DATE(p.bot_reviewed_at)
                    ORDER BY random()
                ) AS rn
         FROM prs p
@@ -187,8 +188,9 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_PER_DAY = """
           AND la.id IS NULL
           AND p.pr_merged = TRUE
           AND p.bot_reviewed_at >= $1
+          AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
     ) sub
-    WHERE rn <= $2
+    WHERE rn <= $3
     ORDER BY bot_reviewed_at DESC NULLS LAST
 """
 
@@ -413,7 +415,7 @@ GET_ANALYZED_NOT_LABELED_PER_DAY = """
     SELECT * FROM (
         SELECT p.*, la.bot_suggestions, la.matching_results,
                ROW_NUMBER() OVER (
-                   PARTITION BY p.bot_reviewed_at::date
+                   PARTITION BY DATE(p.bot_reviewed_at)
                    ORDER BY random()
                ) AS rn
         FROM prs p
@@ -423,8 +425,9 @@ GET_ANALYZED_NOT_LABELED_PER_DAY = """
           AND p.status = 'analyzed'
           AND pl.id IS NULL
           AND p.bot_reviewed_at >= $2
+          AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
     ) sub
-    WHERE rn <= $3
+    WHERE rn <= $4
     ORDER BY bot_reviewed_at DESC NULLS LAST
 """
 
@@ -432,7 +435,7 @@ GET_ALL_ANALYZED_NOT_LABELED_PER_DAY = """
     SELECT * FROM (
         SELECT p.*, la.bot_suggestions, la.matching_results,
                ROW_NUMBER() OVER (
-                   PARTITION BY p.chatbot_id, p.bot_reviewed_at::date
+                   PARTITION BY p.chatbot_id, DATE(p.bot_reviewed_at)
                    ORDER BY random()
                ) AS rn
         FROM prs p
@@ -441,8 +444,9 @@ GET_ALL_ANALYZED_NOT_LABELED_PER_DAY = """
         WHERE p.status = 'analyzed'
           AND pl.id IS NULL
           AND p.bot_reviewed_at >= $1
+          AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
     ) sub
-    WHERE rn <= $2
+    WHERE rn <= $3
     ORDER BY bot_reviewed_at DESC NULLS LAST
 """
 

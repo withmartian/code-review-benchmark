@@ -27,14 +27,19 @@ logger = logging.getLogger(__name__)
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
-# Macroscope stamps every PR comment with a hidden provenance marker whose `kind`
-# identifies the product surface that produced it: `code_review` for real review,
-# and other kinds (check_run, pr_assistant, approvability, notice, ...) for
-# non-review surfaces. We score only `code_review`; everything else is segmented
-# out of the precision denominator. Keying on `kind != code_review` (rather than
-# an allowlist of non-review kinds) means new non-review surfaces are excluded
-# automatically. The pattern tolerates optional quoting and trailing attributes.
-_MACROSCOPE_META_RE = re.compile(r'<!--\s*macroscope-meta\s+kind=["\']?(?P<kind>[a-z_]+)')
+# Macroscope stamps every PR comment with a hidden provenance marker carrying a
+# JSON payload whose `kind` identifies the product surface that produced it:
+# `code_review` for real review, and other kinds (check_run, pr_assistant,
+# approvability, notice, ...) for non-review surfaces. We score only `code_review`;
+# everything else is segmented out of the precision denominator. Keying on
+# `kind != code_review` (rather than an allowlist of non-review kinds) means new
+# non-review surfaces are excluded automatically.
+#
+# The marker looks like: <!-- macroscope-meta: {"kind":"code_review",...} -->
+# We capture the JSON object between the prefix and the closing "-->" and parse it;
+# the regex is whitespace- and newline-tolerant, and the payload may carry extra
+# fields (variant, config, check, ...) that we ignore.
+_MACROSCOPE_META_RE = re.compile(r"<!--\s*macroscope-meta:\s*(\{.*?\})\s*-->", re.DOTALL)
 
 _CODE_REVIEW_KIND = "code_review"
 
@@ -166,13 +171,27 @@ def _clean_bot_comment_body(body: str) -> str:
 def _macroscope_kind(raw_body: str) -> str | None:
     """Return the macroscope-meta `kind` stamped on a raw comment body, if present.
 
+    The marker carries a JSON payload: `<!-- macroscope-meta: {"kind":...} -->`.
+    We extract the JSON object and read its `kind` field.
+
     The check MUST run on the RAW body, before `_clean_bot_comment_body` strips
     HTML comments — the marker lives inside an HTML comment and cleaning would
     erase it, silently letting non-review surfaces back into the precision
     denominator.
+
+    A missing marker, malformed JSON, or a payload without a string `kind` is
+    treated as untagged (returns None) so the comment keeps the default scored
+    behavior rather than being wrongly excluded or throwing.
     """
     match = _MACROSCOPE_META_RE.search(raw_body or "")
-    return match.group("kind") if match else None
+    if not match:
+        return None
+    try:
+        payload = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return None
+    kind = payload.get("kind") if isinstance(payload, dict) else None
+    return kind if isinstance(kind, str) else None
 
 
 @dataclass

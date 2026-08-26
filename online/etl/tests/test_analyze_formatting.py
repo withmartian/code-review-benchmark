@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from pipeline.analyze import _clean_bot_comment_body
 from pipeline.analyze import _format_bot_comments
 
@@ -91,13 +93,15 @@ def test_format_bot_comments_labels_and_numbers_comments() -> None:
     assert "Fixed now." not in formatted
 
 
-def _macroscope_event(kind: str | None, body_text: str, ts: str) -> dict:
+def _macroscope_event(kind: str | None, body_text: str, ts: str, **extra: object) -> dict:
     """Build an issue_comment event, optionally stamped with a macroscope-meta marker.
 
     Mirrors how Macroscope emits comments: the provenance marker is a hidden HTML
-    comment prepended to the visible body.
+    comment carrying a JSON payload, prepended to the visible body. `kind=None`
+    produces an untagged comment; `extra` adds sibling payload fields (variant,
+    config, check, ...) that the parser must ignore.
     """
-    marker = f"<!-- macroscope-meta kind={kind} -->\n" if kind is not None else ""
+    marker = "" if kind is None else f"<!-- macroscope-meta: {json.dumps({'kind': kind, **extra})} -->\n"
     return {
         "actor": "macroscopeapp[bot]",
         "event_type": "issue_comment",
@@ -175,7 +179,7 @@ def test_format_bot_comments_detects_marker_on_raw_body_before_html_cleaning() -
     back into the precision denominator. This asserts the marked comment is excluded
     even though the marker is exactly the kind of HTML comment cleaning strips.
     """
-    stripped_marker = "<!-- macroscope-meta kind=check_run -->"
+    stripped_marker = '<!-- macroscope-meta: {"kind":"check_run"} -->'
     assert _clean_bot_comment_body(stripped_marker) == ""  # cleaning erases the marker entirely
 
     events = [_macroscope_event("check_run", "Style nit.", "2026-07-01T12:00:00Z")]
@@ -186,23 +190,50 @@ def test_format_bot_comments_detects_marker_on_raw_body_before_html_cleaning() -
     assert [c["kind"] for c in segments.custom_check] == ["check_run"]
 
 
-def test_format_bot_comments_marker_tolerates_quotes_and_trailing_attributes() -> None:
-    """Requirement: the marker regex tolerates optional quoting and trailing
-    attributes, so `kind="check_run"` with extra metadata still segments out.
+def test_format_bot_comments_ignores_extra_payload_fields() -> None:
+    """Requirement: the JSON payload may carry sibling fields (variant, config,
+    check, ...); the parser reads only `kind` and ignores the rest.
 
-    Macroscope may extend the marker with additional attributes over time; the kind
-    detection must not become brittle to that.
+    Macroscope stamps additional metadata per surface — e.g. check_run comments
+    carry `config` and `check`. Those must not affect the code_review-only rule.
     """
     events = [
-        {
+        _macroscope_event("code_review", "Real finding.", "2026-07-01T12:00:00Z", variant="inline"),
+        _macroscope_event("check_run", "Style nit.", "2026-07-01T12:01:00Z", config="lint", check="naming"),
+    ]
+
+    segments = _format_bot_comments(events, "macroscopeapp[bot]")
+
+    assert "Real finding." in segments.review
+    assert "Style nit." not in segments.review
+    assert [c["kind"] for c in segments.custom_check] == ["check_run"]
+
+
+def test_format_bot_comments_treats_malformed_payload_as_untagged() -> None:
+    """Requirement: a marker whose payload is not valid JSON (or lacks a string
+    `kind`) is treated as untagged — the comment stays scored, and parsing never
+    throws.
+
+    Robustness: a truncated or malformed marker must not silently exclude a real
+    review comment, nor crash the pipeline. Untagged is the safe default.
+    """
+    events = [
+        {  # malformed JSON payload
             "actor": "macroscopeapp[bot]",
             "event_type": "issue_comment",
             "timestamp": "2026-07-01T12:00:00Z",
-            "data": {"body": '<!-- macroscope-meta kind="check_run" id=abc123 version=2 -->\nStyle nit.'},
+            "data": {"body": '<!-- macroscope-meta: {"kind": check_run,,,} -->\nReview finding A.'},
+        },
+        {  # valid JSON, but no "kind" field
+            "actor": "macroscopeapp[bot]",
+            "event_type": "issue_comment",
+            "timestamp": "2026-07-01T12:01:00Z",
+            "data": {"body": '<!-- macroscope-meta: {"variant":"inline"} -->\nReview finding B.'},
         },
     ]
 
     segments = _format_bot_comments(events, "macroscopeapp[bot]")
 
-    assert segments.review == "(no bot comments)"
-    assert [c["kind"] for c in segments.custom_check] == ["check_run"]
+    assert "Review finding A." in segments.review
+    assert "Review finding B." in segments.review
+    assert segments.custom_check == []

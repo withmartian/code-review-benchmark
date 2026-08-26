@@ -53,15 +53,20 @@ run is rarely "fixed" by a developer, so counting it in the precision denominato
 unfairly drags the tool's precision.
 
 When a tool tells us which surface produced a comment, the benchmark honors it.
-Macroscope stamps every PR comment with a hidden HTML marker recording the
-comment's provenance:
+Macroscope stamps every PR comment with a hidden HTML marker carrying a JSON
+payload that records the comment's provenance:
 
 ```html
-<!-- macroscope-meta kind=code_review -->
+<!-- macroscope-meta: {"kind":"code_review","variant":"..."} -->
+<!-- macroscope-meta: {"kind":"check_run","config":"...","check":"..."} -->
+<!-- macroscope-meta: {"kind":"pr_assistant"} -->
 ```
 
-The `kind` distinguishes real review (`code_review`) from non-review surfaces
-(`check_run`, `pr_assistant`, `approvability`, `notice`, and any added later).
+The `kind` field distinguishes real review (`code_review`) from non-review
+surfaces (`check_run`, `pr_assistant`, `approvability`, `notice`, and any added
+later). Any other payload fields are ignored, and a malformed payload (or one
+without a `kind`) is treated as untagged so a real review comment is never
+wrongly excluded.
 The benchmark scores **only `code_review`**. Every other kind is *segmented* — recorded
 separately as a custom-check comment and excluded from the review-precision
 denominator, not silently dropped (see `custom_check` in

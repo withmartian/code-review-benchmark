@@ -144,10 +144,16 @@ def build_parser() -> argparse.ArgumentParser:
     # Handled by checking if --user is in sys.argv
 
     # discover
-    p_disc = sub.add_parser("discover", help="Discover PRs from BigQuery into DB")
+    p_disc = sub.add_parser("discover", help="Discover PRs into DB (Search API or BigQuery)")
     p_disc.add_argument("--chatbot", help="GitHub username of the chatbot")
     p_disc.add_argument(
-        "--all", action="store_true", dest="all_chatbots", help="Discover for all registered chatbots (single BQ scan)"
+        "--all", action="store_true", dest="all_chatbots", help="Discover for all registered chatbots"
+    )
+    p_disc.add_argument(
+        "--source",
+        choices=["search-api", "bq"],
+        default="search-api",
+        help="Discovery source: 'search-api' (default, GitHub Search API) or 'bq' (BigQuery/GH Archive)",
     )
     p_disc.add_argument("--days-back", type=int, default=7)
     p_disc.add_argument("--start-date", help="YYYY-MM-DD")
@@ -193,6 +199,10 @@ def build_parser() -> argparse.ArgumentParser:
         default="reviewed",
         help="Sort order: 'reviewed' (default, bot_reviewed_at DESC) or 'sweep' (assembled_at DESC, catches late-merged PRs).",
     )
+    p_ana.add_argument(
+        "--max-per-day", type=int, default=None,
+        help="Cap PRs per bot_reviewed_at date (random sample within each day). Requires --since.",
+    )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
 
@@ -218,6 +228,10 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["reviewed", "sweep"],
         default="reviewed",
         help="Sort order: 'reviewed' (bot_reviewed_at DESC, default) or 'sweep' (analyzed_at DESC, for catching stragglers).",
+    )
+    p_lbl.add_argument(
+        "--max-per-day", type=int, default=None,
+        help="Cap PRs per bot_reviewed_at date (random sample within each day). Requires --since.",
     )
     p_lbl.add_argument("--database-url")
     p_lbl.add_argument("--verbose", action="store_true")
@@ -274,8 +288,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_bar.add_argument("--verbose", action="store_true")
 
     # backfill-engagement
-    p_bfe = sub.add_parser("backfill-engagement", help="Compute engagement_signals for assembled PRs missing them")
+    p_bfe = sub.add_parser(
+        "backfill-engagement",
+        help="Compute engagement_signals for assembled PRs (missing by default, or all with --force)",
+    )
     p_bfe.add_argument("--database-url")
+    p_bfe.add_argument("--chatbot", help="Only this github_username (e.g. Copilot)")
+    p_bfe.add_argument(
+        "--force",
+        action="store_true",
+        help="Recompute even when engagement_signals is already set (needed after actor-alias fixes)",
+    )
+    p_bfe.add_argument("--since", help="Inclusive lower bound on bot_reviewed_at (e.g. '60d', '2026-06-20')")
+    p_bfe.add_argument("--until", help="Exclusive upper bound on bot_reviewed_at (e.g. '2026-08-21')")
     p_bfe.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
     p_bfe.add_argument("--batch-size", type=int, default=5000)
     p_bfe.add_argument("--status-filter", default="analyzed", help="Only process PRs with this status (default: analyzed)")
@@ -298,6 +323,8 @@ async def cmd_discover(args: argparse.Namespace) -> None:
     from db.schema import create_tables
     from pipeline.discover import discover_prs
     from pipeline.discover import discover_prs_batch
+    from pipeline.discover import discover_prs_search_api
+    from pipeline.discover import discover_prs_search_api_batch
 
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
@@ -312,6 +339,12 @@ async def cmd_discover(args: argparse.Namespace) -> None:
         logger.error("Specify --chatbot or --all")
         return
 
+    use_search_api = args.source == "search-api"
+    if use_search_api and args.min_pr_number > 0:
+        logger.error("--min-pr-number is not supported with --source search-api (Search API cannot filter by PR number)")
+        return
+    logger.info(f"Discovery source: {'Search API' if use_search_api else 'BigQuery'}")
+
     db = DBAdapter(cfg.database_url)
     await db.connect()
     try:
@@ -322,26 +355,47 @@ async def cmd_discover(args: argparse.Namespace) -> None:
             db_usernames = {bot["github_username"] for bot in chatbots}
             usernames = sorted(db_usernames | set(DEFAULT_CHATBOT_USERNAMES))
             logger.info(f"Batch discovering PRs for {len(usernames)} chatbots")
-            await discover_prs_batch(
-                cfg,
-                db,
-                usernames,
-                start_date,
-                end_date,
-                min_pr_number=args.min_pr_number,
-                max_prs_per_day=args.max_prs_per_day,
-            )
+            if use_search_api:
+                await discover_prs_search_api_batch(
+                    cfg,
+                    db,
+                    usernames,
+                    start_date,
+                    end_date,
+                    max_prs_per_day=args.max_prs_per_day,
+                )
+            else:
+                await discover_prs_batch(
+                    cfg,
+                    db,
+                    usernames,
+                    start_date,
+                    end_date,
+                    min_pr_number=args.min_pr_number,
+                    max_prs_per_day=args.max_prs_per_day,
+                )
         else:
-            await discover_prs(
-                cfg,
-                db,
-                args.chatbot,
-                start_date,
-                end_date,
-                min_pr_number=args.min_pr_number,
-                max_prs_per_day=args.max_prs_per_day,
-                display_name=args.display_name,
-            )
+            if use_search_api:
+                await discover_prs_search_api(
+                    cfg,
+                    db,
+                    args.chatbot,
+                    start_date,
+                    end_date,
+                    max_prs_per_day=args.max_prs_per_day,
+                    display_name=args.display_name,
+                )
+            else:
+                await discover_prs(
+                    cfg,
+                    db,
+                    args.chatbot,
+                    start_date,
+                    end_date,
+                    min_pr_number=args.min_pr_number,
+                    max_prs_per_day=args.max_prs_per_day,
+                    display_name=args.display_name,
+                )
     finally:
         await db.close()
 
@@ -476,6 +530,13 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     since = _parse_time_bound(args.since)
     until = _parse_time_bound(args.until)
     sort_by = args.sort
+    max_per_day: int | None = args.max_per_day
+    if max_per_day is not None and not since:
+        logger.error("--max-per-day requires --since")
+        return
+    if max_per_day is not None and sort_by == "sweep":
+        logger.error("--max-per-day is incompatible with --sort sweep")
+        return
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
@@ -485,6 +546,8 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
             logger.info(f"Filtering PRs reviewed since {since}")
         if until:
             logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
+    if max_per_day is not None:
+        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day (--limit ignored)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -498,7 +561,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
                 await analyze_prs(
                     cfg, db, bot["id"], bot["github_username"],
                     limit=args.limit, since=since, until=until,
-                    sort_by=sort_by,
+                    sort_by=sort_by, max_per_day=max_per_day,
                 )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
@@ -508,8 +571,8 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
             await analyze_prs(
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
-                sort_by=sort_by,
-            )
+                sort_by=sort_by, max_per_day=max_per_day,
+                )
         else:
             logger.error("Specify --chatbot or --all")
     finally:
@@ -532,6 +595,13 @@ async def cmd_label(args: argparse.Namespace) -> None:
     since = _parse_time_bound(args.since)
     until = _parse_time_bound(args.until)
     sort_by = args.sort
+    max_per_day: int | None = args.max_per_day
+    if max_per_day is not None and not since:
+        logger.error("--max-per-day requires --since")
+        return
+    if max_per_day is not None and sort_by == "sweep":
+        logger.error("--max-per-day is incompatible with --sort sweep")
+        return
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unlabeled PRs by analyzed_at)")
@@ -541,6 +611,8 @@ async def cmd_label(args: argparse.Namespace) -> None:
             logger.info(f"Filtering PRs reviewed since {since}")
         if until:
             logger.info(f"Filtering PRs reviewed before {until} (exclusive)")
+    if max_per_day is not None:
+        logger.info(f"Per-day cap: {max_per_day} PRs per bot per day (--limit ignored)")
 
     db = DBAdapter(cfg.database_url)
     await db.connect()
@@ -554,7 +626,7 @@ async def cmd_label(args: argparse.Namespace) -> None:
                 await label_prs(
                     cfg, db, bot["id"], bot["github_username"],
                     limit=args.limit, since=since, until=until,
-                    sort_by=sort_by,
+                    sort_by=sort_by, max_per_day=max_per_day,
                 )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
@@ -564,7 +636,7 @@ async def cmd_label(args: argparse.Namespace) -> None:
             await label_prs(
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
-                sort_by=sort_by,
+                sort_by=sort_by, max_per_day=max_per_day,
             )
         else:
             logger.error("Specify --chatbot or --all")
@@ -990,10 +1062,11 @@ async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
 
 
 async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
-    """Compute engagement_signals for assembled PRs that don't have them yet.
+    """Compute engagement_signals from assembled timelines.
 
-    Uses cursor-based pagination (keyset on p.id) to avoid loading all assembled
-    JSON into memory at once.
+    Default: only PRs with NULL engagement_signals.
+    --force: recompute existing rows (needed after actor-alias fixes so Copilot
+    reviews from copilot-pull-request-reviewer are recognized).
     """
     import json as json_mod
     import time
@@ -1009,22 +1082,46 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
     await create_tables(db)
 
     try:
-        status_filter = args.status_filter
+        where = ["p.assembled IS NOT NULL", "p.status = $1"]
+        params: list[object] = [args.status_filter]
+        if not args.force:
+            where.append("p.engagement_signals IS NULL")
+        if args.chatbot:
+            params.append(args.chatbot)
+            where.append(f"c.github_username = ${len(params)}")
+        since = _parse_time_bound(args.since)
+        until = _parse_time_bound(args.until)
+        if since:
+            params.append(since)
+            where.append(f"p.bot_reviewed_at >= ${len(params)}")
+        if until:
+            params.append(until)
+            where.append(f"p.bot_reviewed_at < ${len(params)}")
+        where_sql = " AND ".join(where)
 
-        # Get total count first (cheap — no assembled JSON loaded)
-        count_row = await db.fetchone(f"""
-            SELECT COUNT(*) as cnt FROM prs p
-            WHERE p.assembled IS NOT NULL AND p.engagement_signals IS NULL
-              AND p.status = '{status_filter}'
-        """)
+        count_row = await db.fetchone(
+            f"""
+            SELECT COUNT(*) as cnt
+            FROM prs p
+            JOIN chatbots c ON c.id = p.chatbot_id
+            WHERE {where_sql}
+            """,
+            tuple(params),
+        )
         total = count_row["cnt"] if count_row else 0
-        logger.info(f"Found {total} assembled PRs missing engagement_signals")
+        scope = "recompute" if args.force else "missing"
+        bot = args.chatbot or "all bots"
+        window = ""
+        if since or until:
+            window = f" [{since or '...'} .. {until or '...'}]"
+        logger.info(f"Found {total} assembled PRs ({scope}) for {bot}{window}")
 
         if total == 0:
             return
 
         batch_size = args.batch_size
         updated = 0
+        skipped = 0
         last_id = 0
         last_log = time.time()
         limit = args.limit
@@ -1037,17 +1134,21 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
             if limit is not None:
                 fetch_size = min(batch_size, limit - updated)
 
-            rows = await db.fetchall(f"""
+            fetch_params = [*params, last_id, fetch_size]
+            id_placeholder = f"${len(params) + 1}"
+            limit_placeholder = f"${len(params) + 2}"
+            rows = await db.fetchall(
+                f"""
                 SELECT p.id, p.assembled, p.pr_author, c.github_username AS chatbot
                 FROM prs p
                 JOIN chatbots c ON c.id = p.chatbot_id
-                WHERE p.assembled IS NOT NULL
-                  AND p.engagement_signals IS NULL
-                  AND p.status = '{status_filter}'
-                  AND p.id > {last_id}
+                WHERE {where_sql}
+                  AND p.id > {id_placeholder}
                 ORDER BY p.id
-                LIMIT {fetch_size}
-            """)
+                LIMIT {limit_placeholder}
+                """,
+                tuple(fetch_params),
+            )
 
             if not rows:
                 break
@@ -1069,7 +1170,12 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
                 return
 
             for row in rows:
-                assembled = json_mod.loads(row["assembled"])
+                try:
+                    assembled = json_mod.loads(row["assembled"])
+                except (TypeError, json_mod.JSONDecodeError):
+                    skipped += 1
+                    last_id = row["id"]
+                    continue
                 signals = compute_engagement_signals(
                     assembled, row["chatbot"], pr_author=row.get("pr_author"),
                 )
@@ -1081,15 +1187,14 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
                     )
                 )
                 updated += 1
-
-            last_id = rows[-1]["id"]
+                last_id = row["id"]
 
             now = time.time()
             if now - last_log >= 15:
                 logger.info(f"  Progress: {updated}/{total}")
                 last_log = now
 
-        logger.info(f"DONE — backfill-engagement: {updated} PRs updated")
+        logger.info(f"DONE — backfill-engagement: {updated} PRs updated, {skipped} skipped")
     finally:
         await db.close()
 

@@ -117,7 +117,16 @@ uv run python -m jobs.enrich_job \
 ```bash
 uv run python main.py analyze --chatbot "coderabbitai[bot]"
 uv run python main.py analyze --all
+
+# With time bounds (filters on bot_reviewed_at)
+uv run python main.py analyze --all --since 2d
+uv run python main.py analyze --all --since 2026-04-18 --until 2026-04-19
+
+# Sweep mode: process by assembled_at DESC to catch late-merged PRs
+uv run python main.py analyze --all --sort sweep --limit 20
 ```
+
+`--sort sweep` ignores `--since`/`--until` — it orders by `assembled_at DESC` to pick up PRs that were discovered long ago but only recently assembled (e.g., merged weeks after the bot reviewed them).
 
 ### Label PRs
 
@@ -125,12 +134,15 @@ uv run python main.py analyze --all
 uv run python main.py label --chatbot "coderabbitai[bot]" --limit 5
 uv run python main.py label --all
 uv run python main.py label --chatbot "coderabbitai[bot]" --since 7d
+
+# Sweep mode: process by analyzed_at DESC to catch stragglers
+uv run python main.py label --all --sort sweep --limit 20
 ```
 
-### Fetch PR volumes from BigQuery
+### Fetch PR volumes
 
 ```bash
-# All chatbots, last 7 days
+# All chatbots, last 7 days (uses GitHub Search API by default)
 uv run python main.py volumes --all --days-back 7
 
 # All chatbots, specific date range
@@ -142,9 +154,15 @@ uv run python main.py volumes --all \
 uv run python main.py volumes \
   --chatbot "coderabbitai[bot]" \
   --days-back 30
+
+# Use BigQuery source instead (legacy)
+uv run python main.py volumes --all --source bq --days-back 7
+
+# Weekly chunking (fewer API calls, less per-day accuracy)
+uv run python main.py volumes --all --weekly --days-back 30
 ```
 
-Queries `githubarchive.day.*` for all PR-related events (reviews, review comments, issue comments on PRs), assigns each unique PR to the first day the bot touched it, and upserts daily counts into the `pr_volumes` table. Each PR is counted exactly once so summing daily counts gives the true unique total — this ensures total PRs >= sampled PRs holds in the leaderboard. Days with no activity for a bot are zero-filled by the API service.
+Default source is GitHub Search API (`--source search-api`), which counts PRs where the bot left a review. Each PR is counted exactly once on the earliest day the bot touched it. Days with no activity are zero-filled by the API service.
 
 ### Import legacy filesystem data
 
@@ -161,7 +179,7 @@ uv run python main.py dashboard
 ## PR Status Flow
 
 ```
-pending → enriching → enriched → assembled → analyzed
+pending → enriching → enriched → assembled → analyzed → labeled
                 ↘ skipped (too large)
                 ↘ error
 ```

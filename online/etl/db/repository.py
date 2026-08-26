@@ -150,11 +150,21 @@ class PRRepository:
         since: str | None = None,
         until: str | None = None,
         sort_by: str = "reviewed",
+        max_per_day: int | None = None,
     ) -> list[dict[str, Any]]:
         # `until` is exclusive: --since 2026-04-18 --until 2026-04-19 yields just 4/18.
         # When `until` is set we use the bounded variant (which also handles since=None);
         # otherwise we keep the existing fast paths to preserve query plans.
         # `sort_by` == "sweep" uses assembled_at DESC (for catching late-discovered PRs).
+        # `max_per_day` caps per bot_reviewed_at date (requires `since`).
+        if max_per_day is not None and since:
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ASSEMBLED_PRS_NOT_ANALYZED_PER_DAY, (chatbot_id, since, until, max_per_day)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ASSEMBLED_NOT_ANALYZED_PER_DAY, (since, until, max_per_day)
+            )
         if sort_by == "sweep":
             if chatbot_id is not None:
                 return await self.db.fetchall(
@@ -321,9 +331,19 @@ class PRRepository:
         since: str | None = None,
         until: str | None = None,
         sort_by: str = "reviewed",
+        max_per_day: int | None = None,
     ) -> list[dict[str, Any]]:
         # See note on get_assembled_not_analyzed: `until` is exclusive.
         # `sort_by` == "sweep" uses analyzed_at DESC (for catching stragglers).
+        # `max_per_day` caps per bot_reviewed_at date (requires `since`).
+        if max_per_day is not None and since:
+            if chatbot_id is not None:
+                return await self.db.fetchall(
+                    q.GET_ANALYZED_NOT_LABELED_PER_DAY, (chatbot_id, since, until, max_per_day)
+                )
+            return await self.db.fetchall(
+                q.GET_ALL_ANALYZED_NOT_LABELED_PER_DAY, (since, until, max_per_day)
+            )
         if sort_by == "sweep":
             if chatbot_id is not None:
                 return await self.db.fetchall(

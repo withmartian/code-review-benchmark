@@ -74,6 +74,7 @@ mod tests {
             has_human_engagement: false,
             human_reviewer_count: 0,
             commits_after_review: 0,
+            is_solo_bot: true,
         }
     }
 
@@ -431,8 +432,8 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
-    // Quality filter tests: exclude_bot_authored, min_repo_contributors,
-    //                       max_author_repo_prs
+    // Quality filter tests: exclude_bot_authored, require_solo_bot,
+    //                       min_repo_contributors, max_author_repo_prs
     // -----------------------------------------------------------------------
 
     /// Build a snapshot that populates the aggregate maps needed for quality filters.
@@ -497,6 +498,36 @@ mod tests {
         let result = apply_filters(&snap, &params_on);
         assert_eq!(result.records.len(), 1);
         assert!(!result.records[0].1.pr_author_is_bot);
+    }
+
+    #[test]
+    fn test_require_solo_bot() {
+        let mut r_solo = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r_solo.is_solo_bot = true;
+
+        let mut r_multi = rec(0, dt(2026, 2, 1), Some(0.8), Some(0.8));
+        r_multi.is_solo_bot = false;
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r_solo),
+                (date(2026, 2, 1), r_multi),
+            ],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        let params_off = FilterParams::default();
+        assert_eq!(apply_filters(&snap, &params_off).records.len(), 2);
+
+        let params_on = FilterParams {
+            require_solo_bot: true,
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params_on);
+        assert_eq!(result.records.len(), 1);
+        assert!(result.records[0].1.is_solo_bot);
     }
 
     #[test]

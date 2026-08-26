@@ -90,7 +90,8 @@ DEFAULT_CHATBOT_USERNAMES = [
     "linearb[bot]",
     "sentry[bot]",
     "bito-code-review[bot]",
-    "macroscopeapp[bot]"
+    "macroscopeapp[bot]",
+    "qodo-free-for-open-source-projects[bot]",
 ]
 
 

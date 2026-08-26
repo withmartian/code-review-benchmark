@@ -104,6 +104,10 @@ pub struct PrRecord {
     pub has_human_engagement: bool,
     pub human_reviewer_count: u8,
     pub commits_after_review: u16,
+    /// True if this GitHub PR (repo, number) was scored for exactly one chatbot.
+    /// Precomputed at snapshot load; counting uses original chatbot_id, so
+    /// display-merged bots (e.g. the two Qodo accounts) still count as two.
+    pub is_solo_bot: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -174,6 +178,8 @@ pub struct FilterParams {
     pub min_commits_after_review: Option<u32>,
     /// Hide bots with fewer than this many scored PRs in the period
     pub min_scored_prs: usize,
+    /// Keep only PRs reviewed by exactly one tracked chatbot
+    pub require_solo_bot: bool,
 }
 
 impl Default for FilterParams {
@@ -201,6 +207,7 @@ impl Default for FilterParams {
             min_human_reviewers: None,
             min_commits_after_review: None,
             min_scored_prs: 0,
+            require_solo_bot: false,
         }
     }
 }

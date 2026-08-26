@@ -37,7 +37,6 @@ _HIDDEN_TOOLS: frozenset[str] = frozenset({
     "propel",
     "propel-v2",
     "gemini",
-    "gitar",
     "deepsource",
     "copilot",
     "greptile-v5",

@@ -32,6 +32,7 @@ from pipeline.quality import serialize_engagement_signals
     ("github-advanced-security", True),
     ("copilot-pull-request-review", True),
     ("copilot-pull-request-reviewer", True),
+    ("copilot-swe-agent", True),
     ("clawdbot", True),
 ])
 def test_is_bot_username(username: str, expected: bool) -> None:

@@ -1,17 +1,70 @@
-"""Pipeline stage: Discover PRs from BigQuery and insert into database."""
+"""Pipeline stage: Discover PRs from BigQuery or GitHub Search API and insert into database."""
 
 from __future__ import annotations
 
+import asyncio
+from datetime import UTC
+from datetime import date
+from datetime import datetime
+from datetime import timedelta
+import itertools
 import json
 import logging
+import random
 
-from google.cloud import bigquery
+import httpx
 
 from config import DBConfig
 from db.connection import DBAdapter
 from db.repository import PRRepository
+from pipeline.volumes import GITHUB_SEARCH_URL
+from pipeline.volumes import SEARCH_API_SLEEP
+from pipeline.volumes import SEARCH_API_USERNAME_MAP
+from pipeline.volumes import SearchError
+from pipeline.volumes import SearchResult
 
 logger = logging.getLogger(__name__)
+
+# Max results the GitHub Search API will return per query (hard API limit)
+_SEARCH_MAX_RESULTS = 1_000
+_SEARCH_PER_PAGE = 100
+# Max PRs from a single repo in a daily sample (prevents repo dominance)
+_MAX_PRS_PER_REPO = 10
+
+_GITHUB_HEADERS = {
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+}
+
+
+class _SearchTokenPool:
+    """Round-robin pool of httpx clients, one per GitHub token.
+
+    Each token gets its own Search API rate limit (30 req/min),
+    so N tokens gives ~Nx throughput.
+    """
+
+    def __init__(self, tokens: list[str], timeout: float = 30.0):
+        self._clients = [
+            httpx.AsyncClient(
+                headers={"Authorization": f"Bearer {t}", **_GITHUB_HEADERS},
+                timeout=timeout,
+            )
+            for t in tokens
+        ]
+        self._cycle = itertools.cycle(range(len(self._clients)))
+
+    @property
+    def size(self) -> int:
+        return len(self._clients)
+
+    def next(self) -> httpx.AsyncClient:
+        """Return the next client in round-robin order."""
+        return self._clients[next(self._cycle)]
+
+    async def close(self) -> None:
+        for c in self._clients:
+            await c.aclose()
 
 # Same combined query from bq_extract.py, with per-day random sampling.
 # The all_target_prs CTE finds every PR the bot touched, grouped by first-seen day.
@@ -231,6 +284,8 @@ async def discover_prs(
     If the total PRs across all days is <= max_prs_per_day, all PRs are kept without sampling.
     Returns the number of new PRs inserted.
     """
+    from google.cloud import bigquery
+
     repo = PRRepository(db)
     chatbot_id = await repo.upsert_chatbot(chatbot_username, display_name)
 
@@ -340,6 +395,8 @@ async def discover_prs_batch(
     Scans BigQuery once instead of N times, saving cost.
     Returns the total number of new PRs inserted across all chatbots.
     """
+    from google.cloud import bigquery
+
     repo = PRRepository(db)
 
     # Upsert all chatbots upfront and build username → chatbot_id map
@@ -442,3 +499,321 @@ async def discover_prs_batch(
         f"inserted {inserted} new ({total - inserted} already existed)"
     )
     return inserted
+
+
+# ---------------------------------------------------------------------------
+# Search API discovery
+# ---------------------------------------------------------------------------
+
+
+def _parse_search_item(item: dict) -> dict:
+    """Extract PR metadata from a GitHub Search API result item."""
+    repo_url = item.get("repository_url", "")
+    repo_name = repo_url.split("/repos/", 1)[-1] if "/repos/" in repo_url else ""
+    pr_data = item.get("pull_request", {}) or {}
+    return {
+        "repo_name": repo_name,
+        "pr_number": item["number"],
+        "pr_url": item.get("html_url", f"https://github.com/{repo_name}/pull/{item['number']}"),
+        "pr_title": item.get("title", ""),
+        "pr_author": (item.get("user") or {}).get("login"),
+        "pr_created_at": item.get("created_at"),
+        "pr_merged": True,  # query uses is:merged
+        # TODO: merged_at is an imprecise proxy for bot_reviewed_at — the bot
+        # reviewed before the merge, potentially days/weeks earlier.  The real
+        # review timestamp (submitted_at) becomes available after enrich, but
+        # we don't currently backfill bot_reviewed_at from it.  This means
+        # Search API-discovered PRs are grouped under the merge date for
+        # --since/--until, --max-per-day, and dashboard date filters.
+        "bot_reviewed_at": pr_data.get("merged_at"),
+    }
+
+
+async def _search_api_count(
+    pool: _SearchTokenPool | httpx.AsyncClient,
+    query: str,
+) -> SearchResult:
+    """Get total_count for a search query. Returns int or SearchError."""
+    client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
+    for attempt in range(3):
+        try:
+            resp = await client.get(
+                GITHUB_SEARCH_URL,
+                params={"q": query, "per_page": "1"},
+            )
+            if resp.status_code == 422:
+                return SearchError.UNSEARCHABLE
+            if resp.status_code == 403:
+                retry_after = resp.headers.get("Retry-After")
+                wait = int(retry_after) if retry_after else 60
+                logger.warning(f"Search API rate limited, waiting {wait}s (attempt {attempt + 1}/3)")
+                await asyncio.sleep(wait)
+                # Rotate to a different token on retry
+                client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
+                continue
+            resp.raise_for_status()
+            return resp.json().get("total_count", 0)
+        except httpx.HTTPError as e:
+            if attempt < 2:
+                await asyncio.sleep(2 ** (attempt + 1))
+            else:
+                logger.error(f"Search API count failed: {e}")
+                return SearchError.TRANSIENT
+    return SearchError.TRANSIENT
+
+
+async def _search_api_fetch_page(
+    pool: _SearchTokenPool | httpx.AsyncClient,
+    query: str,
+    page: int,
+) -> list[dict] | SearchError:
+    """Fetch a single page of search results."""
+    client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
+    for attempt in range(3):
+        try:
+            resp = await client.get(
+                GITHUB_SEARCH_URL,
+                params={"q": query, "per_page": str(_SEARCH_PER_PAGE), "page": str(page)},
+            )
+            if resp.status_code == 422:
+                return SearchError.UNSEARCHABLE
+            if resp.status_code == 403:
+                retry_after = resp.headers.get("Retry-After")
+                wait = int(retry_after) if retry_after else 60
+                logger.warning(f"Search API rate limited on page {page}, waiting {wait}s")
+                await asyncio.sleep(wait)
+                client = pool.next() if isinstance(pool, _SearchTokenPool) else pool
+                continue
+            resp.raise_for_status()
+            return resp.json().get("items", [])
+        except httpx.HTTPError as e:
+            if attempt < 2:
+                await asyncio.sleep(2 ** (attempt + 1))
+            else:
+                logger.error(f"Search API page {page} failed: {e}")
+                return SearchError.TRANSIENT
+    return SearchError.TRANSIENT
+
+
+async def _search_api_fetch_all(
+    pool: _SearchTokenPool | httpx.AsyncClient,
+    query: str,
+    total_count: int,
+    max_items: int = _SEARCH_MAX_RESULTS,
+) -> list[dict]:
+    """Paginate through results for a query, stopping at max_items or 1,000."""
+    target = min(total_count, _SEARCH_MAX_RESULTS, max_items)
+    pages_needed = (target + _SEARCH_PER_PAGE - 1) // _SEARCH_PER_PAGE
+    all_items: list[dict] = []
+
+    for page in range(1, pages_needed + 1):
+        # With N tokens, we can reduce sleep proportionally
+        sleep = SEARCH_API_SLEEP / (pool.size if isinstance(pool, _SearchTokenPool) else 1)
+        await asyncio.sleep(sleep)
+        result = await _search_api_fetch_page(pool, query, page)
+        if isinstance(result, SearchError):
+            logger.warning(f"Stopping pagination at page {page} due to {result}")
+            break
+        all_items.extend(result)
+        if len(all_items) >= target or len(result) < _SEARCH_PER_PAGE:
+            break
+
+    return all_items
+
+
+def _format_dt(dt: datetime) -> str:
+    """Format a datetime for GitHub Search API merged: qualifier."""
+    return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+async def _fetch_window(
+    pool: _SearchTokenPool | httpx.AsyncClient,
+    search_username: str,
+    window_start: datetime,
+    window_end: datetime,
+    max_items: int = _SEARCH_MAX_RESULTS,
+    depth: int = 0,
+) -> list[dict]:
+    """Fetch merged PRs reviewed by a bot in a time window.
+
+    When total_count <= 1,000 or max_items <= 1,000: paginate directly.
+    When total_count > 1,000 and we need more than 1,000: bisect into
+    sub-windows so each fits under the API cap.
+    """
+    merged_range = f"merged:{_format_dt(window_start)}..{_format_dt(window_end)}"
+    query = f"type:pr reviewed-by:{search_username} is:merged {merged_range}"
+
+    sleep = SEARCH_API_SLEEP / (pool.size if isinstance(pool, _SearchTokenPool) else 1)
+    await asyncio.sleep(sleep)
+    count = await _search_api_count(pool, query)
+
+    if isinstance(count, SearchError):
+        logger.warning(f"Search API error for {search_username} in {merged_range}: {count}")
+        return []
+
+    if count == 0:
+        return []
+
+    # If the full result set fits in the API cap, just paginate
+    if count <= max_items:
+        logger.debug(f"  Window {merged_range}: {count} total, fetching all")
+        return await _search_api_fetch_all(pool, query, count, max_items=max_items)
+
+    # Result set is larger than what we need — bisect to spread the candidate
+    # pool across the full time window rather than taking the API's default
+    # prefix (biased toward recently-created PRs).
+    if depth > 8:
+        logger.warning(
+            f"  Window {merged_range}: {count} results at max depth {depth}, "
+            f"fetching first {min(max_items, _SEARCH_MAX_RESULTS)}"
+        )
+        return await _search_api_fetch_all(pool, query, count, max_items=max_items)
+
+    mid = window_start + (window_end - window_start) / 2
+    half_target = max_items // 2 + 1  # slight overlap is fine, deduped later
+    logger.debug(f"  Window {merged_range}: {count} results, bisecting at {_format_dt(mid)}")
+    left = await _fetch_window(pool, search_username, window_start, mid, max_items=half_target, depth=depth + 1)
+    right = await _fetch_window(pool, search_username, mid, window_end, max_items=half_target, depth=depth + 1)
+    return left + right
+
+
+def _sample_prs(
+    prs: list[dict],
+    max_prs_per_day: int,
+    max_per_repo: int = _MAX_PRS_PER_REPO,
+) -> list[dict]:
+    """Apply repo cap and random sampling to a list of parsed PR dicts."""
+    # Cap per repo
+    repo_counts: dict[str, int] = {}
+    capped: list[dict] = []
+    for pr in prs:
+        repo = pr["repo_name"]
+        repo_counts[repo] = repo_counts.get(repo, 0) + 1
+        if repo_counts[repo] <= max_per_repo:
+            capped.append(pr)
+
+    if len(capped) <= max_prs_per_day:
+        return capped
+
+    return random.sample(capped, max_prs_per_day)
+
+
+async def discover_prs_search_api(
+    cfg: DBConfig,
+    db: DBAdapter,
+    chatbot_username: str,
+    start_date: str,
+    end_date: str,
+    max_prs_per_day: int = 500,
+    display_name: str | None = None,
+) -> int:
+    """Discover merged PRs reviewed by a bot via GitHub Search API.
+
+    Queries by merge date, bisects time windows that exceed 1,000 results,
+    caps per-repo representation, and random-samples to max_prs_per_day.
+    Returns the number of new PRs inserted.
+    """
+    repo = PRRepository(db)
+    chatbot_id = await repo.upsert_chatbot(chatbot_username, display_name)
+    search_username = SEARCH_API_USERNAME_MAP.get(chatbot_username, chatbot_username)
+
+    tokens = cfg.github_tokens or ([cfg.github_token] if cfg.github_token else [])
+    if not tokens:
+        logger.error("No GitHub token available for Search API discovery")
+        return 0
+
+    pool = _SearchTokenPool(tokens)
+    logger.info(f"Search API discovery using {pool.size} token(s)")
+
+    start = date.fromisoformat(start_date)
+    end = date.fromisoformat(end_date)
+
+    inserted = 0
+    try:
+        current = start
+        while current <= end:
+            window_start = datetime(current.year, current.month, current.day, tzinfo=UTC)
+            window_end = window_start + timedelta(days=1)
+
+            # Over-fetch by 2x to leave room for repo-cap filtering,
+            # but cap at 1,000 to avoid unnecessary bisection
+            fetch_limit = min(max_prs_per_day * 2, _SEARCH_MAX_RESULTS)
+            raw_items = await _fetch_window(
+                pool, search_username, window_start, window_end,
+                max_items=fetch_limit,
+            )
+
+            if not raw_items:
+                logger.debug(f"  {chatbot_username} on {current}: 0 PRs")
+                current += timedelta(days=1)
+                continue
+
+            # Deduplicate by (repo_name, pr_number) in case bisection windows overlap
+            seen: set[tuple[str, int]] = set()
+            parsed: list[dict] = []
+            for item in raw_items:
+                pr = _parse_search_item(item)
+                key = (pr["repo_name"], pr["pr_number"])
+                if key not in seen:
+                    seen.add(key)
+                    parsed.append(pr)
+
+            sampled = _sample_prs(parsed, max_prs_per_day)
+            logger.info(
+                f"  {chatbot_username} on {current}: {len(parsed)} unique PRs, "
+                f"sampled {len(sampled)}"
+            )
+
+            async with db.transaction():
+                for pr in sampled:
+                    was_inserted = await repo.insert_pr(
+                        chatbot_id=chatbot_id,
+                        repo_name=pr["repo_name"],
+                        pr_number=pr["pr_number"],
+                        pr_url=pr["pr_url"],
+                        pr_title=pr["pr_title"],
+                        pr_author=pr["pr_author"],
+                        pr_created_at=pr["pr_created_at"],
+                        pr_merged=pr["pr_merged"],
+                        status="pending",
+                        bq_events=None,
+                        bot_reviewed_at=pr.get("bot_reviewed_at"),
+                    )
+                    if was_inserted:
+                        inserted += 1
+
+            current += timedelta(days=1)
+    finally:
+        await pool.close()
+
+    logger.info(f"Search API discovered {inserted} new PRs for {chatbot_username}")
+    return inserted
+
+
+async def discover_prs_search_api_batch(
+    cfg: DBConfig,
+    db: DBAdapter,
+    chatbot_usernames: list[str],
+    start_date: str,
+    end_date: str,
+    max_prs_per_day: int = 500,
+) -> int:
+    """Discover merged PRs for multiple bots via GitHub Search API.
+
+    Iterates over each bot sequentially (Search API rate limits are per-token,
+    not per-bot). Returns total new PRs inserted across all bots.
+    """
+    total_inserted = 0
+    for username in chatbot_usernames:
+        logger.info(f"Discovering PRs for {username} via Search API")
+        count = await discover_prs_search_api(
+            cfg, db, username, start_date, end_date,
+            max_prs_per_day=max_prs_per_day,
+        )
+        total_inserted += count
+
+    logger.info(
+        f"Search API batch: discovered {total_inserted} new PRs "
+        f"across {len(chatbot_usernames)} bots"
+    )
+    return total_inserted

@@ -152,6 +152,48 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_BOUNDED = """
     LIMIT $3
 """
 
+# Per-day capped variants: sample up to N PRs per day (bot_reviewed_at date),
+# randomly within each day. Uses ROW_NUMBER with random() ordering so repeated
+# runs pick different PRs from overpopulated days.
+GET_ASSEMBLED_PRS_NOT_ANALYZED_PER_DAY = """
+    SELECT * FROM (
+        SELECT p.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY DATE(p.bot_reviewed_at)
+                   ORDER BY random()
+               ) AS rn
+        FROM prs p
+        LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+        WHERE p.chatbot_id = $1
+          AND p.status = 'assembled'
+          AND la.id IS NULL
+          AND p.pr_merged = TRUE
+          AND p.bot_reviewed_at >= $2
+          AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
+    ) sub
+    WHERE rn <= $4
+    ORDER BY bot_reviewed_at DESC NULLS LAST
+"""
+
+GET_ALL_ASSEMBLED_NOT_ANALYZED_PER_DAY = """
+    SELECT * FROM (
+        SELECT p.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY p.chatbot_id, DATE(p.bot_reviewed_at)
+                   ORDER BY random()
+               ) AS rn
+        FROM prs p
+        LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+        WHERE p.status = 'assembled'
+          AND la.id IS NULL
+          AND p.pr_merged = TRUE
+          AND p.bot_reviewed_at >= $1
+          AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
+    ) sub
+    WHERE rn <= $3
+    ORDER BY bot_reviewed_at DESC NULLS LAST
+"""
+
 # -- PR locking ----------------------------------------------------------------
 
 LOCK_PR = """
@@ -367,6 +409,45 @@ GET_ALL_ANALYZED_NOT_LABELED_BOUNDED = """
       AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
     LIMIT $3
+"""
+
+GET_ANALYZED_NOT_LABELED_PER_DAY = """
+    SELECT * FROM (
+        SELECT p.*, la.bot_suggestions, la.matching_results,
+               ROW_NUMBER() OVER (
+                   PARTITION BY DATE(p.bot_reviewed_at)
+                   ORDER BY random()
+               ) AS rn
+        FROM prs p
+        JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+        LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+        WHERE p.chatbot_id = $1
+          AND p.status = 'analyzed'
+          AND pl.id IS NULL
+          AND p.bot_reviewed_at >= $2
+          AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
+    ) sub
+    WHERE rn <= $4
+    ORDER BY bot_reviewed_at DESC NULLS LAST
+"""
+
+GET_ALL_ANALYZED_NOT_LABELED_PER_DAY = """
+    SELECT * FROM (
+        SELECT p.*, la.bot_suggestions, la.matching_results,
+               ROW_NUMBER() OVER (
+                   PARTITION BY p.chatbot_id, DATE(p.bot_reviewed_at)
+                   ORDER BY random()
+               ) AS rn
+        FROM prs p
+        JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+        LEFT JOIN pr_labels pl ON pl.pr_id = p.id AND pl.chatbot_id = p.chatbot_id
+        WHERE p.status = 'analyzed'
+          AND pl.id IS NULL
+          AND p.bot_reviewed_at >= $1
+          AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
+    ) sub
+    WHERE rn <= $3
+    ORDER BY bot_reviewed_at DESC NULLS LAST
 """
 
 # -- PR volumes ----------------------------------------------------------------

@@ -54,10 +54,13 @@ def is_bot_username(username: str) -> bool:
     """Heuristic: username is a bot if it ends with [bot] or matches a known bot name.
 
     Handles BQ event actors that may lack the [bot] suffix (e.g. 'cubic-dev-ai'
-    instead of 'cubic-dev-ai[bot]').
+    instead of 'cubic-dev-ai[bot]'), and known aliases (e.g. copilot-swe-agent → copilot).
     """
     lower = username.lower()
-    return lower.endswith("[bot]") or lower in _KNOWN_BOT_USERNAMES
+    if lower.endswith("[bot]") or lower in _KNOWN_BOT_USERNAMES:
+        return True
+    canonical = normalize_github_actor(username)
+    return bool(canonical) and canonical in _KNOWN_BOT_USERNAMES
 
 
 def _find_bot_first_review_ts(

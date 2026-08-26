@@ -70,7 +70,7 @@ Visualizations include time series of F-beta scores, precision/recall scatter pl
 
 | Directory | What | Stack |
 |---|---|---|
-| [`etl/`](etl/) | Data pipeline: discover, enrich, analyze, label | Python, asyncio, GitHub Search API, OpenAI API |
+| [`etl/`](etl/) | Data pipeline: discover, enrich, analyze, label, volumes | Python, asyncio, BigQuery, GitHub API, OpenAI API |
 | [`api_service/`](api_service/) | Public dashboard server | Rust, Axum, Plotly.js |
 
 See each subdirectory's README for setup and usage details.

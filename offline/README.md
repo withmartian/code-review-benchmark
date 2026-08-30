@@ -11,6 +11,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | [Claude Code](https://claude.ai) | AI assistant |
 | [CodeAnt](https://www.codeant.ai/) | AI code review |
 | [CodeRabbit](https://www.coderabbit.ai/) | AI code review |
+| [Corbulo](https://corbulo.dev/) | AI code review |
 | [Cursor Bugbot](https://cursor.com) | AI code review |
 | [Cubic](https://cubic.dev/) | AI code review |
 | [Devin](https://devin.ai/) | AI assistant |

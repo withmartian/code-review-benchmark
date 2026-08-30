@@ -18,7 +18,7 @@ The gap between measure and intent is the problem. To close it, you need two thi
 
 Our benchmark has two pieces:
 
-**An offline benchmark** runs every tool on the same PRs with the same bug definitions and scores them against a curated gold set. This is the measure — it lets us make controlled comparisons. The v0 builds on Augment and Greptile's published dataset and improves from there.
+**An offline benchmark** runs every tool on the same PRs with the same bug definitions and scores them against a curated gold set. This is the measure — it lets us make controlled comparisons. The current version builds on Augment and Greptile's published dataset with a curated gold set of 173 golden comments across 50 PRs, each categorized (bug, security, concurrency, etc.) and scored using category-based profiles and F-beta weighting.
 
 **An online benchmark** teaches us user intent based on how developers actually use these tools. When a developer fixes a problem flagged by a tool, they're voting that the flag was useful. These behavioral signals aren't controlled by us or by vendors — they're anchored to what actually happens.
 

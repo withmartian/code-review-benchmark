@@ -26,7 +26,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | [Qodo](https://www.qodo.ai/) | AI code review |
 | [Sourcery](https://sourcery.ai/) | AI code review |
 
-Adding a new tool requires forking the benchmark PRs and collecting the tool's reviews — see Steps 0 and 1 below.
+Running a tool that isn't listed here requires forking the benchmark PRs and collecting the tool's reviews — see Steps 0 and 1 below. Publishing a tool on the leaderboard alongside the others additionally requires meeting the [inclusion criteria](../README.md#inclusion-criteria).
 
 ## Methodology
 

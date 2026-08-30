@@ -42,9 +42,9 @@ Without shared evals for these tools, every company grades its own homework. You
 | [Discourse](https://github.com/discourse/discourse) | Ruby | Forum platform |
 | [Keycloak](https://github.com/keycloak/keycloak) | Java | Authentication |
 
-Each PR has curated golden comments with severity labels (Low / Medium / High / Critical). An LLM judge matches each tool's review against the golden comments and computes precision and recall.
+Each PR has curated golden comments (173 total) with severity labels (Low / Medium / High / Critical) and category tags (bug, security, concurrency, data, api, perf, test_gap, doc_defect, style, speculative). An LLM judge matches each tool's review against the golden comments using three judge models (Claude Opus 4.5, GPT-5.2, Claude Sonnet 4.5). Category-based scoring profiles (Strict / Core / All) control which issue types count toward the score, and F-beta weighting lets users prioritize recall over precision.
 
-**Tools evaluated**: Augment, Claude Code, CodeRabbit, Codex, Cursor Bugbot, Gemini, GitHub Copilot, Graphite, Greptile, Propel, Qodo, and more. Adding a new tool takes an afternoon — fork the benchmark PRs, trigger the tool, run the pipeline.
+**Tools evaluated**: Augment, Baz, Claude Code, CodeAnt, CodeRabbit, Cubic, Cursor Bugbot, Devin, Gemini, GitHub Copilot, GitLab Duo, Graphite, Greptile, KG, Kodus, Macroscope, Qodo, Sourcery, and more. Running a tool that isn't on the leaderboard takes an afternoon — fork the benchmark PRs, trigger the tool, run the pipeline. Publishing it alongside the others additionally requires meeting the [inclusion criteria](#inclusion-criteria).
 
 > **Known limitation**: Static datasets risk training data leakage — tools may have seen these PRs during training. That's why we also run the online benchmark.
 
@@ -55,15 +55,16 @@ See [`offline/README.md`](offline/README.md) for setup and usage.
 The online benchmark continuously samples **fresh real-world PRs from GitHub** where code review bots left comments. Because the PRs are recent, tools can't have memorized them during training.
 
 ```
-GitHub Archive (BigQuery)
+GitHub Search API
         │
         ▼
     ┌────────┐     ┌─────────┐     ┌─────────┐     ┌────┐     ┌───────────┐
     │Discover│────▶│ Enrich  │────▶│ Analyze │────▶│ DB │────▶│ Dashboard │
     └────────┘     └─────────┘     └─────────┘     └────┘     └───────────┘
-   BigQuery scan   GitHub API     LLM 3-step      Postgres    Interactive
-   finds bot PRs   fetches full   extraction &    or SQLite   filters &
-                   PR context     matching                    time series
+   Search API      GitHub API     LLM 3-step      Postgres    Interactive
+   finds merged    fetches full   extraction &    or SQLite   filters &
+   bot-reviewed    PR context     matching                    time series
+   PRs
 ```
 
 **How analysis works**:
@@ -74,7 +75,7 @@ GitHub Archive (BigQuery)
 
 **Bots tracked**: CodeRabbit, GitHub Copilot, Claude, Cursor, Augment, Codex, Gemini, Greptile, Graphite, Qodo, Propel, and others.
 
-**Dashboard features**: Filter by language, project domain, PR type, issue severity, diff size. Track performance over time. Adjustable F-beta weighting.
+**Dashboard features**: Filter by language, project domain, PR type, issue severity, diff size, engagement signals (human comments/commits after bot review), solo-bot PRs, and sample controls. Track performance over time. Adjustable F-beta weighting. See [`online/FILTERS.md`](online/FILTERS.md) for the full filter spec.
 
 See [`online/README.md`](online/README.md) for architecture and setup.
 
@@ -84,14 +85,15 @@ Both benchmarks use an LLM-as-judge approach, but with different methodologies s
 
 | | Offline | Online |
 |---|---|---|
-| **Ground truth** | Human-curated golden comments | Developer's post-review fixes |
+| **Ground truth** | Human-curated golden comments (173, categorized) | Developer's post-review fixes |
 | **Precision** | Tool comments that match a golden comment / total tool comments | Bot suggestions matched to real fixes / total suggestions |
-| **Recall** | Golden comments found by the tool / total golden comments | Real fixes caught by the bot / total fixes made |
+| **Recall** | Golden comments in active profile found by the tool / total golden in profile | Real fixes caught by the bot / total fixes made |
+| **Scoring** | Category-based profiles (Strict/Core/All) + F-beta (0.5–3.0) | F-beta with adjustable weighting |
 | **Judge input** | Golden comment + tool candidate | Full PR timeline: diff, bot comments, post-review commits |
 
 In both cases, the judge prompt asks "do these describe the same underlying issue?" — different wording is fine, only the substance matters.
 
-**Judge model variance**: Different LLM judges can score differently. We mitigate this by storing results per judge model and reporting which model was used. The offline benchmark has been evaluated with Claude Opus 4.5, Claude Sonnet 4.5, and GPT-5.2.
+**Judge model variance**: Different LLM judges can score differently. We mitigate this by storing results per judge model and reporting which model was used. The offline benchmark has been evaluated with Claude Opus 4.5, Claude Sonnet 4.5, and GPT-5.2 — the top 5 tools are identical across all three judges, with most tools varying by at most 2 rank positions.
 
 ## Repository structure
 
@@ -135,7 +137,7 @@ uv run python -m code_review_benchmark.step2_5_dedup_candidates
 
 # Run the LLM judge (pass dedup groups to avoid penalising duplicate candidates)
 uv run python -m code_review_benchmark.step3_judge_comments \
-  --dedup-groups results/$(MARTIAN_MODEL)/dedup_groups.json
+  --dedup-groups results/${MARTIAN_MODEL}/dedup_groups.json
 
 # View results
 open analysis/benchmark_dashboard.html
@@ -161,14 +163,28 @@ uv run python main.py analyze --all
 uv run python main.py dashboard
 ```
 
-## Adding a new tool to the offline benchmark
+## Adding a new tool
+
+Running a tool that isn't on the leaderboard is open to anyone:
 
 1. Fork the 50 benchmark PRs into a GitHub org where your tool is installed
 2. Let the tool review each PR
 3. Add the tool name to the download config and run the pipeline
-4. Results appear alongside existing tools in the dashboard
+4. Compare the results against the existing tools in the dashboard
 
 See [`offline/README.md`](offline/README.md) for detailed instructions.
+
+### Inclusion criteria
+
+Publishing a tool on the leaderboard alongside the others has two further requirements.
+
+**Public usage.** Roughly at least 600–1,000 reviewed public PRs, across a spread of orgs, repos, and authors. The offline benchmark is a fixed set of 50 PRs, so on its own it can't tell us whether a score reflects how a tool behaves in practice. We validate it against the online benchmark, which measures how developers respond to a tool's reviews in the wild, and that cross-check needs enough public review activity to be meaningful. Private installs aren't visible to us and can't be counted, so this is a measurement constraint rather than a judgement about a tool's overall adoption.
+
+**Attributable reviews.** We need to be able to tell from the GitHub API that a review came from the tool rather than from a person — a bot account, a dedicated machine account, or a consistent marker in the comment body all work. Without one of those we can't separate a tool's findings from a human reviewer's comments.
+
+For any tool we publish we also run the pipeline ourselves rather than take submitted results, so every number on the leaderboard is produced the same way.
+
+If a tool doesn't meet these yet, the harness is public and you're welcome to run it and publish your own results.
 
 ## Contributing
 

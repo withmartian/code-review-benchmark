@@ -119,11 +119,9 @@ This section describes what we've built and deployed today. The methodology sect
 
 ### Online benchmark
 
-Each day, we collect events from code review tools using the GHArchive dump, searching for events containing the agent ID associated with each tool. We group these events into PRs.
+Each day, we discover merged PRs where tracked bots left reviews, using the GitHub Search API. We restrict to merged PRs because unmerged PRs rarely have enough post-review signal to score meaningfully. For each tool, we randomly sample PRs and cap per-repo to prevent any single project from dominating the sample. High-volume bots may produce more PRs than the API can return in a single query; we handle this transparently so the sample remains representative.
 
-We filter to projects with more than 1,000 PRs, to avoid low-volume projects where behavioral signals are likely to be noisier. We plan to revisit this threshold — smaller projects may still provide useful data, but we need to examine where they do and don't before including them.
-
-For each tool, we randomly sample PRs each day. If the sample size required to compute a statistically significant mean would exceed 10% of the population, we compute the population mean directly by pulling all examples.
+For each PR, we fetch the full context — commits, reviews, threaded discussions, and per-commit diffs — and assemble a unified chronological timeline. An LLM then performs a three-step analysis: extract what the bot suggested, extract what the developer actually changed after the review, and judge which suggestions correspond to real fixes.
 
 We compute the following metrics for each tool:
 
@@ -139,19 +137,26 @@ We compute the following metrics for each tool:
 - Total comments acted on
 
 *Distributional controls:*
-- Distribution of diff size, repo size, language, backend vs. frontend, and other repository and PR characteristics across tools, to identify whether tools are operating on comparable datasets
+- Distribution of diff size, language, project domain, PR type, issue severity, and other repository and PR characteristics across tools, to identify whether tools are operating on comparable datasets
 
 We plot these statistics over time to track trends in tool performance and usage patterns.
 
+Not all PRs are equally informative. A PR where no human ever looked at the review — no comments, no follow-up commits — tells us little about whether the bot's suggestions were useful. We compute engagement signals for each PR: whether humans commented or pushed commits after the bot's first review, how many distinct reviewers participated, and how many back-and-forth rounds occurred. These signals power a set of quality filters that let us progressively restrict to higher-signal subsets. By default, we exclude bot-authored PRs (where the "developer response" is another bot) and self-reviews (the bot reviewing its own PR). Users can also restrict to solo-bot PRs — where only one bot reviewed — to simplify attribution of human follow-up.
+
+Each of these filters is exposed individually in the dashboard, so users can combine them based on what they care about — requiring human engagement, capping per-author-per-repo contributions, setting minimum contributor diversity, and so on. Stricter filter combinations trade coverage for signal quality: fewer PRs, but more reliable scores.
+
 ### Offline benchmark
 
-We build on the Augment/Greptile dataset. For each PR in the dataset, we:
+We build on the Augment/Greptile dataset, with a curated gold set of **173 golden comments** across 50 PRs. Each golden comment has a severity level and an issue-type category.
+
+For each PR in the dataset, we:
 
 1. Fork a copy of the repository for each code review tool being evaluated.
 2. Open a PR that includes the description from the original human-authored PR.
 3. Trigger the code review tool in the forked repo on GitHub.
 4. Collect all issues identified by the tool, splitting multi-issue comments into individual issues.
-5. Run a judge to evaluate which tool-identified issues correspond to issues in the gold set.
+5. Deduplicate candidates, grouping those that express the same underlying concern so duplicate mentions are not penalized.
+6. Run a judge to evaluate which tool-identified issues correspond to issues in the gold set.
 
 The judge uses the following prompt:
 
@@ -168,19 +173,19 @@ The judge uses the following prompt:
 >
 > Respond with ONLY a JSON object: {"reasoning": "brief explanation", "match": true/false, "confidence": 0.0-1.0}
 
-Matches against the gold set are counted as true positives. Precision and recall are computed from these matches.
+Matches against the gold set are counted as true positives. Precision and recall are computed from these matches, with category-based scoring profiles and F-beta weighting available in the dashboard. Results are evaluated with three independent judge models (Claude Opus 4.5, GPT-5.2, Claude Sonnet 4.5); the top 5 tools are identical across all three judges.
 
 The code to reproduce this is available at: https://github.com/withmartian/code-review-benchmark
 
 ### Known limitations of the current implementation
 
-The current implementation is deliberately minimal — a starting point we can measure and improve against. The main limitations, each addressed by a subsequent section of this document:
+The current implementation is under active improvement but retains significant limitations, each addressed by a subsequent section of this document:
 
-- Bug definitions are implicit in the gold set rather than explicit or conditioned on user preferences (§5).
+- Bug definitions are semi-explicit through categories but not conditioned on user preferences (§5).
 - Recall is capped by the gold set, which is itself capped by human performance (§6).
-- Precision treats all non-action as false positives (§7).
+- Scoring profiles reduce false positive penalties for style/speculative findings, but the gold set has sparse coverage of style issues, so some correct style findings are still penalized (§7).
 - The dataset is static and based on older PRs, with contamination risk (§8).
-- The judge is a single LLM with a single prompt, with no calibration against human annotations (§9).
+- The judge uses three models with consistent rankings, but has not been formally calibrated against human annotations (§9).
 - There is no standardized harness — we're measuring product performance, not model performance (§9).
 
 ---

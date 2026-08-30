@@ -1,8 +1,8 @@
 # PR Review Dataset — ETL Pipeline
 
-Data pipeline for the [online code review benchmark](../README.md). Continuously discovers PRs that code review bots have commented on, fetches full PR data from GitHub, and uses an LLM to analyze whether the bot's suggestions identified real issues and whether developers acted on them.
+Data pipeline for the [online code review benchmark](../README.md). Continuously discovers PRs that code review bots have reviewed, fetches full PR data from GitHub, and uses an LLM to analyze whether the bot's suggestions identified real issues and whether developers acted on them.
 
-Discovers PRs reviewed by a chatbot (via BigQuery), enriches them with GitHub API data, assembles a unified timeline, and runs LLM analysis. Everything is stored in a database (SQLite or PostgreSQL).
+Discovers merged PRs reviewed by a chatbot via the GitHub Search API (`reviewed-by:<bot> is:merged`), enriches them with GitHub API data, assembles a unified timeline, and runs LLM analysis. A BigQuery / GH Archive fallback is available via `--source bq`. Everything is stored in a database (SQLite or PostgreSQL).
 
 ## Setup
 
@@ -13,9 +13,8 @@ cp .env.example .env  # fill in values
 ```
 
 You need:
-- A GCP project with BigQuery access (for querying `githubarchive.day.*`)
 - A GitHub personal access token with `public_repo` read access
-- `gcloud auth application-default login` (for BigQuery auth)
+- (Optional) A GCP project with BigQuery access, only needed for `--source bq` fallback and `gcloud auth application-default login`
 
 ## Environment
 
@@ -72,17 +71,20 @@ Both `asyncpg` (pipeline) and `psycopg` (dashboard) connect through the proxy tr
 
 All commands run from the `etl/` directory.
 
-### Discover PRs from BigQuery
+### Discover PRs
 
 ```bash
-# Single chatbot
+# All chatbots, last 7 days (default: GitHub Search API)
+uv run python main.py discover --all --days-back 7
+
+# Single chatbot, specific date range
 uv run python main.py discover \
   --chatbot "coderabbitai[bot]" \
-  --start-date 2024-01-01 \
-  --end-date 2025-01-01
+  --start-date 2026-06-01 \
+  --end-date 2026-08-01
 
-# All chatbots in one BQ scan (uses DB chatbots, or built-in defaults)
-uv run python main.py discover --all --days-back 7
+# Use BigQuery / GH Archive fallback
+uv run python main.py discover --all --days-back 7 --source bq
 ```
 
 ### Enrich PRs via GitHub API
@@ -118,12 +120,11 @@ uv run python -m jobs.enrich_job \
 uv run python main.py analyze --chatbot "coderabbitai[bot]"
 uv run python main.py analyze --all
 
-# With time bounds (filters on bot_reviewed_at)
-uv run python main.py analyze --all --since 2d
-uv run python main.py analyze --all --since 2026-04-18 --until 2026-04-19
+# Only PRs reviewed in the last 7 days
+uv run python main.py analyze --all --since 7d
 
-# Sweep mode: process by assembled_at DESC to catch late-merged PRs
-uv run python main.py analyze --all --sort sweep --limit 20
+# Specific date window
+uv run python main.py analyze --all --since 2026-08-01 --until 2026-08-15
 ```
 
 `--sort sweep` ignores `--since`/`--until` — it orders by `assembled_at DESC` to pick up PRs that were discovered long ago but only recently assembled (e.g., merged weeks after the bot reviewed them).

@@ -20,6 +20,7 @@ dev = [
 [project.scripts]
 fork-prs = "code_review_benchmark.step0_fork_prs:main"
 download-prs = "code_review_benchmark.step1_download_prs:main"
+parse-reviews = "code_review_benchmark.step1_5_parse_reviews:main"
 extract-comments = "code_review_benchmark.step2_extract_comments:main"
 judge-comments = "code_review_benchmark.step3_judge_comments:main"
 export-by-tool = "code_review_benchmark.step4_export_by_tool:main"

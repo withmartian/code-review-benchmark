@@ -131,6 +131,22 @@ uv run python -m code_review_benchmark.step1_download_prs --output results/bench
 
 **Output:** `results/benchmark_data.json`
 
+### 1.5. Parse reviews
+
+Normalize one tool's raw review comments into clean, named sections before LLM extraction. Registered tools use their tool-specific parser; other tools use a passthrough parser.
+
+```bash
+# Parse reviews with the tool's default section filters
+uv run python -m code_review_benchmark.step1_5_parse_reviews --tool coderabbit
+
+# Preview the rendered markdown without writing the output file
+uv run python -m code_review_benchmark.step1_5_parse_reviews --tool coderabbit --preview
+```
+
+**Output:** `results/parsed_{tool}.json`
+
+See the [parser framework guide](code_review_benchmark/parsers/README.md) for parser behavior, CLI options, and an extension walkthrough.
+
 ### 2. Extract comments
 
 Extract individual issues from review comments for matching:

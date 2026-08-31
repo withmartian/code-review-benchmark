@@ -149,6 +149,23 @@ def get_all_comment_text(review_comments: list[dict]) -> str:
     return "\n\n---\n\n".join(bodies)
 
 
+def get_comment_text_for_review(golden_url: str, tool: str, review_comments: list[dict]) -> str:
+    """Get comment text — use parsed file if available, otherwise raw comments."""
+    parsed_file = RESULTS_DIR / f"parsed_{tool}.json"
+
+    if parsed_file.exists():
+        with open(parsed_file) as f:
+            parsed_data = json.load(f)
+        review = parsed_data.get("reviews", {}).get(golden_url)
+        if review is not None:
+            # Parsed file has an entry for this PR — use it even if empty
+            # (empty means the parser found no actionable comments)
+            return review.get("rendered_markdown", "")
+
+    # Fallback: original behavior (no parsed file for this tool)
+    return get_all_comment_text(review_comments)
+
+
 async def process_batch(tasks: list, batch_size: int = BATCH_SIZE) -> list:
     """Process async tasks in batches."""
     results = []
@@ -217,7 +234,7 @@ async def main():
                 continue
 
             comments = review.get("review_comments", [])
-            all_text = get_all_comment_text(comments)
+            all_text = get_comment_text_for_review(golden_url, tool, comments)
 
             if all_text and len(all_text.strip()) >= 20:
                 extraction_tasks.append((golden_url, tool, all_text))

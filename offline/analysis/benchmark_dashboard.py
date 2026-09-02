@@ -13,6 +13,13 @@ This script creates one dashboard HTML file with all models' data embedded:
 import json
 from pathlib import Path
 
+try:
+    from analysis.golden_version import golden_set_version
+    from analysis.golden_version import resolve_golden_dir
+except ImportError:  # running as a script: python analysis/benchmark_dashboard.py
+    from golden_version import golden_set_version
+    from golden_version import resolve_golden_dir
+
 # Tools excluded from the dashboard (superseded versions, incomplete runs, etc.)
 # Anything matching these exact slugs or the "mra-" prefix is hidden.
 _HIDDEN_TOOLS: frozenset[str] = frozenset({
@@ -1796,13 +1803,19 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
     return html
 
 
-def generate_json_data(all_models_data: dict, default_model: str) -> dict:
-    """Generate JSON data structure for export."""
+def generate_json_data(all_models_data: dict, default_model: str, golden_set: dict | None = None) -> dict:
+    """Generate JSON data structure for export.
+
+    golden_set identifies the golden comment set these scores were measured
+    against; see analysis/golden_version.py. It is null when no golden files
+    were found, so the export never implies an identity it doesn't have.
+    """
     # Generate and enrich predefined filters
     predefined_filters = generate_predefined_filters(all_models_data)
     predefined_filters = enrich_predefined_filters(predefined_filters, all_models_data)
 
     return {
+        "golden_set": golden_set,
         "models": all_models_data,
         "predefined_filters": predefined_filters,
         "tool_display_names": TOOL_DISPLAY_NAMES,
@@ -1843,6 +1856,14 @@ def main():
         print(f"No model results found in {args.results_dir}")
         return
 
+    # Identify the golden set these scores are measured against
+    golden_dir = resolve_golden_dir(args.results_dir)
+    golden_set = golden_set_version(golden_dir)
+    if golden_set:
+        print(f"Golden set: {golden_set['short']} ({golden_set['comments']} comments)")
+    else:
+        print(f"Golden set: not identified (no golden comment files in {golden_dir})")
+
     # Use the model with the most tools evaluated as default
     default_model = max(all_models_data.keys(), key=lambda m: len(all_models_data[m].get("tools", [])))
 
@@ -1857,7 +1878,7 @@ def main():
 
     # Generate JSON
     print("Generating JSON data...")
-    json_data = generate_json_data(all_models_data, default_model)
+    json_data = generate_json_data(all_models_data, default_model, golden_set)
 
     with open(args.json_output, "w") as f:
         json.dump(json_data, f, indent=2)

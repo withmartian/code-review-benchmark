@@ -43,6 +43,26 @@
         "comment": "Object URL for backup codes is not revoked on component unmount, leading to a potential memory leak. This can cause increased memory usage over time, especially if the component is mounted and unmounted frequently.",
         "severity": "Low",
         "category": "perf"
+      },
+      {
+        "comment": "In the NextAuth authorize callback the password check is skipped whenever totpCode is non-empty, and the new backup-code branch never validates that TOTP, so a valid backup code plus any dummy totpCode value authenticates the user without the correct password.",
+        "severity": "Critical",
+        "category": "security"
+      },
+      {
+        "comment": "After successful enablement the modal no longer calls onEnable and only the explicit Close button on the backup-code step invalidates viewer.me, so dismissing that step with Escape or an outside click leaves the settings page showing two-factor as disabled although the server enabled it.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "The modal passes an explicit type=\"password\" to PasswordField, and Input spreads caller props after its own visibility-controlled type, so the new show/hide toggle changes its icon but never reveals the password.",
+        "severity": "Low",
+        "category": "bug"
+      },
+      {
+        "comment": "Setting tabIndex={-1} on the shared password visibility button removes the only show/hide control from keyboard navigation for every PasswordField consumer (login, signup, settings), not just the modal the change targets.",
+        "severity": "Low",
+        "category": "bug"
       }
     ]
   },
@@ -78,6 +98,31 @@
       {
         "comment": "The `credential` may be undefined when passed to `updateEvent` if `reference.credentialId` is set but the credential is not found. This can lead to a runtime error when `updateEvent` is called with an undefined credential, which should be handled to prevent crashes.",
         "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "evt.destinationCalendar is initialized to null when neither the event type nor the organizer has a destination, so the optional-chained push of co-host destinations is a no-op and every connected co-host calendar is silently discarded for collective bookings.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The per-credential creation loop passes the full organizer-first destination array to every adapter, but Office365, Lark and the base CalDAV service still select element zero, so a second host's credential writes the event into the organizer's calendar (or fails) instead of its own.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The new conditional drops result.credentialId from every video reference even though createMeeting supplies it, and handleCancelBooking only calls deleteMeeting for references that carry a credentialId, so cancelling a booking leaves the external video meeting alive.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "In the all-remaining-occurrences branch the loop still iterates only the organizer's credentials and selects each occurrence's first calendar reference, ignoring the co-host credential resolved by the new outer loop, so co-host calendar events of a recurring collective booking are never deleted.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "Request-reschedule cleanup still builds its deletion map only from the requesting user's credentials keyed by provider type, so the co-host calendar events that EventManager now creates under other hosts' credentials cannot be deleted when a reschedule is requested.",
+        "severity": "Medium",
         "category": "bug"
       }
     ]
@@ -116,6 +161,16 @@
         "comment": "The 'cancelled' field is nullable, which can lead to existing records having null values instead of a default of false. This can cause incorrect behavior in the application when checking the cancellation status of reminders.",
         "severity": "Medium",
         "category": "data"
+      },
+      {
+        "comment": "Non-immediate cancellation only marks the reminder row and defers the SendGrid cancellation to the 15-minute cron, but SendGrid rejects cancellations within ten minutes of send_at, so a reminder cancelled shortly before its send time is still delivered.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "A single rejected SendGrid cancellation request throws out of the loop before the accumulated lazy Prisma deletes reach Promise.all, so earlier successful cancellations are never persisted and every later reminder in the batch is skipped.",
+        "severity": "Medium",
+        "category": "bug"
       }
     ]
   },
@@ -130,6 +185,26 @@
       },
       {
         "comment": "Using === for dayjs object comparison will always return false as it compares object references, not values. Use .isSame() method instead: dayjs(date.start).add(utcOffset, 'minutes').isSame(dayjs(date.end).add(utcOffset, minutes))",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "When a date override matches, the availability check returns true before evaluating busy.every, so existing bookings, calendar conflicts and buffers no longer exclude slots on override dates.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The override check rejects a slot if any same-day override excludes it, treating multiple overrides on one date as an intersection instead of a union, so a schedule with two override windows (e.g. 09:00-12:00 and 14:00-17:00) loses all of its slots.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The weekly working-hours check rejects a slot when any interval for that weekday excludes it rather than requiring containment in one interval, so ordinary split-shift schedules produce no available slots.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "Applying the timezone offset by extracting only hour and minute drops the date carry, so an override that crosses midnight after conversion (e.g. 22:00-23:59 UTC viewed at UTC+1) is reversed or attached to the wrong day and discarded by buildSlots.",
         "severity": "Medium",
         "category": "bug"
       }
@@ -183,6 +258,26 @@
         "comment": "The `appCredentialWebhookRequestBodySchema.parse` function can throw on invalid payloads, resulting in 500 Internal Server Errors instead of the expected 400 Bad Request responses. This can lead to confusion for clients and hinder proper error handling.",
         "severity": "Medium",
         "category": "api"
+      },
+      {
+        "comment": "The webhook indexes appStoreMetadata with the database app slug (e.g. google-calendar) while the generated metadata is keyed by directory name (googlecalendar, office365calendar, zoomvideo), so valid installed apps are rejected with 404.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "Replacing credential.key on sync leaves the invalid flag untouched, so a credential that was marked invalid stays excluded by consumers such as getCalendarsEvents even after valid replacement keys arrive.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "The Webex sync path still validates the delegated response with webexRefreshedTokenSchema, which requires scope, token_type, refresh_token and refresh_token_expires_in, so the documented minimal access-token-plus-expiry response from the sync endpoint is always rejected.",
+        "severity": "Medium",
+        "category": "api"
+      },
+      {
+        "comment": "The Lark sync path passes the delegated response through handleLarkError, which requires code === 0 and a nested data payload, so the flat access-token response from the sync endpoint is thrown as an error before any credential is updated.",
+        "severity": "Medium",
+        "category": "api"
       }
     ]
   },
@@ -198,6 +293,16 @@
       {
         "comment": "The deletion logic in scheduleSMSReminders.ts incorrectly deletes non-SMS workflow reminders (e.g., Email, WhatsApp) that have retryCount > 1. This occurs because the retryCount condition within the OR clause for deletion lacks a method: WorkflowMethods.SMS filter, causing it to apply to all reminder types instead of only SMS reminders, which is the intended scope of this function.",
         "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The retry-exhaustion cleanup deletes every reminder whose retryCount exceeds the limit regardless of whether it was eventually scheduled, so a reminder that succeeded on a later attempt is deleted along with the Twilio SID needed to cancel it, leaving an uncancellable SMS scheduled.",
+        "severity": "High",
+        "category": "data"
+      },
+      {
+        "comment": "The retryCount update inside the catch block can itself reject (for example when the reminder row was deleted by a booking cancellation while the Twilio call was pending), and that rejection escapes the per-reminder error boundary and aborts processing of every remaining reminder in the batch.",
+        "severity": "Medium",
         "category": "bug"
       }
     ]
@@ -235,6 +340,31 @@
         "comment": "The `sendAddGuestsEmails` function does not check the `disableStandardEmails` flags in the `EventType` metadata, which may result in sending emails to hosts/attendees even when standard emails are disabled for the event type.",
         "severity": "Medium",
         "category": "bug"
+      },
+      {
+        "comment": "The handler rebuilds the calendar event with Booking.description, which stores the booker's additional notes, and publishes it as the event description to the calendar provider and the guest emails regardless of the event type's hideCalendarNotes setting, exposing notes that were hidden at booking time.",
+        "severity": "High",
+        "category": "security"
+      },
+      {
+        "comment": "The reconstructed event omits team.members, and Google Calendar's updateEvent replaces the entire attendee list derived from that field, so adding a guest to a collective booking removes the other hosts from the calendar event.",
+        "severity": "High",
+        "category": "bug"
+      },
+      {
+        "comment": "The rebuilt event omits the persisted iCalUID and iCalSequence, so generateIcsString falls back to the raw booking UID with sequence zero and existing recipients receive an invitation that does not update the calendar entry created by the original invite.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "updateCalendarAttendees discards the results of CalendarManager.updateEvent, which converts provider failures into success:false, so the mutation commits the new attendees and reports success even when no calendar invitation was updated.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "Being an attendee grants permission to add guests even when the event type has disableGuests set, so a booked attendee can invite arbitrary additional people to an event whose host disabled guests.",
+        "severity": "Medium",
+        "category": "security"
       }
     ]
   },
@@ -259,6 +389,21 @@
       },
       {
         "comment": "Date is formatted with hardcoded 'en-US' locale instead of using the user's locale from useLocale, which can lead to incorrect date representation for users in different locales.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "ENV_FILE=\"../.env\" is resolved relative to the caller's working directory rather than the script's location, so running the script from the repository root edits or creates a .env file in the parent directory instead of the one the app loads.",
+        "severity": "Low",
+        "category": "bug"
+      },
+      {
+        "comment": "Deleting the calendar cache only invokes the optional onChanged callback and never invalidates viewer.calendars.connectedCalendars, so in the event-type Advanced tab (which passes no callback) the UI keeps showing the deleted cache's timestamp and delete action.",
+        "severity": "Medium",
+        "category": "bug"
+      },
+      {
+        "comment": "The cache-status lookup queries by the credential IDs shown in the UI, but delegated connections expose the synthetic ID -1 while their cache rows are keyed by the real credential ID, so delegated users never see cache status or the delete action.",
         "severity": "Medium",
         "category": "bug"
       }

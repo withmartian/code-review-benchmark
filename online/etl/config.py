@@ -91,6 +91,7 @@ DEFAULT_CHATBOT_USERNAMES = [
     "sentry[bot]",
     "bito-code-review[bot]",
     "macroscopeapp[bot]",
+    "mergejudge[bot]",
     "qodo-free-for-open-source-projects[bot]",
 ]
 

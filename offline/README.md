@@ -23,6 +23,7 @@ Open replication of the code review benchmark used by companies like [Augment](h
 | [KG](https://kg.dev/) | AI code review |
 | [Kodus](https://kodus.io/) | AI code review |
 | [Macroscope](https://www.macroscope.com/) | AI code review |
+| [MergeJudge](https://mergejudge.si/) | AI code review (open-source engine: [mergejudge-runner](https://github.com/gauravsharmaGG/mergejudge-runner)) |
 | [Qodo](https://www.qodo.ai/) | AI code review |
 | [Sourcery](https://sourcery.ai/) | AI code review |
 

@@ -92,6 +92,7 @@ DEFAULT_CHATBOT_USERNAMES = [
     "bito-code-review[bot]",
     "macroscopeapp[bot]",
     "qodo-free-for-open-source-projects[bot]",
+    "tenki-reviewer[bot]",
 ]
 
 

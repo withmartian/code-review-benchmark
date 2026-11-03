@@ -1256,6 +1256,56 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "getGroupIdsWithViewPermission collects groupResource.getId() (the authorization store's internal resource UUID) instead of the group id (groupResource.getName()), causing fine-grained admins to get empty user search results and a count of 0 for groups they are explicitly granted access to",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "canManage() calls hasPermission(null, VIEW, MANAGE) so a caller holding only the realm-wide groups view permission passes requireManage(), allowing view-only fine-grained admins to create groups",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Replacing canViewGlobal || groupsEvaluator.canView(g) with bare groupsEvaluator::canView filter is not equivalent for GroupPermissionsV2, where canView(group) never consults the type-level grant, causing admins with all-groups view permission to lose visibility of groups that have per-group resources",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupRemovedEvent listener calls setPermissionsEnabled which throws UnsupportedOperationException in GroupPermissionsV2, causing group deletion in V2 realms to abort with an error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupPermissionsV2.hasPermission falls back to getResourceTypeResource without a null check, causing NPE when the Groups type resource has not been created yet",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc for getGroupIdsWithViewPermission documents @return Stream but the method signature declares Set<String>",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Javadoc for requireManageMembers states it throws when canManageMembership returns false, but implementations check canManageMembers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "GroupResourceTypeEvaluationTest wraps negative assertions in catch(Exception) which masks real failures instead of catching specific ForbiddenException",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -2521,6 +2571,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "readLength returns -1 for indefinite-length marker 0x80 instead of rejecting it, causing NegativeArraySizeException in readInteger when new byte[-1] is called, which escapes the throws IOException contract",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DefaultCryptoProvider, FIPS1402Provider, and WildFlyElytronProvider all return 200 from order(), making provider selection nondeterministic and dependent on ServiceLoader iteration order",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "readSequence silently accepts elements that extend beyond the declared sequence content length instead of rejecting malformed DER signatures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Ignored-providers message is passed as format string to logger.debugf, so any % in provider class name is interpreted as format specifier, and message keeps trailing comma",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Lines 114-115 in AuthzClientCryptoProvider.java create two ASN1Encoder instances and discard their output with no effect on the result",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New abstract order() method on CryptoProvider SPI breaks external CryptoProvider implementations compiled against earlier versions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AuthzClientCryptoProvider.getBouncyCastleProvider() returns JKS/SUN keystore provider instead of BouncyCastle provider as expected by the CryptoProvider contract",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -3515,6 +3609,38 @@
       },
       {
         "text": "Assertion can race with the thread adding exceptions. Thread should be always stopped (finally), marked daemon, and joined (with a timeout) before asserting.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "If any remove() call throws in the delete loop, deletedAll.set(true) never runs and the reader thread spins indefinitely; as a non-daemon thread it blocks JVM shutdown and hangs the test fork",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The reader thread is never joined, so the assertion can run before the final in-flight read records an exception \u2014 the test can pass despite exactly the race it is meant to detect",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The tight poll loop with no backoff and the unbounded CopyOnWriteArrayList accumulation of stack traces amplify the spin cost on the shared test server",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The null-model guard was added only to getSubGroupsCount, but the three getSubGroupsStream overloads still dereference modelSupplier.get() directly with no null check, causing NullPointerException when a cached group is deleted concurrently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getSubGroupsCount returns null when modelSupplier.get() yields a concurrently-deleted model, violating the SPI javadoc contract that states it never returns null",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -4517,6 +4643,38 @@
       },
       {
         "text": "Unused import: NoSuchElementException is no longer referenced in this test (the previous Assert.assertThrows usages were removed), so the import will cause a compilation error.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Call to undefined zero-argument `isConditionalPasskeysEnabled` - UsernameForm.authenticate calls isConditionalPasskeysEnabled() with no arguments but the only method with that name is the UserModel overload, causing compilation failure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Conditional passkey UI dropped when no user is identified - isConditionalPasskeysEnabled(UserModel) returns false when user is null, breaking conditional-UI passkey autofill on the login page for anonymous users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test comment misattributes missing passkeys to user credential - comment says webauthn form is absent because user does not have passkey, but the realm updater actually disables passkeys realm-wide",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "catch (Exception) masks assertion and driver failures - negative webauthn-form checks wrap assertions in try/catch that catches all exceptions including assertion failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error path bypasses overridable isUserAlreadySetBeforeUsernamePasswordAuth - badPasswordHandler delegates to AuthenticatorUtils which re-reads the auth note directly instead of using the protected overridable method",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -5579,6 +5737,68 @@
       },
       {
         "text": "With default=1, the new --flusher-processes option forces single-process flushing unless explicitly overridden, which conflicts with the stated goal of spawning per-shard processes. Also, type=int allows 0/negative values that can break flusher initialization. Consider defaulting to None (meaning 'one per shard') and enforcing a minimum of 1 when provided.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "isinstance guard using multiprocessing.Process never matches spawned flusher processes (SpawnProcess is a sibling, not subclass), so process.kill() and process.terminate() never run for real subprocesses, causing hung processes to keep running while replacements start on the same shards, duplicating segments to Kafka",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When a flusher is a thread, _ensure_processes_alive skips the kill and starts a replacement on the same shards, leaving the hung thread running against the same shard_buffer and shared health counters, causing two flushers to race on the same shards and duplicate-flush segments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "join() deadline loop breaks as soon as deadline is exhausted, so higher-index processes are never waited on and never reach process.terminate(), leaving sibling processes unwaited and un-terminated with KafkaProducers not closed deterministically",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Max flush segments cap scales with flusher processes - each per-process SpansBuffer independently computes max_segments_per_shard, multiplying the global per-cycle flush volume by the number of flusher processes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dead _create_process_for_shard restart helper method is never called anywhere in the codebase",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Per-buffer Redis memory sweeps duplicate cluster-wide calls in submit - each per-process SpansBuffer.get_memory_info() runs iter_cluster_memory_usage sweeping every Redis cluster node regardless of which shards that buffer owns",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inconsistent flusher metric tag key naming - uses 'shard' on some metrics but 'shards' on spans.buffer.flusher.wait_produce",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Docstring claims one process per shard but code caps processes with max_processes and round-robins shards across shared processes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment describes per-shard hang check logic that the code does not implement - only compares per-process timestamp against max_unhealthy_seconds",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test comment says 'Give flusher threads time to process' but time.sleep was monkeypatched to a no-op lambda, so the wait never happens",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -7304,6 +7524,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Table widget flag renders empty table - when use-table-widget-visualization feature is enabled, tableResultComponent renders TableWidgetVisualization with hardcoded empty columns=[] and tableData={{data: [], meta: {fields: {}, units: {}}}}, ignoring the populated result.data/result.meta that the fallback StyledSimpleTableChart consumes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error ids zipped against unordered nodestore values - zip(error_ids, events.values()) pairs each event_id with positionally-matching value from nodestore.backend.get_multi(node_ids), but get_multi does not preserve input order since ids are deduplicated and cache hits are appended after uncached entries, causing error events to be labeled with wrong id/title/message/timestamp",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Scrub delimiter from feedback summary prompt input - make_input_prompt joins raw user-submitted feedback strings with literal separator without scrubbing, allowing feedback containing the separator followed by 'Instructions:' or 'User Feedbacks:' to forge prompt structure and steer the summarization LLM",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Escape untrusted data in PR comment markdown - get_merged_pr_single_issue_template places issue title raw inside link syntax without escaping, so a title like '](https://evil.com) [x' hijacks the link target or injects markdown into posted comments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Environment name in PR comments not escaped - get_environment_info wraps environment name in code span without escaping backticks, and environment names from event ingestion data can inject markdown",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unescaped error data interpolated into Seer prompt - error title and message fetched from nodestore (attacker-controlled SDK event data) are interpolated verbatim into the string fed to the Seer summarization LLM without delimiter or framing escaping",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Equation yAxis crashes visualize change handlers - parsedFunction derived via findFirstFunction returns undefined for equation-style expressions, but onChange handlers non-null assert it, throwing TypeError when user edits a visualize row whose yAxis is an equation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Premature 'Project not found' while projects store loads - new error branch renders before projects store finishes loading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics recorded before feature-flag check rejects request - analytics.record fires before the feature check returns 404",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Doc comment says endpoint only supports LOGS but code passes SPANS - interface comment states trace-item endpoint only supports LOGS but code calls useGetTraceItemAttributeValues with TraceItemDataset.SPANS",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "get docstring still claims it returns recording segments - docstring says it returns replay recording segments but handler now queries for error IDs, fetches error details, and returns Seer summary",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Removed retry: false from attribute keys query - useTraceItemAttributeKeys rewrite to useQuery drops retry: false, staleTime: 0, and refetchOnWindowFocus: false options",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1": {
@@ -8758,6 +9052,38 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Negative-offset cursor crashes Django queryset slicing - the advanced branch slices the queryset with a negative start offset, but Django ORM raises AssertionError for negative slice bounds, contradicting the comment claiming the ORM handles negative slicing automatically",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "math.floor on datetime breaks every optimized request - OptimizedCursorPaginator.get_item_key calls math.floor/math.ceil directly on raw datetime objects instead of converting to epoch floats first, causing TypeError on every non-empty page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Base paginator mishandles negative offsets - the expression passes negative offset through unchanged for previous-page cursors, so a crafted prev cursor still reaches queryset with negative index and crashes with Django's negative-indexing AssertionError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unguarded organization_context.member access can 500 - the code dereferences member without a None check, but RpcUserOrganizationContext.member can be None when user has no membership, causing AttributeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cursor comment misattributes pagination behavior - the comment claims negative offsets are now allowed and enable efficient reverse pagination, but Cursor always accepted negative ints and the behavior is unchanged",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -9707,6 +10033,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Narrowed cacheMu scope allows concurrent duplicate index builds - BuildIndex no longer holds cacheMu for its duration, allowing concurrent GetIndex to return nil mid-build and trigger duplicate builds on the same directory",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New TotalDocs log races unsynchronized cache map read - TotalDocs iterates b.cache without acquiring cacheMu while watch goroutine can write to b.cache, causing potential fatal concurrent map read/write error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Constructor Init failure leaks context and lifecycle resources - NewResourceServer returns early on Init error without calling s.cancel() or s.lifecycle.Stop, leaking partially initialized resources",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "IsHealthy no longer reflects stopping or init-failed state - Removing s.Init(ctx) guard from IsHealthy drops the check that surfaced s.initErr, so health checkers see healthy status during/after shutdown",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Request paths no longer reflect init/stopping state - Per-request s.Init(ctx) calls were removed from Create, Update, Delete, Read, List, Watch, Search, History, Origin, IsHealthy, PutBlob, and GetBlob, so requests proceed against backend after Stop has canceled s.ctx",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test silently skipped for postgres in CI - A new dbType == 'postgres' skip was added so the storage-server integration test no longer runs against postgres in Drone",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80168": {
@@ -10608,6 +10972,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "MetricAlertDetectorHandler cannot be instantiated because it subclasses StatefulDetectorHandler with only a pass body, leaving counter_names, get_dedupe_value, get_group_key_values, and build_occurrence_and_event_data abstract, causing TypeError when Detector.detector_handler tries to instantiate it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Docstring for StatefulDetectorHandler.evaluate still says it returns a list of DetectorEvaluationResult, but the method was changed to return dict[DetectorGroupKey, DetectorEvaluationResult]",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test mock build_mock_occurrence_and_event accepts a value argument but never uses it when building the IssueOccurrence or event_data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -11269,6 +11653,20 @@
       },
       {
         "text": "any([ ... ]) builds an intermediate list; any(...) over a generator is equivalent and avoids the allocation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "In get_monitor_environment_context, the config copy has its schedule_type replaced with the display value, but the returned dict embeds the original monitor_environment.monitor.config, so the rewrite is dead code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The get_failure_reason docstring claims the output 'A failed check-in was detected', but no code path can produce it: the single-failure branch returns only strings from SINGULAR_HUMAN_FAILURE_MAP and the multi-failure branch returns the '<n> check-ins detected' form",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -12071,6 +12469,26 @@
       },
       {
         "text": "Typo in test name: `inalid` -> `invalid`.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "`queued: datetime = timezone.now()` in the AssignmentSource dataclass is evaluated once at module import, so every instance shares the same stale timestamp instead of recording the actual queue time",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test `test_from_dict_empty_array` is named for an empty array, but its fixture is an empty dict",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`AssignmentSource.from_dict` swallows ValueError/TypeError and returns None with no logging, and when that None is passed into should_sync, the cycle guard is skipped entirely",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -13104,6 +13522,68 @@
       },
       {
         "text": "The thread-queue-parallel strategy starts a background commit thread; the test only calls factory.shutdown() which stops the queue workers but never closes the returned consumer, so the commit thread can keep running and mutate state after assertions and leak into other tests. Close the strategy before shutting down the factory and apply similarly in the other new thread-queue-parallel tests.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Strategy close() permanently kills the shared FixedQueuePool - SimpleQueueProcessingStrategy.close() calls self.queue_pool.shutdown() which stops all worker threads permanently, but the pool is shared by every strategy from ResultsStrategyFactory, so after any rebalance the new strategy submits work into a dead pool causing silent data loss",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Failed messages still complete offsets and get committed - OrderedQueueWorker.run catches processing exceptions but its finally block unconditionally calls complete_offset, causing failed messages to be committed and silently dropped instead of redelivered",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unbounded work queues defeat claimed backpressure - Each queue in the pool is created with no maxsize and poll() only emits metrics rather than pausing, so queues grow without bound causing memory exhaustion instead of backpressure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Offset tracker scans full uncommitted range every second - get_committable_offsets iterates range(start, max_offset + 1) for every partition on each commit tick, causing O(n) work per tick and unbounded memory growth when items are slow",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error-handling test asserts the opposite of its docstring - test_thread_queue_parallel_error_handling documents that errors don't block commits but asserts no commit occurs, which contradicts the actual code behavior where failed offsets are completed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Worker shutdown flag abandons queued work before drain - FixedQueuePool.shutdown sets worker.shutdown = True before q.shutdown(immediate=False), but the worker loop exits after current item instead of draining remaining queued items",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Wired decode_payload rejects FilteredPayload the strategy expects - SimpleQueueProcessingStrategy expects decoder to return None for FilteredPayload but the actual decoder asserts not isinstance(payload, FilteredPayload)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Commit thread races pool teardown in close/terminate - close() joins commit thread with ignored 5-second timeout before calling queue_pool.shutdown(), and terminate() never joins the commit thread at all",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Racy assertion on queue depth after submit in test_stats_reporting - asserts total_items > 0 immediately after submitting items without synchronization",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Commit assertion races the first partial commit in test_offset_committing - waits only for first commit event then asserts full final value without waiting for all commits",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -14767,6 +15247,98 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Negative cursor offsets trigger a 500 error because the enable_advanced_features branch passes negative cursor.offset into queryset slicing, and Django rejects negative slice start with AssertionError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comments and docstrings falsely claim Django handles negative slicing automatically when it actually raises an error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cursor.from_string accepts arbitrary user-supplied offsets without validation, allowing crafted cursor strings to trigger 500 errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The prev-page trim compares len(results) against offset + limit + extra even though the fetch used a different start_offset",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_item_key calls math.floor/math.ceil on datetime values (from -datetime ordering), causing TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "value_from_cursor returns raw numeric cursor value which is compared against datetime column instead of converting it like DateTimePaginator does, breaking cursor-based resumption",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Audit-log endpoint reads organization_context.member.has_global_access without None check, causing AttributeError for users without membership row (like sentry-app proxy users)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The enable_advanced expression is evaluated on every GET request, not only when optimized_pagination is set",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Span buffer keys switch from Redis sets to sorted sets without changing key name, causing WRONGTYPE errors when new code executes zadd/zcard against existing set-type keys during deployment",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Span trimming via zpopmin silently drops oldest spans with no metric, log, or returned count to detect data loss",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Span trimming can evict the segment (root) span when its end timestamp is not the newest due to out-of-order timestamps",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The max_segment_spans parameter is now unused but still present in the code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OptimizedCursorPaginator.get_result is a near-verbatim copy of BasePaginator.get_result with only minor differences",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Base paginator clamps negative offset to 0 before slicing but build_cursor still receives the original cursor with negative offset",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Redirect-following loop bound drops from 10000 to 1000 without explanation (comment removed)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -16208,6 +16780,86 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "invalidate_upsampling_cache is dead code - nothing in the repository calls it, so allowlist changes take effect only after the 60-second TTL expires",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Docstrings contradict: NOTE on _are_all_projects_error_upsampled claims allowlist is read fresh but its caller caches the verdict for 60 seconds",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "upsampled_count aggregates sum(sample_weight) but no dataset schema, column registry, migration, or ingestion path defines or populates sample_weight - production ingestion writes sample_rate instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Factory _set_sample_rate_from_error_sampling bypasses production validation - accepts string coercion via float() and out-of-range values like 5.0, and truthiness check silently drops 0.0",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "_is_error_focused_query uses substring test for event.type:error which incorrectly matches negated filters like !event.type:error, quoted literals, and mixed queries like event.type:error OR event.type:transaction",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "upsampled_count SnQLFunction is not marked private=True, allowing any authenticated user to pass upsampled_count() directly on queries for projects not on the allowlist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "count() to upsampled_count() rewrite is applied only to y-axis columns - selected_columns and equation list remain untransformed, causing ordering and totals to disagree with chart",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "transform_query_columns_for_error_upsampling rewrites only exact string count(), so aliased forms like count() as total pass through unweighted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Accidental sentry-repo submodule gitlink added with no corresponding .gitmodules entry",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cache layer with Redis/memcached roundtrip is unnecessary since options.get is already served from in-process option cache",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "upsampled_count declares default_result_type=number while count() it replaces returns integer",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "test_error_upsampling_with_transaction_events queries Snuba without wait_for_event_count call used for error events",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "transform_query_columns_for_error_upsampling is applied independently in three branches instead of computing final_columns once",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -17175,6 +17827,44 @@
       },
       {
         "text": "The test that intends to verify denial-cache entry overrides a cached allow decision is flawed - the permCache is populated with `false` for the dashboard scope, and since `checkPermission` only treats `true` values as grants, the test would deny even without checking the denial cache, so it doesn't validate the intended behavior.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Denial cache can keep denying access after permission grant - the permDenialCache is consulted first in Check and returns Allowed: false without evaluating any permissions, and nothing invalidates the denial entry when permissions/roles/team-memberships change, causing users to see Access denied on resources they were just granted access to until the 30s TTL expires",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Denial cache key components can collide - userPermDenialCacheKey joins namespace, userUID, action, name and parent with underscore separators and no escaping, so distinct (name, parent) pairs can produce the same key (e.g. name 'a_b'/parent 'c' and name 'a'/parent 'b_c' both yield the same key), causing false authorization denials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Permission-less users bypass the check cache entirely - users whose cached permission map is empty fall through to getIdentityPermissions, and since the permCache.Get early-return was removed from getUserPermissions and getAnonymousPermissions, every Check for such users executes a fresh singleflight DB query",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unbounded permDenialCache growth from per-resource keys - userPermDenialCacheKey embeds the resource name and parent, so every denied Check against a distinct resource inserts a new entry with no size cap or eviction, causing memory growth without bound",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Denial test seeds unreachable deny and is vacuous - the test 'Should deny on explicit cache deny entry' sets dashboards:uid:dash1 to false, but getScopeMap only stores true values, making the test ineffective",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cache-usage metric mislabels cache hits as misses - line 137 increments permissionCacheUsage{false} whenever the cached-permission branch did not return, including cases where getCachedIdentityPermissions hit permCache but checkPermission returned denied",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -18293,6 +18983,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Guard the `sender.login` metadata lookup against missing keys - `integration.metadata[\"sender\"][\"login\"]` is indexed directly but `sender` is only conditionally present in GitHub integration metadata, causing KeyError and 500 error for integrations lacking sender metadata",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OAuth `state` is a predictable constant, not CSRF protection - `pipeline.signature` is md5 hash of pipeline view class names which is predictable, allowing attackers to craft valid callback URLs and bind victim's organization to attacker-controlled GitHub installation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The `installation_id` from unauthenticated GET query string is bound before the state check runs, easing the CSRF attack chain",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Catch network failures in OAuth token exchange - `safe_urlopen` call sits outside the try block that guards only `safe_urlread`, causing unhandled exceptions instead of rendering install-failure page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Catch network failures in user lookup - `get_user_info(payload[\"access_token\"])` calls `resp.raise_for_status()` with no exception handling, producing 500 on connection errors or GitHub API failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`test_installation_not_found` test name and comment no longer match assertion - test replaced not-found assertion with check for generic 'Invalid installation request.' text",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -19029,6 +19757,38 @@
       },
       {
         "text": "Login cache stores results for each distinct organizationId inside a single IdentityProviderListQuery keyed only by (realm, fetchMode), which can grow the searchKeys map without bound in realms with many organizations, increasing memory pressure and replication costs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Update invalidation skipped despite BROKER_PUBLIC change - registerIDPLoginInvalidationOnUpdate skips login-cache invalidation when getLoginPredicate() yields same result for original and updated models and organizationId is unchanged, but ignores BROKER_PUBLIC config value changes which affect the cached login query filter",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Org-disabled update masks IDP flag changes from invalidation - registerIDPLoginInvalidationOnUpdate compares the original model fetched via getById which returns organization-aware wrapper whose isEnabled() is false when org is disabled, causing updates that flip hideOnLogin, linkOnly, or enabled to hit early return with no login-cache invalidation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup removes non-existent alias - testCacheIDPForLogin creates providers named idp-alias-0 through idp-alias-20 but cleanup registrations call testRealm().identityProviders().get(\"alias\")::remove, a literal apparently copied from another test",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Login predicate NPEs on null config for org-linked IDPs - the predicate clause idp.getOrganizationId() == null || Boolean.parseBoolean(idp.getConfig().get(...)) dereferences getConfig() without a null guard for org-linked IDPs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "remove() adds unconditional delegate getByAlias read - remove(String alias) now calls idpDelegate.getByAlias(alias) unconditionally before the branch check, whereas previously the delegate lookup happened only when isInvalid(cacheKey) already forced a DB round-trip",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -19894,6 +20654,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "enableSqlExpressions always returns false regardless of the feature flag state - the flag check is inverted (enabled := !h.features.IsEnabledGlobally) and then discarded by an unconditional return false, making the QueryTypeSQL branch dead code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The rejection error message 'sqlExpressions is not implemented' is misleading - the SQL command code exists, so the real condition is a feature-flag rejection, not a missing implementation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DB.TablesList, DB.RunCommands and DB.QueryFramesInto stub methods unconditionally return 'not implemented' errors, breaking all SQL expression queries that previously worked with the DuckDB-backed go-duck implementation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -20440,6 +21220,32 @@
       },
       {
         "text": "Missing concurrency-focused test (run under go test -race) that calls GetWebAssets from multiple goroutines to prevent regressions of the data race and verify caching behavior under contention",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "GetWebAssets takes the write lock without re-checking entryPointAssetsCache (no double-checked locking), causing concurrent callers that miss the fast path to serialize and each rebuild the assets, overwriting the cache",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Write lock is held across readWebAssetsFromFile (os.Open plus full JSON decode), blocking all fast-path RLock readers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In Dev mode the cache is never returned (cfg.Env != setting.Dev guard at line 45), so every request pays serialized I/O",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Duplicate-rebuild stampede occurs on cold start in production",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -21580,6 +22386,44 @@
       },
       {
         "text": "Test case inserts ~40k annotations and uses a 32k batch size, which can make CI slow/flaky without adding much coverage beyond exercising the batch size > SQLite parameter limit path - should reduce dataset while still exceeding 999 parameters (e.g., ~3003 annotations with batch size 1000) and update the test name which incorrectly mentions a specific SQLite version",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Leftover debug logs at Error level in xorm_store.go lines 534, 537, 554, 557, 576, 579 - routine cleanup progress is logged with r.log.Error including full fetched ids slice and always-nil err, flooding error dashboards and alerting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cleanup ticker interval reduced from 10 minutes to 1 minute in cleanup.go:77, causing all eight cleanup jobs to run 10x more often and multiplying background DB load for unrelated jobs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Parameterized path in deleteByIDs only guards parameter count for SQLite (xorm_store.go:608), leaving MySQL/Postgres/MSSQL exposed to 'too many parameters' failures when batch sizes exceed dialect limits like MSSQL's 2100",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Quadratic string concatenation when inlining SQLite ID list - values = fmt.Sprintf(\"%s, %d\", values, v) repeatedly re-copies the whole accumulated string",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test row cleanup t.Cleanup is registered after createTestAnnotations in cleanup_test.go:120 instead of before",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment at xorm_store.go:605 says SQLite has parameter limit of 999 but test in cleanup_test.go:98 treats effective limit as 32767 for SQLite >= 3.32.0",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -23272,6 +24116,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Failed Storage.Create and Storage.Update calls are recorded with d.recordLegacyDuration instead of d.recordStorageDuration (dualwriter_mode3.go:45 and dualwriter_mode3.go:129)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Legacy DeleteCollection goroutine records with d.recordStorageDuration instead of d.recordLegacyDuration (dualwriter_mode3.go:166)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete success path passes name instead of options.Kind as the kind label (dualwriter_mode3.go:106), causing unbounded label cardinality",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Background goroutines create legacy-store timeout from request-scoped ctx, so when HTTP handler returns and cancels the request context, in-flight Legacy.Create/Delete/Update calls abort with context.Canceled instead of using the intended 10-second timeout",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Update passes raw objInfo to d.Legacy.Update instead of wrapping it via updateWrapper{upstream: objInfo, updated: obj}, causing legacy storage to re-derive the updated object and miss server-assigned fields (uid, resourceVersion, defaults)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete returns immediately on any storage error, removing previous tolerance for NotFound that would proceed to legacy delete - objects existing only in legacy storage can no longer be removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Legacy goroutine in Delete no longer filters NotFound, so deleting an already-absent legacy record is recorded as a legacy failure",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "All four fire-and-forget goroutines use legacy error only for metrics and never log it, making legacy write failures silent and undiagnosable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In-flight legacy writes are unsynchronized with Destroy(), which can tear down Legacy while a write is executing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Create passes the same obj pointer to both d.Storage.Create and d.Legacy.Create without DeepCopyObject plus enrichLegacyObject, causing race on shared pointer and divergent uid/resourceVersion between stores",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete builds a scoped log with name, kind, and method fields but puts the unscoped d.Log into the context instead (dualwriter_mode3.go:92-93)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test case named 'error when listing an object in the unified store is not implemented' is stale since List is now implemented",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -24647,6 +25565,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Missing React key prop in FilterView - the refactor from GrafanaRuleLoader to GrafanaRuleListItem dropped the key={key} prop in the origin === 'grafana' branch, causing React reconciliation issues",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Federated-rule immutability guard hardcoded to false - useAllRulerRuleAbilities now hardcodes isFederated = false instead of checking isFederatedRuleGroup(rule.group), allowing edit/delete/pause on federated Mimir rules that the API will reject",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Ruler reconciliation lost in GrafanaGroupLoader - newly created rules that appear in ruler API before Prometheus propagates them no longer render with operation={RuleOperation.Creating}, and deleted rules still in Prometheus render as active instead of RuleOperation.Deleting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "skipToken rules grant Duplicate from global permission - useAllGrafanaPromRuleAbilities treats undefined (skipToken) rule as fully supported, making Duplicate available based on global AlertingRuleCreate permission without folder-scoped check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Recording rules lose Pause and Export in prom path - Pause, ModifyExport, Restore and DeletePermanently are gated on isAlertingRule which is false for Grafana recording rules, causing capability regression",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Silence menu item opens no drawer in list view - the drawer only renders when a ruler rule exists but the new list view passes only promRule, so clicking Silence does nothing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Delete and pause actions unreachable for prom-only rules - canPause and canDelete are computed from grafana prom-rule abilities but menu items are gated on ruler rule being present, which is never passed in new list view",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -25394,6 +26356,26 @@
       },
       {
         "text": "runSplitQuery now applies applyTemplateVariables unconditionally, but in the shard-splitting flow targets may already have had applyTemplateVariables applied once, resulting in multiple passes per request. This causes extra work and can re-apply ad hoc filters (like pipeline label-filters that are not de-duplicated), growing the query string across shard iterations. Consider adding an option to skip interpolation when callers already provided interpolated targets, or ensure this is only applied once per end-user query.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Split queries interpolate templates and ad-hoc filters repeatedly - applyTemplateVariables is called per target in runSplitQuery and runShardSplitQuery, but the resulting sub-requests are executed through datasource.runQuery where DataSourceWithBackend.query applies applyTemplateVariables again, causing ad-hoc filters to be duplicated (appended without deduping) and values to be re-escaped/re-interpolated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The time-split path now applies filters twice (previously once in the backend pipeline), and the shard path applies them three times with the extra work repeated per sub-request",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mutating applyTemplateVariables mock masks regressions - the mock mutates the query in place and returns the same object, while the real LokiDatasource.applyTemplateVariables returns a new object and never mutates its input, causing the interpolated result to leak into original targets so the test cannot detect the regression it exists for",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -26677,6 +27659,74 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "TOCTOU race condition between CountDevices and insert allows device limit to be exceeded under concurrent load - the count check and insert happen in separate sessions with no transaction or lock",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Returning devices older than 30 days but younger than 61 days are wrongly rejected when limit is reached - UPDATE's WHERE clause uses 30-day window but rows persist for 61 days, causing legitimate returning devices to be denied",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Zero rows affected in updateDevice conflates 'limit reached' with 'device not found', making the sentinel error unreliable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "anonymousDeviceLimit: 0 means unlimited server-side but serializes as 0 in JSON, indistinguishable from a configured limit of zero devices - TypeScript types promise undefined but backend never produces it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "MySQL unchanged re-tag reported as device limit reached - MySQL driver reports only changed rows, so UPDATE with identical values returns 0 affected rows, wrongly denying legitimate returning users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Device cached before store write bypasses device limit - localCache.SetDefault runs before CreateOrUpdateDevice, so if store returns ErrDeviceLimitReached the cache entry already exists and subsequent requests bypass the limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Stale wire provider breaks wire generation - ProvideAnonymousDeviceService signature changed but wire.go still registers old bindings, and new int64 deviceLimit parameter has no wire binding",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateDevice docstring misdescribes time inputs - comment says method takes time parameters but the window is derived internally",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hot-path COUNT(*) range scan on every anonymous tag when deviceLimit > 0 - synchronous query on authentication path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Tagging lost its timeout bound and panic recovery - previous goroutine with timeout replaced by synchronous call on request context",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "30-day expiration constant duplicated across packages - anonymousDeviceExpiration defined in multiple places",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -27502,6 +28552,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Mixed string/symbol locales duplicate fallback chain - FallbackLocaleList#[] builds the chain from whatever type it receives, but callers assign String locales while the chain hard-codes the Symbol :en",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "FallbackLocaleList#[] rebuilds the fallback chain on every call, causing a site-setting read plus fresh allocation on every I18n.t lookup on the hot path - should be memoized",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ensure_loaded!'s @loaded_locales read is not guarded by LOAD_MUTEX - lazily initializes and checks include? outside the mutex while load_locale appends to the same array under the mutex",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fallbacks now active in test/dev environments, which may mask missing translations - previously only production-like environments enabled config.i18n.fallbacks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -28216,6 +29292,20 @@
       },
       {
         "text": "ContextualLoggerMiddleware lacks dedicated unit tests unlike most other middlewares in the package, which would help prevent regressions such as missing attributes or wrong endpoint labels",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "MetricsMiddleware closes over a single shared instance and assigns next field per request without synchronization, causing a data race on concurrent plugin requests - should allocate a fresh struct inside the closure like NewTracingMiddleware and NewContextualLoggerMiddleware do",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TestLogger.FromContext returns a fresh NewTestLogger() instead of using the receiver and context, contradicting the Logger interface contract and potentially breaking log-capture assertions in tests",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -30325,6 +31415,116 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Migration crashes when `embed_category` setting is absent - the migration indexes `[0]['id']` directly on the `embed_category` lookup without checking that any row was returned, causing NoMethodError when the setting was never saved",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration crashes on `uncategorized_category_id` fallback - the unguarded `[0]['value']` on the `uncategorized_category_id` fallback has the same crash if that row is missing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Nil host crashes update/destroy in controller - `update` and `destroy` look up the host with `EmbeddableHost.where(id: params[:id]).first` and never check for nil, causing NoMethodError on unknown id",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing nil guard for `params[:embeddable_host]` in `save_host` - a request missing that key causes a 500 error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SQL injection vulnerability - the migration interpolates each line of the stored `embeddable_hosts` site setting directly into a SQL string without escaping or validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Migration inserts unnormalized hosts breaking matching - the migration copies each line of the old `embeddable_hosts` setting verbatim including schemes and paths, but `record_for_host` compares against bare host only",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Serializer emits host ids but UI expects records - `EmbeddingSerializer` declares the association with `embed: :ids` and no `include: true`, so the payload renders as integer ids instead of model records",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Plural `_ids` hydration yields undefined entries - the `*_ids` branch maps every id through `_lookupSubType` and unconditionally assigns the result, storing undefined for missing ids",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Null `*_ids` value throws TypeError - a null `*_ids` value throws a TypeError inside `obj[k].map`, aborting hydration of the whole record",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Guard `before_validation` against nil `host` - the `before_validation` block calls `self.host.sub!` without a presence check, raising NoMethodError when host is nil",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hosts saved with a port can never match referers - the validation regex accepts hosts with port suffix but `record_for_host` compares against `uri.host` which never includes a port",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fabricator contents swapped between two files - `category_fabricator.rb` contains the `embeddable_host` fabricator while `embeddable_host_fabricator.rb` contains category fabricators",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mock `/fruits/:id` handler ignores requested id - the pretender handler always returns `fruits[0]` regardless of the requested id",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Stale test name `embeddable_host is blank` - the test no longer matches the code under test which was changed to `SiteSetting.embed_truncate? && has_topic_embed?`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Host delete swallows request errors - the `delete` action calls `destroyRecord().then(...)` without a rejection handler",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`record_for_host` lowercases column but not input - matches with `where(\"lower(host) = ?\", host)` but never downcases the bound `uri.host` value",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Host validation rejects valid non-TLD hosts - the regex requires a dot and a 2-5 character TLD, rejecting valid hosts like localhost",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`PUT customize/embedding` is a silent no-op - the update action ignores request params and only re-renders the serializer output",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -31560,6 +32760,44 @@
       },
       {
         "text": "Light-theme link color changed from scale-color($primary, $lightness: 30%) to 70% - dark-light-choose takes (light, dark), so to preserve previous light-theme styling should keep 30% for $primary and use 70% for $secondary in dark themes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Light-theme username link lightness inverted from 30% to 70% in topic-post.scss:291 - the dark-light-choose arguments are swapped, causing washed-out 70%-lightness link in light mode instead of the original 30%",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mobile custom-message-length lightness flipped from 70% to 30% in mobile/modal.scss:102 - arguments are inverted compared to the correct desktop version, making light-theme hint text much darker",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Mobile topic-map h3 lightness changed from 20% to 50% in mobile/topic-post.scss:182 - inconsistent with desktop version which correctly uses 20% primary and 80% secondary, causing loss of contrast in light mode",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": ".group-member-info .name lightness changed from 30% to 50% in both mobile/user.scss:497 and desktop/user.scss:522 - likely overwritten with sibling .title value, losing the name/title visual distinction",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missed dark-light-choose conversion in _topic-list.scss:115 - bare scale-color($primary, $lightness: 50%) left unconverted for .topic-list.categories .category .badge-notification, causing nearly invisible text in dark mode",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Bare scale-color($secondary, 50%) left unconverted in mobile/compose.scss:33 for #file-uploading hint while adjacent #draft-status rule was converted",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -33299,6 +34537,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "totalPages computed as Math.floor(user_count / limit) + 1 reports one page too many when user_count is an exact multiple of limit, causing pagination to show an extra empty page",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Create action renders BasicGroupSerializer without a root key, but client code reads resp.basic_group.id, causing resp.basic_group to be undefined and breaking follow-up calls",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "remove_member uses group.users.delete(user_id) which bypasses the GroupUser model's counter_cache, leaving user_count permanently stale after removals",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "limit and offset parameters in public members endpoint are not clamped, allowing huge limit values to load entire membership, limit=-1 to remove SQL LIMIT clause, and negative offset to cause PostgreSQL 500 errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "add_members doesn't filter out users already in the group, causing ActiveRecord::RecordNotUnique exception (500 error) when re-adding existing members due to UNIQUE index on group_users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Spec test uses PUT verb for remove_member but route is mapped to DELETE",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Remove link shows for automatic group members because the template checks automatic attribute on User context which doesn't have that attribute",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Public /groups/:name/members response shape changed from bare JSON array to {members, meta} object, breaking existing consumers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "findMembers returns undefined instead of a promise when group name is empty",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "addMembers doesn't clear the usernames input after successful add, allowing duplicate submissions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "PATCH membership changes (changes[:add]/changes[:delete]) are now silently ignored after update_patch path was removed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "visible parameter assignment uses string comparison (params[:visible] == \"true\"), so omitted or boolean true values silently make groups invisible",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -34429,6 +35741,56 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Blocked-email lookup is case-sensitive and bypassable - BlockedEmail.should_block? uses exact case-sensitive comparison, so blocking foo@spam.com is bypassed by FOO@spam.com",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The unique index on blocked_emails table is case-sensitive, allowing case variants of the same blocked address to coexist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Blocklist regex is unanchored - pattern @(#{domains}) doesn't anchor to end of address, so user@foo.mailinator.com evades mailinator.com blacklist (subdomain evasion)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Blocklist regex causes over-blocking - unanchored pattern blocks user@mailinator.com.evil.com when only mailinator.com is blacklisted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rejectedEmails array pushes email for any email-keyed server error including 'taken' or transient failures, not just blocks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rejectedEmails array is never cleared, so addresses stay hard-rejected for the controller's lifetime",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Rejection reason shown is generic user.email.invalid instead of server's specific user.email.blocked message, mislabeling taken or blocked emails as invalid",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Site setting value is interpolated into Regexp unescaped (only dots are escaped) in email_in_restriction_setting?",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -35421,6 +36783,26 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Flex conversion strands float children in .small-action - converting to flexbox makes float: right on button and float: left on .topic-avatar no-ops since floats are ignored for flex items, causing the delete/edit buttons to land immediately after description text rather than at the far right edge of the row",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Invalid display: -ms-inline-flexbox value in inline-flex mixin - IE10 only recognized display: -ms-flexbox, so the declaration is dropped as invalid",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Nonexistent -ms-align-items property in align-items mixin - this property was never part of any flexbox spec or IE implementation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6": {
@@ -36389,6 +37771,50 @@
       },
       {
         "text": "Host comparison doesn't normalize hosts, which can cause case-sensitivity surprises",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "website_name is declared as a plain attribute and bypasses restricted-user-field hiding that website itself is gated by through untrusted_attributes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The hook is named include_website_name without the ? suffix that every other conditional in the file uses, so active_model_serializers 0.8.3 never calls it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Even if the hook were renamed with ?, it omits the restriction check, allowing anonymous viewers of TL0/restricted profiles to see website host and path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The template renders website_name as a link with an empty href when website is withheld",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Suffix match accepts bare public-suffix hosts - a user setting website to http://com/<path> against a host like forum.example.com hits the ends_with check and displays com/<path> as the site name",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Label-count heuristic is asymmetric for subdomain pairs - www.example.co.uk against discourse host example.co.uk falls to fallback where ends_with fails and related site is treated as unrelated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "User profile website link sets target=_blank without rel=noopener, leaving the opened page with window.opener access in browsers that do not implicitly apply noopener",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -38806,6 +40232,134 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "TopicEmbed.import stores feed/article content with cook_method raw_html, bypassing sanitization pipeline, allowing malicious feeds to inject script, iframe, event handlers or javascript: hrefs that execute on the forum's origin",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unescaped url interpolated into imported_from anchor adds attribute-injection vector for stored XSS",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Reflected XSS via request.referer in inline script - ERB's HTML escaping doesn't escape single quotes, allowing crafted Referer header to break out of JS string literal",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-atomic setnx/expire Redis calls can leave key with no expiry if process dies between commands, permanently blocking embed URL retrieval",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Feed URL interpolated unescaped into HTML anchor in imported_from footer allows XSS via URL containing quotes or angle brackets",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "absolutize_urls treats protocol-relative URLs starting with // as site-relative, mangling them to wrong host",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Gemfile.lock not updated for new ruby-readability and simple-rss gems, causing bundle install --frozen to fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "poll_feed item loop dereferences i.content.scrub without nil check, raising NoMethodError and aborting poll for items without content",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "poll_feed url fallback can leave url nil, causing NoMethodError in TopicEmbed.import on url regex match",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Kernel#open with bare url enables command execution for strings starting with |, SSRF to internal endpoints, and has no timeout or size cap",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ensure_embeddable authorizes access solely by comparing Referer header host, which is spoofable by non-browser clients",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Check-then-act race condition on concurrent embed imports can cause RecordNotUnique exception on unique embed_url index",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "TopicEmbed.import crashes when embed's post was deleted - PostRevisor.new(nil).revise! raises NoMethodError on @post.raw",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Spec stubs TopicRetriever but controller enqueues a background job instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dead feed_key method builds Redis key but nothing reads or writes it, leaving conditional-GET check unimplemented",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "postMessage origin check uses substring match instead of strict equality, allowing forged messages from substring-matching origins",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "embed.js crashes when #discourse-comments container element is missing due to no null guard",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Guard tests pass without exercising the guard - don't stub feed_polling_enabled? to true",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing embed_by_username user silently disables import without error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Disqus import dropped --category option and cannot accept created_at, losing original dates and category support",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "topic_embeds.embed_url capped at 255 chars may truncate long URLs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -40259,6 +41813,32 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Duplicate `downsize` definition in app/models/optimized_image.rb - the patch adds a second downsize method at line 149 while leaving the earlier one at line 145, Ruby keeps only the last definition, causing the emoji job that calls with five arguments to raise ArgumentError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "API URL download cap hardcoded to 10MB instead of using SiteSetting.max_image_size_kb.kilobytes, causing API clients pulling images larger than 10MB to silently fail even when admin configured a larger limit",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Downsizing animated GIFs strips animation because the auto-downsize loop passes tempfile.path to OptimizedImage.downsize, but the animated-gifsicle branch requires the path to end in .GIF which Tempfile paths never do, causing animated GIFs to be flattened to single-frame images",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hardcoded 10MB client-side check in utilities.js ignores max_*_size_kb site settings - admins who set limits below 10MB no longer get client-side rejection, and admins who raise limits above 10MB get valid files wrongly rejected",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -41553,6 +43133,56 @@
       },
       {
         "text": "Template renders a computed property named stopNotificiationsText with a typo via triple-stash - should render the translation directly with the existing i18n helper instead",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "`unsubscribe` crashes when no `TopicUser` record exists - `TopicsController#unsubscribe` calls `TopicUser.find_by` and immediately reads `tu.notification_level` with no nil guard, causing NoMethodError and 500 error for users who never visited the topic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`unsubscribe` action is not added to the `ensure_logged_in` list, so anonymous GET to `/t/:topic_id/unsubscribe` reaches `current_user.id` and raises NoMethodError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`topicUnsubscribe` route is shadowed by `fromParamsNear` - declared after the `topic` resource whose nested `fromParamsNear` route matches `/:nearPost`, so `/t/some-slug/123/unsubscribe` is captured by `topic.fromParamsNear` with `nearPost: \"unsubscribe\"` instead of the unsubscribe route",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unsubscribe toggle re-mutes users on repeated clicks - a user at `regular` who clicks again is set to `muted`, making double-clicks or confirmation clicks result in unexpected full mute instead of idempotent behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Direct `tu.save!` skips `TopicUser.change` side effects - bypasses MessageBus `notification_level_change` publication and `notifications_reason_id`/`notifications_changed_at` stamping, leaving live clients with stale state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`List-Unsubscribe` header ignores per-topic `unsubscribe_url` - still emits `List-Unsubscribe: <user_preferences_url>` only instead of using the new per-topic URL",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Misspelled `stopNotificiationsText` property in topic-unsubscribe.js.es6 and template",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Cached 301 for slugless unsubscribe redirect - the slugless email link `/t/:id/unsubscribe` is redirected with `status: 301` which gets cached, but the slug can change over time",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -42941,6 +44571,74 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Empty-data `updateMany` cannot bump `updatedAt` - fetchAvailabilityAndSetCache calls updateManyByCredentialId with an empty data object, but Prisma's updateMany writes no fields for empty data so the @updatedAt column is never recomputed, and on some Prisma 5 versions the call throws a validation error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The updatedAt bump happens once after the per-event-type loop, so a failure in a later group aborts before reaching it, leaving updatedAt stale even for groups whose cache rows were already refreshed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`deleteCache` throws generic `Error` instead of `TRPCError`, causing clients to receive INTERNAL_SERVER_ERROR (500) instead of the intended 404/403 error codes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`sed -i ''` in test-gcal-webhooks.sh is macOS/BSD-only syntax and breaks on GNU sed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hardcoded `en-US` locale for cache timestamp formatting ignores the user's locale that useLocale() already provides",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "connectedCalendarsHandler instantiates CalendarCacheRepository directly instead of using buildCalendarCacheRepository, bypassing the disabled-cache gate when the feature flag is off",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`updateManyByCredentialId` accepts `Prisma.SelectedCalendarUpdateInput` but forwards it to updateMany which requires `Prisma.SelectedCalendarUpdateManyMutationInput`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook test script cleanup() always exits with code 0, masking test setup failures in automated usage",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "deleteCacheMutation shows success toast but never invalidates the viewer.calendars.connectedCalendars query, unlike disconnectMutation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`deleteCache` mutation only verifies credentialId belongs to the user but accepts non-calendar credentials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "findMany wrapper no longer uses `satisfies Prisma.SelectedCalendarFindManyArgs`, removing compile-time type checking",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -44199,6 +45897,50 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Working-hours boundary check computes `end` from `slotStartTime` instead of `slotEndTime`, so slots that begin inside working hours but extend past `workingHour.endTime` incorrectly pass validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Zero-length override guard compares two distinct dayjs instances with `===` which is always false, making the branch dead code and treating date overrides with equal start/end as normal availability windows",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When a slot falls inside a date-override window, `checkIfIsAvailable` returns `true` before the `busy.every(...)` booking-overlap check runs, allowing double-booking on date-override days",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The `dateOverrides.find` callback recomputes `dayjs.tz(date.start, organizerTimeZone).utcOffset()` and rebuilds dayjs objects multiple times per invocation, running once per slot per host, causing redundant timezone parses in the hot loop",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Override mapping recomputes `dayjs(override.start.toString()).tz(override.timeZone)` and `dayjs(override.start.toString()).tz(timeZone)` for every active override on every `getSlots` call, and `getSchedule` invokes `getSlots` once per day, repeating identical timezone parses",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The block constructs `dayjs(override.start).utc().add(offset, \"minute\")` twice each for start and end instead of once per timestamp, quadrupling allocations per override",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inside the per-slot `.map`, each `slotUserId` triggers a linear `userAvailability.find` scan for both loose hosts and selectedSlots branch, making the phase O(slots \u00d7 userIds \u00d7 users) when a Map lookup would be more efficient",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -45012,6 +46754,68 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "The retryCount > 1 branch of the deleteMany OR has no method: WorkflowMethods.SMS or scheduled constraint, causing it to delete scheduled and non-SMS reminders",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "retryCount is never reset on success, so a reminder that fails twice then schedules successfully is deleted on the next run, dropping the Twilio referenceId so the already-scheduled SMS can no longer be cancelled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The SMS cron purges rows belonging to other delivery methods as soon as any code increments their retryCount",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "A reminder whose scheduledDate is days away can be silently dropped as soon as its count reaches 2",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "twilio.scheduleSMS returns undefined without throwing when SMS sending is globally locked, and checkSMSRateLimit throws on rate limits - both are treated as genuine per-reminder failures and increment retryCount",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "During a transient global lock or rate-limit window, every pending reminder burns its retry budget and is then permanently deleted without ever being sent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "There is no max-retry check in the loop - the only cap is the cleanup deleting retryCount > 1 on the next run",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The comment at scheduleSMSReminders.ts:28 still says the delete only removes scheduled SMS reminders whose date has passed, but this is now stale",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The retryCount increment sits inside the catch block with no error handling of its own",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "WorkflowReminder has no index on retryCount for the cron delete that filters on retryCount: { gt: 1 }",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/22345": {
@@ -45806,6 +47610,20 @@
       },
       {
         "text": "userIdsFromOrg lookup is skipped when there are no child teams, causing org members' non-team bookings (isTeamBooking = false) to be incorrectly excluded for orgs without child teams",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "OR-rooted auth fragments are returned unparenthesized - getBaseConditions returns org/team authorization condition as bare (A) OR (B) fragment without outer parentheses, causing AND predicates to bind only to the last OR arm and silently widening authorization scope",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Loosened options type hides missing teamId as empty results - constructor accepts InsightsBookingServicePublicOptions where teamId is optional for every scope, but insightsBookingServiceOptionsSchema still requires teamId for scope: team",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -48219,6 +50037,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Broken relative import after file move - createOAuthAppCredential.ts import was rewritten to ../oauth/decodeOAuthState which resolves to a non-existent directory _utils/oauth/oauth/decodeOAuthState, breaking the build",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Google persists safeParse wrapper as credential key - parseRefreshTokenResponse returns the full zod SafeParseResult instead of refreshTokenResponse.data, causing googleCredentialSchema.parse to fail on next construction",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Sync branch returns raw fetch Response to callers instead of parsed JSON - refreshOAuthTokens returns raw Response in credential sharing mode while callers expect token objects, breaking all token refreshes under credential sharing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Bigin sends credential id as sync user id - refreshOAuthTokens is called with credentialId instead of userId, causing the sync endpoint to look up the wrong record",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Computed-key schema drops expiry check - minimumTokenResponseSchema computed keys evaluate to literal string '[object Object]', causing sync responses to fail validation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Placeholder refresh_token overwrites real tokens - parseRefreshTokenResponse substitutes literal string 'refresh_token' when field is missing, destroying real refresh tokens when persisted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Webhook auth passes when secret env is unset - undefined !== undefined is false, so requests without secret header are treated as authenticated when CALCOM_WEBHOOK_SECRET is not configured",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Decrypted webhook payload persisted unvalidated - JSON.parse result is stored directly as Credential.key without validating it matches the app's credential shape, and no try/catch means malformed input causes unhandled 500",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unauthenticated AES-CBC decryption of webhook credentials - symmetricDecrypt uses bare AES-256-CBC with no MAC or AEAD tag, making ciphertext malleable and enabling decryption oracle attacks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Salesforce success check uses statusText !== 'OK' - statusText is not guaranteed to be 'OK' over HTTP/2 or in some runtimes, causing successful token refreshes to throw HttpError 400",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Teams sync-mode refresh loses refresh_token and expiry - sync endpoint returns only access token and expiry, but refreshAccessToken expects full ITokenResponse, causing expiry_date to be immediately expired and refresh_token to be lost",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "FindFirst-then-create race duplicates credentials - webhook does findFirst then conditionally update or create without transaction or unique constraint, allowing concurrent deliveries to create duplicate credentials",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -49747,6 +51639,38 @@
       },
       {
         "text": "The current try/catch wraps the entire cancellation loop, so if one SendGrid cancellation request fails the cron stops processing remaining reminders - should handle errors per reminder and continue to make the job resilient",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "One failed cancel in cron aborts all remaining reminders - the cron cancel loop awaits each SendGrid request sequentially inside a single try, so one failure (SendGrid 4xx, null referenceId, or Prisma P2025) aborts the whole loop and blocks all subsequent cron runs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "immediateDelete orphans WorkflowReminder rows - the immediateDelete branch cancels the SendGrid batch but returns without deleting the row or setting cancelled: true, leaving rows with scheduled=true and cancelled=null that are never cleaned up by cron",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Twilio cancel failure skips SMS reminder deletion - when twilio.cancelSMS rejects, the DB row is never removed because both calls share one try block, leaving orphaned rows with no cancelled marker",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Reminder cancellations are fire-and-forget - deleteScheduledEmailReminder/deleteScheduledSMSReminder are async but invoked unawaited inside forEach, so on serverless runtimes the work may be frozen and cancelled bookings can still trigger notifications",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Reschedule cancels old reminders before reschedule succeeds - reminders are cancelled via fire-and-forget forEach before the reschedule success check, so if reschedule fails the original booking's reminders are already cancelled with no way to restore them",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -51435,6 +53359,98 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "isTeamAdminOrOwner ANDs isTeamAdmin with isTeamOwner, which reduces permission to owner-only and makes the ADMIN branch unreachable, causing team admins who are not owners to receive permission denied when adding guests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "sendAddGuestsEmails receives raw guests input instead of filtered uniqueGuests, causing blacklisted and duplicate addresses to still receive email invitations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "sendAddGuestsEmails uses newGuests.includes(attendee.email) to pick template, so re-submitted existing attendees receive AttendeeScheduledEmail instead of AttendeeAddGuestsEmail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Case-sensitive comparisons in blacklist check allow mixed-case emails like Guest@x.com to bypass lowercase blacklist entries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Case-sensitive attendee duplicate check allows case-variant duplicates of existing attendees to be inserted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Using array index as React key in MultiEmail component causes inputs to be re-bound to shifted array elements after mid-list removal, showing wrong values",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "booking.userId || 0 coalesces null userId to 0 before findFirstOrThrow, causing P2025 error for hostless bookings instead of proper error handling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calendar update uses requesting user's credentials instead of booking organizer's credentials, causing sync to run against wrong account",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Calendar update has no error handling, so failures leave attendees persisted and emailed while calendar event is never updated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hardcoded 'Remove email' tooltip bypasses i18n while rest of component uses translations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isInvalidEmail state is set on failed validation but not reset in mutation onSuccess, only in cancel handler",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error toast template string with err.data?.code renders 'undefined:' for errors without tRPC code, and fallback never triggers because string is always truthy",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Catch block for email error logs constant string without actual error details",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No max length validation on guests array in zod schema",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "BAD_REQUEST message 'emails_must_be_unique_valid' is misleading when guests are filtered out for already existing or being blacklisted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -53015,6 +55031,74 @@
       },
       {
         "text": "Backup codes are generated as lowercase hex but user input isn't normalized - uppercase input from password managers would be rejected even if the code is correct",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Backup code consumption is a non-atomic race - two concurrent sign-in requests with the same valid code can both pass the check before either update lands, allowing a single-use backup code to authenticate twice",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code login can bypass password verification - password verification is skipped when credentials.totpCode is non-empty, and the backup-code branch never re-checks the password, allowing login with just a backup code and any non-empty totpCode value",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Closing enable modal via ESC skips onEnable - if user closes dialog via Escape, overlay click, or X after 2FA was enabled, the parent's handler never runs so viewer.me is never invalidated and settings switch shows 2FA as disabled; resetState is also skipped so reopening shows stale DisplayBackupCodes screen",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No backfill for existing 2FA users' backupCodes - migration adds nullable column with no backfill, so existing twoFactorEnabled=true users have NULL backupCodes and both consumption paths throw MissingBackupCodes, blocking backup code login and disable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Uncaught JSON.parse of decrypted backupCodes - if stored value was encrypted under rotated key, corrupted, or in legacy format, decryption yields non-JSON and parse throws, causing generic error in authorize or unhandled 500 in disable endpoint",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Disable endpoint error message says 'login' but handler disables two-factor auth and never performs a login",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Consumed backup codes leave null tombstones in array contradicting comment that claims code is deleted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "resetState leaves backup codes, secret and blob URL stale - only clears password, errorMessage, and step",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code compared with non-constant-time indexOf which short-circuits on first differing character",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Disable modal retains lost-access mode after cancel - twoFactorLostAccess state is only reset on success, not on Cancel button or dialog dismissal",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Backup code input not normalized before comparison - only dash-stripping applied, leading/trailing whitespace and uppercase letters from copy-paste are not handled",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -55137,6 +57221,80 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Google Calendar fallback find compares against falsy id - the fallback event.destinationCalendar?.find((cal) => cal.externalId === externalCalendarId)?.externalId only executes when externalCalendarId is falsy, so the comparison never matches and calendar id resolves to undefined, breaking Google event rescheduling in updateEvent and causing orphaned events in deleteEvent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Meet fallback crashes when destinationCalendar is empty - destructuring mainHostDestinationCalendar from evt.destinationCalendar ?? [] yields undefined when destinationCalendar is null or empty array, and reading mainHostDestinationCalendar.integration without optional chaining throws TypeError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Inverted IS_TEAM_BILLING_ENABLED condition drops slug - the rewrite from ...(!IS_TEAM_BILLING_ENABLED && { slug }) to ...(IS_TEAM_BILLING_ENABLED ? { slug } : {}) inverted the condition, so organizations created with billing disabled have neither slug nor requestedSlug",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No-credentialId create path loses destination and externalId - destinations without credentialId call createEvent without the second argument, so Google find never matches and events go to 'primary' instead of selected destination, and externalId is undefined in booking references",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Collective team destination calendars silently dropped - when evt.destinationCalendar is null but teamDestinationCalendars is non-empty, optional chaining on push silently skips appending team destination calendars",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-calendar references lose credentialId - the non-calendar branch changed to credentialId: isCalendarType ? result.credentialId : undefined, so video and other non-calendar booking references are saved without their credential",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Merge-reschedule deletes only first calendar reference - the merge-deletion branch still uses find instead of filter, so only the first calendar reference's remote event is deleted, leaving stale duplicates on other destination calendars",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "updateEvent invoked with undefined credential after failed lookup - when credential lookup misses and DB fallback doesn't assign credential, updateEvent is still called with undefined credential causing a throw, and the outer catch fails all calendar events for the booking",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Per-credential findUnique inside new calendar loops causes performance issues - each booking with multiple destination calendars incurs one serial DB round-trip per credential missing from calendarCredentials on the booking create/reschedule hot path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Office365/Lark createEvent always target first destination - both services destructure only the first element and don't receive the new credentialId argument, so every credential inserts into the first entry's calendar instead of the correct one",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CalDAV filter against first destination can create nothing - if the first destination entry belongs to a different credential, no calendar matches the filter, the filtered array is empty, and the CalDAV event is silently never created",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Serial credential fetch and calendar init per reference on cancel - handleCancelBooking loops over all calendar references and awaits prisma.credential.findUnique and getCalendar serially rather than concurrently",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -56501,6 +58659,38 @@
       },
       {
         "text": "`getVideoAdapters` now awaits each app module sequentially in a loop. When `withCredentials` contains multiple credentials, this serializes imports and can increase latency. Consider importing/building adapters in parallel with `Promise.all` and filtering nulls.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Unawaited async forEach fills apiDeletes too late - credentials.forEach(async (credential) => ...) awaits getCalendar before pushing into apiDeletes, but the enclosing function does not await these callbacks, so Promise.all(prismaPromises.concat(apiDeletes)) can run before any push has happened, leaving orphaned external calendar events while the DB marks bookings cancelled",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "forEach(async ...) leaves deletions unawaited and uncaught in reschedule.ts - each calendar/video deletion runs as fire-and-forget promise, the enclosing try/catch can never catch the awaited rejections, and the reschedule flow proceeds to sendRequestRescheduleEmail before any deletion has started, with failures surfacing as unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unguarded dynamic import() in getCalendar - getCalendar now does await appStore[...] with no try/catch, so a module-load failure rejects getCalendar instead of returning null",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Serialize appStore import awaits in adapter loop - getVideoAdapters awaits each appStore[appName] sequentially inside a for loop, so adapter resolution is serialized per credential on the availability path",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Eager import() defeats app-store laziness - the appStore literal immediately invokes import() for every app, so all ~29 dynamic chunks are fetched the moment any module imports the barrel, gaining no true laziness while each hot-path caller pays resolution overhead for entries it never uses",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -57997,6 +60187,56 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Lithuanian account totpStep1 message replaced with Italian text instead of Lithuanian translation in messages_lt.properties:101",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Lithuanian loginTotpStep1 message replaced with Italian text instead of Lithuanian translation in messages_lt.properties:71",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Raw RuntimeException thrown instead of MojoExecutionException in verifySafeHtml when files cannot be read, breaking Maven error reporting in VerifyMessageProperties.java:70",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Simplified Chinese file (zh_CN) given Traditional Chinese text for totpStep1 in messages_zh_CN.properties:112",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Danish identityProviderLinkBodyHtml has stray 'n' artifact remaining after HTML fix in messages_da.properties:9",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Lithuanian emailVerificationBodyHtml still has stray 'nJei' artifact after fix in messages_lt.properties:3",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ANCHOR_PATTERN regex over-matches tags starting with 'a' (like abbr, area, article, aside, address) instead of only anchor tags in VerifyMessageProperties.java:145",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Raw RuntimeException thrown instead of MojoExecutionException when English properties file cannot be read in VerifyMessageProperties.java:79",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -59218,6 +61458,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Inverted grant-shortcut check and wrong offset in isAccessTokenId - the matcher slices substring(3, 5) and returns false when it equals the expected shortcut, so the grant assertion never validates anything. The correct indices should be substring(4, 6) and the condition should be negated to fail when it does NOT match.",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Constructor null-checks grantType twice, never rawTokenId - the second null check repeats Objects.requireNonNull(grantType, ...) with the message 'Null rawTokenId not allowed', so rawTokenId is never validated and a null rawTokenId flows into encodeTokenId as the literal string 'null'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New abstract getShortcut() method breaks external grant providers - adding an abstract method with no default to OAuth2GrantTypeFactory SPI causes third-party grant-type providers compiled against the previous interface to fail with AbstractMethodError at server startup",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Client-credentials and exchange paths never set GRANT_TYPE on ClientSessionContext, so DefaultTokenContextEncoderProvider encodes their token ids with the UNKNOWN (na) grant shortcut instead of the real grant",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getShortcut javadoc says 3-letter but all implementations return 2-character shortcuts and DefaultTokenContextEncoderProvider requires exactly 6 characters (three 2-char groups)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Lazy grant-map refresh is not atomic and overwrites collisions - getShortcutByGrantType and getGrantTypeByShortcut perform an unlocked check-then-act refresh of two separate ConcurrentHashMaps on lookup miss",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -60348,6 +62626,44 @@
         "line": null,
         "source": "extracted"
       }
+    ],
+    "tenki": [
+      {
+        "text": "Recovery codes stored unhashed in user storage - the user-storage branch serializes raw generatedCodes list into UserCredentialModel while local-DB fallback persists already hashed codes, exposing cleartext codes in federated user store",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Federated recovery credential loses its id - getCredentials rebuilds the recovery-codes model via createFromValues which never assigns an id, causing removeStoredCredentialById to silently remove nothing and ID-based lookups to fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Stale local recovery codes stay active after storage write - when codes are written to user storage, pre-existing local recovery-code credentials are not deleted, allowing superseded local codes to still authenticate",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Federated-first credential lookup can parse dummy credentials - getCredential returns first federated credential without skipping placeholder entries with null data, causing parsing to throw during login instead of falling back to locally stored credential",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Recovery codes validated with anyMatch, never consumed - storage provider's isValid accepts any stored code via anyMatch and never removes a used code, breaking single-use/next-code semantics for federated users",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "disableCredentialType ignores recovery-codes type - supportsCredentialType and isConfiguredFor were extended for RecoveryAuthnCodesCredentialModel.TYPE but disableCredentialType still only clears OTP credential",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
     ]
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
@@ -61024,6 +63340,26 @@
       },
       {
         "text": "Grammar issue: 'While on preview stage' is unidiomatic English. Should be 'While in preview' or 'While in the preview stage'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "The new CAUTION block states the Keycloak Operator will fail if the preview feature 'rolling-updates' is not enabled, but no code enforces this claim",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "In both UpdateCompatibilityCheck.run() and UpdateCompatibilityMetadata.run(), the new ROLLING_UPDATES gate runs before validateConfig(), which masks usage errors in update commands",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RECREATE_UPGRADE_EXIT_CODE is changed from 4 to 3 and the freed value 4 is assigned to the new FEATURE_DISABLED result, which flips the meaning for existing automation",
         "path": null,
         "line": null,
         "source": "extracted"
@@ -62168,6 +64504,86 @@
       },
       {
         "text": "Static import TOKEN_EXCHANGE and the logger field are unused in production code, increasing noise and potentially failing static-analysis checks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "tenki": [
+      {
+        "text": "Removal listener in AdminPermissions.java is gated on ADMIN_FINE_GRAINED_AUTHZ flag which V2 configuration does not enable, causing role/client/group deletion to silently skip disabling admin permission resources and leaving stale permission resources",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "When both ADMIN_FINE_GRAINED_AUTHZ flags are enabled, management(...).clients().setPermissionsEnabled(...) resolves to V2 implementation which throws UnsupportedOperationException, breaking deletion entirely",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2.canExchangeTo unconditionally throws UnsupportedOperationException but token exchange flow calls clients().canExchangeTo(...), causing any client-initiated token exchange with audience check to fail with server error instead of permission decision",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getClientsWithPermission iterates resources by type and adds resource.getName() to result, but the realm-level all-clients resource has name 'Clients' which gets emitted as a client ID, while per-client resources never get setType and are invisible to enumeration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "The caller of getClientsWithPermission feeds the set into realm.getClientById(cid).getRolesStream() which NPEs for 'Clients' string, breaking available-role-mappings endpoint for realms with all-clients grant",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "testManageOnlyOneClient renames shared myclient to 'somethingNew' and never restores it, causing sibling tests calling findByClientId('myclient').get(0) to get empty list and throw IndexOutOfBoundsException",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "testManageOnlyOneClient permanently removes a default client scope without restoring it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "ClientPermissionsV2.hasPermission falls back to all-clients resource and calls policyStore.findByResource without null check, but getResourceTypeResource returns null when 'Clients' resource was never created, causing NPE in JPAPolicyStore.findByResource",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "requireView javadoc states 'Returns true' but the method actually throws",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "requireViewClientScopes javadoc states 'Returns true' but the method actually throws",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getEvaluationContext method in ClientPermissionsV2 is private and never called, leaving unused code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "AdminPermissionsSchema.getResourceName only resolves names for Users type but lacks a Clients type branch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "realm.cleanup() lambdas dereference findByName(name).getId() without null check, causing NPE when policy already removed",
         "path": null,
         "line": null,
         "source": "extracted"

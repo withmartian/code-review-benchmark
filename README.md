@@ -73,7 +73,7 @@ GitHub Search API
 2. **Extract human actions** — The LLM reads the post-review commits and identifies what the developer actually fixed after the bot commented.
 3. **Judge matching** — The LLM determines which bot suggestions correspond to actual fixes, producing per-PR precision (what % of the bot's comments were useful?) and recall (what % of real issues did the bot catch?).
 
-**Bots tracked**: CodeRabbit, GitHub Copilot, Claude, Cursor, Augment, Codex, Gemini, Greptile, Graphite, Qodo, Propel, and others.
+**Bots tracked**: CodeRabbit, GitHub Copilot, Claude, Cursor, Augment, Codex, Gemini, Greptile, Graphite, Qodo, Propel, Tenki, and others.
 
 **Dashboard features**: Filter by language, project domain, PR type, issue severity, diff size, engagement signals (human comments/commits after bot review), solo-bot PRs, and sample controls. Track performance over time. Adjustable F-beta weighting. See [`online/FILTERS.md`](online/FILTERS.md) for the full filter spec.
 

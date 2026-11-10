@@ -33,6 +33,18 @@ that merely confirm a fix, acknowledge a clarification, say a parent comment was
 broad, pre-existing, already addressed, or out of scope, unless that same comment introduces a
 new distinct code issue.
 
+Bots often post PR-level content next to their findings. This content is not a code-review
+finding, even when it is phrased as advice or sits inside a review body or issue comment:
+- Overviews of the change: walkthroughs, change summaries, per-file tables, release notes,
+  sequence or architecture diagrams, and effort, risk, or confidence ratings.
+- Results of automated checks reported as a status (pass/fail/warning) or as a metric against a
+  configured threshold, such as title, description, linked-issue, or scope checks and coverage
+  percentages. A metric below a threshold is not by itself a finding. Extract a finding from a
+  check result only when it names a concrete problem in the changed code, such as a specific
+  missing or incorrect behavior.
+- Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
+  tips, links to dashboards, and configuration or review-settings details.
+
 PR Title: {pr_title}
 PR Author: {pr_author}
 Repository: {repo_name}

@@ -34,6 +34,13 @@ def test_extract_bot_suggestions_excludes_pr_overviews_check_status_and_controls
     assert "checkboxes, buttons, commands the reader can run" in rendered
 
 
+def test_extract_bot_suggestions_keeps_concrete_problems_explained_under_a_rating() -> None:
+    rendered = _render()
+
+    assert "Effort, risk, or confidence ratings themselves." in rendered
+    assert "concrete problem in the changed code, that problem is a finding: extract it." in rendered
+
+
 def test_extract_bot_suggestions_puts_scope_rules_before_the_inputs() -> None:
     rendered = _render()
 

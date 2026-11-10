@@ -35,8 +35,10 @@ new distinct code issue.
 
 Bots often post PR-level content next to their findings. This content is not a code-review
 finding, even when it is phrased as advice or sits inside a review body or issue comment:
-- Overviews of the change: walkthroughs, change summaries, per-file tables, release notes,
-  sequence or architecture diagrams, and effort, risk, or confidence ratings.
+- Overviews of the change: walkthroughs, change summaries, per-file tables, release notes, and
+  sequence or architecture diagrams.
+- Effort, risk, or confidence ratings themselves. When the text that explains a rating names a
+  concrete problem in the changed code, that problem is a finding: extract it.
 - Results of automated checks reported as a status (pass/fail/warning) or as a metric against a
   configured threshold, such as title, description, linked-issue, or scope checks and coverage
   percentages. A metric below a threshold is not by itself a finding. Extract a finding from a

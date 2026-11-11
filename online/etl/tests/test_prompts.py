@@ -324,3 +324,19 @@ def test_the_merge_base_check_passes_only_a_base_without_a_prompt_version(tmp_pa
     git("commit", "-q", "-m", "table appears")
     with pytest.raises(RuntimeError, match="missing at"):
         pins_at_merge_base("main", str(pins))
+
+
+def test_the_merge_base_check_fails_when_prompts_py_moved_but_the_table_exists(tmp_path) -> None:
+    import pytest
+
+    from pipeline.prompt_pins import pins_at_merge_base
+
+    git, _prompts, pins = _scratch_repo(tmp_path)
+    (tmp_path / "llm" / "prompt_text.py").write_text('EXTRACTION_PROMPT_VERSION = "v1"\n')  # moved away
+    pins.write_text('PINNED_INPUTS_BY_VERSION = {"v1": {"previous": None, "inputs": {"P": "a"}}}\n')
+    git("add", ".")
+    git("commit", "-q", "-m", "prompts.py moved")
+    git("checkout", "-q", "-b", "change")
+    git("commit", "-q", "--allow-empty", "-m", "anything")
+    with pytest.raises(RuntimeError, match="has no EXTRACTION_PROMPT_VERSION"):
+        pins_at_merge_base("main", str(pins))

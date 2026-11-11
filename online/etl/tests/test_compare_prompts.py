@@ -349,7 +349,11 @@ async def test_analyses_with_no_stored_actions_are_kept_and_scored_without_recal
     row = _pr_row()
     for n, actions in ((1, [{"action_id": "A1", "description": "fix"}]), (2, [])):
         await repo.insert_pr(
-            chatbot_id=cid, repo_name="org/repo", pr_number=n, pr_url=f"https://github.com/org/repo/pull/{n}"
+            chatbot_id=cid,
+            repo_name="org/repo",
+            pr_number=n,
+            pr_url=f"https://github.com/org/repo/pull/{n}",
+            pr_merged=True,
         )
         pr = await repo.get_pr(cid, "org/repo", n)
         await repo.update_commits(pr["id"], json.loads(row["commits"]))
@@ -444,7 +448,11 @@ async def _db_with_analyses(tmp_path: Path, numbers: tuple[int, ...]):
     row = _pr_row()
     for n in numbers:
         await repo.insert_pr(
-            chatbot_id=cid, repo_name="org/repo", pr_number=n, pr_url=f"https://github.com/org/repo/pull/{n}"
+            chatbot_id=cid,
+            repo_name="org/repo",
+            pr_number=n,
+            pr_url=f"https://github.com/org/repo/pull/{n}",
+            pr_merged=True,
         )
         pr = await repo.get_pr(cid, "org/repo", n)
         await repo.update_commits(pr["id"], json.loads(row["commits"]))
@@ -510,3 +518,37 @@ async def test_a_run_with_an_empty_model_name_stops_before_any_call(tmp_path: Pa
             await _run(args, cfg, repo)
     finally:
         await db.close()
+
+
+async def test_all_analyzed_compares_merged_prs_only(tmp_path: Path, capsys) -> None:
+    import argparse
+
+    from config import DBConfig
+    from prompt_eval.compare_prompts import _run
+
+    db, repo = await _db_with_analyses(tmp_path, (1, 2))
+    cid = (await repo.get_chatbot("reviewer[bot]"))["id"]
+    await repo.insert_pr(
+        chatbot_id=cid, repo_name="org/repo", pr_number=3, pr_url="https://github.com/org/repo/pull/3", pr_merged=False
+    )
+    pr = await repo.get_pr(cid, "org/repo", 3)
+    await repo.insert_analysis(
+        pr_id=pr["id"],
+        chatbot_id=cid,
+        bot_suggestions=[],
+        human_actions=[],
+        matching_results=[],
+        total_bot_comments=0,
+        matched_bot_comments=0,
+        precision=None,
+        recall=None,
+        f_beta=None,
+        model_name="m",
+    )
+    args = argparse.Namespace(pr_list=None, bots=None, limit_per_bot=None, draws=2, dry_run=True)
+    try:
+        assert await _run(args, DBConfig(), repo) == 0
+    finally:
+        await db.close()
+
+    assert "2 analyzed PRs" in capsys.readouterr().out  # the unmerged PR 3 is not compared

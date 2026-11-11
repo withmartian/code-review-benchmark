@@ -67,9 +67,10 @@ NULL_SHA = "0" * 40
 def pins_at_merge_base(base_ref: str, test_file: str) -> dict[str, dict]:
     """PINNED_INPUTS_BY_VERSION as it is in `test_file` at the merge-base of HEAD and `base_ref`.
 
-    Returns {} only when the base predates the version stamp (its llm/prompts.py has no
-    EXTRACTION_PROMPT_VERSION). Raises when git cannot resolve the refs, and when the base has a
-    version but the test file or its table is missing there (a moved or deleted table would otherwise
+    Returns {} only when the base predates the version stamp: its llm/prompts.py has no
+    EXTRACTION_PROMPT_VERSION and the pinned test file does not exist there. Raises when git cannot
+    resolve the refs, when the base has a version but the test file or its table is missing, and when
+    the test file or table exists but prompts.py or its version does not (a moved file would otherwise
     disable the check)."""
     import ast
     from pathlib import Path
@@ -94,13 +95,21 @@ def pins_at_merge_base(base_ref: str, test_file: str) -> dict[str, dict]:
     merge_base = git("merge-base", "HEAD", base_ref)
     top = Path(git("rev-parse", "--show-toplevel"))
     test_rel = Path(test_file).resolve().relative_to(top)
-    prompts = show((test_rel.parent.parent / "llm" / "prompts.py").as_posix())
-    if prompts is None or "EXTRACTION_PROMPT_VERSION =" not in prompts:
-        return {}
+    prompts_rel = (test_rel.parent.parent / "llm" / "prompts.py").as_posix()
+    prompts = show(prompts_rel)
     source = show(test_rel.as_posix())
+    table = None
+    for node in ast.parse(source).body if source is not None else []:
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "PINNED_INPUTS_BY_VERSION":
+            table = ast.literal_eval(node.value)
+    has_version = prompts is not None and "EXTRACTION_PROMPT_VERSION =" in prompts
+    if not has_version:
+        if table is not None or (prompts is None and source is not None):
+            # the pinned table (or its test file) exists but the version moved: the check would go blind
+            raise RuntimeError(f"{prompts_rel} has no EXTRACTION_PROMPT_VERSION at {merge_base}, but {test_rel} exists")
+        return {}  # the base predates the version stamp: nothing to compare
     if source is None:
         raise RuntimeError(f"{test_rel} is missing at {merge_base}, which already has a prompt version")
-    for node in ast.parse(source).body:
-        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "PINNED_INPUTS_BY_VERSION":
-            return ast.literal_eval(node.value)
-    raise RuntimeError(f"PINNED_INPUTS_BY_VERSION is missing from {test_rel} at {merge_base}")
+    if table is None:
+        raise RuntimeError(f"PINNED_INPUTS_BY_VERSION is missing from {test_rel} at {merge_base}")
+    return table

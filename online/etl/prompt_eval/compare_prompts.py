@@ -13,8 +13,9 @@ extraction prompts, the matching prompt, the model configuration and every input
 a rerun resumes that file only when the fingerprint matches and otherwise refuses it, so rows from
 a different prompt, model or input set are never mixed in. With --pr-list, a CSV that has a bot
 column selects (bot, pr_url) pairs; one with only pr_url selects every bot's analysis of the PR.
-Without --pr-list the script compares every analyzed PR in the DB, so it asks for --all-analyzed
-(cap it with --limit-per-bot).
+Only merged PRs are compared, as the API serves only those. Without --pr-list the script compares
+every analyzed merged PR in the DB, so it asks for --all-analyzed (--limit-per-bot keeps the newest
+analyses of each bot).
 extraction_scope_prs.csv lists the public PRs of the measurement made when the non-finding rules
 were added, and extraction_scope_results.jsonl holds that measurement's per-PR metrics (bot, arm,
 suggestion and action counts, precision, recall; no review text). That measurement came from a
@@ -266,11 +267,19 @@ def is_selected(bot: str, pr_url: str, urls: set[str] | None, pairs: set[tuple[s
     return urls is None or pr_url in urls
 
 
+# Merged PRs only, as the API serves; newest analysis first, so --limit-per-bot takes the newest.
+MERGED_ANALYSES_SQL = """
+    SELECT la.*, p.pr_url
+    FROM llm_analyses la
+    JOIN prs p ON la.pr_id = p.id
+    WHERE la.chatbot_id = $1 AND p.pr_merged = TRUE
+    ORDER BY la.analyzed_at DESC
+"""
 ANALYSES_FOR_URLS_SQL = """
     SELECT la.*, p.pr_url
     FROM llm_analyses la
     JOIN prs p ON la.pr_id = p.id
-    WHERE la.chatbot_id = $1 AND p.pr_url IN ({urls})
+    WHERE la.chatbot_id = $1 AND p.pr_merged = TRUE AND p.pr_url IN ({urls})
 """
 
 
@@ -370,7 +379,9 @@ async def _run(args: argparse.Namespace, cfg: DBConfig, repo: PRRepository) -> i
             continue
         n = 0
         analyses = (
-            await analyses_for_urls(repo, cb["id"], urls) if urls is not None else await repo.get_analyses(cb["id"])
+            await analyses_for_urls(repo, cb["id"], urls)
+            if urls is not None
+            else await repo.db.fetchall(MERGED_ANALYSES_SQL, (cb["id"],))
         )
         for an in analyses:
             # analyses with no stored human actions are kept: precision is still defined, recall is not,
@@ -470,11 +481,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument(
         "--all-analyzed",
         action="store_true",
-        help="without --pr-list, compare every analyzed PR in the DB (each one costs 4 LLM calls per draw; "
-        "cap it with --limit-per-bot)",
+        help="without --pr-list, compare every analyzed merged PR in the DB (each one costs 4 LLM calls per "
+        "draw; cap it with --limit-per-bot)",
     )
     ap.add_argument("--bots", help="comma-separated bot usernames; default: all")
-    ap.add_argument("--limit-per-bot", type=int)
+    ap.add_argument("--limit-per-bot", type=int, help="at most this many analyses per bot, the newest first")
     ap.add_argument("--draws", type=int, default=2)
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--out", default="compare_prompts.jsonl")

@@ -9,6 +9,7 @@ Dashboard server for the [online code review benchmark](../README.md). Axum-base
 | `DATABASE_URL` | PostgreSQL connection URL | *(required)* |
 | `BIND_ADDR` | Address to bind the HTTP server | `0.0.0.0:3000` |
 | `RUST_LOG` | Log level filter | `info` |
+| `SERVED_PROMPT_VERSION` | Extraction-prompt version whose analyses are served (`llm_analyses.model_name` ending in `+<version>`, e.g. `extract-v2`); unset, empty or `unstamped` serves the analyses made before versions were stamped. Flip it only after the backfill and relabel in [Rolling out a prompt change](../etl/README.md#rolling-out-a-prompt-change). | *(unstamped)* |
 
 ## Build & Run
 

@@ -126,32 +126,45 @@ uv run python main.py analyze --all --since 7d
 # Specific date window
 uv run python main.py analyze --all --since 2026-08-01 --until 2026-08-15
 
-# Re-analyze PRs already analyzed in a window after a prompt change; count first. Selects PRs whose
-# stored model_name is not "<model>+<EXTRACTION_PROMPT_VERSION>", reuses their stored human actions
-# (step 2 is not redrawn), replaces the analysis and deletes the labels (re-run `label` afterwards).
-# Rerun the same command until it selects nothing: re-analyzed PRs are stamped and skipped, failed
-# ones keep their old row and are retried. --limit is per bot (default 100); a warning says when
-# the selection hit it.
-uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-08-15 --limit 100000 --dry-run
-uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-08-15 --limit 100000
+# Re-analyze PRs already analyzed after a prompt change; count first. Selects PRs whose stored
+# model_name is not "<model>+<EXTRACTION_PROMPT_VERSION>", reuses their stored human actions (step 2
+# is not redrawn), replaces the analysis and deletes the labels (re-run `label` afterwards).
+# The selection must be explicit: a --since/--until window, or --all-time for every analyzed PR
+# (including PRs with no bot_reviewed_at, which a window never selects). --limit is per bot
+# (default 100) and a warning says when the selection hit it: run it with --limit 500 in a loop
+# until the dry run counts 0. Re-analyzed PRs are stamped and not selected again; a failed one
+# keeps its old row and is retried, and after --max-attempts failures (default 3) it is given up
+# (status 'error', no longer selected; the dry run counts these).
+uv run python main.py analyze --all --reanalyze --all-time --limit 500 --dry-run
+uv run python main.py analyze --all --reanalyze --all-time --limit 500
+uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-08-15 --limit 500
 ```
 
 `--sort sweep` ignores `--since`/`--until` — it orders by `assembled_at DESC` to pick up PRs that were discovered long ago but only recently assembled (e.g., merged weeks after the bot reviewed them).
 
 ### Rolling out a prompt change
 
-Analyses store `model_name` as `"<model>+<EXTRACTION_PROMPT_VERSION>"` (`llm/prompts.py`), and the API
-service serves only rows with the current stamp (`EXTRACTION_PROMPT_VERSION` in
-`../api_service/src/db.rs`; a test checks the two agree). After a change that bumps the version, in
+Analyses store `model_name` as `"<model>+<EXTRACTION_PROMPT_VERSION>"` (`llm/prompts.py`). The API
+service serves one prompt version at a time, named by its `SERVED_PROMPT_VERSION` setting: unset, it
+keeps serving the analyses made before versions were stamped, so deploying this code changes
+nothing on the leaderboard until the setting is flipped. New analyses this code writes carry the new
+stamp, so they are not served until the flip either: run the backfill soon after deploying. After a
+change that bumps the version, in
 this order:
 
 1. Pause the scheduled analyze job (`jobs/analyze_job.py`), so the backfill runs alone.
-2. Backfill: `analyze --all --reanalyze --since ... --until ... --limit 100000`, rerun until its
-   `--dry-run` counts 0 for every bot (a failed re-analysis keeps its old row and is retried).
-3. Run `label --all --since ... --until ... --limit 100000`: re-analysis deletes the affected labels.
-4. Restart or redeploy the API service: it loads analyses only at start, and serves only the
-   rows with the current stamp. Restarting earlier is safe but shows only the rows re-analyzed so far.
-5. Resume the `analyze` job.
+2. Backfill every served row: `analyze --all --reanalyze --all-time --limit 500` in a loop until its
+   `--dry-run` selects 0 for every bot. A failed re-analysis keeps its old row and is retried; after
+   `--max-attempts` failures it is given up (status `error`).
+3. Run `label --all --limit 500` in a loop until it labels nothing: re-analysis deletes the affected
+   labels.
+4. Check completeness: at start the API logs, per bot and over merged PRs only (what the leaderboard
+   reads), how many analyses carry the current stamp, none, or another one, and how many were given
+   up. Every served row should carry the current stamp; given-up PRs drop out of the leaderboard
+   once the setting is flipped.
+5. Set `SERVED_PROMPT_VERSION` to the new version (e.g. `extract-v2`) and restart or redeploy the API
+   service (it loads analyses only at start).
+6. Resume the `analyze` job.
 
 ### Label PRs
 

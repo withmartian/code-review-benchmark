@@ -1063,8 +1063,25 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
-    fn test_only_rows_with_the_current_prompt_stamp_are_selected() {
-        assert_eq!(crate::db::model_name_stamp_pattern(), "%+extract-v2");
+    fn test_stamp_pattern_matches_the_version_suffix() {
+        assert_eq!(crate::db::model_name_stamp_pattern("extract-v2"), "%+extract-v2");
+    }
+
+    #[test]
+    fn test_served_prompt_version_defaults_to_the_unstamped_set() {
+        use crate::db::served_prompt_version;
+        assert_eq!(served_prompt_version(None), None);
+        assert_eq!(served_prompt_version(Some(String::new())), None);
+        assert_eq!(served_prompt_version(Some("  ".to_string())), None);
+        assert_eq!(served_prompt_version(Some("unstamped".to_string())), None);
+    }
+
+    #[test]
+    fn test_served_prompt_version_reads_a_named_version() {
+        assert_eq!(
+            crate::db::served_prompt_version(Some(" extract-v2 ".to_string())),
+            Some("extract-v2".to_string())
+        );
     }
 
     #[test]

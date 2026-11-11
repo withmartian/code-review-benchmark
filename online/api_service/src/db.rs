@@ -6,23 +6,39 @@ use tracing::{info, warn};
 
 use crate::model::*;
 
-/// The extraction-prompt version the ETL stamps into `llm_analyses.model_name` as
+/// The extraction-prompt version this code's ETL stamps into `llm_analyses.model_name` as
 /// `"<model>+<version>"`. It must equal `EXTRACTION_PROMPT_VERSION` in `online/etl/llm/prompts.py`
-/// (both sides have a test). Only analyses with this stamp are served, so a window that is only
-/// partly re-scored after a prompt change never mixes two prompts in one leaderboard.
+/// (both sides have a test).
 pub const EXTRACTION_PROMPT_VERSION: &str = "extract-v2";
 
-/// SQL LIKE pattern matching a `model_name` stamped with the current extraction-prompt version.
-pub fn model_name_stamp_pattern() -> String {
-    format!("%+{EXTRACTION_PROMPT_VERSION}")
+/// The analyses to serve, from `SERVED_PROMPT_VERSION`: unset, empty or `unstamped` serves the
+/// analyses made before prompt versions were stamped; a version (e.g. `extract-v2`) serves only
+/// analyses with that stamp. Only one prompt's analyses are ever served, so a window that is partly
+/// re-scored never mixes two prompts. Flip it after the backfill and the relabel, then restart.
+pub fn served_prompt_version(env: Option<String>) -> Option<String> {
+    env.map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty() && v != "unstamped")
 }
 
-/// Load analyzed PR data (current extraction-prompt stamp only) from Postgres into an in-memory Snapshot.
+/// SQL LIKE pattern matching a `model_name` stamped with `version`.
+pub fn model_name_stamp_pattern(version: &str) -> String {
+    format!("%+{version}")
+}
+
+/// Load analyzed PR data (one prompt version, see `served_prompt_version`) from Postgres into an
+/// in-memory Snapshot.
 pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> {
     let pool = PgPoolOptions::new()
         .max_connections(2)
         .connect(database_url)
         .await?;
+
+    let served = served_prompt_version(std::env::var("SERVED_PROMPT_VERSION").ok());
+    let served_bind = served.clone().unwrap_or_default();
+    info!(
+        "Serving analyses for prompt version {}",
+        served.as_deref().unwrap_or("unstamped (made before prompt versions were stamped)")
+    );
 
     let rows = sqlx::query_as::<_, RawRow>(
         r#"
@@ -45,26 +61,52 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
         JOIN chatbots c ON la.chatbot_id = c.id
         LEFT JOIN pr_labels pl ON pl.pr_id = la.pr_id AND pl.chatbot_id = la.chatbot_id
         WHERE p.pr_merged = TRUE
-          AND la.model_name LIKE $1
+          AND CASE WHEN $1 = '' THEN (la.model_name IS NULL OR la.model_name NOT LIKE '%+%')
+                   ELSE la.model_name LIKE '%+' || $1 END
         ORDER BY p.bot_reviewed_at ASC NULLS FIRST
         "#,
     )
-    .bind(model_name_stamp_pattern())
+    .bind(&served_bind)
     .fetch_all(&pool)
     .await?;
 
-    let (unstamped,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM llm_analyses WHERE model_name IS NULL OR model_name NOT LIKE $1",
+    // Per bot, merged PRs only (what the leaderboard reads): how many analyses carry this code's
+    // stamp, none, or another one, and how many the re-analysis gave up on. Use it to check that a
+    // backfill is complete before flipping SERVED_PROMPT_VERSION.
+    let mix: Vec<(String, String, bool, i64)> = sqlx::query_as(
+        r#"
+        SELECT c.github_username,
+               CASE WHEN la.model_name LIKE $1 THEN 'current'
+                    WHEN la.model_name IS NULL OR la.model_name NOT LIKE '%+%' THEN 'unstamped'
+                    ELSE 'other' END AS stamp,
+               COALESCE(p.status = 'error', FALSE) AS gave_up,
+               COUNT(*) AS n
+        FROM llm_analyses la
+        JOIN prs p ON la.pr_id = p.id
+        JOIN chatbots c ON la.chatbot_id = c.id
+        WHERE p.pr_merged = TRUE
+        GROUP BY 1, 2, 3
+        ORDER BY 1, 2, 3
+        "#,
     )
-    .bind(model_name_stamp_pattern())
-    .fetch_one(&pool)
+    .bind(model_name_stamp_pattern(EXTRACTION_PROMPT_VERSION))
+    .fetch_all(&pool)
     .await?;
-    if unstamped > 0 {
-        warn!(
-            "Not serving {} analyses scored with another extraction prompt (model_name without \"+{}\"); \
-             re-analyze them with `analyze --reanalyze` and restart",
-            unstamped, EXTRACTION_PROMPT_VERSION
-        );
+    for (bot, stamp, gave_up, n) in &mix {
+        let note = if *gave_up { " (re-analysis given up, status 'error')" } else { "" };
+        info!("Analyses of merged PRs for {bot}: {n} {stamp} (this code writes +{EXTRACTION_PROMPT_VERSION}){note}");
+    }
+    let not_served: i64 = mix
+        .iter()
+        .filter(|(_, stamp, _, _)| match &served {
+            None => stamp != "unstamped",
+            Some(v) if v == EXTRACTION_PROMPT_VERSION => stamp != "current",
+            Some(_) => true,
+        })
+        .map(|(_, _, _, n)| n)
+        .sum();
+    if not_served > 0 {
+        warn!("{not_served} analyses of merged PRs are not served (other prompt versions); see the per-bot counts above");
     }
 
     // Load ignored tools

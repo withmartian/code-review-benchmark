@@ -131,7 +131,10 @@ uv run python main.py analyze --all --since 2026-08-01 --until 2026-08-15
 
 Each analysis stores `model_name` as `"<model>+<EXTRACTION_PROMPT_VERSION>"` (`llm/prompts.py`), so
 analyses scored with different extraction prompts can be told apart; analyses made before the
-version was stamped carry no `+<version>` suffix. A change to a step prompt, a response schema or the
+version was stamped carry no `+<version>` suffix. `analyze` selects only PRs that have no analysis
+yet, and the API service reads every analysis whatever its `model_name`, so after a prompt change the
+leaderboard and its time series mix analyses made with both prompts until the older ones are
+re-scored or the API filters on the version. A change to a step prompt, a response schema or the
 code that renders step input bumps the version (`tests/test_prompts.py` fails until it does).
 
 ### Label PRs

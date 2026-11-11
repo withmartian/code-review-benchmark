@@ -52,7 +52,20 @@ DEFAULT_DIFF_LINES_MAX = 2000
 # rating and status lines bots post, as the extraction step paraphrases them. Anything that does not
 # match a whole template is a finding.
 _N = r"~?\d+(?:\.\d+)?\s*%"
-_SCOPE = r"\(?(?:for|on|in) [^.;:()]*?(?:functions?|diff|changes?)[^.;:()]*\)?"
+# Scope and remediation tails are fixed phrases too: a tail that goes on to name anything else (a
+# path, a bug, a behavior) makes the whole text fail to match, so the item stays a finding.
+_FUNCS = (
+    r"(?:the )?(?:(?:touched|changed|modified|affected)(?: complex| higher-complexity)? functions?"
+    r"|functions? (?:touched|changed|modified)(?: (?:by|in) (?:this|the) (?:diff|pr|pull request|change))?)"
+    r"(?: with (?:cyclomatic )?complexity ?(?:>=|≥) ?\d+)?"
+)
+_SCOPE = rf"\(?(?:for|on|in) (?:{_FUNCS}|(?:this|the) (?:diff|pr|pull request))\)?"
+_REMEDY = (
+    r"(?:so |please |bot (?:requests|recommends) )?(?:add(?:ing)?|consider adding|missing) (?:the )?(?:missing )?"
+    rf"(?:docstrings?|tests?)(?: (?:need to be|should be) added)?(?: (?:for|to) {_FUNCS}| for (?:the )?missing functions?)?"
+    r"(?: (?:to|so (?:as )?to) (?:meet|satisfy|reach|pass) (?:the )?(?:required |configured )?(?:\d+% )?"
+    r"(?:threshold|check|coverage(?: threshold)?|ci(?: threshold)?|pre-merge check))?"
+)
 _COVERAGE_TEMPLATE = (
     r"(?:\(?(?:ci/)?(?:pre-merge|ci|doc) check\)?(?: (?:failure|failed|finding|warning|reports|indicates|flagged|warns))?:? )?"
     r"(?:insufficient |only )?(?:the )?(?:ci )?(?:docstring|test) coverage(?: pre-merge| ci)?(?: check| gate| warning)?"
@@ -64,8 +77,7 @@ _COVERAGE_TEMPLATE = (
     rf"(?:,? \(?(?:vs\.?|<|versus|below)(?: the)?(?: required)?(?: threshold)?(?: of)? {_N}(?: threshold)?\)?"
     rf"| which is insufficient(?: \(required {_N}\))?)?"
     rf"(?:,? {_SCOPE})?"
-    r"(?:[,.;:] (?:so |add|please add|missing|consider adding|bot (?:requests|recommends))[^.]*)?\.?"
-    r"(?: (?:add|missing)[^.]*\.?)?"
+    rf"(?:[,.;:] {_REMEDY})?\.?"
 )
 _TEMPLATES = {
     "coverage": re.compile(_COVERAGE_TEMPLATE, re.I),
@@ -80,8 +92,10 @@ _TEMPLATES = {
     # "Actionable comments posted: 2", "Bot review was paused for this user, so no ... were produced ..."
     "run_status": re.compile(
         r"(?:actionable comments posted: \d+|no actionable comments(?: were generated)?"
-        r"|(?:the )?(?:bot )?review (?:was|has been) (?:paused|skipped)(?: for this (?:user|pull request|pr))?"
-        r"(?:,? so no (?:automated )?(?:code-review )?findings were produced(?: in the pr comments)?)?)\.?",
+        r"|(?:the )?(?:\w+ )?(?:code )?review (?:(?:was|has been) (?:paused|skipped|not run)|did not (?:complete|run)|failed)"
+        r"(?: for this (?:user|pull request|pr))?(?: \(review status: \w+\))?"
+        r"(?:,? so no (?:automated |substantive )?(?:code-review )?findings were produced(?: in the (?:pr|bot) comments)?)?"
+        r"|(?:the )?bot(?:'s)? review comments contained no (?:substantive )?(?:code-review )?findings)\.?",
         re.I,
     ),
     # "Offers to generate unit tests (beta)", "The bot offers to generate docstrings for this PR"
@@ -217,11 +231,11 @@ async def run(
         await db.close()
     by_bot: dict[str, list[dict]] = {}
     for r in rows:
-        if not include_ignored and ignored and r["bot"] in ignored:
+        shown = MERGE_INTO.get(r["bot"], r["bot"])  # db.rs: the effective (merged) username
+        if not include_ignored and ignored and shown in ignored:
             continue
         if diff_lines_max is not None and r.get("diff_lines") is not None and r["diff_lines"] > diff_lines_max:
             continue
-        shown = MERGE_INTO.get(r["bot"], r["bot"])
         if bot is None or shown == MERGE_INTO.get(bot, bot):
             by_bot.setdefault(shown, []).append(r)
     return {b: summarize(rs, beta) for b, rs in sorted(by_bot.items())}

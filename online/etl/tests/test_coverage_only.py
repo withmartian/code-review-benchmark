@@ -44,6 +44,17 @@ FOOFTILLY_FINDING = next(f["quote"] for f in FOOFTILLY["findings"] if f["kind"] 
         ("Actionable comments posted: 2", "run_status"),
         ("Bot review was paused for this user, so no automated code-review findings were produced.", "run_status"),
         ("Review was skipped.", "run_status"),
+        (
+            "Codex code review did not complete (review status: Failed), so no substantive findings were produced"
+            " in the bot comments.",
+            "run_status",
+        ),
+        ("Bot review comments contained no substantive code-review findings.", "run_status"),
+        (
+            "Docstring coverage check failed (42.86% vs required 80%) for touched functions; bot requests adding"
+            " missing docstrings to meet the threshold.",
+            "coverage",
+        ),
         ("Offers to generate unit tests (beta)", "generation_offer"),
     ],
 )
@@ -68,6 +79,14 @@ def test_whole_text_templates_of_fixed_lines_are_excluded(description: str, kind
         "Test coverage is missing for the retry path, which handles 100% of transient failures",
         "Review was skipped for generated files, but src/gen/handler.py contains hand-written logic with a bug",
         "The CLI's --generate docstrings flag crashes when the output directory does not exist",
+        # a gate line followed by a concrete problem: the tail is not a fixed remediation phrase
+        "Test coverage is 61% below the required 80%; add a regression test because parse_token() accepts expired"
+        " tokens.",
+        "Test coverage is 0%. Add tests for the token-expiry path, which silently accepts expired tokens.",
+        "Docstring coverage check failed (42.86% vs required 80%); missing input validation in upload handler"
+        " allows path traversal.",
+        "Docstring coverage is 25% vs 80%; missing null check in parse() causes a crash.",
+        "The review failed to flag that retry() never resets its backoff",
     ],
 )
 def test_anything_else_is_a_finding_even_without_a_file(description: str) -> None:
@@ -229,3 +248,45 @@ def test_until_includes_the_whole_end_date_as_the_api_does() -> None:
 
     assert _until_inclusive("2026-11-06") == "2026-11-07T00:00:00+00:00"
     assert _until_inclusive(None) is None
+
+
+async def test_ignored_tools_are_checked_against_the_merged_username(tmp_path: Path) -> None:
+    from db.connection import DBAdapter
+    from db.repository import PRRepository
+    from db.schema import create_tables
+
+    url = f"sqlite:///{tmp_path / 'x.db'}"
+    db = DBAdapter(url)
+    await db.connect()
+    await create_tables(db)
+    repo = PRRepository(db)
+    cid = await repo.upsert_chatbot("qodo-free-for-open-source-projects[bot]")
+    await repo.insert_pr(
+        chatbot_id=cid,
+        repo_name="o/r",
+        pr_number=1,
+        pr_url="https://github.com/o/r/pull/1",
+        pr_merged=True,
+        bot_reviewed_at="2026-10-02T12:00:00+00:00",
+    )
+    pr = await repo.get_pr(cid, "o/r", 1)
+    await repo.insert_analysis(
+        pr_id=pr["id"],
+        chatbot_id=cid,
+        bot_suggestions=[FINDING],
+        human_actions=[],
+        matching_results=[],
+        total_bot_comments=1,
+        matched_bot_comments=0,
+        precision=1.0,
+        recall=None,
+        f_beta=None,
+        model_name="m",
+    )
+    await db.execute("CREATE TABLE ignored_tools (github_username TEXT)")
+    await db.execute("INSERT INTO ignored_tools VALUES ($1)", ("qodo-code-review[bot]",))
+    await db.close()
+
+    # db.rs hides a bot by its effective (merged) name, so the secondary account is hidden with it
+    assert await run(None, url) == {}
+    assert sorted(await run(None, url, include_ignored=True)) == ["qodo-code-review[bot]"]

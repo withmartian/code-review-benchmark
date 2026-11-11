@@ -35,7 +35,7 @@ Raw API data is assembled into a unified chronological timeline: commits, review
 
 This is the core of the benchmark — a three-step LLM analysis:
 
-**Step 1 — Extract bot suggestions**: The LLM reads the code the bot reviewed (pre-review commits + diff) and the bot's comments. It extracts each actionable suggestion with category (bug, security, performance, style, refactor, docs) and severity (low/medium/high/critical). PR-level overviews (walkthroughs, change summaries, risk or effort ratings), automated check statuses and threshold metrics, and interactive controls are not counted as findings, whichever bot posts them.
+**Step 1 — Extract bot suggestions**: The LLM reads the code the bot reviewed (pre-review commits + diff) and the bot's comments. It extracts each actionable suggestion with category (bug, security, performance, style, refactor, docs) and severity (low/medium/high/critical). PR-level overviews (walkthroughs, change summaries, risk or effort ratings), automated check statuses and threshold metrics, interactive controls, review run metadata, and tool output the bot quotes as review context are not counted as findings, whichever bot posts them. Findings inside collapsed sections still are.
 
 **Step 2 — Extract human actions**: The LLM reads post-review commits and identifies what the developer actually fixed after the bot commented. This is the ground truth — real issues that required code changes.
 

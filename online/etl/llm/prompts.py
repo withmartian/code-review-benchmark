@@ -38,7 +38,8 @@ finding, even when it is phrased as advice or sits inside a review body or issue
 - Overviews of the change: walkthroughs, change summaries, per-file tables, release notes, and
   sequence or architecture diagrams.
 - Effort, risk, or confidence ratings themselves. When the text that explains a rating names a
-  concrete problem in the changed code, that problem is a finding: extract it.
+  concrete problem in the changed code, that problem is a finding: extract it, even when no
+  other comment states it.
 - Results of automated checks reported as a status (pass/fail/warning) or as a metric against a
   configured threshold, such as title, description, linked-issue, or scope checks and coverage
   percentages. A metric below a threshold is not by itself a finding. Extract a finding from a
@@ -49,6 +50,9 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   to generate code for the author, such as "generate docstrings" or "generate unit tests".
 - Review status and run metadata: counts of comments posted, lists of files reviewed or skipped,
   the commit range reviewed, run or plan details, and quota or allowance notes.
+- Context the bot lists as input to its review, such as quoted linter or static-analysis output,
+  code guidelines, or path instructions. A tool result is a finding only when the bot states it
+  in its own comment.
 
 These rules depend on what a piece of text is, not on where it sits. A concrete finding inside a
 collapsed or nested section (for example a nitpick or an outside-diff comment listed in a review

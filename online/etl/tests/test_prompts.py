@@ -38,7 +38,10 @@ def test_extract_bot_suggestions_keeps_concrete_problems_explained_under_a_ratin
     rendered = _render()
 
     assert "Effort, risk, or confidence ratings themselves." in rendered
-    assert "concrete problem in the changed code, that problem is a finding: extract it." in rendered
+    assert (
+        "concrete problem in the changed code, that problem is a finding: extract it, even when no\n  other comment states it."
+        in rendered
+    )
 
 
 def test_extract_bot_suggestions_puts_scope_rules_before_the_inputs() -> None:
@@ -59,3 +62,10 @@ def test_extract_bot_suggestions_keeps_findings_inside_collapsed_sections() -> N
 
     assert "These rules depend on what a piece of text is, not on where it sits." in rendered
     assert "A concrete finding inside a\ncollapsed or nested section" in rendered
+
+
+def test_extract_bot_suggestions_excludes_tool_output_listed_as_review_context() -> None:
+    rendered = _render()
+
+    assert "Context the bot lists as input to its review, such as quoted linter" in rendered
+    assert "A tool result is a finding only when the bot states it\n  in its own comment." in rendered

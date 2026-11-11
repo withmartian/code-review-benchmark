@@ -1,7 +1,7 @@
 """Extraction-scope checks on trimmed real review bodies.
 
 Each fixture under tests/fixtures/extraction_scope/ holds one public github.com PR's bot events
-(walkthrough issue comment, first review body, two inline comments) in the pipeline's event shape,
+(walkthrough issue comment, first review body, up to two inline comments) in the pipeline's event shape,
 trimmed by removing whole sections (image markup, static-analysis transcripts, agent prompts,
 suggested code, file lists, table rows past the second). Labels are verbatim quotes:
 ``non_findings`` is PR-level content the prompt says not to extract, ``findings`` are review
@@ -34,10 +34,11 @@ RULE_FOR_KIND = {
     "control": "Interactive controls and product text: checkboxes, buttons",
     "generation_offer": '"generate docstrings" or "generate unit tests"',
     "product_tip": "usage\n  tips, links to dashboards",
+    "tool_context": "quoted linter or static-analysis output",
     "inline": "Top-level inline\nreview comments generally contain substantive findings",
     "collapsed_nitpick": "A concrete finding inside a\ncollapsed or nested section",
     "collapsed_follow_up": "A concrete finding inside a\ncollapsed or nested section",
-    "rating_explanation": "concrete problem in the changed code, that problem is a finding: extract it.",
+    "rating_explanation": "that problem is a finding: extract it, even when no\n  other comment states it.",
 }
 
 

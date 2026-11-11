@@ -6,7 +6,10 @@ trimmed by removing hidden HTML comments and whole sections (image markup, stati
 transcripts, agent prompts, suggested code, file lists, table rows past the second). Labels are
 verbatim quotes: ``non_findings`` is PR-level content the prompt says not to extract,
 ``findings`` are review findings it must keep, including ones inside collapsed sections. Each
-label's optional ``pattern`` is used by the opt-in model check in test_extraction_scope_live.py.
+label's optional ``pattern`` is used by the opt-in model check in test_extraction_scope_live.py. A
+finding label stays asserted whatever its pass rate in that check (failures are disclosed, never
+hidden by un-asserting); only overview sentences, which no text pattern separates from findings on
+the same code, carry no pattern.
 
 These tests are deterministic: they check that both kinds of text reach the extraction prompt and
 that the prompt states a rule for every labelled kind.

@@ -144,8 +144,8 @@ co-reviewed with CodeRabbit in this window (`kiloconnect[bot]`, `propel-code-bot
 
 ## Qodo: resolved and dismissed findings
 
-Qodo keeps its earlier findings in its summary comment, struck through and marked "✓ Resolved" (the
-author fixed it) or "✗ Dismissed". 7 of the 13 Qodo PRs carry such marks. Items extracted on them
+Qodo keeps its earlier findings in its summary comment, struck through and marked as resolved (the
+author fixed it) or as dismissed. 7 of the 13 Qodo PRs carry such marks. Items extracted on them
 (matched in parentheses): current 30 (19) and 30 (18), earlier revision 24 (17) and 27 (18),
 `cee5e6cc` 27 (17), `093c763a` 25 (17), `a2fcbe51` 32 (18), head 29 (18). `093c763a` dropped 5 such
 findings that both current-prompt draws extract, on anolilab/neore#451 (two resolved, one of them
@@ -156,7 +156,7 @@ resolved finding and multica's dismissed one; swath's dismissed one is not. swat
 is extracted but not matched: the judge matched it in 1 of the 5 draws that extracted it (the
 current prompt's first), so swath#243's -14.3 recall at the head is the matching draw. No other
 bot's comments in the sample carry such marks except one cubic PR (5 matched in every arm) and
-CodeRabbit's inline comments, which it marks "Addressed in commit" once fixed (posted inline comments
+CodeRabbit's inline comments, which it marks as addressed once a commit fixes them (posted inline comments
 still extracted: see the type table).
 
 ## Ruling question 2: remarks about the PR itself
@@ -197,11 +197,11 @@ quoted tool output, on scylla the description-check row:
 | 2. wording 1 + ", including in a summary that lists its findings: extract it." (**chosen**) | 6/6 | 6/6 | 5/6 | 1/6 |
 | 3. wording 1 + ", wherever it is listed and whatever status or counts the bot shows beside it: extract it." | 6/6 | 4/6 | 5/6 | 0/6 |
 
-The live run on wording 2 passes 10 of 12 fixtures. It fails the scylla row in its one draw (so 5 of
-7 draws in all, a majority) and the TajsTokens dismissed finding. That finding is also missed by the
-current upstream prompt (`e616e849`: 0 of 6 draws) and by `093c763a` (0 of 8), so it is not a
-regression of this PR; the rule raises it to 1 of 7 draws on the head (2 of 9 on `a2fcbe51`). Both rows stay asserted, so the
-live run is expected to fail TajsTokens in most draws. The new Qodo fixture (anolilab/neore#451:
+The first live run on wording 2 passed 10 of 12 fixtures (the pcsx-redux and local-search-mcp
+findings were not yet asserted). It failed the scylla row in its one draw and the TajsTokens
+dismissed finding. That finding is also missed by the current upstream prompt (`e616e849`: 0 of 6
+draws) and by `093c763a` (0 of 8), so it is not a regression of this PR; the rule raises it a
+little (counts below). Both rows stay asserted. The new Qodo fixture (anolilab/neore#451:
 two resolved findings, one dismissed) passes, but also passes on `093c763a` (8 of 8): trimmed to the
 summary comment, it does not reproduce the drop seen on the full input, so it guards the rule rather
 than measuring it.
@@ -210,25 +210,31 @@ than measuring it.
 
 - scylladb/scylla-operator#3811 description-check row: 6 of 6 draws with the scoped intro, 5 of 6
   before the two `093c763a` rewordings, 13 of 18 on `093c763a` (4 of 8 in a later run), 1 of 9 on
-  `a2fcbe51`, 5 of 7 on the head.
+  `a2fcbe51`, 6 of 8 on the head.
 - hyperpolymath/universal-chat-extractor#186 zizmor lines: extracted in 0 of 14 targeted draws with
   the "configured review instructions" wording, 1 of 13 after the quoted-tool-output rule was
   narrowed, 1 of 9 on `a2fcbe51`, 0 of 6 on the head (and kept out in its live draw).
 - Copilot's description remark on fleetdm/fleet#55421: extracted in every draw of the scoped-intro
   prompts.
 
-### Finding labels that are not asserted
+### Asserted finding labels the model misses
 
-Two finding labels stay unasserted because neither the head nor the current upstream prompt
-(`e616e849`) extracts them in a majority of draws (6 draws each, every label checked):
+Rule: a finding label stays asserted whatever its pass rate, and its failures are disclosed here.
+Only the 10 overview sentences carry no pattern (no text pattern separates them from findings on
+the same code), so the live run does not check overviews. With every finding asserted, the live run
+on the head (one draw per fixture, after the wording draws) passes 9 of 12 and fails exactly these
+three, each counted over the targeted draws plus the live draws:
 
+- Qodo's dismissed finding on tajemniktv/TajsTokens#109: 1 of 8 on the head, 2 of 9 on
+  `a2fcbe51`, 0 of 8 on `093c763a`, 0 of 6 with the current upstream prompt (`e616e849`).
 - CodeRabbit's rating-explanation finding on pcsx-redux/pcsx-redux#2544 (a concrete problem named
-  only in the merge-risk explanation, which the rule says to extract): 0 of 6 on the head, 1 of 6
+  only in the merge-risk explanation, which the rule says to extract): 0 of 7 on the head, 1 of 6
   with the current upstream prompt (earlier: 1 of 5 and 0 of 5).
 - cubic's linked-issue table row on Fooftilly/local-search-mcp#27 that names a concrete problem:
-  0 of 6 on the head and 0 of 6 with the current upstream prompt (earlier: 0 of 3 and 0 of 4).
+  0 of 7 on the head, 0 of 6 with the current upstream prompt (earlier: 0 of 3 and 0 of 4).
 
-The same pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).
+The scylla description-check row passed this live draw (6 of 8 on the head in all). The same
+pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).
 
 ## Status notes and the coverage-only templates
 

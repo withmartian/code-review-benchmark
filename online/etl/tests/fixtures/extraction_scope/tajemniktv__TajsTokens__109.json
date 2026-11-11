@@ -1,0 +1,95 @@
+{
+ "source": "https://github.com/tajemniktv/TajsTokens/pull/109",
+ "bot_username": "qodo-code-review[bot]",
+ "events": [
+  {
+   "actor": "qodo-code-review[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-10-12T13:02:28Z",
+   "data": {
+    "body": "<h3>PR Summary by Qodo</h3>\n\nPreserve source timestamp provenance in Codex replay and accounting\n\n<code>🐞 Bug fix</code> <code>🧪 Tests</code> <code>📝 Documentation</code> <code>🕐 40+ Minutes</code>\n\n\n<details>\n<summary>AI Description</summary>\n\n<dl>\n<dd>\n<br/>\n\n><pre>\n>• Separate source event time, capture time, and timestamp quality without changing all-time token\n>  totals.\n>• Replay verified rollouts under existing occurrence IDs and exclude unverified time from dated\n>  accounting, Intelligence, and forecasts.\n>• Add migration and cross-platform regressions for source identity, thread selection, and path\n>  sanitization.\n></pre>\n\n</dd>\n</dl>\n\n</details>\n\n\n<details>\n<summary>High-Level Assessment</summary>\n\n<dl>\n<dd>\n\n<br/>\n\n>The following are alternative approaches to this PR:\n\n<details>\n<summary><b>1. Eager full-history provenance rebuild</b></summary>\n\n<dl>\n<dd>\n\n- ➕ Repairs eligible historical rows before dated queries resume.\n- ➖ Requires an unbounded migration and risks restamping captures or changing established occurrence identities and amounts.\n\n</dd>\n</dl>\n\n</details>\n\n>**Recommendation:** Keep the PR&#x27;s bounded, prefix-verified replay. It makes uncertain legacy chronology explicitly unverified immediately, then repairs only provenance that source bytes can establish; an eager rebuild offers faster coverage at substantially greater migration and data-integrity risk.\n\n</dd>\n</dl>\n\n</details>\n"
+   }
+  },
+  {
+   "actor": "qodo-code-review[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-10-12T13:08:02Z",
+   "data": {
+    "body": "<h3>Code Review by Qodo</h3>\n\n<code>🐞 Bugs (0)</code>  <code>📘 Rule violations (0)</code>  <code>🔗 Cross-repo conflicts (0)</code>  <code>📜 Skill insights (0)</code>\n\n\n<br/>\n\n\n<details>\n<summary>  1.  <s>Linux/macOS refreshes re-hash whole rollouts</s> <code>✗ Dismissed</code></summary>\n\n<br/>\n\n> <details open>\n><summary>Description</summary>\n><br/>\n>\n><pre>\n><b><i>cachedPrefix</i></b> now requires <b><i>sameFile</i></b> and is turned off for <b><i>fallback-path:</i></b> identities. Meanwhile,\n><b><i>legacyIdentity</i></b> keeps an upgraded <b><i>fallback:</i></b> checkpoint identity forever, so on Linux <b><i>sameFile</i></b>\n>never becomes true again; on macOS every identity is <b><i>fallback-path:</i></b>. In both cases\n><b><i>HashThroughAsync</i></b> re-reads the entire consumed prefix on every refresh of every changed file. For\n>actively growing session files the I/O keeps rising with file size, which slows the bounded\n>16-file-per-pass refresh scheduler.\n></pre>\n></details>\n\n> <details open>\n><summary>Code</summary>\n><br/>\n>\n>\n>```diff\n>+        bool cachedPrefix = sameFile && !sourceIdentity.StartsWith(\"fallback-path:\", StringComparison.Ordinal) &&\n>+                            existing?.ConsumedPrefixSha256 is { } knownHash &&\n>```\n></details>\n\n> <details open>\n><summary>Relevance</summary>\n><br/>\n>\n> `●●● Strong`\n>\n><pre>\n>Accepted identity-handling precedents favor preserving stable checkpoints and avoiding repeated\n>full-file work.\n></pre>\n>\n>\n> <code>ⓘ Recommendations generated based on similar findings in past PRs</code>\n></details>\n\n> <details open>\n><summary>Evidence</summary>\n><br/>\n>\n><pre>\n><b><i>sameFile</i></b> is true only when the stored identity equals the newly computed one, or starts with it\n>plus <b><i>:generation:</i></b>. On Linux, <b><i>GetSourceIdentity</i></b> now returns <b><i>linux:...</i></b>, but a verified legacy\n>checkpoint keeps <b><i>sourceIdentity = existing.SourceIdentity</i></b> (<b><i>fallback:...</i></b>) through\n><b><i>canResume</i></b>/<b><i>metadataOnlyReplay</i></b>. That identity is saved back to the checkpoint, so later runs\n>compare <b><i>fallback:...</i></b> against <b><i>linux:...</i></b> and <b><i>sameFile</i></b> stays false. On macOS the new identity is\n>always <b><i>fallback-path:...</i></b>, which line 116 excludes outright. With <b><i>cachedPrefix</i></b> false, line 124\n>calls <b><i>HashThroughAsync(existing.LastByteOffset)</i></b> on every ingestion, even though\n><b><i>_verifiedPrefixes</i></b> is still filled at the end of each run.\n></pre>\n>\n></details>\n\n\n<hr/>\n</details>\n\n\n<details>\n<summary>  2.  <s>Backfilled context hides newer events</s> <code>✓ Resolved</code></summary>\n\n<br/>\n\n> <details open>\n><summary>Description</summary>\n><br/>\n>\n><pre>\n><b><i>GetContextObservationsAsync</i></b> now orders and limits rows by <b><i>captured_at_utc</i></b> instead of verified\n>event time. When older session records are imported after newer ones, the Observatory’s 240-row\n>context list puts the older events first and can omit the most recent events despite displaying\n>their source dates.\n></pre>\n></details>\n\n> <details open>\n><summary>Code</summary>\n><br/>\n>\n>\n>```diff\n>+                              ORDER BY captured_at_utc DESC, source_event_at_utc DESC, rowid DESC LIMIT $take;\n>```\n></details>\n\n> <details open>\n><summary>Relevance</summary>\n><br/>\n>\n> `●●● Strong`\n>\n><pre>\n>Capture-time ordering conflicts with the PR’s stated source-time chronology and can truncate newer\n>visible events.\n></pre>\n>\n> <code>ⓘ Recommendations generated based on similar findings in past PRs</code>\n></details>\n\n> <details open>\n><summary>Evidence</summary>\n><br/>\n>\n><pre>\n>The changed query applies <b><i>LIMIT $take</i></b> after capture-time ordering. The page requests 240 rows and\n>displays verified source event times, so a later capture of older events can displace newer\n>event-time rows from the visible list.\n></pre>\n>\n></details>\n\n\n<hr/>\n</details>\n\n\n<details>\n<summary>  3.  <s>Legacy duplicate totals lose their warning</s> <code>✓ Resolved</code></summary>\n\n<br/>\n\n> <details open>\n><summary>Description</summary>\n><br/>\n>\n><pre>\n><b><i>ReadComparisonsAsync</i></b> now requires <b><i>source_timestamp_quality = &#x27;Valid&#x27;</i></b> for its repeated-event\n>fingerprint query. Schema migration marks every existing token row <b><i>LegacyUnverified</i></b> without\n>changing its amounts or observed timestamp, so matching cross-file legacy rows disappear from this\n>diagnostic while remaining in the lifetime total.\n></pre>\n></details>\n\n> <details open>\n><summary>Code</summary>\n><br/>\n>\n>\n>```diff\n>+                                      WHERE source_event_at_utc IS NOT NULL AND source_timestamp_quality = 'Valid'\n>+                                      GROUP BY session_id,source_event_at_utc,model,reasoning_effort,uncached_input_tokens,cache_read_tokens,\n>```\n></details>\n\n> <details open>\n><summary>Relevance</summary>\n><br/>\n>\n> `●● Moderate`\n>\n><pre>\n>Filtering unverified chronology appears intentional, but its impact on duplicate diagnostics creates\n>a genuine observability tradeoff.\n></pre>\n>\n> <code>ⓘ Recommendations generated based on similar findings in past PRs</code>\n></details>\n\n> <details open>\n><summary>Evidence</summary>\n><br/>\n>\n><pre>\n>The migration defaults old token rows to <b><i>LegacyUnverified</i></b> with null source event time. The changed\n>fingerprint query excludes them, while the adjacent lifetime comparison still sums all native token\n>rows; thus previously visible repeated-event candidates from legacy history are no longer shown.\n></pre>\n>\n></details>\n\n\n<hr/>\n</details>\n\n\n<details><summary><strong>Context sources</strong></summary>\n\n<div>&#x2705; Compliance rules (platform): <code>17 rules</code></div>\n<details>\n<summary>&#x2705; Cross-repo context — repo relationships</summary>\n</details>\n<div>Review mode: <code>Auto: 🧠 Deep</code>: Broad provenance, migration, ingestion, accounting, and forecasting changes create many independent defect opportunities.</div>\n\n</details>\n\n\n<details>\n<summary><strong>Tip of the day</strong></summary>\n\n<br/>\n\n<pre>💡 Did you know, you can turn these tips off under Display &gt; Comment parts</pre>\n\nMore tips ↗ | Customize Qodo ↗ | Qodo docs ↗\n\n</details>\n"
+   }
+  },
+  {
+   "actor": "qodo-code-review[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-12T13:08:05Z",
+   "data": {
+    "path": "src/TajsTokens.Infrastructure/Persistence/SqliteCodexObservatoryStore.cs",
+    "line": 1133,
+    "body": "1\\. Backfilled context hides newer events <code>🐞 Bug</code> <code>≡ Correctness</code>\n\n<pre>\n<b><i>GetContextObservationsAsync</i></b> now orders and limits rows by <b><i>captured_at_utc</i></b> instead of verified\nevent time. When older session records are imported after newer ones, the Observatory’s 240-row\ncontext list puts the older events first and can omit the most recent events despite displaying\ntheir source dates.\n</pre>\n\n\nDismiss ↗ | View ↗\n"
+   }
+  },
+  {
+   "actor": "qodo-code-review[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-12T13:08:05Z",
+   "data": {
+    "path": "src/TajsTokens.Infrastructure/Services/CodexServerEvidenceService.cs",
+    "line": 386,
+    "body": "3\\. Legacy duplicate totals lose their warning <code>🐞 Bug</code> <code>◔ Observability</code>\n\n<pre>\n<b><i>ReadComparisonsAsync</i></b> now requires <b><i>source_timestamp_quality = &#x27;Valid&#x27;</i></b> for its repeated-event\nfingerprint query. Schema migration marks every existing token row <b><i>LegacyUnverified</i></b> without\nchanging its amounts or observed timestamp, so matching cross-file legacy rows disappear from this\ndiagnostic while remaining in the lifetime total.\n</pre>\n\n\nDismiss ↗ | View ↗\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "change_overview",
+   "quote": "Preserve source timestamp provenance in Codex replay and accounting",
+   "pattern": null
+  },
+  {
+   "kind": "rating",
+   "quote": "<code>🕐 40+ Minutes</code>",
+   "pattern": "(?i)40\\+ minutes|review effort"
+  },
+  {
+   "kind": "run_status",
+   "quote": "<code>🐞 Bugs (0)</code>",
+   "pattern": "(?i)bugs \\(0\\)|rule violations"
+  },
+  {
+   "kind": "tool_context",
+   "quote": "Compliance rules (platform): <code>17 rules</code>",
+   "pattern": "(?i)compliance rules"
+  },
+  {
+   "kind": "run_status",
+   "quote": "Review mode: <code>Auto: 🧠 Deep</code>",
+   "pattern": "(?i)review mode"
+  },
+  {
+   "kind": "product_tip",
+   "quote": "Did you know, you can turn these tips off",
+   "pattern": "(?i)tips off|tip of the day"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "inline",
+   "path": "src/TajsTokens.Infrastructure/Persistence/SqliteCodexObservatoryStore.cs",
+   "quote": "Backfilled context hides newer events",
+   "pattern": "(?i)captured_at|backfill|newer|order"
+  },
+  {
+   "kind": "inline",
+   "path": "src/TajsTokens.Infrastructure/Services/CodexServerEvidenceService.cs",
+   "quote": "Legacy duplicate totals lose their warning",
+   "pattern": "(?i)legacy|duplicate|fingerprint|LegacyUnverified"
+  },
+  {
+   "kind": "body_finding",
+   "path": null,
+   "quote": "Linux/macOS refreshes re-hash whole rollouts",
+   "pattern": null,
+   "not_asserted": "struck through and marked dismissed in the bot's own comment; whether a dismissed finding still counts is outside this PR"
+  }
+ ]
+}

@@ -272,6 +272,15 @@ UPDATE_PR_ASSEMBLED = """
     WHERE id = $3
 """
 
+UPDATE_PR_ERROR_MESSAGE = """
+    UPDATE prs SET error_message = $1 WHERE id = $2
+"""
+
+COUNT_REANALYSIS_GAVE_UP = """
+    SELECT COUNT(*) AS n FROM prs
+    WHERE chatbot_id = $1 AND status = 'error' AND error_message LIKE 'reanalyze failed%'
+"""
+
 UPDATE_PR_ERROR = """
     UPDATE prs SET status = 'error', error_message = $1,
                    locked_by = NULL, locked_at = NULL

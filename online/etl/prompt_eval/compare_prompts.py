@@ -316,7 +316,9 @@ async def _run(args: argparse.Namespace, cfg: DBConfig, repo: PRRepository) -> i
             continue
         n = 0
         for an in await repo.get_analyses(cb["id"]):
-            if not is_selected(bot, an["pr_url"], urls, pairs) or not _actions(an):
+            # analyses with no stored human actions are kept: precision is still defined, recall is not,
+            # and dropping them would bias suggestions/PR and matched/PR
+            if not is_selected(bot, an["pr_url"], urls, pairs):
                 continue
             pr_row = await repo.get_pr_by_id(an["pr_id"])
             fields = step1_fields(pr_row, bot) if pr_row else None
@@ -326,7 +328,11 @@ async def _run(args: argparse.Namespace, cfg: DBConfig, repo: PRRepository) -> i
             n += 1
             if args.limit_per_bot and n >= args.limit_per_bot:
                 break
-    print(f"{len(units)} analyzed PRs with stored actions; {len(units) * args.draws * 4} LLM calls at most")
+    no_actions = sum(1 for u in units if not u["actions"])
+    print(
+        f"{len(units)} analyzed PRs ({no_actions} with no stored human actions, so no recall); "
+        f"{len(units) * args.draws * 4} LLM calls at most"
+    )
     if args.dry_run:
         return 0
     baseline = (

@@ -290,3 +290,56 @@ def test_deltas_never_fall_back_to_another_arm_when_baseline_draw_1_has_no_rows(
     unavailable = "unavailable: no PR scored in both baseline draw 1 and this arm"
     assert f"| candidate draw 1 | 10 | 4.00 | 3.00 | 75.0 | 50.0 | 0 | {unavailable} | {unavailable} | 0 |" in table
     assert f"| baseline draw 2 | 10 | 4.00 | 2.00 | 50.0 | 50.0 | 0 | {unavailable} | {unavailable} | 0 |" in table
+
+
+async def test_analyses_with_no_stored_actions_are_kept_and_scored_without_recall(tmp_path: Path, capsys) -> None:
+    import argparse
+
+    from config import DBConfig
+    from db.connection import DBAdapter
+    from db.repository import PRRepository
+    from db.schema import create_tables
+    from prompt_eval.compare_prompts import _run
+
+    db = DBAdapter(f"sqlite:///{tmp_path / 'x.db'}")
+    await db.connect()
+    await create_tables(db)
+    repo = PRRepository(db)
+    cid = await repo.upsert_chatbot("reviewer[bot]")
+    row = _pr_row()
+    for n, actions in ((1, [{"action_id": "A1", "description": "fix"}]), (2, [])):
+        await repo.insert_pr(
+            chatbot_id=cid, repo_name="org/repo", pr_number=n, pr_url=f"https://github.com/org/repo/pull/{n}"
+        )
+        pr = await repo.get_pr(cid, "org/repo", n)
+        await repo.update_commits(pr["id"], json.loads(row["commits"]))
+        await repo.mark_assembled(pr["id"], json.loads(row["assembled"]))
+        await repo.insert_analysis(
+            pr_id=pr["id"],
+            chatbot_id=cid,
+            bot_suggestions=[],
+            human_actions=actions,
+            matching_results=[],
+            total_bot_comments=0,
+            matched_bot_comments=0,
+            precision=None,
+            recall=None,
+            f_beta=None,
+            model_name="m",
+        )
+    args = argparse.Namespace(pr_list=None, bots=None, limit_per_bot=None, draws=2, dry_run=True)
+
+    assert await _run(args, DBConfig(), repo) == 0
+    await db.close()
+
+    assert "2 analyzed PRs (1 with no stored human actions, so no recall)" in capsys.readouterr().out
+
+
+async def test_score_arm_with_no_actions_defines_precision_but_not_recall() -> None:
+    llm = _StubLLM()
+    res = await score_arm(llm, "T {bot_comments}", step1_fields(_pr_row(), "reviewer[bot]"), [])
+
+    assert len(llm.prompts) == 1  # no matching call without actions
+    assert res["total_suggestions"] == 2
+    assert res["precision"] == 0.0
+    assert res["recall"] is None

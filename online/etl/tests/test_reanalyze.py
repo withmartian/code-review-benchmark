@@ -106,7 +106,7 @@ async def test_cli_refuses_reanalyze_without_since(tmp_path, caplog) -> None:
     db_url = f"sqlite:///{tmp_path / 'x.db'}"
     await cmd_analyze(_args("--all", "--reanalyze", "--dry-run", "--database-url", db_url))
 
-    assert "--reanalyze requires --since" in caplog.text
+    assert "--reanalyze needs --since (and usually --until) or --all-time" in caplog.text
 
 
 # -- re-analysis end to end with a stub LLM ---------------------------------------------------
@@ -333,3 +333,65 @@ async def test_reanalysis_never_marks_an_analyzed_pr_skipped(db: DBAdapter, monk
         102: "analyzed",
         103: "assembled",
     }
+
+
+@pytest.mark.asyncio
+async def test_a_pr_that_keeps_failing_is_given_up_after_max_attempts(db: DBAdapter, monkeypatch, caplog) -> None:
+    import pipeline.analyze as analyze_mod
+
+    monkeypatch.setattr(analyze_mod, "LLMClient", _StubLLM)
+    _StubLLM.calls, _StubLLM.fail = [], True
+    repo = PRRepository(db)
+    cid, pr_id = await _seed_one(repo, "old-model")
+    cfg = DBConfig()
+    cfg.martian_model_name = "judge-model"
+    kw = {"limit": 10, "reanalyze": True, "since": "2026-04-18T00:00:00+00:00", "max_attempts": 2}
+
+    await analyze_mod.analyze_prs(cfg, db, cid, "reviewer[bot]", **kw)
+    pr = await repo.get_pr_by_id(pr_id)
+    assert pr["status"] == "analyzed"
+    assert pr["error_message"].startswith("reanalyze failed 1 time: LLM 400")
+
+    await analyze_mod.analyze_prs(cfg, db, cid, "reviewer[bot]", **kw)
+    pr = await repo.get_pr_by_id(pr_id)
+    assert pr["status"] == "error"  # given up: no longer selected, old analysis kept
+    assert pr["error_message"].startswith("reanalyze failed 2 times")
+    assert [r["model_name"] for r in await _analysis(db, pr_id)] == ["old-model"]
+    caplog.set_level("INFO")
+    assert await analyze_mod.analyze_prs(cfg, db, cid, "reviewer[bot]", dry_run=True, **kw) == 0
+    assert "1 PRs given up after 2 failed re-analyses" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_all_time_selects_prs_without_a_review_date(db: DBAdapter) -> None:
+    repo = PRRepository(db)
+    cid = await _seed(repo)
+    await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=104, pr_url="https://x/104", pr_merged=True)
+    pr = await repo.get_pr(cid, "org/repo", 104)
+    await repo.mark_assembled(pr["id"], {"pr_merged": True})
+    await repo.insert_analysis(
+        pr_id=pr["id"],
+        chatbot_id=cid,
+        bot_suggestions=[],
+        human_actions=[],
+        matching_results=[],
+        total_bot_comments=0,
+        matched_bot_comments=0,
+        precision=None,
+        recall=None,
+        f_beta=None,
+        model_name="m",
+    )
+
+    rows = await repo.get_analyzed_prs(cid, limit=10)
+    assert {r["pr_number"] for r in rows} == {100, 101, 102, 104}  # 104 has no bot_reviewed_at
+
+
+@pytest.mark.asyncio
+async def test_cli_refuses_all_time_with_a_window(tmp_path, caplog) -> None:
+    db_url = f"sqlite:///{tmp_path / 'x.db'}"
+    await cmd_analyze(
+        _args("--all", "--reanalyze", "--all-time", "--since", "7d", "--dry-run", "--database-url", db_url)
+    )
+
+    assert "--all-time selects every analyzed PR" in caplog.text

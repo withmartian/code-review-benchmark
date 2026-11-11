@@ -111,28 +111,52 @@ def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findin
     )
 
 
-# The prompt text each EXTRACTION_PROMPT_VERSION was released with. Changing EXTRACT_BOT_SUGGESTIONS or
-# JUDGE_MATCHING fails this test until the version is bumped (so stored analyses and the API's filter
-# can tell the two prompts apart) and the new hashes are recorded here.
-PROMPT_SHA256_BY_VERSION = {
+def _pinned_inputs() -> dict[str, str]:
+    """sha256 of everything an analysis depends on: the three step prompts and the code that renders
+    step 1 and step 3 input (whitespace and comments in that code count, on purpose)."""
+    import hashlib
+    import inspect
+
+    from llm import prompts
+    from pipeline import analyze
+
+    texts = {
+        name: getattr(prompts, name) for name in ("EXTRACT_BOT_SUGGESTIONS", "EXTRACT_HUMAN_ACTIONS", "JUDGE_MATCHING")
+    }
+    for fn in ("_clean_bot_comment_body", "_format_bot_comments", "_format_suggestions", "_format_actions"):
+        texts[f"pipeline.analyze.{fn}"] = inspect.getsource(getattr(analyze, fn))
+    return {name: hashlib.sha256(text.encode()).hexdigest() for name, text in texts.items()}
+
+
+# What each EXTRACTION_PROMPT_VERSION was released with. Never edit an existing entry: when any pinned
+# input changes, bump EXTRACTION_PROMPT_VERSION (in llm/prompts.py and api_service/src/db.rs) and add a
+# new entry, so stored analyses and the API's served set can tell the two apart. `analyze --reanalyze`
+# re-runs steps 1 and 3 only; a change to EXTRACT_HUMAN_ACTIONS needs fresh analyses as well.
+PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
-        "EXTRACT_BOT_SUGGESTIONS": "cf4460fb2d6d4b725ba6f221e3f88c51c1d6b7e9cdc24d13f6a81d6621721912",
+        "EXTRACT_BOT_SUGGESTIONS": "1ed595f2b0a51171a87ae2ab8c392d1fb9080d9541c1339f6501b84033e5ca6b",
+        "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
         "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
+        "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
+        "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
+        "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
+        "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
     },
 }
 
 
-def test_prompt_version_is_pinned_to_the_extraction_and_matching_prompt_text() -> None:
-    import hashlib
+def test_prompt_version_is_pinned_to_every_prompt_and_formatter() -> None:
+    from llm.prompts import EXTRACTION_PROMPT_VERSION
 
-    from llm import prompts
+    pinned = PINNED_INPUTS_BY_VERSION[EXTRACTION_PROMPT_VERSION]
+    current = _pinned_inputs()
+    changed = sorted(name for name in current if current[name] != pinned.get(name))
+    assert not changed, f"{changed} changed: bump EXTRACTION_PROMPT_VERSION and add a new entry here"
 
-    pinned = PROMPT_SHA256_BY_VERSION[prompts.EXTRACTION_PROMPT_VERSION]
-    for name, digest in pinned.items():
-        text = getattr(prompts, name)
-        assert hashlib.sha256(text.encode()).hexdigest() == digest, (
-            f"{name} changed: bump EXTRACTION_PROMPT_VERSION and record the new sha256 here"
-        )
+
+def test_no_two_prompt_versions_share_a_pinned_input_set() -> None:
+    sets = [tuple(sorted(pins.items())) for pins in PINNED_INPUTS_BY_VERSION.values()]
+    assert len(set(sets)) == len(sets)
 
 
 def test_located_rule_violations_are_findings_only_aggregate_results_are_excluded() -> None:

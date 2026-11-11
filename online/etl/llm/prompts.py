@@ -1,11 +1,11 @@
 """Prompt templates for the LLM analysis pipeline."""
 
 # Stamped into llm_analyses.model_name as "<model>+<version>" so analyses scored with different
-# prompts can be told apart, `analyze --reanalyze` can find the ones not yet re-run, and the API
-# serves only rows with the current stamp. Bump it whenever EXTRACT_BOT_SUGGESTIONS or JUDGE_MATCHING
-# changes (tests/test_prompts.py pins their sha256 to this version). A re-analysis re-runs only those
-# two steps and reuses the stored human actions; a change to EXTRACT_HUMAN_ACTIONS needs fresh
-# analyses instead.
+# prompts can be told apart and `analyze --reanalyze` can find the ones not yet re-run; the API
+# serves the version named by SERVED_PROMPT_VERSION. Bump it whenever a step prompt or the code that
+# renders step 1 or step 3 input changes: tests/test_prompts.py pins their sha256 per version. A
+# re-analysis re-runs only steps 1 and 3 and reuses the stored human actions, so a change to
+# EXTRACT_HUMAN_ACTIONS needs fresh analyses instead.
 EXTRACTION_PROMPT_VERSION = "extract-v2"
 
 EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.
@@ -73,7 +73,7 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   about the content of a file the pull request changes is about the code, even when that file is
   documentation or configuration: extract it.
 - Inputs the bot lists as having used for its review, such as linter or static-analysis output,
-  code guidelines, or path instructions (for example a section where the bot lists the inputs or
+  code guidelines, or path-specific instructions (for example a section where the bot lists the inputs or
   context it used). Do not extract findings from these inputs, even when a listed tool result
   names a file and line of the changed code: the bot did not raise it as its own comment.
 - Raw tool output quoted in a comment is not its own finding: only problems the bot states in its

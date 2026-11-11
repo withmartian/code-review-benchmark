@@ -457,6 +457,7 @@ async def analyze_prs(
     max_per_day: int | None = None,
     reanalyze: bool = False,
     dry_run: bool = False,
+    max_attempts: int = 3,
 ) -> int:
     """Run LLM analysis on all assembled, unanalyzed PRs for a chatbot.
 
@@ -469,8 +470,9 @@ async def analyze_prs(
     actions (step 2 is not redrawn), and writes the new stamped analysis, the status update and the
     deletion of the PR's labels in one transaction, so `label` recomputes them. A re-analyzed PR is
     not selected again; a failed one (LLM error or a failed write, rolled back) keeps its previous,
-    unstamped row, status and labels and is retried by
-    the next run. `dry_run` only counts the PRs that would be analyzed.
+    unstamped row, status and labels, has the failure counted in error_message, and is retried by
+    the next run until `max_attempts` failures, when it gets status 'error' and is no longer
+    selected. `dry_run` only counts the PRs that would be analyzed (and those given up on).
     Returns the number of PRs analyzed (or, with `dry_run`, selected).
     """
     repo = PRRepository(db)
@@ -499,7 +501,11 @@ async def analyze_prs(
 
     verb = "re-analyze" if reanalyze else "analyze"
     if dry_run:
-        logger.info(f"Dry run: would {verb} {len(prs)} PRs for {chatbot_username}")
+        gave_up = ""
+        if reanalyze:
+            n = await repo.count_reanalysis_gave_up(chatbot_id)
+            gave_up = f"; {n} PRs given up after {max_attempts} failed re-analyses (status 'error')"
+        logger.info(f"Dry run: would {verb} {len(prs)} PRs for {chatbot_username}{gave_up}")
         return len(prs)
 
     if not prs:
@@ -535,12 +541,29 @@ async def analyze_prs(
                     beta=cfg.f_beta,
                     stored_actions=stored,
                 )
+                if not ok and reanalyze:
+                    await _reanalysis_failed(pr_row, "missing events or commits data")
                 return ok
             except BadRequestError as exc:
                 logger.error(f"LLM 400 for {pr_row['repo_name']}#{pr_row['pr_number']}: {exc}")
-                if not reanalyze:  # a failed re-analysis keeps the previous analysis and status
+                if reanalyze:  # the previous analysis and status stay; the failure is counted
+                    await _reanalysis_failed(pr_row, f"LLM 400: {exc}")
+                else:
                     await repo.mark_error(pr_row["id"], f"LLM 400: {exc}")
                 return False
+            except Exception as exc:
+                if not reanalyze:
+                    raise
+                logger.error(f"Re-analysis failed for {pr_row['repo_name']}#{pr_row['pr_number']}: {exc}")
+                await _reanalysis_failed(pr_row, f"{type(exc).__name__}: {exc}")
+                return False
+
+    async def _reanalysis_failed(pr_row: dict, reason: str) -> None:
+        if await repo.record_reanalysis_failure(pr_row["id"], pr_row.get("error_message"), reason, max_attempts):
+            logger.warning(
+                f"Giving up on {pr_row['repo_name']}#{pr_row['pr_number']} after {max_attempts} failed re-analyses: "
+                "status 'error', previous analysis kept"
+            )
 
     try:
         tasks = [asyncio.create_task(_run(pr_row)) for pr_row in prs]

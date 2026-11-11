@@ -39,7 +39,7 @@
   {
    "kind": "description_check",
    "quote": "Description is only 'Backport of `#3793`.'",
-   "pattern": "(?i)(PR|pull request) description|template"
+   "pattern": "(?i)(PR|pull request) description|description is only|template"
   },
   {
    "kind": "change_overview",
@@ -64,7 +64,7 @@
   {
    "kind": "control",
    "quote": "Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts",
-   "pattern": "(?i)autofix"
+   "pattern": "(?i)autofix|keep fixing"
   }
  ],
  "findings": [

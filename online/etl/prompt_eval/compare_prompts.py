@@ -104,16 +104,27 @@ def step1_fields(pr_row: dict, chatbot_username: str) -> dict | None:
 
 
 def metrics(suggestions: list[dict], actions: list[dict], matches: list[dict]) -> dict:
-    """The analyze_single_pr arithmetic."""
+    """The analyze_single_pr arithmetic, plus a count of matched pairs naming an unknown id.
+
+    analyze_single_pr checks each endpoint of a matched pair on its own: a pair whose suggestion
+    id does not exist still credits its action toward recall, and a pair whose action id does not
+    exist still credits its suggestion toward precision. This script keeps that arithmetic so its
+    numbers stay comparable with the leaderboard, and reports how many such pairs each arm has
+    (``invalid_id_matches``) instead of dropping them silently.
+    """
     sid = {s["issue_id"] for s in suggestions}
     aid = {a["action_id"] for a in actions}
     ms = {m["bot_issue_id"] for m in matches if m["matched"] and m.get("bot_issue_id") in sid}
     ma = {m["human_action_id"] for m in matches if m["matched"] and m.get("human_action_id") in aid}
+    invalid = sum(
+        1 for m in matches if m["matched"] and (m.get("bot_issue_id") not in sid or m.get("human_action_id") not in aid)
+    )
     return {
         "total_suggestions": len(suggestions),
         "matched_suggestions": len(ms),
         "precision": len(ms) / len(suggestions) if suggestions else None,
         "recall": len(ma) / len(actions) if actions else None,
+        "invalid_id_matches": invalid,
     }
 
 
@@ -169,14 +180,18 @@ def report(rows: list[dict]) -> str:
         if not keys:
             continue
         out.append(f"\n### {bot} ({len(keys)} PRs)\n")
-        out.append("| arm | suggestions/PR | matched/PR | P | R | dP vs baseline draw 1 | dR vs baseline draw 1 |")
-        out.append("|---|---|---|---|---|---|---|")
+        out.append(
+            "| arm | suggestions/PR | matched/PR | P | R | dP vs baseline draw 1 | dR vs baseline draw 1 "
+            "| invalid-id matches |"
+        )
+        out.append("|---|---|---|---|---|---|---|---|")
         base = arms[0]
         for a in arms:
             rs = [by[k][a] for k in keys]
             p, rc, _ = leaderboard(rs)
             spr = sum(r["total_suggestions"] for r in rs) / len(rs)
             mpr = sum(r["matched_suggestions"] for r in rs) / len(rs)
+            bad = sum(r.get("invalid_id_matches", 0) for r in rs)
             cells = ["", ""]
             if a != base:
                 pairs = [(by[k][base], by[k][a]) for k in keys]
@@ -186,7 +201,7 @@ def report(rows: list[dict]) -> str:
                     if d0 is not None and d1 is not None and ci:
                         cells[i] = f"{(d1 - d0) * 100:+.1f} [{ci[0] * 100:+.1f}, {ci[1] * 100:+.1f}]"
             fmt = lambda v: "n/a" if v is None else f"{v * 100:.1f}"  # noqa: E731
-            out.append(f"| {a} | {spr:.2f} | {mpr:.2f} | {fmt(p)} | {fmt(rc)} | {cells[0]} | {cells[1]} |")
+            out.append(f"| {a} | {spr:.2f} | {mpr:.2f} | {fmt(p)} | {fmt(rc)} | {cells[0]} | {cells[1]} | {bad} |")
     return "\n".join(out)
 
 

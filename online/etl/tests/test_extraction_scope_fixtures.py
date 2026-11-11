@@ -107,3 +107,38 @@ def test_live_check_flags_a_coverage_item_and_a_missing_finding() -> None:
     problems = check_labels(fx, [*kept[1:], coverage])
     assert any(p.startswith("non-finding extracted (coverage_check)") for p in problems)
     assert any(p.startswith("finding not extracted (inline)") for p in problems)
+
+
+def test_live_check_reports_a_dropped_check_finding_when_only_inline_findings_are_extracted() -> None:
+    from tests.test_extraction_scope_live import check_labels
+
+    fx = _load(next(p for p in FIXTURES if "local-search-mcp" in p.stem))
+    inline_bodies = [e["data"] for e in fx["events"] if e["event_type"] == "review_comment"]
+    only_inline = [{"description": d["body"], "file_path": d["path"]} for d in inline_bodies]
+
+    problems = check_labels(fx, only_inline)
+
+    assert any(p.startswith("finding not extracted (check_finding)") for p in problems)
+    assert not any("(inline)" in p for p in problems)
+
+
+def _other_finding_text(fx: dict, label: dict) -> str:
+    """The whole inline comment holding a finding's quote, else the quote itself."""
+    inline = [e["data"]["body"] for e in fx["events"] if e["event_type"] == "review_comment"]
+    return next((b for b in inline if label["quote"] in b), label["quote"])
+
+
+@pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.stem)
+def test_label_patterns_match_their_own_quote_and_no_other_finding(path: Path) -> None:
+    import re
+
+    fx = _load(path)
+    for label in fx["findings"] + fx["non_findings"]:
+        if label.get("pattern"):
+            assert re.search(label["pattern"], label["quote"]), label["quote"]
+    for label in fx["findings"]:
+        if not label.get("pattern"):
+            continue
+        for other in fx["findings"]:
+            if other is not label:
+                assert not re.search(label["pattern"], _other_finding_text(fx, other)), (label["quote"], other["quote"])

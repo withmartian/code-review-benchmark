@@ -54,7 +54,7 @@
    "kind": "check_finding",
    "path": null,
    "quote": "The hourly count includes only currently pending rows, so deciding a row removes it from the rate-limit count.",
-   "pattern": "(?i)hourly|rolling hour|rate[- ]limit"
+   "pattern": "(?i)only (currently )?pending|pending rows|decid\\w* (a |the )?(row|request|host)|from the (rate[- ]limit |hourly )?count"
   },
   {
    "kind": "inline",

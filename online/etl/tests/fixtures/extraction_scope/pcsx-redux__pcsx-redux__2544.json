@@ -79,13 +79,13 @@
    "kind": "collapsed_follow_up",
    "path": "src/core/gdb-server.cc",
    "quote": "Restart the rewind ring after GDB's writes on `c` and `s`, not in the `Run` listener.",
-   "pattern": "(?i)Run.{0,3}listener|resume"
+   "pattern": "(?i)(another|other) resume source|after (GDB'?s? )?(binary|PC|writes)|before GDB (finishes|writes)|binary/PC"
   },
   {
    "kind": "collapsed_nitpick",
    "path": "tests/lua/gdb-reverse-shell.lua",
    "quote": "Cover the zero-interval shell hijack with a snapshot taken before the hijack.",
-   "pattern": "(?i)interval"
+   "pattern": "(?i)zero[- ]interval|interval (of )?0|RewindInterval\\s*(=|==)?\\s*0\\b"
   },
   {
    "kind": "rating_explanation",

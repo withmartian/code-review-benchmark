@@ -53,7 +53,7 @@
    "kind": "inline",
    "path": "src/lib/web-sources.ts",
    "quote": "URL length is uncapped here while `title` and `snippet` are bounded.",
-   "pattern": "(?i)url"
+   "pattern": "(?i)url (length|cap|field)|MAX_SOURCE_URL|uncapped|unbounded"
   },
   {
    "kind": "inline",

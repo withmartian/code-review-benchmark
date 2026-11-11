@@ -94,13 +94,36 @@ async def test_score_arm_uses_the_template_and_scores_against_the_given_actions(
     assert res["recall"] == 1.0
 
 
-def test_metrics_ignore_matches_to_unknown_ids() -> None:
-    m = metrics(
-        [{"issue_id": "S1"}], [{"action_id": "A1"}], [{"bot_issue_id": "S9", "human_action_id": "A1", "matched": True}]
-    )
+def test_metrics_keep_the_leaderboard_arithmetic_and_count_invalid_id_pairs() -> None:
+    # analyze_single_pr checks each endpoint of a matched pair on its own; the script keeps that
+    # so its numbers match the leaderboard, and counts the pairs that name an unknown id.
+    suggestions = [{"issue_id": "S1"}, {"issue_id": "S2"}]
+    actions = [{"action_id": "A1"}, {"action_id": "A2"}]
 
-    assert m["matched_suggestions"] == 0
-    assert m["recall"] == 1.0
+    unknown_suggestion = metrics(
+        suggestions, actions, [{"bot_issue_id": "S9", "human_action_id": "A1", "matched": True}]
+    )
+    assert unknown_suggestion["matched_suggestions"] == 0
+    assert unknown_suggestion["precision"] == 0.0
+    assert unknown_suggestion["recall"] == 0.5  # A1 is still credited, as in analyze_single_pr
+    assert unknown_suggestion["invalid_id_matches"] == 1
+
+    unknown_action = metrics(suggestions, actions, [{"bot_issue_id": "S1", "human_action_id": "A9", "matched": True}])
+    assert unknown_action["matched_suggestions"] == 1  # S1 is still credited, as in analyze_single_pr
+    assert unknown_action["precision"] == 0.5
+    assert unknown_action["recall"] == 0.0
+    assert unknown_action["invalid_id_matches"] == 1
+
+    valid = metrics(
+        suggestions,
+        actions,
+        [
+            {"bot_issue_id": "S1", "human_action_id": "A1", "matched": True},
+            {"bot_issue_id": "S9", "human_action_id": "A9", "matched": False},
+        ],
+    )
+    assert valid["invalid_id_matches"] == 0  # unmatched pairs are not counted
+    assert (valid["precision"], valid["recall"]) == (0.5, 0.5)
 
 
 def test_leaderboard_paired_ci_and_report() -> None:
@@ -126,7 +149,7 @@ def test_leaderboard_paired_ci_and_report() -> None:
     assert lo == hi == 0.25
     table = report(rows)
     assert "### reviewer[bot] (20 PRs)" in table
-    assert "| candidate draw 1 | 4.00 | 3.00 | 75.0 | 50.0 | +25.0 [+25.0, +25.0] |" in table
+    assert "| candidate draw 1 | 4.00 | 3.00 | 75.0 | 50.0 | +25.0 [+25.0, +25.0] | +0.0 [+0.0, +0.0] | 0 |" in table
 
 
 def test_pr_list_with_a_bot_column_selects_only_the_listed_pairs(tmp_path: Path) -> None:

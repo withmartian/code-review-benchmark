@@ -9,13 +9,16 @@ averages precision and recall only over PRs that have both. So such a PR raises 
 the F score of its bot, whichever bot it is. The measurement in the PR that added this script has
 almost no such PR in its sample, so this script estimates that part on the stored analyses.
 
-Only unambiguous aggregate statements count as excluded, and only when the suggestion names no file:
-a coverage gate (docstring or test coverage stated with a percentage, in gate or status form) and
-review status (comments posted, no actionable comments, review paused or skipped, free review limits),
-plus effort ratings and offers to generate code. Anything ambiguous is left as a finding, so the
-figures are an estimate; --show prints the classified items for a hand check. The population is the
-API's base one (merged PRs with a review date), optionally limited with --since/--until; "daily"
-figures are pooled over that window, not per day. Nothing is written and no LLM is called.
+A suggestion counts as excluded only when it names no file and its whole whitespace-normalized text
+matches a template of a fixed line as the extraction step writes it: a coverage gate with its
+percentage, an effort / risk / impact / priority / confidence rating, a review status line, or an
+offer to generate code. Everything else is a finding, so the figures are an estimate; --show prints
+the classified items for a hand check. The population follows the API: merged PRs with a review
+date, the secondary Qodo account shown under the primary one, bots in ignored_tools hidden unless
+--include-ignored, and the bundled dashboard's default of at most 2000 changed lines
+(--diff-lines-max). --since / --until bound the review date, --until including its whole day as the
+API's end_date does; "daily" figures are pooled over that window, not per day (min_scored_prs in
+daily_metrics counts PRs with a precision, not PRs with both). Nothing is written and no LLM is called.
 
     uv run python -m prompt_eval.coverage_only --bot all --since 2026-10-01 --show 20
 """
@@ -31,16 +34,20 @@ from config import DBConfig
 from db.connection import DBAdapter
 
 ANALYSES_SQL = """
-    SELECT c.github_username AS bot, p.pr_url, la.precision, la.recall, la.bot_suggestions
+    SELECT c.github_username AS bot, p.pr_url, p.diff_lines, la.precision, la.recall, la.bot_suggestions
     FROM llm_analyses la
     JOIN prs p ON la.pr_id = p.id
     JOIN chatbots c ON la.chatbot_id = c.id
     WHERE p.pr_merged = TRUE
       AND p.bot_reviewed_at IS NOT NULL
-      AND ($1::text IS NULL OR c.github_username = $1)
-      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at >= $2)
-      AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
+      AND ($1::timestamptz IS NULL OR p.bot_reviewed_at >= $1)
+      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at < $2)
 """
+# The API's presentation rules (api_service/src/db.rs, compute.rs): a secondary account is shown under
+# its primary bot, bots in ignored_tools are hidden unless include_ignored, and the bundled dashboard
+# (static/index.html) filters diff_lines to at most 2000 (a PR without diff_lines passes).
+MERGE_INTO = {"qodo-free-for-open-source-projects[bot]": "qodo-code-review[bot]"}
+DEFAULT_DIFF_LINES_MAX = 2000
 # Whole-text templates (anchored, matched on the whitespace-normalized description) of the fixed gate,
 # rating and status lines bots post, as the extraction step paraphrases them. Anything that does not
 # match a whole template is a finding.
@@ -183,28 +190,69 @@ def report(bot: str, s: dict, show: int = 0) -> str:
     return "\n".join(lines)
 
 
+async def _ignored_tools(db: DBAdapter) -> set[str] | None:
+    """Usernames in the API's ignored_tools table, or None when this DB has no such table."""
+    try:
+        return {r["github_username"] for r in await db.fetchall("SELECT github_username FROM ignored_tools")}
+    except Exception:
+        return None
+
+
 async def run(
-    bot: str | None, database_url: str, since: str | None = None, until: str | None = None, beta: float = 1.0
+    bot: str | None,
+    database_url: str,
+    since: str | None = None,
+    until: str | None = None,
+    beta: float = 1.0,
+    diff_lines_max: int | None = DEFAULT_DIFF_LINES_MAX,
+    include_ignored: bool = False,
 ) -> dict[str, dict]:
-    """One summary per bot ({bot: summary}); bot None means every bot."""
+    """One summary per bot as the API shows it ({bot: summary}); bot None means every bot."""
     db = DBAdapter(database_url)
     await db.connect()
     try:
-        rows = await db.fetchall(ANALYSES_SQL, (bot, since, until))
+        rows = await db.fetchall(ANALYSES_SQL, (since, until))
+        ignored = await _ignored_tools(db)
     finally:
         await db.close()
     by_bot: dict[str, list[dict]] = {}
     for r in rows:
-        by_bot.setdefault(r["bot"], []).append(r)
+        if not include_ignored and ignored and r["bot"] in ignored:
+            continue
+        if diff_lines_max is not None and r.get("diff_lines") is not None and r["diff_lines"] > diff_lines_max:
+            continue
+        shown = MERGE_INTO.get(r["bot"], r["bot"])
+        if bot is None or shown == MERGE_INTO.get(bot, bot):
+            by_bot.setdefault(shown, []).append(r)
     return {b: summarize(rs, beta) for b, rs in sorted(by_bot.items())}
+
+
+def _until_inclusive(value: str | None) -> str | None:
+    """--until as the API's end_date: a date is included whole (the bound becomes the next midnight)."""
+    from datetime import date
+    from datetime import timedelta
+    import re
+
+    if value and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return f"{(date.fromisoformat(value) + timedelta(days=1)).isoformat()}T00:00:00+00:00"
+    from main import _parse_time_bound
+
+    return _parse_time_bound(value)
 
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--bot", default="coderabbitai[bot]", help='a bot username, or "all" for one block per bot')
     ap.add_argument("--since", help="bot_reviewed_at lower bound (inclusive), e.g. 7d or 2026-10-01")
-    ap.add_argument("--until", help="bot_reviewed_at upper bound (exclusive)")
+    ap.add_argument("--until", help="last bot_reviewed_at date included, as the API's end_date (e.g. 2026-11-06)")
     ap.add_argument("--beta", type=float, default=1.0, help="F-beta weight, as the API's beta parameter")
+    ap.add_argument(
+        "--diff-lines-max",
+        type=int,
+        default=DEFAULT_DIFF_LINES_MAX,
+        help="drop PRs with more changed lines, as the bundled dashboard does by default (0: no limit)",
+    )
+    ap.add_argument("--include-ignored", action="store_true", help="keep bots listed in ignored_tools")
     ap.add_argument("--show", type=int, default=0, help="print this many classified items per bot for a hand check")
     ap.add_argument("--database-url")
     args = ap.parse_args(argv)
@@ -212,8 +260,18 @@ def main(argv: list[str] | None = None) -> None:
     bot = None if args.bot == "all" else args.bot
     from main import _parse_time_bound  # the CLI's own parsing: "7d", "2026-10-01" or an ISO timestamp
 
-    since, until = _parse_time_bound(args.since), _parse_time_bound(args.until)
-    summaries = asyncio.run(run(bot, args.database_url or cfg.database_url, since, until, args.beta))
+    since, until = _parse_time_bound(args.since), _until_inclusive(args.until)
+    summaries = asyncio.run(
+        run(
+            bot,
+            args.database_url or cfg.database_url,
+            since,
+            until,
+            args.beta,
+            args.diff_lines_max or None,
+            args.include_ignored,
+        )
+    )
     print("\n\n".join(report(b, s, args.show) for b, s in summaries.items()) or "no analyses in this window")
 
 

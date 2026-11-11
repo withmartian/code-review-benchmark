@@ -166,3 +166,66 @@ async def test_run_reads_merged_reviewed_analyses_per_bot_and_window(tmp_path: P
     every = await run(None, url, since="2026-10-01T00:00:00+00:00")
     assert sorted(every) == ["coderabbitai[bot]", "other[bot]"]
     assert every["other[bot]"]["excluded_only"] == 1  # the dropout is not specific to one bot
+
+
+async def test_run_applies_the_api_presentation_rules(tmp_path: Path) -> None:
+    from db.connection import DBAdapter
+    from db.repository import PRRepository
+    from db.schema import create_tables
+
+    url = f"sqlite:///{tmp_path / 'x.db'}"
+    db = DBAdapter(url)
+    await db.connect()
+    await create_tables(db)
+    repo = PRRepository(db)
+    prs = (
+        # bot, number, diff lines
+        ("qodo-code-review[bot]", 1, 100),
+        ("qodo-free-for-open-source-projects[bot]", 2, 100),  # shown under qodo-code-review (MERGE_INTO)
+        ("qodo-code-review[bot]", 3, 5000),  # above the dashboard's 2000-line default
+        ("hidden[bot]", 4, 100),  # in ignored_tools
+    )
+    for bot, n, lines in prs:
+        cid = await repo.upsert_chatbot(bot)
+        await repo.insert_pr(
+            chatbot_id=cid,
+            repo_name="o/r",
+            pr_number=n,
+            pr_url=f"https://github.com/o/r/pull/{n}",
+            pr_merged=True,
+            bot_reviewed_at="2026-10-02T12:00:00+00:00",
+        )
+        pr = await repo.get_pr(cid, "o/r", n)
+        await db.execute("UPDATE prs SET diff_lines = $1 WHERE id = $2", (lines, pr["id"]))
+        await repo.insert_analysis(
+            pr_id=pr["id"],
+            chatbot_id=cid,
+            bot_suggestions=[FINDING],
+            human_actions=[],
+            matching_results=[],
+            total_bot_comments=1,
+            matched_bot_comments=0,
+            precision=1.0,
+            recall=None,
+            f_beta=None,
+            model_name="m",
+        )
+    await db.execute("CREATE TABLE ignored_tools (github_username TEXT)")
+    await db.execute("INSERT INTO ignored_tools VALUES ($1)", ("hidden[bot]",))
+    await db.close()
+
+    s = await run(None, url)
+    assert sorted(s) == ["qodo-code-review[bot]"]
+    assert s["qodo-code-review[bot]"]["analyses"] == 2  # the merged account counts, the 5000-line PR does not
+    assert (await run("qodo-free-for-open-source-projects[bot]", url))["qodo-code-review[bot]"]["analyses"] == 2
+    assert sorted(await run(None, url, include_ignored=True, diff_lines_max=None)) == [
+        "hidden[bot]",
+        "qodo-code-review[bot]",
+    ]
+
+
+def test_until_includes_the_whole_end_date_as_the_api_does() -> None:
+    from prompt_eval.coverage_only import _until_inclusive
+
+    assert _until_inclusive("2026-11-06") == "2026-11-07T00:00:00+00:00"
+    assert _until_inclusive(None) is None

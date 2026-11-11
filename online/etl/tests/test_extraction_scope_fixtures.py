@@ -24,7 +24,7 @@ from pipeline.analyze import _format_bot_comments
 
 FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob("*.json"))
 
-# The prompt sentence that covers each labelled kind.
+# The prompt sentence that covers each labelled kind (compared with whitespace collapsed).
 RULE_FOR_KIND = {
     "coverage_check": "A metric below a threshold is not by itself a finding.",
     "description_check": "such as title, description, linked-issue, or scope checks",
@@ -33,13 +33,20 @@ RULE_FOR_KIND = {
     "run_status": "Review status and run metadata: counts of comments posted",
     "control": "Interactive controls and product text: checkboxes, buttons",
     "generation_offer": '"generate docstrings" or "generate unit tests"',
-    "product_tip": "usage\n  tips, links to dashboards",
-    "tool_context": "quoted linter or static-analysis output",
-    "inline": "Top-level inline\nreview comments generally contain substantive findings",
-    "collapsed_nitpick": "A concrete finding inside a\ncollapsed or nested section",
-    "collapsed_follow_up": "A concrete finding inside a\ncollapsed or nested section",
-    "rating_explanation": "that problem is a finding: extract it, even when no\n  other comment states it.",
+    "product_tip": "usage tips, links to dashboards",
+    "tool_context": "Tool output the bot lists as context is not a finding",
+    "inline": "Top-level inline review comments generally contain substantive findings",
+    "body_finding": "review bodies and issue comments may contain findings or summaries",
+    "summary_finding": "A concrete problem named inside a summary or walkthrough is still a finding",
+    "collapsed_nitpick": "A concrete finding inside a collapsed or nested section",
+    "collapsed_follow_up": "A concrete finding inside a collapsed or nested section",
+    "rating_explanation": "that problem is a finding: extract it, even when no other comment states it.",
+    "tool_finding": "Tool results the bot presents as its own findings",
 }
+
+
+def flat(text: str) -> str:
+    return " ".join(text.split())
 
 
 def _load(path: Path) -> dict:
@@ -78,10 +85,8 @@ def test_labelled_text_reaches_the_extraction_input(path: Path) -> None:
 @pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.stem)
 def test_prompt_states_a_rule_for_every_labelled_kind_before_the_inputs(path: Path) -> None:
     fx = _load(path)
-    rendered = _render(fx)
-    inputs_start = rendered.index("=== Bot Review Comments ===")
+    rendered = flat(_render(fx))
+    rules = rendered[: rendered.index("=== Bot Review Comments ===")]
 
     for item in fx["findings"] + fx["non_findings"]:
-        rule = RULE_FOR_KIND[item["kind"]]
-        assert rule in rendered, item["kind"]
-        assert rendered.index(rule) < inputs_start, item["kind"]
+        assert RULE_FOR_KIND[item["kind"]] in rules, item["kind"]

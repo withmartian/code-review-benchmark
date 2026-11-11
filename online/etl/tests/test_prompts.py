@@ -1,4 +1,7 @@
-"""Tests for llm/prompts.py: the extraction prompt renders and carries its scope rules."""
+"""Tests for llm/prompts.py: the extraction prompt renders and carries its scope rules.
+
+Rule text is compared with whitespace collapsed, so rewrapping the prompt does not break a test.
+"""
 
 from __future__ import annotations
 
@@ -16,6 +19,17 @@ def _render() -> str:
     )
 
 
+def flat(text: str) -> str:
+    """Collapse every run of whitespace to one space."""
+    return " ".join(text.split())
+
+
+def _rules() -> str:
+    """The rendered prompt up to the inputs, whitespace collapsed."""
+    rendered = flat(_render())
+    return rendered[: rendered.index("=== Bot Review Comments ===")]
+
+
 def test_extract_bot_suggestions_renders_with_all_placeholders() -> None:
     rendered = _render()
 
@@ -25,47 +39,59 @@ def test_extract_bot_suggestions_renders_with_all_placeholders() -> None:
     assert "}" not in rendered
 
 
-def test_extract_bot_suggestions_excludes_pr_overviews_check_status_and_controls() -> None:
-    rendered = _render()
+def test_overviews_are_not_findings_but_problems_named_inside_them_are() -> None:
+    rules = _rules()
 
-    assert "walkthroughs, change summaries" in rendered
-    assert "A metric below a threshold is not by itself a finding." in rendered
-    assert "names a concrete problem in the changed code" in rendered
-    assert "checkboxes, buttons, commands the reader can run" in rendered
+    assert "walkthroughs, change summaries, per-file tables, release notes" in rules
+    assert "A concrete problem named inside a summary or walkthrough is still a finding: extract it." in rules
 
 
-def test_extract_bot_suggestions_keeps_concrete_problems_explained_under_a_rating() -> None:
-    rendered = _render()
+def test_ratings_are_not_findings_but_problems_in_their_explanation_are() -> None:
+    rules = _rules()
 
-    assert "Effort, risk, or confidence ratings themselves." in rendered
+    assert "Effort, risk, or confidence ratings themselves." in rules
     assert (
-        "concrete problem in the changed code, that problem is a finding: extract it, even when no\n  other comment states it."
-        in rendered
+        "When the text that explains a rating names a concrete problem in the changed code, "
+        "that problem is a finding: extract it, even when no other comment states it." in rules
     )
 
 
-def test_extract_bot_suggestions_puts_scope_rules_before_the_inputs() -> None:
-    rendered = _render()
+def test_repository_policy_gates_are_not_findings_on_any_surface() -> None:
+    rules = _rules()
 
-    assert rendered.index("Results of automated checks") < rendered.index("=== Bot Review Comments ===")
-
-
-def test_extract_bot_suggestions_excludes_generation_offers_and_run_metadata() -> None:
-    rendered = _render()
-
-    assert '"generate docstrings" or "generate unit tests"' in rendered
-    assert "Review status and run metadata: counts of comments posted" in rendered
+    assert "Repository-policy gates:" in rules
+    assert "coverage thresholds (for example docstring or test coverage percentages)" in rules
+    assert "regardless of which bot posts them or where (summary, review body, or inline comment)" in rules
+    assert "A metric below a threshold is not by itself a finding." in rules
 
 
-def test_extract_bot_suggestions_keeps_findings_inside_collapsed_sections() -> None:
-    rendered = _render()
+def test_documentation_requests_about_specific_code_are_still_findings() -> None:
+    rules = _rules()
 
-    assert "These rules depend on what a piece of text is, not on where it sits." in rendered
-    assert "A concrete finding inside a\ncollapsed or nested section" in rendered
+    assert (
+        "A comment that points at specific changed code and asks for documentation there is a "
+        "documentation finding, not a gate result: extract it." in rules
+    )
 
 
-def test_extract_bot_suggestions_excludes_tool_output_listed_as_review_context() -> None:
-    rendered = _render()
+def test_controls_generation_offers_and_run_metadata_are_not_findings() -> None:
+    rules = _rules()
 
-    assert "Context the bot lists as input to its review, such as quoted linter" in rendered
-    assert "Do\n  not extract findings from quoted tool output." in rendered
+    assert "checkboxes, buttons, commands the reader can run" in rules
+    assert '"generate docstrings" or "generate unit tests"' in rules
+    assert "Review status and run metadata: counts of comments posted" in rules
+
+
+def test_tool_output_listed_as_context_is_not_a_finding_but_tool_results_the_bot_presents_are() -> None:
+    rules = _rules()
+
+    assert "Tool output the bot lists as context is not a finding" in rules
+    assert "Tool results the bot presents as its own findings" in rules
+    assert "are findings." in rules
+
+
+def test_findings_inside_collapsed_sections_are_still_findings() -> None:
+    rules = _rules()
+
+    assert "These rules depend on what a piece of text is, not on where it sits." in rules
+    assert "A concrete finding inside a collapsed or nested section" in rules

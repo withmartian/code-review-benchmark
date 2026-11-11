@@ -36,24 +36,29 @@ new distinct code issue.
 Bots often post PR-level content next to their findings. This content is not a code-review
 finding, even when it is phrased as advice or sits inside a review body or issue comment:
 - Overviews of the change: walkthroughs, change summaries, per-file tables, release notes, and
-  sequence or architecture diagrams.
+  sequence or architecture diagrams. A concrete problem named inside a summary or walkthrough is
+  still a finding: extract it.
 - Effort, risk, or confidence ratings themselves. When the text that explains a rating names a
   concrete problem in the changed code, that problem is a finding: extract it, even when no
   other comment states it.
-- Results of automated checks reported as a status (pass/fail/warning) or as a metric against a
-  configured threshold, such as title, description, linked-issue, or scope checks and coverage
-  percentages. A metric below a threshold is not by itself a finding. Extract a finding from a
-  check result only when it names a concrete problem in the changed code, such as a specific
-  missing or incorrect behavior.
+- Repository-policy gates: results of automated checks reported as a status (pass/fail/warning)
+  or as a metric against a configured threshold, such as title, description, linked-issue, or
+  scope checks and coverage thresholds (for example docstring or test coverage percentages),
+  regardless of which bot posts them or where (summary, review body, or inline comment). A
+  metric below a threshold is not by itself a finding. Extract a finding from a check result
+  only when it names a concrete problem in the changed code, such as a specific missing or
+  incorrect behavior. A comment that points at specific changed code and asks for
+  documentation there is a documentation finding, not a gate result: extract it.
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, such as "generate docstrings" or "generate unit tests".
 - Review status and run metadata: counts of comments posted, lists of files reviewed or skipped,
   the commit range reviewed, run or plan details, and quota or allowance notes.
 - Context the bot lists as input to its review, such as quoted linter or static-analysis output,
-  code guidelines, or path instructions (for example under a heading like "context used"). Do
-  not extract findings from quoted tool output. A tool result is a finding only when the bot
-  restates it as its own comment, outside the quoted output.
+  code guidelines, or path instructions (for example under a heading like "context used"). Tool
+  output the bot lists as context is not a finding: do not extract findings from it. Tool
+  results the bot presents as its own findings (in its own comment, outside the quoted
+  context) are findings.
 
 These rules depend on what a piece of text is, not on where it sits. A concrete finding inside a
 collapsed or nested section (for example a nitpick or an outside-diff comment listed in a review

@@ -13,6 +13,9 @@ extraction prompts, the matching prompt, the model configuration and every input
 a rerun resumes that file only when the fingerprint matches and otherwise refuses it, so rows from
 a different prompt, model or input set are never mixed in. With --pr-list, a CSV that has a bot
 column selects (bot, pr_url) pairs; one with only pr_url selects every bot's analysis of the PR.
+extraction_scope_prs.csv lists the public PRs of the measurement made when the non-finding rules
+were added, and extraction_scope_results.jsonl holds that measurement's per-PR metrics (bot, arm,
+suggestion and action counts, precision, recall; no review text).
 
     uv run python -m prompt_eval.compare_prompts --dry-run
     uv run python -m prompt_eval.compare_prompts \\

@@ -269,6 +269,34 @@ def test_every_bot_in_the_packaged_pr_list_resolves_to_a_tracked_bot() -> None:
     assert is_selected("Copilot", next(u for b, u in pairs if b == "copilot"), urls, pairs)
 
 
+def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metrics() -> None:
+    import csv
+    import json
+    import re
+
+    here = Path(__file__).parents[1] / "prompt_eval"
+    with (here / "extraction_scope_prs.csv").open() as f:
+        listed = {(r["bot"], r["pr_url"]) for r in csv.DictReader(f)}
+    rows = [json.loads(line) for line in (here / "extraction_scope_results.jsonl").open()]
+    pr_url = re.compile(r"^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/pull/[1-9]\d*$")
+    metrics = {"total_suggestions", "matched_suggestions", "total_actions", "matched_actions", "precision", "recall"}
+    arms = {"current", "current, 2nd draw", "this PR", "this PR, 2nd draw"}
+
+    assert all(pr_url.match(r["pr_url"]) for r in rows)
+    assert all(set(r) <= {"table", "bot", "pr_url", "arm"} | metrics for r in rows)
+    # metrics are numbers only: no extracted text
+    assert all(
+        r[k] is None or (isinstance(r[k], (int, float)) and not isinstance(r[k], bool))
+        for r in rows
+        for k in metrics & set(r)
+    )
+    per_bot = [r for r in rows if r["table"] == "per-bot"]
+    assert {(r["bot"], r["pr_url"]) for r in per_bot} == listed
+    # every listed PR is scored in all four arms, once each
+    assert len(per_bot) == 4 * len(listed)
+    assert {r["arm"] for r in per_bot} == arms
+
+
 def test_deltas_never_fall_back_to_another_arm_when_baseline_draw_1_has_no_rows() -> None:
     def row(arm: str, i: int, p: float) -> dict:
         return {

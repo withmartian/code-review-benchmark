@@ -89,8 +89,7 @@
    "kind": "dismissed_finding",
    "path": null,
    "quote": "Linux/macOS refreshes re-hash whole rollouts",
-   "pattern": "(?i)re-?hash|HashThrough|cachedPrefix|prefix",
-   "not_asserted": "a finding by the prompt's rule (struck through and marked dismissed in the bot's own comment), but borderline in the model: extracted in 2 of 9 draws on this prompt and 0 of 8 on the previous one"
+   "pattern": "(?i)re-?hash|HashThrough|cachedPrefix|prefix"
   }
  ]
 }

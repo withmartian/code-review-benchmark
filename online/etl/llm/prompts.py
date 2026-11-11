@@ -38,7 +38,7 @@ Skip generic praise, status/progress messages, quota/limit messages, pure summar
 concrete finding, and "looks good" / "no issues found" comments. Also skip follow-up comments
 that merely confirm a fix, acknowledge a clarification, say a parent comment was wrong, too
 broad, pre-existing, already addressed, or out of scope, unless that same comment introduces a
-new distinct code issue.
+new distinct code issue (this covers the confirmation, not the finding it refers to).
 
 Bots often post PR-level content next to their findings. Only the kinds listed below are excluded:
 they are not code-review findings, even when phrased as advice or placed inside a review body or
@@ -86,11 +86,9 @@ still a finding, as each item says.
 
 These rules depend on what a piece of text is, not on where it sits. A concrete finding listed in
 a review-body section rather than as an inline comment, or inside a collapsed or nested section,
-is still a finding: extract it. So is a finding the bot posted and later marked resolved, fixed,
-outdated or dismissed, or struck through, whether in the comment that raised it or in a summary or
-tracking comment that lists the bot's findings: that marker is the finding's state, not review
-status or run metadata, and the skip for follow-up comments that merely confirm a fix covers only
-the confirmation, not the finding it refers to.
+is still a finding: extract it. A finding stays a finding when the bot later marks it resolved,
+fixed, outdated or dismissed, or strikes it through, including in a summary that lists its
+findings: extract it.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

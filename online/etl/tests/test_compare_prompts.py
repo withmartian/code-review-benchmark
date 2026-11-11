@@ -278,6 +278,19 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
     with (here / "extraction_scope_prs.csv").open() as f:
         listed = {(r["bot"], r["pr_url"]) for r in csv.DictReader(f)}
     rows = [json.loads(line) for line in (here / "extraction_scope_results.jsonl").open()]
+    header = [r for r in rows if r["table"] == "arms"]
+    rows = [r for r in rows if r["table"] != "arms"]
+    # one header row per arm: its name and the sha256 of the EXTRACT_BOT_SUGGESTIONS it was measured with
+    assert {h["arm"] for h in header} == {r["arm"] for r in rows}
+    assert all(
+        set(h) == {"table", "arm", "prompt_sha256"} and re.fullmatch(r"[0-9a-f]{64}", h["prompt_sha256"])
+        for h in header
+    )
+    # the head arm was measured on the prompt this branch ships
+    from pipeline.prompt_pins import pinned_inputs
+
+    head_sha = next(h["prompt_sha256"] for h in header if h["arm"] == "this PR at head, one draw")
+    assert head_sha == pinned_inputs()["EXTRACT_BOT_SUGGESTIONS"]
     pr_url = re.compile(r"^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/pull/[1-9]\d*$")
     metrics = {"total_suggestions", "matched_suggestions", "total_actions", "matched_actions", "precision", "recall"}
     arms = {

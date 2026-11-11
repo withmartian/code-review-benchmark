@@ -92,10 +92,12 @@ _TEMPLATES = {
     # "Actionable comments posted: 2", "Bot review was paused for this user, so no ... were produced ..."
     "run_status": re.compile(
         r"(?:actionable comments posted: \d+|no actionable comments(?: were generated)?"
-        r"|(?:the )?(?:\w+ )?(?:code )?review (?:(?:was|has been) (?:paused|skipped|not run)|did not (?:complete|run)|failed)"
+        r"|(?:the )?(?:\w+ ){0,2}(?:code )?review (?:(?:was|has been) (?:paused|skipped|not run)|did not (?:complete|run)|failed)"
         r"(?: for this (?:user|pull request|pr))?(?: \(review status: \w+\))?"
         r"(?:,? so no (?:automated |substantive )?(?:code-review )?findings were produced(?: in the (?:pr|bot) comments)?)?"
-        r"|(?:the )?bot(?:'s)? review comments contained no (?:substantive )?(?:code-review )?findings)\.?",
+        r"|(?:the )?bot(?:'s)? review comments contained no (?:substantive )?(?:code-review )?findings"
+        r"|(?:\w+ ){1,2}reviewed \d+ (?:out )?of \d+ changed files(?: in this pull request)? and generated (?:no|\d+)"
+        r" (?:new )?comments?)\.?",
         re.I,
     ),
     # "Offers to generate unit tests (beta)", "The bot offers to generate docstrings for this PR"

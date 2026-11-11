@@ -1,3 +1,9 @@
+{"table":"arms","arm":"current","prompt_sha256":"19276b0455a1bd9a2ad79e4fede2e2ef4624df2031de76fb1e091eef49535492"}
+{"table":"arms","arm":"current, 2nd draw","prompt_sha256":"19276b0455a1bd9a2ad79e4fede2e2ef4624df2031de76fb1e091eef49535492"}
+{"table":"arms","arm":"earlier revision cf4460fb","prompt_sha256":"cf4460fb2d6d4b725ba6f221e3f88c51c1d6b7e9cdc24d13f6a81d6621721912"}
+{"table":"arms","arm":"earlier revision cf4460fb, 2nd draw","prompt_sha256":"cf4460fb2d6d4b725ba6f221e3f88c51c1d6b7e9cdc24d13f6a81d6621721912"}
+{"table":"arms","arm":"previous revision cee5e6cc, one draw","prompt_sha256":"cee5e6cccb4bb0e4dee9534f88fbd049723c611773100d627acd6af68e6a3756"}
+{"table":"arms","arm":"this PR at head, one draw","prompt_sha256":"093c763af266cf9237d2f5a1482247225d14acf80fc4820760606ac85711ddaf"}
 {"table":"per-bot","bot":"chatgpt-codex-connector[bot]","pr_url":"https://github.com/Boulea7/agy-mcp/pull/19","arm":"current","total_suggestions":0,"matched_suggestions":0,"total_actions":4,"matched_actions":0,"precision":null,"recall":0.0}
 {"table":"per-bot","bot":"chatgpt-codex-connector[bot]","pr_url":"https://github.com/Boulea7/agy-mcp/pull/19","arm":"current, 2nd draw","total_suggestions":0,"matched_suggestions":0,"total_actions":4,"matched_actions":0,"precision":null,"recall":0.0}
 {"table":"per-bot","bot":"chatgpt-codex-connector[bot]","pr_url":"https://github.com/Boulea7/agy-mcp/pull/19","arm":"earlier revision cf4460fb","total_suggestions":0,"matched_suggestions":0,"total_actions":4,"matched_actions":0,"precision":null,"recall":0.0}

@@ -50,6 +50,9 @@ FOOFTILLY_FINDING = next(f["quote"] for f in FOOFTILLY["findings"] if f["kind"] 
             "run_status",
         ),
         ("Bot review comments contained no substantive code-review findings.", "run_status"),
+        ("Qodo Merge review was paused for this user.", "run_status"),
+        ("Copilot reviewed 3 out of 3 changed files in this pull request and generated no comments.", "run_status"),
+        ("Copilot reviewed 5 out of 7 changed files and generated 2 comments", "run_status"),
         (
             "Docstring coverage check failed (42.86% vs required 80%) for touched functions; bot requests adding"
             " missing docstrings to meet the threshold.",
@@ -87,6 +90,8 @@ def test_whole_text_templates_of_fixed_lines_are_excluded(description: str, kind
         " allows path traversal.",
         "Docstring coverage is 25% vs 80%; missing null check in parse() causes a crash.",
         "The review failed to flag that retry() never resets its backoff",
+        "Copilot reviewed 3 out of 3 changed files but missed the race in worker.py",
+        "The Qodo Merge review was paused mid-run, so the retry() bug went unreported",
     ],
 )
 def test_anything_else_is_a_finding_even_without_a_file(description: str) -> None:

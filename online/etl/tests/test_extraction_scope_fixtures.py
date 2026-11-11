@@ -34,7 +34,7 @@ RULE_FOR_KIND = {
     "run_status": "Review status and run metadata: counts of comments posted",
     "control": "Interactive controls and product text: checkboxes, buttons",
     "generation_offer": "offers to generate code for the author, for example to write docstrings or tests",
-    "pr_remark": "Top-level inline review comments generally contain substantive findings",
+    "pr_remark": "is a finding, wherever it sits: extract it.",
     "product_tip": "usage tips, links to dashboards",
     "tool_context": "Do not extract findings from these inputs",
     "nested_tool_output": "Tool output quoted as supporting context inside a comment",

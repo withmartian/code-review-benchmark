@@ -13,7 +13,8 @@ A suggestion counts as excluded only when it names no file and its whole whitesp
 matches a template of a fixed line as the extraction step writes it: a coverage gate with its
 percentage, an effort / risk / impact / priority / confidence rating, a review status line, or an
 offer to generate code. Everything else is a finding, so the figures are an estimate; --show prints
-the classified items for a hand check. The population follows the API: merged PRs with a review
+the classified items for a hand check. The templates follow the lines CodeRabbit writes, so f is
+understated more for the other bots than for CodeRabbit and is not comparable across bots. The population follows the API: merged PRs with a review
 date, the secondary Qodo account shown under the primary one, bots in ignored_tools hidden unless
 --include-ignored, and the bundled dashboard's default of at most 2000 changed lines
 (--diff-lines-max). --since / --until bound the review date, --until including its whole day as the

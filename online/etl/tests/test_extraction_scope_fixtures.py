@@ -51,7 +51,7 @@ RULE_FOR_KIND = {
     "rating_explanation": "that problem is a finding: extract it, even when no other comment states it.",
     "tool_finding": "a linter or static-analysis result the bot writes up as a problem in its own comment text",
     "praise": "Skip generic praise",
-    "check_finding": "Extract a finding from a check result only when it names a concrete problem in the changed code",
+    "check_finding": "Other PR-level content is judged like any other comment of the bot.",
     "located_rule_violation": "a violation of a repository rule or guideline reported at a specific location in the changed code is a finding",
 }
 

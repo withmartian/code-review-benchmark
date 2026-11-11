@@ -198,9 +198,10 @@ quoted tool output, on scylla the description-check row:
 | 3. wording 1 + ", wherever it is listed and whatever status or counts the bot shows beside it: extract it." | 6/6 | 4/6 | 5/6 | 0/6 |
 
 Wording 2 was chosen as the one with the most clean draws over the four fixtures: 18 of 24, against
-17 and 15. Its two CodeRabbit differences from the others (the scylla row 5 vs 6 of 6, zizmor kept
-out 6 vs 4 of 6) are within 6-draw noise, and both favour CodeRabbit's score: one fewer scylla
-description-check row extracted (5 vs 6 of 6) and two more zizmor lines kept out (6 vs 4 of 6).
+17 and 15. Against wording 1 the whole margin is the two CodeRabbit fixtures, both in CodeRabbit's
+favour: zizmor kept out in 2 more draws (6 vs 4 of 6) and the scylla description-check row extracted
+in 1 fewer (5 vs 6 of 6). Against wording 3 it is zizmor (+2, in CodeRabbit's favour) and TajsTokens
+(+1, in Qodo's favour); scylla is equal (5 of 6). All of these are within 6-draw noise.
 
 The first live run on wording 2 passed 10 of 12 fixtures (the pcsx-redux and local-search-mcp
 findings were not yet asserted). It failed the scylla row in its one draw and the TajsTokens
@@ -244,6 +245,11 @@ three, each counted over the targeted draws plus the live draws:
   A reword ("what the pull request's title or description lacks, or what the change lacks against
   its linked issue") left the row at 0 of 6 and did worse elsewhere (scylla row 3 of 6, zizmor kept
   out 2 of 6, TajsTokens 2 of 6, the Qodo fixture 6 of 6, 6 draws each), so it was not adopted.
+  Narrowing the gate bullet's carve-out to title and description checks only (so a linked-issue
+  check that names a concrete problem would fall under the concrete-problem rule) also left the row
+  at 0 of 6 and lowered the scylla row to 1 of 6 (zizmor kept out 5 of 6, TajsTokens 3 of 6, the
+  Qodo fixture 6 of 6), so it was not adopted either. The fixture test maps this label to the
+  sentence that judges other PR-level content like any other comment.
 
 The scylla description-check row passed this live draw (6 of 8 on the head in all). The same
 pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).

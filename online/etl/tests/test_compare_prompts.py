@@ -148,8 +148,11 @@ def test_leaderboard_paired_ci_and_report() -> None:
     lo, hi = paired_ci(list(zip(base, cand, strict=True)), lambda x: leaderboard(x)[0])
     assert lo == hi == 0.25
     table = report(rows)
-    assert "### reviewer[bot] (20 PRs)" in table
-    assert "| candidate draw 1 | 4.00 | 3.00 | 75.0 | 50.0 | +25.0 [+25.0, +25.0] | +0.0 [+0.0, +0.0] | 0 |" in table
+    assert "### reviewer[bot]" in table
+    assert (
+        "| candidate draw 1 | 20 | 4.00 | 3.00 | 75.0 | 50.0 | 20 | +25.0 [+25.0, +25.0] | +0.0 [+0.0, +0.0] | 0 |"
+        in table
+    )
 
 
 def test_pr_list_with_a_bot_column_selects_only_the_listed_pairs(tmp_path: Path) -> None:
@@ -232,3 +235,35 @@ async def test_a_failed_job_is_reported_and_not_scored_while_the_others_complete
         ("baseline draw 1", "reviewer[bot]", "https://github.com/o/r/pull/1"),
         ("baseline draw 2", "reviewer[bot]", "https://github.com/o/r/pull/1"),
     }
+
+
+def test_report_counts_prs_per_arm_and_pairs_deltas_over_prs_scored_in_both() -> None:
+    def row(arm: str, i: int, p: float) -> dict:
+        return {
+            "arm": arm,
+            "bot": "b[bot]",
+            "pr_url": f"https://github.com/o/r/pull/{i}",
+            "total_suggestions": 2,
+            "matched_suggestions": int(2 * p),
+            "precision": p,
+            "recall": 0.5,
+        }
+
+    rows = [row("baseline draw 1", i, 0.5) for i in range(10)] + [row("candidate draw 1", i, 1.0) for i in range(6)]
+    table = report(rows)
+
+    assert "| baseline draw 1 | 10 |" in table
+    assert "| candidate draw 1 | 6 | 2.00 | 2.00 | 100.0 | 50.0 | 6 | +50.0 [+50.0, +50.0] |" in table
+
+
+def test_every_bot_in_the_packaged_pr_list_resolves_to_a_tracked_bot() -> None:
+    from config import DEFAULT_CHATBOT_USERNAMES
+    from pipeline.actors import normalize_github_actor
+
+    urls, pairs = read_pr_list(str(Path(__file__).parents[1] / "prompt_eval" / "extraction_scope_prs.csv"))
+    tracked = {normalize_github_actor(b) for b in DEFAULT_CHATBOT_USERNAMES}
+
+    assert pairs
+    assert {bot for bot, _ in pairs} <= tracked
+    # Copilot is listed under its reviewer account but stored as "Copilot": both resolve to one name
+    assert is_selected("Copilot", next(u for b, u in pairs if b == "copilot"), urls, pairs)

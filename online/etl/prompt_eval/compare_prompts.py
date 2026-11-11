@@ -41,6 +41,7 @@ from llm.prompts import EXTRACT_BOT_SUGGESTIONS
 from llm.prompts import JUDGE_MATCHING
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import MatchingResponse
+from pipeline.actors import normalize_github_actor
 from pipeline.analyze import _build_details_by_sha
 from pipeline.analyze import _find_bot_review_commit
 from pipeline.analyze import _format_actions
@@ -168,40 +169,52 @@ def paired_ci(pairs: list[tuple[dict, dict]], stat, n: int = 2000, seed: int = 7
 
 
 def report(rows: list[dict]) -> str:
-    """Markdown table per bot from --out rows (the fingerprint header line is skipped)."""
+    """Markdown table per bot from --out rows (the fingerprint header line is skipped).
+
+    Each arm's columns use every PR scored in that arm ("PRs scored"). Deltas against the
+    baseline's first draw are paired: they use only the PRs scored in both arms ("paired PRs").
+    """
     rows = [r for r in rows if "arm" in r]
     by: dict[tuple[str, str], dict[str, dict]] = {}
     for r in rows:
         by.setdefault((r["bot"], r["pr_url"]), {})[r["arm"]] = r
     arms = sorted({r["arm"] for r in rows}, key=lambda a: (not a.startswith("baseline"), a))
+    if not arms:
+        return ""
+    base = arms[0]
+    fmt = lambda v: "n/a" if v is None else f"{v * 100:.1f}"  # noqa: E731
     out = []
     for bot in sorted({b for b, _ in by}):
-        keys = [k for k in by if k[0] == bot and all(a in by[k] for a in arms)]
-        if not keys:
-            continue
-        out.append(f"\n### {bot} ({len(keys)} PRs)\n")
+        keys = [k for k in by if k[0] == bot]
+        out.append(f"\n### {bot}\n")
         out.append(
-            "| arm | suggestions/PR | matched/PR | P | R | dP vs baseline draw 1 | dR vs baseline draw 1 "
-            "| invalid-id matches |"
+            "| arm | PRs scored | suggestions/PR | matched/PR | P | R | paired PRs "
+            "| dP vs baseline draw 1 | dR vs baseline draw 1 | invalid-id matches |"
         )
-        out.append("|---|---|---|---|---|---|---|---|")
-        base = arms[0]
+        out.append("|---|---|---|---|---|---|---|---|---|---|")
         for a in arms:
-            rs = [by[k][a] for k in keys]
+            rs = [by[k][a] for k in keys if a in by[k]]
+            if not rs:
+                continue
             p, rc, _ = leaderboard(rs)
             spr = sum(r["total_suggestions"] for r in rs) / len(rs)
             mpr = sum(r["matched_suggestions"] for r in rs) / len(rs)
             bad = sum(r.get("invalid_id_matches", 0) for r in rs)
-            cells = ["", ""]
+            cells, n_pairs = ["", ""], ""
             if a != base:
-                pairs = [(by[k][base], by[k][a]) for k in keys]
+                pairs = [(by[k][base], by[k][a]) for k in keys if base in by[k] and a in by[k]]
+                n_pairs = str(len(pairs))
                 for i, f in enumerate((lambda x: leaderboard(x)[0], lambda x: leaderboard(x)[1])):
+                    if not pairs:
+                        break
                     d0, d1 = f([x for x, _ in pairs]), f([y for _, y in pairs])
                     ci = paired_ci(pairs, f)
                     if d0 is not None and d1 is not None and ci:
                         cells[i] = f"{(d1 - d0) * 100:+.1f} [{ci[0] * 100:+.1f}, {ci[1] * 100:+.1f}]"
-            fmt = lambda v: "n/a" if v is None else f"{v * 100:.1f}"  # noqa: E731
-            out.append(f"| {a} | {spr:.2f} | {mpr:.2f} | {fmt(p)} | {fmt(rc)} | {cells[0]} | {cells[1]} | {bad} |")
+            out.append(
+                f"| {a} | {len(rs)} | {spr:.2f} | {mpr:.2f} | {fmt(p)} | {fmt(rc)} | {n_pairs} "
+                f"| {cells[0]} | {cells[1]} | {bad} |"
+            )
     return "\n".join(out)
 
 
@@ -216,13 +229,13 @@ def read_pr_list(path: str) -> tuple[set[str], set[tuple[str, str]] | None]:
         rows = list(reader)
         has_bot = "bot" in (reader.fieldnames or [])
     urls = {r["pr_url"] for r in rows}
-    pairs = {(r["bot"], r["pr_url"]) for r in rows} if has_bot else None
+    pairs = {(normalize_github_actor(r["bot"]), r["pr_url"]) for r in rows} if has_bot else None
     return urls, pairs
 
 
 def is_selected(bot: str, pr_url: str, urls: set[str] | None, pairs: set[tuple[str, str]] | None) -> bool:
     if pairs is not None:
-        return (bot, pr_url) in pairs
+        return (normalize_github_actor(bot), pr_url) in pairs
     return urls is None or pr_url in urls
 
 
@@ -279,11 +292,11 @@ async def run(args: argparse.Namespace) -> int:
 
 async def _run(args: argparse.Namespace, cfg: DBConfig, repo: PRRepository) -> int:
     urls, pairs = read_pr_list(args.pr_list) if args.pr_list else (None, None)
-    bots = set(args.bots.split(",")) if args.bots else None
+    bots = {normalize_github_actor(b) for b in args.bots.split(",")} if args.bots else None
     units = []
     for cb in await repo.get_all_chatbots():
         bot = cb["github_username"]
-        if bots and bot not in bots:
+        if bots and normalize_github_actor(bot) not in bots:
             continue
         n = 0
         for an in await repo.get_analyses(cb["id"]):

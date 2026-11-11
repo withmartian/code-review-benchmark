@@ -61,9 +61,16 @@ def changed_entries(base: dict[str, dict], head: dict[str, dict]) -> list[str]:
     return sorted(v for v in base if head.get(v) != base[v])
 
 
+NULL_SHA = "0" * 40
+
+
 def pins_at_merge_base(base_ref: str, test_file: str) -> dict[str, dict]:
-    """PINNED_INPUTS_BY_VERSION as it is in `test_file` at the merge-base of HEAD and `base_ref`
-    ({} when the file or the table did not exist there). Raises when git cannot resolve the refs."""
+    """PINNED_INPUTS_BY_VERSION as it is in `test_file` at the merge-base of HEAD and `base_ref`.
+
+    Returns {} only when the base predates the version stamp (its llm/prompts.py has no
+    EXTRACTION_PROMPT_VERSION). Raises when git cannot resolve the refs, and when the base has a
+    version but the test file or its table is missing there (a moved or deleted table would otherwise
+    disable the check)."""
     import ast
     from pathlib import Path
     import subprocess
@@ -75,13 +82,25 @@ def pins_at_merge_base(base_ref: str, test_file: str) -> dict[str, dict]:
             ["git", "-C", str(here), *args], check=True, capture_output=True, text=True
         ).stdout.strip()
 
+    def show(rel: str) -> str | None:
+        """File content at the merge-base, or None when the path does not exist there."""
+        done = subprocess.run(["git", "-C", str(here), "show", f"{merge_base}:{rel}"], capture_output=True, text=True)
+        if done.returncode == 0:
+            return done.stdout
+        if "does not exist" in done.stderr or "exists on disk, but not in" in done.stderr:
+            return None
+        raise RuntimeError(f"git show {merge_base}:{rel} failed: {done.stderr.strip()}")
+
     merge_base = git("merge-base", "HEAD", base_ref)
     top = Path(git("rev-parse", "--show-toplevel"))
-    rel = Path(test_file).resolve().relative_to(top).as_posix()
-    shown = subprocess.run(["git", "-C", str(here), "show", f"{merge_base}:{rel}"], capture_output=True, text=True)
-    if shown.returncode != 0:
+    test_rel = Path(test_file).resolve().relative_to(top)
+    prompts = show((test_rel.parent.parent / "llm" / "prompts.py").as_posix())
+    if prompts is None or "EXTRACTION_PROMPT_VERSION =" not in prompts:
         return {}
-    for node in ast.parse(shown.stdout).body:
+    source = show(test_rel.as_posix())
+    if source is None:
+        raise RuntimeError(f"{test_rel} is missing at {merge_base}, which already has a prompt version")
+    for node in ast.parse(source).body:
         if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "PINNED_INPUTS_BY_VERSION":
             return ast.literal_eval(node.value)
-    return {}
+    raise RuntimeError(f"PINNED_INPUTS_BY_VERSION is missing from {test_rel} at {merge_base}")

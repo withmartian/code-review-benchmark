@@ -150,7 +150,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "previous": None,
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "9d588151de20e956d142b1263d24e8fc897fb64b4c646adce2848a78f9118030",
+            "EXTRACT_BOT_SUGGESTIONS": "30b7af7e37fc7c47c9a073d70216e0a9d002f3c3cc42a2e75c66a9e616d10042",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
@@ -214,13 +214,21 @@ def test_located_rule_violations_are_findings_only_aggregate_results_are_exclude
     )
 
 
-def test_pull_request_title_description_and_linked_issue_checks_are_left_to_the_general_rules() -> None:
+def test_only_the_listed_kinds_are_excluded_and_pull_request_metadata_gaps_are_findings() -> None:
     rules = _rules()
 
     assert (
+        "Only the kinds listed below are excluded: they are not code-review findings, even when phrased as "
+        "advice or placed inside a review body or issue comment. Other PR-level content is judged like any "
+        "other comment of the bot." in rules
+    )
+    assert (
+        "a remark or check result that says what the pull request's title, description, or linked issue "
+        "lacks is a finding, wherever it sits: extract it." in rules
+    )
+    assert (
         "This rule does not cover checks of the pull request's title, description, or linked issue, even when "
-        "they are listed with other check results: a check result that says what one of them lacks is a "
-        "finding: extract it." in rules
+        "they are listed with other check results (see above)." in rules
     )
     # remarks about the pull request itself are not excluded by any rule here (left to the maintainers)
     assert "Remarks about the pull request itself" not in rules
@@ -236,26 +244,27 @@ def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:
 
 def test_no_pinned_entry_on_the_base_branch_was_edited() -> None:
     """Editing the newest entry in place keeps the per-version test green without a version bump, so
-    CI compares the table with the one at the merge-base (PROMPT_PINS_BASE_REF names the base)."""
+    CI compares the table with the one at the merge-base (PROMPT_PINS_BASE_REF names the base: the
+    pull request's base branch, or the commit a push started from)."""
     import os
 
     import pytest
 
+    from pipeline.prompt_pins import NULL_SHA
     from pipeline.prompt_pins import changed_entries
     from pipeline.prompt_pins import pins_at_merge_base
 
     base_ref = os.environ.get("PROMPT_PINS_BASE_REF")
     if not base_ref:
         pytest.skip("PROMPT_PINS_BASE_REF is not set (CI sets it to the base branch)")
+    if base_ref == NULL_SHA:
+        pytest.skip("the push created a new branch: there is no earlier commit to compare with")
     edited = changed_entries(pins_at_merge_base(base_ref, __file__), PINNED_INPUTS_BY_VERSION)
     assert not edited, f"{edited} changed on this branch: add a new EXTRACTION_PROMPT_VERSION instead"
 
 
-def test_the_merge_base_check_catches_an_entry_edited_in_place(tmp_path) -> None:
+def _scratch_repo(tmp_path):
     import subprocess
-
-    from pipeline.prompt_pins import changed_entries
-    from pipeline.prompt_pins import pins_at_merge_base
 
     def git(*args: str) -> None:
         subprocess.run(
@@ -264,10 +273,20 @@ def test_the_merge_base_check_catches_an_entry_edited_in_place(tmp_path) -> None
             capture_output=True,
         )
 
-    pins = tmp_path / "pins.py"
+    (tmp_path / "llm").mkdir()
+    (tmp_path / "tests").mkdir()
     git("init", "-q", "-b", "main")
+    return git, tmp_path / "llm" / "prompts.py", tmp_path / "tests" / "test_prompts.py"
+
+
+def test_the_merge_base_check_catches_an_entry_edited_in_place(tmp_path) -> None:
+    from pipeline.prompt_pins import changed_entries
+    from pipeline.prompt_pins import pins_at_merge_base
+
+    git, prompts, pins = _scratch_repo(tmp_path)
+    prompts.write_text('EXTRACTION_PROMPT_VERSION = "v1"\n')
     pins.write_text('PINNED_INPUTS_BY_VERSION = {"v1": {"previous": None, "inputs": {"P": "a"}}}\n')
-    git("add", "pins.py")
+    git("add", ".")
     git("commit", "-q", "-m", "base")
     git("checkout", "-q", "-b", "change")
     pins.write_text('PINNED_INPUTS_BY_VERSION = {"v1": {"previous": None, "inputs": {"P": "b"}}}\n')
@@ -278,3 +297,30 @@ def test_the_merge_base_check_catches_an_entry_edited_in_place(tmp_path) -> None
     assert changed_entries(base, {"v1": {"previous": None, "inputs": {"P": "b"}}}) == ["v1"]
     # appending a new version leaves the base entry as it was
     assert changed_entries(base, {**base, "v2": {"previous": "x", "inputs": {"P": "b"}}}) == []
+
+
+def test_the_merge_base_check_passes_only_a_base_without_a_prompt_version(tmp_path) -> None:
+    import pytest
+
+    from pipeline.prompt_pins import pins_at_merge_base
+
+    git, prompts, pins = _scratch_repo(tmp_path)
+    prompts.write_text("PROMPT = 'x'\n")
+    git("add", ".")
+    git("commit", "-q", "-m", "before the version stamp")
+    git("checkout", "-q", "-b", "change")
+    pins.write_text('PINNED_INPUTS_BY_VERSION = {"v1": {"previous": None, "inputs": {"P": "a"}}}\n')
+    git("add", ".")
+    git("commit", "-q", "-m", "add the table")
+    assert pins_at_merge_base("main", str(pins)) == {}  # nothing to compare yet
+
+    git("checkout", "-q", "main")
+    prompts.write_text('EXTRACTION_PROMPT_VERSION = "v1"\n')
+    git("commit", "-q", "-am", "a version but no table")
+    git("checkout", "-q", "-b", "change2")
+    pins.parent.mkdir(exist_ok=True)  # the checkout of main removed the untracked-empty tests/ dir
+    pins.write_text('PINNED_INPUTS_BY_VERSION = {"v1": {"previous": None, "inputs": {"P": "a"}}}\n')
+    git("add", ".")
+    git("commit", "-q", "-m", "table appears")
+    with pytest.raises(RuntimeError, match="missing at"):
+        pins_at_merge_base("main", str(pins))

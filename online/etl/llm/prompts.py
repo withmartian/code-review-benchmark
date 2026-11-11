@@ -39,8 +39,12 @@ that merely confirm a fix, acknowledge a clarification, say a parent comment was
 broad, pre-existing, already addressed, or out of scope, unless that same comment introduces a
 new distinct code issue.
 
-Bots often post PR-level content next to their findings. This content is not a code-review
-finding, even when it is phrased as advice or sits inside a review body or issue comment:
+Bots often post PR-level content next to their findings. Only the kinds listed below are excluded:
+they are not code-review findings, even when phrased as advice or placed inside a review body or
+issue comment. Other PR-level content is judged like any other comment of the bot. In particular, a
+remark or check result that says what the pull request's title, description, or linked issue lacks
+is a finding, wherever it sits: extract it. Within a listed kind, a concrete problem the bot names is
+still a finding, as each item says.
 - Overviews of the change: walkthroughs, change summaries, per-file tables, release notes, and
   sequence or architecture diagrams. A concrete problem named inside a summary or walkthrough is
   still a finding: extract it.
@@ -59,8 +63,7 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   finding: extract it. Only aggregate results (a status, or a metric against a threshold) are
   excluded: a violation of a repository rule or guideline reported at a specific location in the
   changed code is a finding. This rule does not cover checks of the pull request's title,
-  description, or linked issue, even when they are listed with other check results: a check result
-  that says what one of them lacks is a finding: extract it.
+  description, or linked issue, even when they are listed with other check results (see above).
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, for example to write docstrings or tests.

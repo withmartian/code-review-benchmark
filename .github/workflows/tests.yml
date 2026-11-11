@@ -36,5 +36,6 @@ jobs:
       - run: uv run ruff check .
       - run: uv run pytest tests/
         env:
-          # a pull request compares with its base branch, a push with the commit before it
-          PROMPT_PINS_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD^' }}
+          # a pull request compares with its base branch, a push with the commit the push started from
+          # (all zeros for a new branch: the test then says there is nothing to compare)
+          PROMPT_PINS_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}

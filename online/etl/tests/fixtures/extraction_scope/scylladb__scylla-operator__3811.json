@@ -80,8 +80,7 @@
    "kind": "pr_description_check",
    "path": null,
    "quote": "Description is only 'Backport of `#3793`.'",
-   "pattern": "(?i)(PR|pull request) description|description is only|template section",
-   "not_asserted": "a description-check row, a finding under this prompt; gpt-5.2-2025-12-11 extracts it in 2 of 4 draws (3 of 4 with the current prompt), so one draw cannot assert it"
+   "pattern": "(?i)(PR|pull request) description|description is only|template section"
   }
  ]
 }

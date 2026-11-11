@@ -80,7 +80,8 @@
    "kind": "pr_description_check",
    "path": null,
    "quote": "Description is only 'Backport of `#3793`.'",
-   "pattern": "(?i)(PR|pull request) description|description is only|template section"
+   "pattern": "(?i)(PR|pull request) description|description is only|template section",
+   "not_asserted": "a finding by the prompt's rule, but borderline in the model: extracted in 1 of 9 draws on this prompt and 4 of 8 (an earlier run: 13 of 18) on the previous one"
   }
  ]
 }

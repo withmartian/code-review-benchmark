@@ -299,6 +299,7 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
         "earlier revision cf4460fb",
         "earlier revision cf4460fb, 2nd draw",
         "previous revision cee5e6cc, one draw",
+        "previous revision 093c763a, one draw",
         "this PR at head, one draw",
     }
 

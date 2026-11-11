@@ -275,3 +275,40 @@ async def test_reanalysis_warns_when_the_selection_reaches_the_limit(db: DBAdapt
     await analyze_prs(DBConfig(), db, cid, "reanalyze[bot]", limit=2, reanalyze=True, dry_run=True, **window)
 
     assert "reached --limit 2" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_a_failed_label_deletion_rolls_back_the_whole_replacement(db: DBAdapter, monkeypatch) -> None:
+    import pipeline.analyze as analyze_mod
+
+    monkeypatch.setattr(analyze_mod, "LLMClient", _StubLLM)
+    _StubLLM.calls, _StubLLM.fail = [], False
+    repo = PRRepository(db)
+    cid, pr_id = await _seed_one(repo, "old-model")
+    before = await _analysis(db, pr_id)
+    real_execute = db.execute
+
+    async def failing_execute(sql: str, args=None):
+        if "DELETE FROM pr_labels" in sql:
+            raise RuntimeError("label deletion failed")
+        return await real_execute(sql, args)
+
+    monkeypatch.setattr(db, "execute", failing_execute)
+    cfg = DBConfig()
+    cfg.martian_model_name = "judge-model"
+    window = {"since": "2026-04-18T00:00:00+00:00"}
+
+    assert await analyze_mod.analyze_prs(cfg, db, cid, "reviewer[bot]", limit=10, reanalyze=True, **window) == 0
+
+    monkeypatch.setattr(db, "execute", real_execute)
+    after = await _analysis(db, pr_id)
+    assert [(r["model_name"], r["human_actions"], r["bot_suggestions"]) for r in after] == [
+        (r["model_name"], r["human_actions"], r["bot_suggestions"]) for r in before
+    ]  # the new stamped analysis was rolled back with the failed delete
+    assert len(await db.fetchall("SELECT * FROM pr_labels WHERE pr_id = $1", (pr_id,))) == 1
+    assert (await repo.get_pr_by_id(pr_id))["status"] == "analyzed"
+    # still unstamped, so the next re-analysis selects it again and can repair it
+    assert (
+        await analyze_mod.analyze_prs(cfg, db, cid, "reviewer[bot]", limit=10, reanalyze=True, dry_run=True, **window)
+        == 1
+    )

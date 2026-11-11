@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC
 from datetime import datetime
 import json
@@ -30,6 +31,7 @@ class PRRepository:
 
     def __init__(self, db: DBAdapter):
         self.db = db
+        self._tx_lock = asyncio.Lock()
 
     # -- Chatbots --------------------------------------------------------------
 
@@ -203,9 +205,6 @@ class PRRepository:
             q.GET_ANALYZED_PRS_BOUNDED, (chatbot_id, since, until, current_model_name or "", limit)
         )
 
-    async def delete_labels(self, pr_id: int, chatbot_id: int) -> None:
-        await self.db.execute(q.DELETE_PR_LABELS, (pr_id, chatbot_id))
-
     # -- Locking ---------------------------------------------------------------
 
     async def lock_pr(self, pr_id: int, worker_id: str, lock_timeout_minutes: int = 30) -> bool:
@@ -321,6 +320,19 @@ class PRRepository:
         )
         now = datetime.now(UTC).isoformat()
         await self.db.execute(q.UPDATE_PR_ANALYZED, (now, pr_id))
+
+    async def replace_analysis(self, pr_id: int, chatbot_id: int, **analysis: Any) -> None:
+        """For a re-analysis: write the new analysis, the status update and the deletion of the PR's
+        labels in one transaction, so a failure anywhere leaves the old analysis (with its old
+        model_name stamp) and labels in place and the PR is selected again by the next re-analysis.
+
+        `analysis` takes the keyword arguments of insert_analysis. Transactions on the adapter are
+        serialized with a lock, because a transaction routes every statement on the adapter through
+        one connection while it is open.
+        """
+        async with self._tx_lock, self.db.transaction():
+            await self.insert_analysis(pr_id=pr_id, chatbot_id=chatbot_id, **analysis)
+            await self.db.execute(q.DELETE_PR_LABELS, (pr_id, chatbot_id))
 
     # -- PR labels -------------------------------------------------------------
 

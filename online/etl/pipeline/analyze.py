@@ -307,7 +307,8 @@ async def analyze_single_pr(
     """Run 3-step LLM analysis on a single assembled PR. Returns True if successful.
 
     With `stored_actions` (a re-analysis), step 2 is skipped and those human actions are reused, so
-    only the bot-suggestion extraction and the matching are re-run against a fixed ground truth.
+    only the bot-suggestion extraction and the matching are re-run against a fixed ground truth, and
+    the result replaces the old analysis and deletes the PR's labels in one transaction.
     """
     assembled = pr_row.get("assembled")
     if assembled is None:
@@ -417,7 +418,8 @@ async def analyze_single_pr(
         f_beta = (1 + beta_sq) * precision * recall / (beta_sq * precision + recall)
 
     # Store results
-    await repo.insert_analysis(
+    persist = repo.replace_analysis if stored_actions is not None else repo.insert_analysis
+    await persist(
         pr_id=pr_row["id"],
         chatbot_id=pr_row["chatbot_id"],
         bot_suggestions=suggestions,
@@ -463,9 +465,10 @@ async def analyze_prs(
     `max_per_day` caps PRs per bot_reviewed_at date (requires `since`).
     `reanalyze` selects already-analyzed PRs in the window whose stored model_name is not the
     current `<model>+<prompt version>` stamp, re-runs steps 1 and 3 against the stored human
-    actions (step 2 is not redrawn), replaces the analysis row (upsert) with the new stamp, and
-    deletes the PR's labels so `label` recomputes them from the new analysis. A re-analyzed PR is
-    not selected again; a failed one keeps its previous, unstamped row and status and is retried by
+    actions (step 2 is not redrawn), and writes the new stamped analysis, the status update and the
+    deletion of the PR's labels in one transaction, so `label` recomputes them. A re-analyzed PR is
+    not selected again; a failed one (LLM error or a failed write, rolled back) keeps its previous,
+    unstamped row, status and labels and is retried by
     the next run. `dry_run` only counts the PRs that would be analyzed.
     Returns the number of PRs analyzed (or, with `dry_run`, selected).
     """
@@ -531,8 +534,6 @@ async def analyze_prs(
                     beta=cfg.f_beta,
                     stored_actions=stored,
                 )
-                if ok and reanalyze:
-                    await repo.delete_labels(pr_row["id"], pr_row["chatbot_id"])
                 return ok
             except BadRequestError as exc:
                 logger.error(f"LLM 400 for {pr_row['repo_name']}#{pr_row['pr_number']}: {exc}")

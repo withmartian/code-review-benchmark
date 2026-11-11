@@ -69,8 +69,13 @@ def test_documentation_requests_about_specific_code_are_still_findings() -> None
     rules = _rules()
 
     assert (
-        "A comment that points at specific changed code and asks for documentation there is a "
-        "documentation finding, not a gate result: extract it." in rules
+        'A request to add docstrings or tests to "the touched functions" so a coverage threshold is met '
+        "is a gate result, wherever it appears." in rules
+    )
+    assert (
+        "A comment on a specific location in the changed code (a named function or file and line) that "
+        "asks for documentation of that code, for a reason other than meeting a threshold, is a "
+        "documentation finding: extract it." in rules
     )
 
 

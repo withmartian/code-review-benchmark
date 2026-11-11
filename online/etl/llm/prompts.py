@@ -47,8 +47,11 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   regardless of which bot posts them or where (summary, review body, or inline comment). A
   metric below a threshold is not by itself a finding. Extract a finding from a check result
   only when it names a concrete problem in the changed code, such as a specific missing or
-  incorrect behavior. A comment that points at specific changed code and asks for
-  documentation there is a documentation finding, not a gate result: extract it.
+  incorrect behavior. A request to add docstrings or tests to "the touched functions" so a
+  coverage threshold is met is a gate result, wherever it appears. A comment on a specific
+  location in the changed code (a named function or file and line) that asks for documentation
+  of that code, for a reason other than meeting a threshold, is a documentation finding: extract
+  it.
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, such as "generate docstrings" or "generate unit tests".

@@ -134,9 +134,11 @@ analyses scored with different extraction prompts can be told apart; analyses ma
 version was stamped carry no `+<version>` suffix. `analyze` selects only PRs that have no analysis
 yet, and the API service reads every analysis whatever its `model_name`, so after a prompt change the
 leaderboard and its time series mix analyses made with both prompts until the older ones are
-re-scored or the API filters on the version. A change to a step prompt, a response schema, the LLM
-call or the code that renders step input needs a new version: `tests/test_prompts.py` pins their
-sha256 per version and fails when a digest changes without a matching entry. Editing the newest
+re-scored or the API filters on the version. A change to any input `pipeline/prompt_pins.py` lists
+needs a new version: a step prompt, the code that splits the commits and renders step input, the
+actor matching, `analyze_single_pr`'s metric arithmetic, a response schema or the LLM call.
+`tests/test_prompts.py` pins their sha256 per version and fails when a digest changes without a
+matching entry. Editing the newest
 entry in place silences that test, so CI also compares the table with the one at the merge-base
 (`PROMPT_PINS_BASE_REF`) and fails when an entry that exists there changed. Run locally without
 that variable, the comparison is skipped, so a reviewer should check that a digest change comes

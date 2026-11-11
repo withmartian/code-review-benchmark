@@ -1,9 +1,10 @@
 """Prompt templates for the LLM analysis pipeline."""
 
 # Stamped into llm_analyses.model_name as "<model>+<version>", so analyses scored with different
-# prompts can be told apart (analyses made before the stamp carry none). Bump it whenever a step
-# prompt, a response schema or the code that renders step input changes: tests/test_prompts.py pins
-# their sha256 per version.
+# prompts can be told apart (analyses made before the stamp carry none). Bump it whenever any input
+# pipeline/prompt_pins.py lists changes: a step prompt, the code that splits the commits and renders
+# step input, the actor matching, analyze_single_pr's metric arithmetic, a response schema or the LLM
+# call. tests/test_prompts.py pins their sha256 per version.
 EXTRACTION_PROMPT_VERSION = "extract-v2"
 
 EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.

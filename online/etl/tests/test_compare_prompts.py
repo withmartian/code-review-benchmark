@@ -320,6 +320,16 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
     assert {r["arm"] for r in per_bot} == arms
     items = {k for k in counts if k.startswith("items_")}
     assert all(sum(r.get(k, 0) for k in items) == r["total_suggestions"] for r in per_bot)
+    # the excluded-only PRs' items are typed as run status in every arm that extracted them
+    by_key = {(r["bot"], r["pr_url"].split("github.com/")[1], r["arm"]): r for r in per_bot}
+    for bot, pr, arm in (
+        ("chatgpt-codex-connector[bot]", "harshanandak/forge/pull/98", "current"),
+        ("qodo-code-review[bot]", "Heretek-AI/claude-4-opencode/pull/4", "current"),
+        ("qodo-code-review[bot]", "Heretek-AI/claude-4-opencode/pull/4", "current, 2nd draw"),
+        ("qodo-code-review[bot]", "Heretek-AI/claude-4-opencode/pull/4", "previous revision cee5e6cc, one draw"),
+    ):
+        row = by_key[(bot, pr, arm)]
+        assert row["total_suggestions"] == row.get("items_run_status") == 1, (bot, pr, arm)
 
 
 def test_deltas_never_fall_back_to_another_arm_when_baseline_draw_1_has_no_rows() -> None:

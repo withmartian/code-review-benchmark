@@ -7,9 +7,9 @@ Makes one paid LLM call per fixture, so it is skipped unless all of these are se
 
 A labelled finding passes when some extracted suggestion matches its ``pattern`` (and its file, when
 the label names one). A labelled non-finding passes when no extracted suggestion matches its
-``pattern``. Labels with a ``not_asserted`` field are not checked here; the field says why
-(including one known miss of this prompt). One draw at temperature 1.0 can
-flip a borderline item, so a single failure is a prompt to look, not proof of a regression.
+``pattern``. Labels with a ``not_asserted`` field are not checked here; the field says why.
+One draw at temperature 1.0 can flip a borderline item, so a single failure is a prompt to look,
+not proof of a regression.
 """
 
 from __future__ import annotations

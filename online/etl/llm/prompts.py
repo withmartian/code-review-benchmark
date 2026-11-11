@@ -51,8 +51,9 @@ finding, even when it is phrased as advice or sits inside a review body or issue
 - Review status and run metadata: counts of comments posted, lists of files reviewed or skipped,
   the commit range reviewed, run or plan details, and quota or allowance notes.
 - Context the bot lists as input to its review, such as quoted linter or static-analysis output,
-  code guidelines, or path instructions. A tool result is a finding only when the bot states it
-  in its own comment.
+  code guidelines, or path instructions (for example under a heading like "context used"). Do
+  not extract findings from quoted tool output. A tool result is a finding only when the bot
+  restates it as its own comment, outside the quoted output.
 
 These rules depend on what a piece of text is, not on where it sits. A concrete finding inside a
 collapsed or nested section (for example a nitpick or an outside-diff comment listed in a review

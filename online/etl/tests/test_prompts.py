@@ -68,4 +68,4 @@ def test_extract_bot_suggestions_excludes_tool_output_listed_as_review_context()
     rendered = _render()
 
     assert "Context the bot lists as input to its review, such as quoted linter" in rendered
-    assert "A tool result is a finding only when the bot states it\n  in its own comment." in rendered
+    assert "Do\n  not extract findings from quoted tool output." in rendered

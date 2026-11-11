@@ -140,7 +140,9 @@ sha256 per version and fails when a digest changes without a matching entry. Edi
 entry in place silences that test, so CI also compares the table with the one at the merge-base
 (`PROMPT_PINS_BASE_REF`) and fails when an entry that exists there changed. Run locally without
 that variable, the comparison is skipped, so a reviewer should check that a digest change comes
-with a new version.
+with a new version. On a push it is also skipped when there is no earlier commit to compare with:
+the push created the branch (an all-zero sha), or it followed a force-push and the commit it
+replaced is no longer in the clone.
 
 ### Label PRs
 

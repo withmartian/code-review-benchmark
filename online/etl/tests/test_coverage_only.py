@@ -51,6 +51,7 @@ FOOFTILLY_FINDING = next(f["quote"] for f in FOOFTILLY["findings"] if f["kind"] 
         ),
         ("Bot review comments contained no substantive code-review findings.", "run_status"),
         ("Qodo Merge review was paused for this user.", "run_status"),
+        ("Qodo Merge Pro review was paused.", "run_status"),
         ("Copilot reviewed 3 out of 3 changed files in this pull request and generated no comments.", "run_status"),
         ("Copilot reviewed 5 out of 7 changed files and generated 2 comments", "run_status"),
         (

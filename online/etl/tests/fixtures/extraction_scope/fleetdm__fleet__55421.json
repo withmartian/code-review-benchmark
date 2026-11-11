@@ -45,7 +45,7 @@
    "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
   },
   {
-   "kind": "rating",
+   "kind": "run_status",
    "quote": "🧠 **Review effort:** Balanced",
    "pattern": "(?i)review effort"
   },

@@ -64,6 +64,19 @@ def changed_entries(base: dict[str, dict], head: dict[str, dict]) -> list[str]:
 NULL_SHA = "0" * 40
 
 
+def unreachable_push_base(base_ref: str, cwd: str) -> bool:
+    """True when `base_ref` is a raw commit sha (a push's github.event.before) that is not in this
+    clone, as after a force-push that dropped it. A named ref (a pull request's origin/<base>) is never
+    reported unreachable here: when it does not resolve, the merge-base check fails loudly instead."""
+    import re
+    import subprocess
+
+    if not re.fullmatch(r"[0-9a-f]{40}", base_ref):
+        return False
+    done = subprocess.run(["git", "-C", cwd, "cat-file", "-e", f"{base_ref}^{{commit}}"], capture_output=True)
+    return done.returncode != 0
+
+
 def pins_at_merge_base(base_ref: str, test_file: str) -> dict[str, dict]:
     """PINNED_INPUTS_BY_VERSION as it is in `test_file` at the merge-base of HEAD and `base_ref`.
 

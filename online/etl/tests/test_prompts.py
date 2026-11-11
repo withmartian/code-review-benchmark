@@ -260,12 +260,15 @@ def test_no_pinned_entry_on_the_base_branch_was_edited() -> None:
     from pipeline.prompt_pins import NULL_SHA
     from pipeline.prompt_pins import changed_entries
     from pipeline.prompt_pins import pins_at_merge_base
+    from pipeline.prompt_pins import unreachable_push_base
 
     base_ref = os.environ.get("PROMPT_PINS_BASE_REF")
     if not base_ref:
         pytest.skip("PROMPT_PINS_BASE_REF is not set (CI sets it to the base branch)")
     if base_ref == NULL_SHA:
         pytest.skip("the push created a new branch: there is no earlier commit to compare with")
+    if unreachable_push_base(base_ref, os.path.dirname(__file__)):
+        pytest.skip(f"the push's earlier commit {base_ref[:12]} is not in this clone (a force-push dropped it)")
     edited = changed_entries(pins_at_merge_base(base_ref, __file__), PINNED_INPUTS_BY_VERSION)
     assert not edited, f"{edited} changed on this branch: add a new EXTRACTION_PROMPT_VERSION instead"
 
@@ -304,6 +307,25 @@ def test_the_merge_base_check_catches_an_entry_edited_in_place(tmp_path) -> None
     assert changed_entries(base, {"v1": {"previous": None, "inputs": {"P": "b"}}}) == ["v1"]
     # appending a new version leaves the base entry as it was
     assert changed_entries(base, {**base, "v2": {"previous": "x", "inputs": {"P": "b"}}}) == []
+
+
+def test_only_a_missing_raw_push_sha_counts_as_unreachable(tmp_path) -> None:
+    import subprocess
+
+    from pipeline.prompt_pins import unreachable_push_base
+
+    git, prompts, _ = _scratch_repo(tmp_path)
+    prompts.write_text('EXTRACTION_PROMPT_VERSION = "v1"\n')
+    git("add", ".")
+    git("commit", "-q", "-m", "base")
+    head = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+    assert not unreachable_push_base(head, str(tmp_path))
+    assert unreachable_push_base("1" * 40, str(tmp_path))  # e.g. the tip a force-push replaced
+    # a named ref is left to the merge-base call, which fails loudly when it does not resolve
+    assert not unreachable_push_base("origin/no-such-branch", str(tmp_path))
 
 
 def test_the_merge_base_check_passes_only_a_base_without_a_prompt_version(tmp_path) -> None:

@@ -36,6 +36,7 @@ RULE_FOR_KIND = {
     "pr_process": "Remarks about the pull request itself rather than the changed code",
     "product_tip": "usage tips, links to dashboards",
     "tool_context": "Tool output the bot lists as context is not a finding",
+    "nested_tool_output": "Tool output quoted inside one of the bot's comments",
     "inline": "Top-level inline review comments generally contain substantive findings",
     "body_finding": "review bodies and issue comments may contain findings or summaries",
     "summary_finding": "A concrete problem named inside a summary or walkthrough is still a finding",

@@ -55,10 +55,10 @@
    "pattern": "(?i)\\bMCP\\b"
   },
   {
-   "kind": "description_check",
+   "kind": "pr_process",
    "quote": "The PR description is freeform and omits the required template sections",
    "pattern": "(?i)PR description|template section|AI section",
-   "not_asserted": "known miss: the prompt says a description-template check is a gate result on any surface, but gpt-5.2-2025-12-11 still extracts this inline one (4 of 4 draws)"
+   "not_asserted": "known miss: the prompt says a remark about the PR description is not a finding, even as an inline comment, but gpt-5.2-2025-12-11 still extracts this one (4 of 4 draws with the earlier wording, 4 of 4 with the explicit PR-remark rule); the bot lists it among its own findings"
   }
  ],
  "findings": [

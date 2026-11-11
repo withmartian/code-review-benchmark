@@ -68,7 +68,7 @@
    "pattern": "(?i)actionable comments"
   },
   {
-   "kind": "tool_context",
+   "kind": "nested_tool_output",
    "quote": "[warning] 1-1: First line in a file should be a top-level heading",
    "pattern": "(?i)top-level heading|MD041"
   }

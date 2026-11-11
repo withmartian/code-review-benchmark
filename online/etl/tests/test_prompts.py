@@ -51,7 +51,7 @@ def test_overviews_are_not_findings_but_problems_named_inside_them_are() -> None
 def test_ratings_are_not_findings_but_problems_in_their_explanation_are() -> None:
     rules = _rules()
 
-    assert "Effort, risk, or confidence ratings themselves." in rules
+    assert "Effort, risk, priority, impact, or confidence ratings themselves." in rules
     assert (
         "When the text that explains a rating names a concrete problem in the changed code, "
         "that problem is a finding: extract it, even when no other comment states it." in rules
@@ -156,7 +156,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "previous": None,
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "cee5e6cccb4bb0e4dee9534f88fbd049723c611773100d627acd6af68e6a3756",
+            "EXTRACT_BOT_SUGGESTIONS": "093c763af266cf9237d2f5a1482247225d14acf80fc4820760606ac85711ddaf",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
@@ -215,7 +215,8 @@ def test_located_rule_violations_are_findings_only_aggregate_results_are_exclude
     rules = _rules()
 
     assert (
-        "Only aggregate results (a status, or a metric against a threshold) are excluded: a violation of a "
+        "Only aggregate results (a status, or a metric against a threshold) and the located coverage request "
+        "above are excluded: a violation of a "
         "repository rule or guideline reported at a specific location in the changed code is a finding." in rules
     )
 

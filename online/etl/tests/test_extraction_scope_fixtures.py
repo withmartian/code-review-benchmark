@@ -30,7 +30,7 @@ RULE_FOR_KIND = {
     "pr_description_check": "This rule does not cover checks of the pull request's title, description, or linked issue",
     "linked_issue_check": "This rule does not cover checks of the pull request's title, description, or linked issue",
     "change_overview": "walkthroughs, change summaries, per-file tables, release notes",
-    "rating": "Effort, risk, or confidence ratings themselves.",
+    "rating": "Effort, risk, priority, impact, or confidence ratings themselves.",
     "run_status": "Review status and run metadata: counts of comments posted",
     "control": "Interactive controls and product text: checkboxes, buttons",
     "generation_offer": "offers to generate code for the author, for example to write docstrings or tests",

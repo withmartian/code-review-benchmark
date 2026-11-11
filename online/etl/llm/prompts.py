@@ -48,9 +48,9 @@ still a finding, as each item says.
 - Overviews of the change: walkthroughs, change summaries, per-file tables, release notes, and
   sequence or architecture diagrams. A concrete problem named inside a summary or walkthrough is
   still a finding: extract it.
-- Effort, risk, or confidence ratings themselves. When the text that explains a rating names a
-  concrete problem in the changed code, that problem is a finding: extract it, even when no
-  other comment states it.
+- Effort, risk, priority, impact, or confidence ratings themselves. When the text that explains a
+  rating names a concrete problem in the changed code, that problem is a finding: extract it, even
+  when no other comment states it.
 - Repository-policy gates: results of automated checks reported as a status (pass/fail/warning)
   or as a metric against a configured threshold, such as coverage thresholds (for example
   docstring or test coverage percentages), regardless of which bot posts them or where (summary,
@@ -63,10 +63,11 @@ still a finding, as each item says.
   finding: extract it. When a request names specific code and its only stated reason is a coverage
   threshold (for example "add a docstring to parse() to meet the 80% docstring coverage rule"), it
   is a gate result; when it cites a documentation or style rule for that specific code, it is a
-  finding. Only aggregate results (a status, or a metric against a threshold) are excluded: a
-  violation of a repository rule or guideline reported at a specific location in the changed code
-  is a finding. This rule does not cover checks of the pull request's title, description, or linked
-  issue, even when they are listed with other check results (see above).
+  finding. Only aggregate results (a status, or a metric against a threshold) and the located
+  coverage request above are excluded: a violation of a repository rule or guideline reported at a
+  specific location in the changed code is a finding. This rule does not cover checks of the pull
+  request's title, description, or linked issue, even when they are listed with other check results
+  (see above).
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, for example to write docstrings or tests.

@@ -220,7 +220,7 @@ than measuring it.
   `a2fcbe51`, 6 of 8 on the head.
 - hyperpolymath/universal-chat-extractor#186 zizmor lines: extracted in 0 of 14 targeted draws with
   the "configured review instructions" wording, 1 of 13 after the quoted-tool-output rule was
-  narrowed, 1 of 9 on `a2fcbe51`, 0 of 6 on the head (and kept out in its live draw).
+  narrowed, 1 of 9 on `a2fcbe51`, 0 of 8 on the head (6 targeted draws and both live draws).
 - Copilot's description remark on fleetdm/fleet#55421: extracted in every draw of the scoped-intro
   prompts.
 
@@ -244,16 +244,17 @@ three, each counted over the targeted draws plus the live draws:
   description, or linked issue lacks" a finding; a linked-issue row reports what the change lacks
   against the issue, which that wording does not literally cover, so it may contribute to this miss.
   A reword ("what the pull request's title or description lacks, or what the change lacks against
-  its linked issue") left the row at 0 of 6 and did worse elsewhere (scylla row 3 of 6, zizmor kept
-  out 2 of 6, TajsTokens 2 of 6, the Qodo fixture 6 of 6, 6 draws each), so it was not adopted.
-  Narrowing the gate bullet's carve-out to title and description checks only (so a linked-issue
-  check that names a concrete problem would fall under the concrete-problem rule) also left the row
-  at 0 of 6 and lowered the scylla row to 1 of 6 (zizmor kept out 5 of 6, TajsTokens 3 of 6, the
-  Qodo fixture 6 of 6), so it was not adopted either. The fixture test maps this label to the
+  its linked issue") left the row at 0 of 6, did worse on the CodeRabbit fixtures (scylla row 3 of
+  6, zizmor kept out 2 of 6) and better on TajsTokens (2 of 6), with the Qodo fixture at 6 of 6 (6
+  draws each), so it was not adopted. Narrowing the gate bullet's carve-out to title and description
+  checks only (so a linked-issue check that names a concrete problem would fall under the
+  concrete-problem rule) also left the row at 0 of 6, did worse on the CodeRabbit fixtures (scylla
+  row 1 of 6, zizmor kept out 5 of 6) and better on TajsTokens (3 of 6), with the Qodo fixture at 6
+  of 6, so it was not adopted either. The fixture test maps this label to the
   sentence that judges other PR-level content like any other comment. Both rejected tries extracted
   the scylla CodeRabbit description-check row less often (3 of 6 and 1 of 6, against 6 of 8 on the
-  head), which would have favoured CodeRabbit. Try 1 also kept the zizmor tool lines out less often
-  (2 of 6, try 2 5 of 6, against 6 of 6), which would have counted against CodeRabbit. Both tries
+  head), which would have favoured CodeRabbit. Both kept the zizmor tool lines out less often (2 of
+  6 and 5 of 6, against 8 of 8 on the head), which would have counted against CodeRabbit. Both tries
   extracted Qodo's TajsTokens dismissed finding more often (2 of 6 and 3 of 6, against 1 of 8), which
   would have favoured Qodo. These counts come from different sessions and are within draw-to-draw
   noise (the same row moved from 13 of 18 to 4 of 8 between sessions on one prompt); neither try

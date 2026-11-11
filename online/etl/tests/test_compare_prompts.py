@@ -285,10 +285,14 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
         "current, 2nd draw",
         "earlier revision cf4460fb",
         "earlier revision cf4460fb, 2nd draw",
+        "revision 3f2a618, one draw",
         "this PR at head, one draw",
     }
 
     assert all(pr_url.match(r["pr_url"]) for r in rows)
+    counts = {k for r in rows for k in r if k.startswith(("items_", "matched_items_"))}
+    assert counts
+    metrics |= counts
     assert all(set(r) <= {"table", "bot", "pr_url", "arm"} | metrics for r in rows)
     # metrics are numbers only: no extracted text
     assert all(
@@ -298,9 +302,11 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
     )
     per_bot = [r for r in rows if r["table"] == "per-bot"]
     assert {(r["bot"], r["pr_url"]) for r in per_bot} == listed
-    # every listed PR is scored in all five arms, once each
+    # every listed PR is scored in every arm, once each; its per-type item counts (absent = 0) add up
     assert len(per_bot) == len(arms) * len(listed)
     assert {r["arm"] for r in per_bot} == arms
+    items = {k for k in counts if k.startswith("items_")}
+    assert all(sum(r.get(k, 0) for k in items) == r["total_suggestions"] for r in per_bot)
 
 
 def test_deltas_never_fall_back_to_another_arm_when_baseline_draw_1_has_no_rows() -> None:

@@ -14,8 +14,9 @@ matches a template of a fixed line as the extraction step writes it: a coverage 
 percentage, an effort / risk / impact / priority / confidence rating, a review status line, or an
 offer to generate code. Everything else is a finding, so the figures are an estimate; --show prints
 the classified items for a hand check. The templates follow the lines CodeRabbit writes, so f is
-understated more for the other bots than for CodeRabbit and is not comparable across bots. The population follows the API: merged PRs with a review
-date, the secondary Qodo account shown under the primary one, bots in ignored_tools hidden unless
+understated more for the other bots than for CodeRabbit and is not comparable across bots; --bot
+all prints that caveat once. The population follows the API: merged PRs with a review date, the
+secondary Qodo account shown under the primary one, bots in ignored_tools hidden unless
 --include-ignored, and the bundled dashboard's default of at most 2000 changed lines
 (--diff-lines-max). --since / --until bound the review date, --until including its whole day as the
 API's end_date does; "daily" figures are pooled over that window, not per day (min_scored_prs in
@@ -49,6 +50,10 @@ ANALYSES_SQL = """
 # (static/index.html) filters diff_lines to at most 2000 (a PR without diff_lines passes).
 MERGE_INTO = {"qodo-free-for-open-source-projects[bot]": "qodo-code-review[bot]"}
 DEFAULT_DIFF_LINES_MAX = 2000
+CROSS_BOT_CAVEAT = (
+    "f is not comparable across bots: the templates follow CodeRabbit's lines, so f is understated "
+    "more for the other bots."
+)
 # Whole-text templates (anchored, matched on the whitespace-normalized description) of the fixed gate,
 # rating and status lines bots post, as the extraction step paraphrases them. Anything that does not
 # match a whole template is a finding.
@@ -289,7 +294,15 @@ def main(argv: list[str] | None = None) -> None:
             args.include_ignored,
         )
     )
-    print("\n\n".join(report(b, s, args.show) for b, s in summaries.items()) or "no analyses in this window")
+    print(render_all(summaries, args.show, all_bots=bot is None))
+
+
+def render_all(summaries: dict[str, dict], show: int = 0, all_bots: bool = False) -> str:
+    """Every bot's block; with --bot all, one caveat line first, since f is not comparable across bots."""
+    blocks = "\n\n".join(report(b, s, show) for b, s in summaries.items())
+    if not blocks:
+        return "no analyses in this window"
+    return f"{CROSS_BOT_CAVEAT}\n\n{blocks}" if all_bots else blocks
 
 
 if __name__ == "__main__":

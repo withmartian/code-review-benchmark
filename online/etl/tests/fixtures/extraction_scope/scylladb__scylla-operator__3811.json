@@ -53,7 +53,7 @@
    "pattern": "(?i)actionable comments"
   },
   {
-   "kind": "run_status",
+   "kind": "control",
    "quote": "**Review profile**: QUIET",
    "pattern": "(?i)review profile"
   },

@@ -140,6 +140,20 @@ def test_excluded_only_prs_leave_every_precision_and_recall_mean() -> None:
     assert text.count("\n  [") == 2  # --show 2 prints two classified items
 
 
+def test_bot_all_prints_the_cross_bot_caveat_once() -> None:
+    from prompt_eval.coverage_only import CROSS_BOT_CAVEAT
+    from prompt_eval.coverage_only import render_all
+
+    s = summarize([{"pr_url": "u1", "precision": 0.5, "recall": 0.5, "bot_suggestions": []}])
+    every = render_all({"a[bot]": s, "b[bot]": s}, all_bots=True)
+    one = render_all({"a[bot]": s})
+
+    assert every.startswith(CROSS_BOT_CAVEAT) and every.count(CROSS_BOT_CAVEAT) == 1
+    assert "not comparable across bots" in every and "understated more for the other bots" in every
+    assert CROSS_BOT_CAVEAT not in one
+    assert render_all({}, all_bots=True) == "no analyses in this window"
+
+
 async def test_run_reads_merged_reviewed_analyses_per_bot_and_window(tmp_path: Path) -> None:
     from db.connection import DBAdapter
     from db.repository import PRRepository

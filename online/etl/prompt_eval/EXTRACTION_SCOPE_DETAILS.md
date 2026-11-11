@@ -249,7 +249,11 @@ three, each counted over the targeted draws plus the live draws:
   check that names a concrete problem would fall under the concrete-problem rule) also left the row
   at 0 of 6 and lowered the scylla row to 1 of 6 (zizmor kept out 5 of 6, TajsTokens 3 of 6, the
   Qodo fixture 6 of 6), so it was not adopted either. The fixture test maps this label to the
-  sentence that judges other PR-level content like any other comment.
+  sentence that judges other PR-level content like any other comment. Both rejected tries extracted
+  the scylla CodeRabbit description-check row less often (3 of 6 and 1 of 6, against 6 of 8 on the
+  head), so adopting either would have favoured CodeRabbit's score and rejecting them went against
+  our interest (unlike the resolved-findings wording choice above, whose small differences favour
+  CodeRabbit).
 
 The scylla description-check row passed this live draw (6 of 8 on the head in all). The same
 pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).
@@ -268,7 +272,9 @@ Heretek-AI/claude-4-opencode#4 leave the means), but still extracts the two Clau
 the note is the PR's only item.
 `coverage_only.py`'s whole-text templates catch 2 and 0 of them, and 76 of 119 and 61 of 112 of
 CodeRabbit's unlocated docstring-coverage items in the two current-prompt draws, so its f is a
-lower bound. It finds two excluded-only PRs in our rows, harshanandak/forge#98 (Codex) and
+lower bound. It is not comparable across bots: the templates follow CodeRabbit's lines, so f is
+understated more for the other bots (`--bot all` prints this caveat). It finds two excluded-only
+PRs in our rows, harshanandak/forge#98 (Codex) and
 Heretek-AI/claude-4-opencode#4 (Qodo).
 
 **Offline dataset (`offline/results/benchmark_data.json`), 20 PRs x 8 tools.** Each tool's

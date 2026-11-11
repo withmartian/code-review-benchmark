@@ -70,9 +70,11 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   code guidelines, or configured review instructions (for example a section where the bot lists the
   inputs or context it used). Do not extract findings from these inputs, even when a listed tool
   result names a file and line of the changed code: the bot did not raise it as its own comment.
-- Raw tool output quoted in a comment is not its own finding: only problems the bot states in its
-  own words are findings. A linter or static-analysis result is a finding when the bot writes it
-  up as a problem in its own comment text.
+- Tool output quoted as supporting context inside a comment, such as a linter or static-analysis
+  log next to the bot's own text, is not its own finding: only problems the bot states in its own
+  words are findings. A tool result the bot posts as its own comment at a location in the changed
+  code is a finding, and so is a linter or static-analysis result the bot writes up as a problem in
+  its own comment text.
 
 These rules depend on what a piece of text is, not on where it sits. A concrete finding listed in
 a review-body section rather than as an inline comment, or inside a collapsed or nested section,

@@ -37,14 +37,14 @@ RULE_FOR_KIND = {
     "pr_remark": "Top-level inline review comments generally contain substantive findings",
     "product_tip": "usage tips, links to dashboards",
     "tool_context": "Do not extract findings from these inputs",
-    "nested_tool_output": "Raw tool output quoted in a comment is not its own finding",
+    "nested_tool_output": "Tool output quoted as supporting context inside a comment",
     "inline": "Top-level inline review comments generally contain substantive findings",
     "body_finding": "review bodies and issue comments may contain findings or summaries",
     "summary_finding": "A concrete problem named inside a summary or walkthrough is still a finding",
     "collapsed_nitpick": "inside a collapsed or nested section, is still a finding",
     "collapsed_follow_up": "inside a collapsed or nested section, is still a finding",
     "rating_explanation": "that problem is a finding: extract it, even when no other comment states it.",
-    "tool_finding": "A linter or static-analysis result is a finding when the bot writes it up",
+    "tool_finding": "a linter or static-analysis result the bot writes up as a problem in its own comment text",
     "praise": "Skip generic praise",
     "check_finding": "Extract a finding from a check result only when it names a concrete problem in the changed code",
     "located_rule_violation": "a violation of a repository rule or guideline reported at a specific location in the changed code is a finding",
@@ -161,3 +161,17 @@ def test_neutral_labels_say_why_and_are_never_asserted(path: Path) -> None:
     for label in fx.get("neutral", []):
         assert label.get("reason"), label["quote"]
         assert "pattern" not in label, label["quote"]
+
+
+@pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.stem)
+def test_no_non_finding_pattern_matches_a_finding(path: Path) -> None:
+    """A non-finding pattern that also matched a finding would fail the live check on a correct
+    extraction of that finding."""
+    import re
+
+    fx = _load(path)
+    for label in fx["non_findings"]:
+        if not label.get("pattern"):
+            continue
+        for finding in fx["findings"]:
+            assert not re.search(label["pattern"], finding["quote"]), (label["kind"], finding["quote"])

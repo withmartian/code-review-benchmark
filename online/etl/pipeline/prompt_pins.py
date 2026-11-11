@@ -2,9 +2,14 @@
 
 An analysis depends on the three step prompts, the code that splits the commits at the reviewed one
 and renders each step's input, the actor matching that decides which comments are the bot's, the
-metric arithmetic in analyze_single_pr, and the JSON schema of each step's structured response.
+metric arithmetic in analyze_single_pr, the JSON schema of each step's structured response, and the
+LLM call (LLMClient.structured_completion: message shape, temperature, response format).
 tests/test_prompts.py pins these digests per version, and prompt_eval/compare_prompts.py puts them
 in its resume fingerprint. Whitespace and comments in the pinned code count, on purpose.
+
+Not pinned, on purpose: the model name and base URL (configuration, stored in model_name next to the
+version), the openai SDK and pydantic versions (uv.lock), and the data an analysis reads (the PR's
+events and commits).
 """
 
 from __future__ import annotations
@@ -30,6 +35,7 @@ PROMPTS = ("EXTRACT_BOT_SUGGESTIONS", "EXTRACT_HUMAN_ACTIONS", "JUDGE_MATCHING")
 
 
 def pinned_inputs() -> dict[str, str]:
+    from llm import client
     from llm import prompts
     from llm import schemas
     from pipeline import actors
@@ -40,6 +46,42 @@ def pinned_inputs() -> dict[str, str]:
         texts[f"pipeline.analyze.{fn}"] = inspect.getsource(getattr(analyze, fn))
     texts["pipeline.analyze._HTML_COMMENT_RE"] = analyze._HTML_COMMENT_RE.pattern
     texts["pipeline.actors"] = inspect.getsource(actors)
+    texts["llm.client.LLMClient.structured_completion"] = inspect.getsource(client.LLMClient.structured_completion)
     for model in RESPONSE_SCHEMAS:
         texts[f"llm.schemas.{model}"] = json.dumps(getattr(schemas, model).model_json_schema(), sort_keys=True)
     return {name: hashlib.sha256(text.encode()).hexdigest() for name, text in texts.items()}
+
+
+def changed_entries(base: dict[str, dict], head: dict[str, dict]) -> list[str]:
+    """Versions whose pinned entry differs between the base branch and this branch.
+
+    Editing the newest entry in place keeps the per-version test green without a version bump; this
+    comparison against the merge-base catches it (tests/test_prompts.py runs it when CI names the
+    base through PROMPT_PINS_BASE_REF)."""
+    return sorted(v for v in base if head.get(v) != base[v])
+
+
+def pins_at_merge_base(base_ref: str, test_file: str) -> dict[str, dict]:
+    """PINNED_INPUTS_BY_VERSION as it is in `test_file` at the merge-base of HEAD and `base_ref`
+    ({} when the file or the table did not exist there). Raises when git cannot resolve the refs."""
+    import ast
+    from pathlib import Path
+    import subprocess
+
+    here = Path(test_file).resolve().parent
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", "-C", str(here), *args], check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    merge_base = git("merge-base", "HEAD", base_ref)
+    top = Path(git("rev-parse", "--show-toplevel"))
+    rel = Path(test_file).resolve().relative_to(top).as_posix()
+    shown = subprocess.run(["git", "-C", str(here), "show", f"{merge_base}:{rel}"], capture_output=True, text=True)
+    if shown.returncode != 0:
+        return {}
+    for node in ast.parse(shown.stdout).body:
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "PINNED_INPUTS_BY_VERSION":
+            return ast.literal_eval(node.value)
+    return {}

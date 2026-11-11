@@ -95,10 +95,14 @@ def test_inputs_the_bot_lists_and_raw_tool_output_are_not_findings() -> None:
     assert "Inputs the bot lists as having used for its review" in rules
     assert "Do not extract findings from these inputs, even when a listed tool result names a file and line" in rules
     assert (
-        "Raw tool output quoted in a comment is not its own finding: only problems the bot states in its "
-        "own words are findings." in rules
+        "Tool output quoted as supporting context inside a comment, such as a linter or static-analysis log "
+        "next to the bot's own text, is not its own finding: only problems the bot states in its own words "
+        "are findings." in rules
     )
-    assert "A linter or static-analysis result is a finding when the bot writes it up as a problem" in rules
+    assert (
+        "A tool result the bot posts as its own comment at a location in the changed code is a finding, and "
+        "so is a linter or static-analysis result the bot writes up as a problem in its own comment text." in rules
+    )
 
 
 def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findings() -> None:
@@ -146,7 +150,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "previous": None,
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "e5cd1540f903ec5bde771687b73da4119c58d6f7aa7d9466972004c3d214db34",
+            "EXTRACT_BOT_SUGGESTIONS": "9d588151de20e956d142b1263d24e8fc897fb64b4c646adce2848a78f9118030",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
@@ -161,6 +165,7 @@ PINNED_INPUTS_BY_VERSION = {
             "pipeline.analyze.analyze_single_pr": "8f0cfd7d38d9e8318ccb8c89c9034a8ddf72e5fb54e15a4f09a326ea94095a8c",
             "pipeline.analyze._HTML_COMMENT_RE": "39d3d18fd21298dd2ea96526389f29db50575fe2b20f99d3306ddf6b269e79fa",
             "pipeline.actors": "d2cf21925cedd789b7ec2cdb6b93a32b7b3062dec265de1cd8f9af96b874b3cd",
+            "llm.client.LLMClient.structured_completion": "8e334213d7602d491ff14ac64efdc147555210d422edd38022d8a41bd8fecf2a",
             "llm.schemas.BotSuggestionsResponse": "5969e73467cf574786325ea59d8470b0d6e817c82b7d02ce206d8e612e48b110",
             "llm.schemas.HumanActionsResponse": "34ad210bbaa719035d8e38a22d73f22e316e3efcc59b53133e946f8a175d880c",
             "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
@@ -227,3 +232,49 @@ def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:
     from pipeline.analyze import stamped_model_name
 
     assert stamped_model_name("some-model") == f"some-model+{EXTRACTION_PROMPT_VERSION}"
+
+
+def test_no_pinned_entry_on_the_base_branch_was_edited() -> None:
+    """Editing the newest entry in place keeps the per-version test green without a version bump, so
+    CI compares the table with the one at the merge-base (PROMPT_PINS_BASE_REF names the base)."""
+    import os
+
+    import pytest
+
+    from pipeline.prompt_pins import changed_entries
+    from pipeline.prompt_pins import pins_at_merge_base
+
+    base_ref = os.environ.get("PROMPT_PINS_BASE_REF")
+    if not base_ref:
+        pytest.skip("PROMPT_PINS_BASE_REF is not set (CI sets it to the base branch)")
+    edited = changed_entries(pins_at_merge_base(base_ref, __file__), PINNED_INPUTS_BY_VERSION)
+    assert not edited, f"{edited} changed on this branch: add a new EXTRACTION_PROMPT_VERSION instead"
+
+
+def test_the_merge_base_check_catches_an_entry_edited_in_place(tmp_path) -> None:
+    import subprocess
+
+    from pipeline.prompt_pins import changed_entries
+    from pipeline.prompt_pins import pins_at_merge_base
+
+    def git(*args: str) -> None:
+        subprocess.run(
+            ["git", "-C", str(tmp_path), "-c", "user.name=t", "-c", "user.email=t@example.com", *args],
+            check=True,
+            capture_output=True,
+        )
+
+    pins = tmp_path / "pins.py"
+    git("init", "-q", "-b", "main")
+    pins.write_text('PINNED_INPUTS_BY_VERSION = {"v1": {"previous": None, "inputs": {"P": "a"}}}\n')
+    git("add", "pins.py")
+    git("commit", "-q", "-m", "base")
+    git("checkout", "-q", "-b", "change")
+    pins.write_text('PINNED_INPUTS_BY_VERSION = {"v1": {"previous": None, "inputs": {"P": "b"}}}\n')
+    git("commit", "-q", "-am", "edit in place")
+
+    base = pins_at_merge_base("main", str(pins))
+    assert base == {"v1": {"previous": None, "inputs": {"P": "a"}}}
+    assert changed_entries(base, {"v1": {"previous": None, "inputs": {"P": "b"}}}) == ["v1"]
+    # appending a new version leaves the base entry as it was
+    assert changed_entries(base, {**base, "v2": {"previous": "x", "inputs": {"P": "b"}}}) == []

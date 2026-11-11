@@ -45,7 +45,14 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   check result only when it names a concrete problem in the changed code, such as a specific
   missing or incorrect behavior.
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
-  tips, links to dashboards, and configuration or review-settings details.
+  tips, links to dashboards, and configuration or review-settings details. This includes offers
+  to generate code for the author, such as "generate docstrings" or "generate unit tests".
+- Review status and run metadata: counts of comments posted, lists of files reviewed or skipped,
+  the commit range reviewed, run or plan details, and quota or allowance notes.
+
+These rules depend on what a piece of text is, not on where it sits. A concrete finding inside a
+collapsed or nested section (for example a nitpick or an outside-diff comment listed in a review
+body) is still a finding: extract it.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

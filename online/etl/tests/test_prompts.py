@@ -45,3 +45,17 @@ def test_extract_bot_suggestions_puts_scope_rules_before_the_inputs() -> None:
     rendered = _render()
 
     assert rendered.index("Results of automated checks") < rendered.index("=== Bot Review Comments ===")
+
+
+def test_extract_bot_suggestions_excludes_generation_offers_and_run_metadata() -> None:
+    rendered = _render()
+
+    assert '"generate docstrings" or "generate unit tests"' in rendered
+    assert "Review status and run metadata: counts of comments posted" in rendered
+
+
+def test_extract_bot_suggestions_keeps_findings_inside_collapsed_sections() -> None:
+    rendered = _render()
+
+    assert "These rules depend on what a piece of text is, not on where it sits." in rendered
+    assert "A concrete finding inside a\ncollapsed or nested section" in rendered

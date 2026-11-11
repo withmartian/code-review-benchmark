@@ -37,11 +37,6 @@
    "pattern": "(?i)docstring"
   },
   {
-   "kind": "description_check",
-   "quote": "Description is only 'Backport of `#3793`.'",
-   "pattern": "(?i)(PR|pull request) description|description is only|template section"
-  },
-  {
    "kind": "change_overview",
    "quote": "End-to-end test runs can now use custom ScyllaDB, Manager, and Manager Agent image references",
    "pattern": null,
@@ -80,6 +75,13 @@
    "path": "test/e2e/utils/scylladb_versions_test.go",
    "quote": "Add a success-path test for `ListImageRepositoryTags`.",
    "pattern": "(?i)success|valid repositor"
+  },
+  {
+   "kind": "pr_description_check",
+   "path": null,
+   "quote": "Description is only 'Backport of `#3793`.'",
+   "pattern": "(?i)(PR|pull request) description|description is only|template section",
+   "not_asserted": "a description-check row, a finding under this prompt; gpt-5.2-2025-12-11 extracts it in 2 of 4 draws (3 of 4 with the current prompt), so one draw cannot assert it"
   }
  ]
 }

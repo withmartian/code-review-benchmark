@@ -175,7 +175,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "previous": None,
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "1ed595f2b0a51171a87ae2ab8c392d1fb9080d9541c1339f6501b84033e5ca6b",
+            "EXTRACT_BOT_SUGGESTIONS": "e5cd1540f903ec5bde771687b73da4119c58d6f7aa7d9466972004c3d214db34",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
@@ -234,18 +234,17 @@ def test_located_rule_violations_are_findings_only_aggregate_results_are_exclude
     )
 
 
-def test_remarks_about_the_pull_request_itself_are_not_findings_but_remarks_about_changed_files_are() -> None:
+def test_pull_request_title_description_and_linked_issue_checks_are_left_to_the_general_rules() -> None:
     rules = _rules()
 
     assert (
-        "Remarks about the pull request itself rather than the changed code: its title, description, "
-        "template sections, linked issue or ticket, test plan, or review and merge process." in rules
+        "This rule does not cover checks of the pull request's title, description, or linked issue, even when "
+        "they are listed with other check results: a check result that says what one of them lacks is a "
+        "finding: extract it." in rules
     )
-    assert "even when the bot attaches such a remark to a line of the diff as an inline comment" in rules
-    assert (
-        "A remark about the content of a file the pull request changes is about the code, even when that "
-        "file is documentation or configuration: extract it." in rules
-    )
+    # remarks about the pull request itself are not excluded by any rule here (left to the maintainers)
+    assert "Remarks about the pull request itself" not in rules
+    assert "title, description, linked-issue, or scope checks" not in rules
 
 
 def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:

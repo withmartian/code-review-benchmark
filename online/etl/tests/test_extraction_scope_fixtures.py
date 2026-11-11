@@ -27,13 +27,14 @@ FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob
 # The prompt sentence that covers each labelled kind (compared with whitespace collapsed).
 RULE_FOR_KIND = {
     "coverage_check": "A metric below a threshold is not by itself a finding.",
-    "description_check": "such as title, description, linked-issue, or scope checks",
+    "pr_description_check": "This rule does not cover checks of the pull request's title, description, or linked issue",
+    "linked_issue_check": "This rule does not cover checks of the pull request's title, description, or linked issue",
     "change_overview": "walkthroughs, change summaries, per-file tables, release notes",
     "rating": "Effort, risk, or confidence ratings themselves.",
     "run_status": "Review status and run metadata: counts of comments posted",
     "control": "Interactive controls and product text: checkboxes, buttons",
     "generation_offer": "offers to generate code for the author, for example to write docstrings or tests",
-    "pr_process": "Remarks about the pull request itself rather than the changed code",
+    "pr_remark": "Top-level inline review comments generally contain substantive findings",
     "product_tip": "usage tips, links to dashboards",
     "tool_context": "Do not extract findings from these inputs",
     "nested_tool_output": "Raw tool output quoted in a comment is not its own finding",

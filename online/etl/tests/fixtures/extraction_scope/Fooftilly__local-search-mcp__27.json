@@ -39,10 +39,10 @@
    "pattern": "(?i)all reported issues"
   },
   {
-   "kind": "description_check",
+   "kind": "linked_issue_check",
    "quote": "Bound pending requests globally and per registrable site",
    "pattern": null,
-   "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
+   "not_asserted": "a linked-issue requirement row that names no problem; linked-issue checks are left to the general rules, so it is asserted neither way"
   },
   {
    "kind": "control",
@@ -56,7 +56,7 @@
    "path": null,
    "quote": "The hourly count includes only currently pending rows, so deciding a row removes it from the rate-limit count.",
    "pattern": "(?i)only (currently )?pending|pending rows|decid\\w* (a |the )?(row|request|host)|from the (rate[- ]limit |hourly )?count",
-   "not_asserted": "a linked-issue check row that names a concrete problem, which the rule says to extract; gpt-5.2-2025-12-11 extracts it with neither the current prompt (0 of 3 draws) nor this one (0 of 4 draws), so it is not a change this PR makes"
+   "not_asserted": "a linked-issue check row that names a concrete problem, a finding under the general rules; gpt-5.2-2025-12-11 extracts it with neither the current prompt (0 of 3 draws) nor this one (0 of 4)"
   },
   {
    "kind": "inline",

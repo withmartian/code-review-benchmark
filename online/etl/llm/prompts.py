@@ -48,32 +48,28 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   concrete problem in the changed code, that problem is a finding: extract it, even when no
   other comment states it.
 - Repository-policy gates: results of automated checks reported as a status (pass/fail/warning)
-  or as a metric against a configured threshold, such as title, description, linked-issue, or
-  scope checks and coverage thresholds (for example docstring or test coverage percentages),
-  regardless of which bot posts them or where (summary, review body, or inline comment). A
-  metric below a threshold is not by itself a finding. Extract a finding from a check result
-  only when it names a concrete problem in the changed code, such as a specific missing or
-  incorrect behavior. A request to add docstrings or tests to "the touched functions" so a
-  coverage threshold is met is a gate result, wherever it appears. A comment on a specific
-  location in the changed code (a named function or file and line) that asks for documentation
-  of that code, for a reason other than meeting a threshold, is a documentation finding: extract
-  it. Only aggregate results (a status, or a metric against a threshold) are excluded: a
-  violation of a repository rule or guideline reported at a specific location in the changed
-  code is a finding.
+  or as a metric against a configured threshold, such as coverage thresholds (for example
+  docstring or test coverage percentages), regardless of which bot posts them or where (summary,
+  review body, or inline comment). A metric below a threshold is not by itself a finding. Extract
+  a finding from a check result only when it names a concrete problem in the changed code, such as
+  a specific missing or incorrect behavior. A request to add docstrings or tests to "the touched
+  functions" so a coverage threshold is met is a gate result, wherever it appears. A comment on a
+  specific location in the changed code (a named function or file and line) that asks for
+  documentation of that code, for a reason other than meeting a threshold, is a documentation
+  finding: extract it. Only aggregate results (a status, or a metric against a threshold) are
+  excluded: a violation of a repository rule or guideline reported at a specific location in the
+  changed code is a finding. This rule does not cover checks of the pull request's title,
+  description, or linked issue, even when they are listed with other check results: a check result
+  that says what one of them lacks is a finding: extract it.
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, for example to write docstrings or tests.
 - Review status and run metadata: counts of comments posted, lists of files reviewed or skipped,
   the commit range reviewed, run or plan details, and quota or allowance notes.
-- Remarks about the pull request itself rather than the changed code: its title, description,
-  template sections, linked issue or ticket, test plan, or review and merge process. This holds
-  even when the bot attaches such a remark to a line of the diff as an inline comment. A remark
-  about the content of a file the pull request changes is about the code, even when that file is
-  documentation or configuration: extract it.
 - Inputs the bot lists as having used for its review, such as linter or static-analysis output,
-  code guidelines, or path-specific instructions (for example a section where the bot lists the inputs or
-  context it used). Do not extract findings from these inputs, even when a listed tool result
-  names a file and line of the changed code: the bot did not raise it as its own comment.
+  code guidelines, or configured review instructions (for example a section where the bot lists the
+  inputs or context it used). Do not extract findings from these inputs, even when a listed tool
+  result names a file and line of the changed code: the bot did not raise it as its own comment.
 - Raw tool output quoted in a comment is not its own finding: only problems the bot states in its
   own words are findings. A linter or static-analysis result is a finding when the bot writes it
   up as a problem in its own comment text.

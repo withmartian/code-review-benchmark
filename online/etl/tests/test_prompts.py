@@ -79,6 +79,12 @@ def test_documentation_requests_about_specific_code_are_still_findings() -> None
         "asks for documentation of that code, for a reason other than meeting a threshold, is a "
         "documentation finding: extract it." in rules
     )
+    # tie-break between the two sentences above, for a located request whose only reason is the gate
+    assert (
+        "When a request names specific code and its only stated reason is a coverage threshold (for example "
+        '"add a docstring to parse() to meet the 80% docstring coverage rule"), it is a gate result; when it '
+        "cites a documentation or style rule for that specific code, it is a finding." in rules
+    )
 
 
 def test_controls_generation_offers_and_run_metadata_are_not_findings() -> None:
@@ -150,7 +156,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "previous": None,
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "30b7af7e37fc7c47c9a073d70216e0a9d002f3c3cc42a2e75c66a9e616d10042",
+            "EXTRACT_BOT_SUGGESTIONS": "cee5e6cccb4bb0e4dee9534f88fbd049723c611773100d627acd6af68e6a3756",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

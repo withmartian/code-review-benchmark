@@ -60,10 +60,13 @@ still a finding, as each item says.
   functions" so a coverage threshold is met is a gate result, wherever it appears. A comment on a
   specific location in the changed code (a named function or file and line) that asks for
   documentation of that code, for a reason other than meeting a threshold, is a documentation
-  finding: extract it. Only aggregate results (a status, or a metric against a threshold) are
-  excluded: a violation of a repository rule or guideline reported at a specific location in the
-  changed code is a finding. This rule does not cover checks of the pull request's title,
-  description, or linked issue, even when they are listed with other check results (see above).
+  finding: extract it. When a request names specific code and its only stated reason is a coverage
+  threshold (for example "add a docstring to parse() to meet the 80% docstring coverage rule"), it
+  is a gate result; when it cites a documentation or style rule for that specific code, it is a
+  finding. Only aggregate results (a status, or a metric against a threshold) are excluded: a
+  violation of a repository rule or guideline reported at a specific location in the changed code
+  is a finding. This rule does not cover checks of the pull request's title, description, or linked
+  issue, even when they are listed with other check results (see above).
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, for example to write docstrings or tests.

@@ -2,7 +2,7 @@
 
 Each fixture under tests/fixtures/extraction_scope/ holds one public github.com PR's bot events
 (walkthrough issue comment, first review body, up to two inline comments) in the pipeline's event shape,
-trimmed by removing whole sections (image markup, static-analysis transcripts, agent prompts,
+trimmed by removing hidden HTML comments and whole sections (image markup, static-analysis transcripts, agent prompts,
 suggested code, file lists, table rows past the second). Labels are verbatim quotes:
 ``non_findings`` is PR-level content the prompt says not to extract, ``findings`` are review
 findings it must keep, including ones inside collapsed sections.

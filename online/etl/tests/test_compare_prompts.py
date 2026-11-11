@@ -379,13 +379,14 @@ async def test_analyses_with_no_stored_actions_are_kept_and_scored_without_recal
     assert "2 analyzed PRs (1 with no stored human actions, so no recall)" in capsys.readouterr().out
 
 
-async def test_score_arm_with_no_actions_defines_precision_but_not_recall() -> None:
+async def test_score_arm_calls_the_judge_without_actions_as_analyze_single_pr_does() -> None:
     llm = _StubLLM()
     res = await score_arm(llm, "T {bot_comments}", step1_fields(_pr_row(), "reviewer[bot]"), [])
 
-    assert len(llm.prompts) == 1  # no matching call without actions
+    assert len(llm.prompts) == 2  # step 3 runs even with no actions, as in analyze_single_pr
     assert res["total_suggestions"] == 2
-    assert res["precision"] == 0.0
+    # the stub matches S1 to an action that does not exist: the pipeline's arithmetic still credits S1
+    assert res["precision"] == 0.5
     assert res["recall"] is None
 
 

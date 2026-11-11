@@ -145,19 +145,20 @@ def metrics(suggestions: list[dict], actions: list[dict], matches: list[dict]) -
 
 
 async def score_arm(llm, template: str, fields: dict, actions: list[dict]) -> dict:
+    """Steps 1 and 3 as analyze_single_pr runs them: the judge is called even when there are no
+    suggestions or no actions (it then matches nothing, but the call is kept so the arithmetic and
+    any judge quirk are the pipeline's)."""
     resp = await llm.structured_completion(template.format(**fields), BotSuggestionsResponse)
     suggestions = [s.model_dump() for s in resp.suggestions]
-    matches = []
-    if suggestions and actions:
-        m = await llm.structured_completion(
-            JUDGE_MATCHING.format(
-                bot_username=fields["bot_username"],
-                bot_suggestions=_format_suggestions(suggestions),
-                human_actions=_format_actions(actions),
-            ),
-            MatchingResponse,
-        )
-        matches = [x.model_dump() for x in m.matches]
+    m = await llm.structured_completion(
+        JUDGE_MATCHING.format(
+            bot_username=fields["bot_username"],
+            bot_suggestions=_format_suggestions(suggestions),
+            human_actions=_format_actions(actions),
+        ),
+        MatchingResponse,
+    )
+    matches = [x.model_dump() for x in m.matches]
     return {"suggestions": suggestions, "matches": matches, **metrics(suggestions, actions, matches)}
 
 

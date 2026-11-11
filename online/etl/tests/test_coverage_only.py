@@ -1,7 +1,8 @@
-"""prompt_eval/coverage_only.py: sizing analyses whose only suggestions are excluded items."""
+"""prompt_eval/coverage_only.py: estimating analyses whose only suggestions are excluded items."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -13,24 +14,48 @@ from prompt_eval.coverage_only import report
 from prompt_eval.coverage_only import run
 from prompt_eval.coverage_only import summarize
 
-COVERAGE = {"description": "Docstring coverage is 25% vs the required 80%", "file_path": None}
+COVERAGE = {"description": "Docstring coverage is 25.00% which is insufficient (required 80%)", "file_path": None}
 FINDING = {"description": "Null dereference when value is missing", "file_path": "src/app.py"}
-RATING = {"description": "Estimated code review effort is moderate (~20 minutes)", "file_path": None}
+PAUSED = {"description": "Bot review was paused for this user, so no findings were produced", "file_path": None}
+
+FOOFTILLY = json.loads(
+    (Path(__file__).parent / "fixtures" / "extraction_scope" / "Fooftilly__local-search-mcp__27.json").read_text()
+)
+FOOFTILLY_FINDING = next(f["quote"] for f in FOOFTILLY["findings"] if f["kind"] == "check_finding")
 
 
-def test_coverage_items_include_test_coverage_and_located_gates() -> None:
-    assert is_coverage_item(COVERAGE)
-    assert is_coverage_item({"description": "Test coverage is 61% below the required 80%", "file_path": None})
-    assert is_coverage_item({**COVERAGE, "file_path": "src/app.py"})  # a gate posted on a line is still a gate
-    assert not is_coverage_item({"description": "Add a docstring explaining the retry", "file_path": "src/a.py"})
-    assert not is_coverage_item(FINDING)
-
-
-def test_other_excluded_kinds_count_only_when_unlocated() -> None:
-    assert excluded_kind(RATING) == "rating"
+def test_unambiguous_aggregate_statements_are_excluded() -> None:
+    assert excluded_kind(COVERAGE) == "coverage"
+    assert excluded_kind({"description": "Test coverage is 61% below the required 80%", "file_path": None}) == (
+        "coverage"
+    )
+    assert excluded_kind({"description": "42.86% docstring coverage vs required 80%", "file_path": None}) == (
+        "coverage"
+    )
+    assert excluded_kind(PAUSED) == "run_status"
     assert excluded_kind({"description": "Actionable comments posted: 3", "file_path": None}) == "run_status"
-    assert excluded_kind({**RATING, "file_path": "src/app.py"}) is None
-    assert excluded_kind(FINDING) is None
+    assert excluded_kind({"description": "Estimated code review effort: 3 (Moderate)", "file_path": None}) == "rating"
+
+
+@pytest.mark.parametrize(
+    ("description", "file_path"),
+    [
+        (FOOFTILLY_FINDING, None),  # names "rate-limit", but is a concrete finding
+        ("Add test coverage for the required null-input error path in parse().", "src/parse.py"),
+        ("Add test coverage for the required-field validation in parse_config", "src/config.py"),
+        ("The docstring for retry() says the threshold defaults to 5 but the code uses 3", None),
+        ("Docstring claims the function returns a value in 0-100% but it returns a fraction", None),
+        ("Missing test coverage for the error path; this branch is required for the fallback", None),
+    ],
+)
+def test_ambiguous_or_concrete_items_are_left_as_findings(description: str, file_path: str | None) -> None:
+    item = {"description": description, "file_path": file_path}
+    assert excluded_kind(item) is None
+    assert not is_coverage_item(item)
+
+
+def test_a_located_gate_is_left_as_a_finding() -> None:
+    assert excluded_kind({**COVERAGE, "file_path": "src/app.py"}) is None
 
 
 def test_f_beta_matches_the_api_formula() -> None:
@@ -41,11 +66,11 @@ def test_f_beta_matches_the_api_formula() -> None:
 
 def test_excluded_only_prs_leave_every_precision_and_recall_mean() -> None:
     rows = [
-        {"precision": 0.0, "recall": 0.0, "bot_suggestions": [COVERAGE]},  # coverage-only, with actions
-        {"precision": 0.0, "recall": None, "bot_suggestions": [COVERAGE, RATING]},  # excluded-only, no actions
-        {"precision": 0.5, "recall": 0.5, "bot_suggestions": [COVERAGE, FINDING]},
-        {"precision": 1.0, "recall": None, "bot_suggestions": [FINDING]},
-        {"precision": None, "recall": 0.0, "bot_suggestions": []},
+        {"pr_url": "u1", "precision": 0.0, "recall": 0.0, "bot_suggestions": [COVERAGE]},  # coverage-only, actions
+        {"pr_url": "u2", "precision": 0.0, "recall": None, "bot_suggestions": [COVERAGE, PAUSED]},  # no actions
+        {"pr_url": "u3", "precision": 0.5, "recall": 0.5, "bot_suggestions": [COVERAGE, FINDING]},
+        {"pr_url": "u4", "precision": 1.0, "recall": None, "bot_suggestions": [FINDING]},
+        {"pr_url": "u5", "precision": None, "recall": 0.0, "bot_suggestions": []},
     ]
     s = summarize(rows)
 
@@ -59,13 +84,16 @@ def test_excluded_only_prs_leave_every_precision_and_recall_mean() -> None:
     assert now["leaderboard_recall"] == pytest.approx(0.25) and without["leaderboard_recall"] == pytest.approx(0.5)
     assert now["daily_recall"] == now["leaderboard_recall"]
     assert now["leaderboard_f"] == pytest.approx(0.25) and without["leaderboard_f"] == pytest.approx(0.5)
-    text = report("b", s)
+    text = report("b", s, show=2)
+    assert "(an estimate): 2" in text
     assert "f  = 2/4 = 50.0% of analyses with a precision" in text
     assert "f' = 1/2 = 50.0% of analyses with both" in text
-    assert "leaderboard recall      25.0   50.0" in text
+    assert "leaderboard recall              25.0   50.0" in text
+    assert "  [coverage] u1: Docstring coverage is 25.00%" in text
+    assert text.count("\n  [") == 2  # --show 2 prints two classified items
 
 
-async def test_run_reads_merged_analyses_of_the_bot_from_the_db(tmp_path: Path) -> None:
+async def test_run_reads_merged_reviewed_analyses_per_bot_and_window(tmp_path: Path) -> None:
     from db.connection import DBAdapter
     from db.repository import PRRepository
     from db.schema import create_tables
@@ -75,10 +103,24 @@ async def test_run_reads_merged_analyses_of_the_bot_from_the_db(tmp_path: Path) 
     await db.connect()
     await create_tables(db)
     repo = PRRepository(db)
-    cid = await repo.upsert_chatbot("coderabbitai[bot]")
-    for n, merged, sugg, p in ((1, True, [COVERAGE], 0.0), (2, True, [FINDING], 1.0), (3, False, [COVERAGE], 0.0)):
+    prs = (
+        # bot, number, merged, reviewed at, suggestions, precision
+        ("coderabbitai[bot]", 1, True, "2026-10-02T00:00:00+00:00", [COVERAGE], 0.0),
+        ("coderabbitai[bot]", 2, True, "2026-10-03T00:00:00+00:00", [FINDING], 1.0),
+        ("coderabbitai[bot]", 3, False, "2026-10-03T00:00:00+00:00", [COVERAGE], 0.0),  # not merged
+        ("coderabbitai[bot]", 4, True, None, [COVERAGE], 0.0),  # no review date: not in the API
+        ("coderabbitai[bot]", 5, True, "2026-09-01T00:00:00+00:00", [COVERAGE], 0.0),  # before --since
+        ("other[bot]", 6, True, "2026-10-02T00:00:00+00:00", [PAUSED], 0.0),
+    )
+    for bot, n, merged, reviewed, sugg, p in prs:
+        cid = await repo.upsert_chatbot(bot)
         await repo.insert_pr(
-            chatbot_id=cid, repo_name="o/r", pr_number=n, pr_url=f"https://github.com/o/r/pull/{n}", pr_merged=merged
+            chatbot_id=cid,
+            repo_name="o/r",
+            pr_number=n,
+            pr_url=f"https://github.com/o/r/pull/{n}",
+            pr_merged=merged,
+            bot_reviewed_at=reviewed,
         )
         pr = await repo.get_pr(cid, "o/r", n)
         await repo.insert_analysis(
@@ -96,5 +138,9 @@ async def test_run_reads_merged_analyses_of_the_bot_from_the_db(tmp_path: Path) 
         )
     await db.close()
 
-    s = await run("coderabbitai[bot]", url)
-    assert (s["analyses"], s["excluded_only"]) == (2, 1)  # the unmerged PR is not on the leaderboard
+    one = await run("coderabbitai[bot]", url, since="2026-10-01T00:00:00+00:00")
+    assert list(one) == ["coderabbitai[bot]"]
+    assert (one["coderabbitai[bot]"]["analyses"], one["coderabbitai[bot]"]["excluded_only"]) == (2, 1)
+    every = await run(None, url, since="2026-10-01T00:00:00+00:00")
+    assert sorted(every) == ["coderabbitai[bot]", "other[bot]"]
+    assert every["other[bot]"]["excluded_only"] == 1  # the dropout is not specific to one bot

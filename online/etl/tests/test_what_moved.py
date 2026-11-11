@@ -64,8 +64,11 @@ def test_the_figures_quoted_in_the_pr_description_come_from_the_results_file() -
     qodo = bot_moves(data["qodo-code-review[bot]"], "current", head)
     top_p = {t["pr_url"].split("github.com/")[1]: round(100 * t["contribution"], 1) for t in qodo["top_precision"]}
     top_r = {t["pr_url"].split("github.com/")[1]: round(100 * t["contribution"], 1) for t in qodo["top_recall"]}
-    assert top_p == {"anolilab/neore/pull/451": 4.2, "TW199501/multica/pull/50": 1.7, "varveio/swath/pull/243": -1.4}
-    assert top_r == {"varveio/swath/pull/243": -12.5, "anolilab/neore/pull/451": -1.4}
+    assert top_p == {"anolilab/neore/pull/451": 6.0, "TW199501/multica/pull/50": 3.1, "varveio/swath/pull/243": -1.4}
+    assert top_r == {"varveio/swath/pull/243": -12.5, "anolilab/neore/pull/451": -1.2}
+    assert [
+        (x["pr_url"].split("github.com/")[1], round(100 * x["shift"]["precision"], 1)) for x in qodo["dropouts"]
+    ] == [("Heretek-AI/claude-4-opencode/pull/4", 9.7)]
 
     codex = bot_moves(data["chatgpt-codex-connector[bot]"], "current", head)
     assert [d["pr_url"].split("github.com/")[1] for d in codex["dropouts"]] == ["harshanandak/forge/pull/98"]

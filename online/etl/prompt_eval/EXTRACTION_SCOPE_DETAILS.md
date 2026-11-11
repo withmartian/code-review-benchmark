@@ -199,7 +199,8 @@ quoted tool output, on scylla the description-check row:
 
 Wording 2 was chosen as the one with the most clean draws over the four fixtures: 18 of 24, against
 17 and 15. Its two CodeRabbit differences from the others (the scylla row 5 vs 6 of 6, zizmor kept
-out 6 vs 4 of 6) are within 6-draw noise.
+out 6 vs 4 of 6) are within 6-draw noise, and both favour CodeRabbit's score: one fewer scylla
+description-check row extracted (5 vs 6 of 6) and two more zizmor lines kept out (6 vs 4 of 6).
 
 The first live run on wording 2 passed 10 of 12 fixtures (the pcsx-redux and local-search-mcp
 findings were not yet asserted). It failed the scylla row in its one draw and the TajsTokens
@@ -236,7 +237,13 @@ three, each counted over the targeted draws plus the live draws:
   only in the merge-risk explanation, which the rule says to extract): 0 of 7 on the head, 1 of 6
   with the current upstream prompt (earlier: 1 of 5 and 0 of 5).
 - cubic's linked-issue table row on Fooftilly/local-search-mcp#27 that names a concrete problem:
-  0 of 7 on the head, 0 of 6 with the current upstream prompt (earlier: 0 of 3 and 0 of 4).
+  0 of 7 on the head, 0 of 6 with the current upstream prompt (earlier: 0 of 3 and 0 of 4). The
+  prompt's intro calls a remark or check result that says what "the pull request's title,
+  description, or linked issue lacks" a finding; a linked-issue row reports what the change lacks
+  against the issue, which that wording does not literally cover, so it may contribute to this miss.
+  A reword ("what the pull request's title or description lacks, or what the change lacks against
+  its linked issue") left the row at 0 of 6 and did worse elsewhere (scylla row 3 of 6, zizmor kept
+  out 2 of 6, TajsTokens 2 of 6, the Qodo fixture 6 of 6, 6 draws each), so it was not adopted.
 
 The scylla description-check row passed this live draw (6 of 8 on the head in all). The same
 pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).

@@ -290,9 +290,11 @@ def _format_actions(actions: list[dict]) -> str:
     return "\n".join(lines) if lines else "(no actions)"
 
 
-def stamped_model_name(model_name: str | None) -> str:
-    """The model_name stored with an analysis: the model plus the extraction prompt version."""
-    return f"{model_name or 'unknown'}+{EXTRACTION_PROMPT_VERSION}"
+def stamped_model_name(model_name: str | None) -> str | None:
+    """The model_name stored with an analysis: the model plus the extraction prompt version.
+
+    Without a model name there is nothing to stamp, so it stays None, as before the stamp."""
+    return f"{model_name}+{EXTRACTION_PROMPT_VERSION}" if model_name else None
 
 
 async def analyze_single_pr(

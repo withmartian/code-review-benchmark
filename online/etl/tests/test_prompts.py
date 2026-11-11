@@ -247,6 +247,9 @@ def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:
     from pipeline.analyze import stamped_model_name
 
     assert stamped_model_name("some-model") == f"some-model+{EXTRACTION_PROMPT_VERSION}"
+    # no model name: nothing to stamp, so the stored value stays None rather than "unknown+<version>"
+    assert stamped_model_name(None) is None
+    assert stamped_model_name("") is None
 
 
 def test_no_pinned_entry_on_the_base_branch_was_edited() -> None:

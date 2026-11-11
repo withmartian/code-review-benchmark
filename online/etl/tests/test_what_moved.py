@@ -46,6 +46,36 @@ def test_an_entering_pr_is_counted_on_the_arm_side() -> None:
     assert p["dropouts"] + p["entries"] + p["retained"] == pytest.approx(p["total"])
 
 
+def test_an_arm_with_no_scored_pr_reports_the_change_as_unavailable() -> None:
+    # every PR drops out of the candidate arm: its mean is undefined, so there is no delta and no split
+    arms = _arms([(1.0, 1.0), (0.5, 0.5)], [(None, 0.0), (None, 0.0)])
+    m = bot_moves(arms, "base", "arm")
+    p = m["precision"]
+
+    assert m["n"] == (2, 0, 0)
+    assert p["arm"] is None and p["total"] is None
+    assert p["dropouts"] is None and p["entries"] is None and p["retained"] is None
+    assert all(d["effect"]["precision"] is None for d in m["dropouts"])
+    text = render("b[bot]", arms, "base", "arm")
+    assert "- precision 75.0 -> undefined (change unavailable: no PR with both values in one arm)" in text
+    assert "effect on precision unavailable, on recall unavailable" in text
+    assert "-75.0" not in text and "-100.0" not in text
+
+
+def test_disjoint_arms_give_a_total_but_no_split() -> None:
+    # both means exist but no PR is scored in both arms: no reference mean, so the split is skipped
+    arms = _arms([(1.0, 1.0), (None, 0.0)], [(None, 0.0), (0.5, 0.5)])
+    m = bot_moves(arms, "base", "arm")
+    p = m["precision"]
+
+    assert m["n"] == (1, 1, 0)
+    assert p["total"] == pytest.approx(-0.5)
+    assert p["dropouts"] is None and p["entries"] is None and p["retained"] is None
+    assert m["top_precision"] == []
+    text = render("b[bot]", arms, "base", "arm")
+    assert "- precision 100.0 -> 50.0 (-50.0; not split: no PR has both values in both arms)" in text
+
+
 def test_render_names_the_split_and_each_pr() -> None:
     text = render(
         "b[bot]", _arms([(0.0, 0.0), (0.9, 1.0), (0.6, 0.5)], [(None, 0.0), (0.8, 1.0), (0.6, 0.5)]), "base", "arm"

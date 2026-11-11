@@ -51,21 +51,25 @@ def bot_moves(by_arm: dict[str, dict[str, dict]], base: str, arm: str, top: int 
         out["entries"].append({"pr_url": url, "base": by_arm[base].get(url), "arm": b[url], "effect": {}})
     for key in ("precision", "recall"):
         ma, mb = _mean([r[key] for r in a.values()]), _mean([r[key] for r in b.values()])
+        # The split needs both means and at least one PR in both arms: without one there is no
+        # reference mean for the leaving and entering cohorts, so the parts are unavailable (None),
+        # never computed against an invented zero. The total is unavailable when either mean is.
+        split = ma is not None and mb is not None and bool(kept)
         ka = _mean([a[u][key] for u in kept])
         kb = _mean([b[u][key] for u in kept])
         for d in out["dropouts"]:
-            d["effect"][key] = ((ka if ka is not None else 0.0) - d["base"][key]) / len(a)
+            d["effect"][key] = (ka - d["base"][key]) / len(a) if split else None
         for e in out["entries"]:
-            e["effect"][key] = (e["arm"][key] - (kb if kb is not None else 0.0)) / len(b)
+            e["effect"][key] = (e["arm"][key] - kb) / len(b) if split else None
         retained = [((b[u][key] - a[u][key]) / len(kept), u) for u in kept if b[u][key] != a[u][key]]
         retained.sort(key=lambda c: (-abs(c[0]), c[1]))
         out[key] = {
             "base": ma,
             "arm": mb,
-            "total": (mb or 0.0) - (ma or 0.0),
-            "dropouts": sum(d["effect"][key] for d in out["dropouts"]),
-            "entries": sum(e["effect"][key] for e in out["entries"]),
-            "retained": sum(c for c, _ in retained),
+            "total": mb - ma if ma is not None and mb is not None else None,
+            "dropouts": sum(d["effect"][key] for d in out["dropouts"]) if split else None,
+            "entries": sum(e["effect"][key] for e in out["entries"]) if split else None,
+            "retained": sum(c for c, _ in retained) if split else None,
         }
         out[f"top_{key}"] = [
             {"pr_url": u, "contribution": c, "base": a[u][key], "arm": b[u][key]} for c, u in retained[:top]
@@ -80,6 +84,10 @@ def _pr(url: str) -> str:
 
 def _v(x: float | None) -> str:
     return "undefined" if x is None else f"{100 * x:.1f}"
+
+
+def _d(x: float | None) -> str:
+    return "unavailable" if x is None else f"{100 * x:+.1f}"
 
 
 def _matched(by_arm: dict[str, dict[str, dict]], url: str) -> str:
@@ -97,10 +105,16 @@ def render(bot: str, by_arm: dict[str, dict[str, dict]], base: str, arm: str, to
     lines = [f"**{bot}**: PRs with both {m['n'][0]} -> {m['n'][1]} ({m['n'][2]} in both arms)"]
     for key in ("precision", "recall"):
         k = m[key]
-        lines.append(
-            f"- {key} {_v(k['base'])} -> {_v(k['arm'])} ({100 * k['total']:+.1f}) = PRs leaving "
-            f"{100 * k['dropouts']:+.1f} + PRs entering {100 * k['entries']:+.1f} + PRs in both {100 * k['retained']:+.1f}"
-        )
+        head = f"- {key} {_v(k['base'])} -> {_v(k['arm'])}"
+        if k["total"] is None:
+            lines.append(f"{head} (change unavailable: no PR with both values in one arm)")
+        elif k["retained"] is None:
+            lines.append(f"{head} ({_d(k['total'])}; not split: no PR has both values in both arms)")
+        else:
+            lines.append(
+                f"{head} ({_d(k['total'])}) = PRs leaving {_d(k['dropouts'])} + PRs entering "
+                f"{_d(k['entries'])} + PRs in both {_d(k['retained'])}"
+            )
     for label, items in (("leaves", m["dropouts"]), ("enters", m["entries"])):
         for d in items:
             before = d["base"] or {"precision": None, "recall": None}
@@ -108,7 +122,7 @@ def render(bot: str, by_arm: dict[str, dict[str, dict]], base: str, arm: str, to
             lines.append(
                 f"- {_pr(d['pr_url'])} {label}: precision {_v(before['precision'])} -> {_v(after['precision'])}, "
                 f"recall {_v(before['recall'])} -> {_v(after['recall'])}; effect on precision "
-                f"{100 * d['effect']['precision']:+.1f}, on recall {100 * d['effect']['recall']:+.1f}"
+                f"{_d(d['effect']['precision'])}, on recall {_d(d['effect']['recall'])}"
             )
     for key in ("precision", "recall"):
         for t in m[f"top_{key}"]:

@@ -111,39 +111,10 @@ def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findin
     )
 
 
-ANALYZE_FUNCTIONS = (
-    "_find_bot_review_commit",
-    "_split_commits_at_hash",
-    "_build_details_by_sha",
-    "_format_commits_with_diffs",
-    "_clean_bot_comment_body",
-    "_format_bot_comments",
-    "_format_suggestions",
-    "_format_actions",
-)
-RESPONSE_SCHEMAS = ("BotSuggestionsResponse", "HumanActionsResponse", "MatchingResponse")
-
-
 def _pinned_inputs() -> dict[str, str]:
-    """sha256 of everything an analysis depends on: the three step prompts, the code that splits the
-    commits at the reviewed one and renders every step's input (whitespace and comments in that code
-    count, on purpose), and the JSON schema of each step's structured response."""
-    import hashlib
-    import inspect
-    import json
+    from pipeline.prompt_pins import pinned_inputs
 
-    from llm import prompts
-    from llm import schemas
-    from pipeline import analyze
-
-    texts = {
-        name: getattr(prompts, name) for name in ("EXTRACT_BOT_SUGGESTIONS", "EXTRACT_HUMAN_ACTIONS", "JUDGE_MATCHING")
-    }
-    for fn in ANALYZE_FUNCTIONS:
-        texts[f"pipeline.analyze.{fn}"] = inspect.getsource(getattr(analyze, fn))
-    for model in RESPONSE_SCHEMAS:
-        texts[f"llm.schemas.{model}"] = json.dumps(getattr(schemas, model).model_json_schema(), sort_keys=True)
-    return {name: hashlib.sha256(text.encode()).hexdigest() for name, text in texts.items()}
+    return pinned_inputs()
 
 
 def _entry_digest(entry: dict) -> str:
@@ -154,8 +125,8 @@ def _entry_digest(entry: dict) -> str:
 
 
 def _ledger_problems(ledger: dict[str, dict]) -> list[str]:
-    """Each entry names the sha256 of the entry before it, so a past entry cannot change without
-    rewriting every later link (which a review of the diff shows)."""
+    """Each entry names the sha256 of the entry before it. This does not stop an edit to a past
+    entry, but such an edit also has to rewrite every later link, so it is visible in the diff."""
     problems, previous = [], None
     for version, entry in ledger.items():
         if entry.get("previous") != previous:
@@ -167,10 +138,10 @@ def _ledger_problems(ledger: dict[str, dict]) -> list[str]:
     return problems
 
 
-# What each EXTRACTION_PROMPT_VERSION was released with, oldest first. Append only: never edit an
-# existing entry. When any pinned input changes, bump EXTRACTION_PROMPT_VERSION in llm/prompts.py and
-# append a new entry whose "previous" is _entry_digest() of the entry before it, so stored analyses
-# made with the two can be told apart.
+# What each EXTRACTION_PROMPT_VERSION was released with, oldest first. Do not edit a past entry:
+# when any pinned input changes, bump EXTRACTION_PROMPT_VERSION in llm/prompts.py and add a new entry
+# whose "previous" is _entry_digest() of the entry before it, so stored analyses made with the two
+# can be told apart. An edit to a past entry is visible in the diff (it breaks or rewrites the links).
 PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "previous": None,
@@ -184,8 +155,12 @@ PINNED_INPUTS_BY_VERSION = {
             "pipeline.analyze._format_commits_with_diffs": "4c24815cc71086530723fa6eb6a4346896622098e5c08d0f19358646ae635f9b",
             "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
             "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
+            "pipeline.analyze._format_post_review_activity": "aed6a6644974acb60a5b40e05d6075a6847c3e26ad331d5f2b7787727332ca38",
             "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
             "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
+            "pipeline.analyze.analyze_single_pr": "8f0cfd7d38d9e8318ccb8c89c9034a8ddf72e5fb54e15a4f09a326ea94095a8c",
+            "pipeline.analyze._HTML_COMMENT_RE": "39d3d18fd21298dd2ea96526389f29db50575fe2b20f99d3306ddf6b269e79fa",
+            "pipeline.actors": "d2cf21925cedd789b7ec2cdb6b93a32b7b3062dec265de1cd8f9af96b874b3cd",
             "llm.schemas.BotSuggestionsResponse": "5969e73467cf574786325ea59d8470b0d6e817c82b7d02ce206d8e612e48b110",
             "llm.schemas.HumanActionsResponse": "34ad210bbaa719035d8e38a22d73f22e316e3efcc59b53133e946f8a175d880c",
             "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
@@ -205,7 +180,7 @@ def test_prompt_version_is_pinned_to_every_prompt_formatter_and_schema() -> None
     assert not changed, f"{changed} changed: bump EXTRACTION_PROMPT_VERSION and append a new entry here"
 
 
-def test_past_prompt_versions_are_unchanged_and_distinct() -> None:
+def test_prompt_version_entries_are_linked_and_distinct() -> None:
     assert _ledger_problems(PINNED_INPUTS_BY_VERSION) == []
 
 

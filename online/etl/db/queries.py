@@ -152,6 +152,19 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_BOUNDED = """
     LIMIT $3
 """
 
+# Already-analyzed PRs in a bot_reviewed_at window, for `analyze --reanalyze` (re-running the
+# analysis after a prompt change). The analysis row is upserted, so a rerun replaces it.
+GET_ANALYZED_PRS_BOUNDED = """
+    SELECT p.* FROM prs p
+    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
+    WHERE p.chatbot_id = $1
+      AND p.status = 'analyzed'
+      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at >= $2)
+      AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
+    ORDER BY p.bot_reviewed_at DESC NULLS LAST
+    LIMIT $4
+"""
+
 # Per-day capped variants: sample up to N PRs per day (bot_reviewed_at date),
 # randomly within each day. Uses ROW_NUMBER with random() ordering so repeated
 # runs pick different PRs from overpopulated days.

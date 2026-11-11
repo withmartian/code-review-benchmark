@@ -125,6 +125,10 @@ uv run python main.py analyze --all --since 7d
 
 # Specific date window
 uv run python main.py analyze --all --since 2026-08-01 --until 2026-08-15
+
+# Re-analyze PRs already analyzed in a window (for example after a prompt change); count first
+uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-08-15 --limit 100000 --dry-run
+uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-08-15 --limit 100000
 ```
 
 `--sort sweep` ignores `--since`/`--until` — it orders by `assembled_at DESC` to pick up PRs that were discovered long ago but only recently assembled (e.g., merged weeks after the bot reviewed them).

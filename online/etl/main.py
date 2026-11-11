@@ -203,6 +203,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-per-day", type=int, default=None,
         help="Cap PRs per bot_reviewed_at date (random sample within each day). Requires --since.",
     )
+    p_ana.add_argument(
+        "--reanalyze",
+        action="store_true",
+        help=(
+            "Re-run the analysis for PRs already analyzed in the --since/--until window (for example after "
+            "a prompt change), replacing their stored analysis. Rerunning is safe; a failed re-analysis keeps "
+            "the previous analysis. Requires --since."
+        ),
+    )
+    p_ana.add_argument(
+        "--dry-run", action="store_true", help="Only count the PRs that would be (re-)analyzed; no LLM calls."
+    )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
 
@@ -523,7 +535,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
         cfg.database_url = args.database_url
-    if not cfg.martian_api_key:
+    if not cfg.martian_api_key and not args.dry_run:
         logger.error("MARTIAN_API_KEY required")
         return
 
@@ -537,6 +549,14 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     if max_per_day is not None and sort_by == "sweep":
         logger.error("--max-per-day is incompatible with --sort sweep")
         return
+    if args.reanalyze:
+        if not since:
+            logger.error("--reanalyze requires --since (and usually --until), so a window is always explicit")
+            return
+        if sort_by == "sweep" or max_per_day is not None:
+            logger.error("--reanalyze is incompatible with --sort sweep and --max-per-day")
+            return
+        logger.info("Re-analyze mode: already-analyzed PRs in the window are analyzed again and replaced")
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
@@ -561,7 +581,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
                 await analyze_prs(
                     cfg, db, bot["id"], bot["github_username"],
                     limit=args.limit, since=since, until=until,
-                    sort_by=sort_by, max_per_day=max_per_day,
+                    sort_by=sort_by, max_per_day=max_per_day, reanalyze=args.reanalyze, dry_run=args.dry_run,
                 )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
@@ -571,7 +591,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
             await analyze_prs(
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
-                sort_by=sort_by, max_per_day=max_per_day,
+                sort_by=sort_by, max_per_day=max_per_day, reanalyze=args.reanalyze, dry_run=args.dry_run,
                 )
         else:
             logger.error("Specify --chatbot or --all")

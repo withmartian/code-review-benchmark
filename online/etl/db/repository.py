@@ -189,6 +189,16 @@ class PRRepository:
             return await self.db.fetchall(q.GET_ASSEMBLED_PRS_NOT_ANALYZED, (chatbot_id, limit))
         return await self.db.fetchall(q.GET_ALL_ASSEMBLED_NOT_ANALYZED, (limit,))
 
+    async def get_analyzed_prs(
+        self,
+        chatbot_id: int,
+        limit: int = 100,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Already-analyzed PRs with bot_reviewed_at in [since, until), newest first."""
+        return await self.db.fetchall(q.GET_ANALYZED_PRS_BOUNDED, (chatbot_id, since, until, limit))
+
     # -- Locking ---------------------------------------------------------------
 
     async def lock_pr(self, pr_id: int, worker_id: str, lock_timeout_minutes: int = 30) -> bool:

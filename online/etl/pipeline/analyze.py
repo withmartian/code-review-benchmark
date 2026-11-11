@@ -438,6 +438,8 @@ async def analyze_prs(
     until: str | None = None,
     sort_by: str = "reviewed",
     max_per_day: int | None = None,
+    reanalyze: bool = False,
+    dry_run: bool = False,
 ) -> int:
     """Run LLM analysis on all assembled, unanalyzed PRs for a chatbot.
 
@@ -445,19 +447,30 @@ async def analyze_prs(
     upper bound. `sort_by` controls priority: "reviewed" (bot_reviewed_at DESC) or
     "sweep" (assembled_at DESC, for catching late-discovered PRs).
     `max_per_day` caps PRs per bot_reviewed_at date (requires `since`).
-    Returns the number of PRs analyzed.
+    `reanalyze` selects already-analyzed PRs in the window instead and re-runs all three steps;
+    the analysis row is replaced (upsert), so rerunning is safe. A failed re-analysis keeps the
+    previous row. `dry_run` only counts the PRs that would be analyzed.
+    Returns the number of PRs analyzed (or, with `dry_run`, selected).
     """
     repo = PRRepository(db)
-    prs = await repo.get_assembled_not_analyzed(
-        chatbot_id=chatbot_id, limit=limit, since=since, until=until,
-        sort_by=sort_by, max_per_day=max_per_day,
-    )
+    if reanalyze:
+        prs = await repo.get_analyzed_prs(chatbot_id=chatbot_id, limit=limit, since=since, until=until)
+    else:
+        prs = await repo.get_assembled_not_analyzed(
+            chatbot_id=chatbot_id, limit=limit, since=since, until=until,
+            sort_by=sort_by, max_per_day=max_per_day,
+        )
+
+    verb = "re-analyze" if reanalyze else "analyze"
+    if dry_run:
+        logger.info(f"Dry run: would {verb} {len(prs)} PRs for {chatbot_username}")
+        return len(prs)
 
     if not prs:
-        logger.info(f"No unanalyzed PRs for {chatbot_username}")
+        logger.info(f"No PRs to {verb} for {chatbot_username}")
         return 0
 
-    logger.info(f"Analyzing {len(prs)} PRs for {chatbot_username}")
+    logger.info(f"{'Re-analyzing' if reanalyze else 'Analyzing'} {len(prs)} PRs for {chatbot_username}")
 
     llm = LLMClient(
         base_url=cfg.martian_base_url,
@@ -478,7 +491,8 @@ async def analyze_prs(
                 )
             except BadRequestError as exc:
                 logger.error(f"LLM 400 for {pr_row['repo_name']}#{pr_row['pr_number']}: {exc}")
-                await repo.mark_error(pr_row["id"], f"LLM 400: {exc}")
+                if not reanalyze:  # a failed re-analysis keeps the previous analysis and status
+                    await repo.mark_error(pr_row["id"], f"LLM 400: {exc}")
                 return False
 
     try:

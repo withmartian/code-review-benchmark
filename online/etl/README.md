@@ -126,7 +126,12 @@ uv run python main.py analyze --all --since 7d
 # Specific date window
 uv run python main.py analyze --all --since 2026-08-01 --until 2026-08-15
 
-# Re-analyze PRs already analyzed in a window (for example after a prompt change); count first
+# Re-analyze PRs already analyzed in a window after a prompt change; count first. Selects PRs whose
+# stored model_name is not "<model>+<EXTRACTION_PROMPT_VERSION>", reuses their stored human actions
+# (step 2 is not redrawn), replaces the analysis and deletes the labels (re-run `label` afterwards).
+# Rerun the same command until it selects nothing: re-analyzed PRs are stamped and skipped, failed
+# ones keep their old row and are retried. --limit is per bot (default 100); a warning says when
+# the selection hit it.
 uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-08-15 --limit 100000 --dry-run
 uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-08-15 --limit 100000
 ```

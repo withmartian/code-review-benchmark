@@ -1,11 +1,9 @@
 """Prompt templates for the LLM analysis pipeline."""
 
-# Stamped into llm_analyses.model_name as "<model>+<version>" so analyses scored with different
-# prompts can be told apart and `analyze --reanalyze` can find the ones not yet re-run; the API
-# serves the version named by SERVED_PROMPT_VERSION. Bump it whenever a step prompt or the code that
-# renders step 1 or step 3 input changes: tests/test_prompts.py pins their sha256 per version. A
-# re-analysis re-runs only steps 1 and 3 and reuses the stored human actions, so a change to
-# EXTRACT_HUMAN_ACTIONS needs fresh analyses instead.
+# Stamped into llm_analyses.model_name as "<model>+<version>", so analyses scored with different
+# prompts can be told apart (analyses made before the stamp carry none). Bump it whenever a step
+# prompt, a response schema or the code that renders step input changes: tests/test_prompts.py pins
+# their sha256 per version.
 EXTRACTION_PROMPT_VERSION = "extract-v2"
 
 EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.

@@ -203,35 +203,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-per-day", type=int, default=None,
         help="Cap PRs per bot_reviewed_at date (random sample within each day). Requires --since.",
     )
-    p_ana.add_argument(
-        "--reanalyze",
-        action="store_true",
-        help=(
-            "Re-run steps 1 and 3 for PRs already analyzed in the --since/--until window (or every analyzed "
-            "PR with --all-time, including ones without a bot_reviewed_at) whose stored model_name is not "
-            "the current <model>+<prompt version> stamp, reusing their stored human actions and replacing "
-            "the analysis; their labels are deleted so `label` recomputes them. Re-analyzed PRs are not "
-            "selected again; a failed one is retried by the next run, up to --max-attempts. Requires --since "
-            "or --all-time; --limit is per bot (default 100), so run it in a loop, for example --limit 500."
-        ),
-    )
-    p_ana.add_argument(
-        "--dry-run", action="store_true", help="Only count the PRs that would be (re-)analyzed; no LLM calls."
-    )
-    p_ana.add_argument(
-        "--all-time",
-        action="store_true",
-        help="With --reanalyze: select every analyzed PR, including ones with no bot_reviewed_at.",
-    )
-    p_ana.add_argument(
-        "--max-attempts",
-        type=int,
-        default=3,
-        help=(
-            "With --reanalyze: after this many failed re-analyses a PR gets status 'error' (its old "
-            "analysis is kept, and listed by --dry-run) instead of being retried forever."
-        ),
-    )
     p_ana.add_argument("--database-url")
     p_ana.add_argument("--verbose", action="store_true")
 
@@ -552,7 +523,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
         cfg.database_url = args.database_url
-    if not cfg.martian_api_key and not args.dry_run:
+    if not cfg.martian_api_key:
         logger.error("MARTIAN_API_KEY required")
         return
 
@@ -566,17 +537,6 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
     if max_per_day is not None and sort_by == "sweep":
         logger.error("--max-per-day is incompatible with --sort sweep")
         return
-    if args.reanalyze:
-        if args.all_time and (since or until):
-            logger.error("--all-time selects every analyzed PR: do not combine it with --since/--until")
-            return
-        if not since and not args.all_time:
-            logger.error("--reanalyze needs --since (and usually --until) or --all-time, so the selection is explicit")
-            return
-        if sort_by == "sweep" or max_per_day is not None:
-            logger.error("--reanalyze is incompatible with --sort sweep and --max-per-day")
-            return
-        logger.info("Re-analyze mode: already-analyzed PRs in the window are analyzed again and replaced")
     if sort_by == "sweep":
         if since or until:
             logger.warning("--since/--until are ignored in sweep mode (sweep processes all unanalyzed PRs by assembled_at)")
@@ -601,7 +561,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
                 await analyze_prs(
                     cfg, db, bot["id"], bot["github_username"],
                     limit=args.limit, since=since, until=until,
-                    sort_by=sort_by, max_per_day=max_per_day, reanalyze=args.reanalyze, dry_run=args.dry_run, max_attempts=args.max_attempts,
+                    sort_by=sort_by, max_per_day=max_per_day,
                 )
         elif args.chatbot:
             bot = await repo.get_chatbot(args.chatbot)
@@ -611,7 +571,7 @@ async def cmd_analyze(args: argparse.Namespace) -> None:
             await analyze_prs(
                 cfg, db, bot["id"], bot["github_username"],
                 limit=args.limit, since=since, until=until,
-                sort_by=sort_by, max_per_day=max_per_day, reanalyze=args.reanalyze, dry_run=args.dry_run, max_attempts=args.max_attempts,
+                sort_by=sort_by, max_per_day=max_per_day,
                 )
         else:
             logger.error("Specify --chatbot or --all")

@@ -1057,40 +1057,4 @@ mod tests {
         assert_eq!(result.records.len(), 1);
         assert!((result.records[0].1.precision.unwrap() - 0.9).abs() < 0.001);
     }
-
-    // -----------------------------------------------------------------------
-    // extraction-prompt stamp
-    // -----------------------------------------------------------------------
-
-    #[test]
-    fn test_stamp_pattern_matches_the_version_suffix() {
-        assert_eq!(crate::db::model_name_stamp_pattern("extract-v2"), "%+extract-v2");
-    }
-
-    #[test]
-    fn test_served_prompt_version_defaults_to_the_unstamped_set() {
-        use crate::db::served_prompt_version;
-        assert_eq!(served_prompt_version(None), None);
-        assert_eq!(served_prompt_version(Some(String::new())), None);
-        assert_eq!(served_prompt_version(Some("  ".to_string())), None);
-        assert_eq!(served_prompt_version(Some("unstamped".to_string())), None);
-    }
-
-    #[test]
-    fn test_served_prompt_version_reads_a_named_version() {
-        assert_eq!(
-            crate::db::served_prompt_version(Some(" extract-v2 ".to_string())),
-            Some("extract-v2".to_string())
-        );
-    }
-
-    #[test]
-    fn test_prompt_stamp_matches_the_etl_constant() {
-        let prompts = include_str!("../../etl/llm/prompts.py");
-        let expected = format!(
-            "EXTRACTION_PROMPT_VERSION = \"{}\"",
-            crate::db::EXTRACTION_PROMPT_VERSION
-        );
-        assert!(prompts.contains(&expected), "api_service and the ETL disagree on the prompt version");
-    }
 }

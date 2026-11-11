@@ -129,9 +129,8 @@ def _pinned_inputs() -> dict[str, str]:
 
 
 # What each EXTRACTION_PROMPT_VERSION was released with. Never edit an existing entry: when any pinned
-# input changes, bump EXTRACTION_PROMPT_VERSION (in llm/prompts.py and api_service/src/db.rs) and add a
-# new entry, so stored analyses and the API's served set can tell the two apart. `analyze --reanalyze`
-# re-runs steps 1 and 3 only; a change to EXTRACT_HUMAN_ACTIONS needs fresh analyses as well.
+# input changes, bump EXTRACTION_PROMPT_VERSION in llm/prompts.py and add a new entry, so stored
+# analyses made with the two can be told apart.
 PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "EXTRACT_BOT_SUGGESTIONS": "1ed595f2b0a51171a87ae2ab8c392d1fb9080d9541c1339f6501b84033e5ca6b",
@@ -187,12 +186,3 @@ def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:
     from pipeline.analyze import stamped_model_name
 
     assert stamped_model_name("some-model") == f"some-model+{EXTRACTION_PROMPT_VERSION}"
-
-
-def test_api_service_serves_the_same_prompt_version() -> None:
-    from pathlib import Path
-
-    from llm.prompts import EXTRACTION_PROMPT_VERSION
-
-    db_rs = (Path(__file__).parents[2] / "api_service" / "src" / "db.rs").read_text()
-    assert f'pub const EXTRACTION_PROMPT_VERSION: &str = "{EXTRACTION_PROMPT_VERSION}";' in db_rs

@@ -152,25 +152,6 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_BOUNDED = """
     LIMIT $3
 """
 
-# Already-analyzed PRs in a bot_reviewed_at window whose stored analysis was not made with the
-# current "<model>+<prompt version>" stamp, for `analyze --reanalyze`. The stored human actions
-# come along so step 2 is not redrawn. The analysis row is upserted, so a rerun replaces it.
-GET_ANALYZED_PRS_BOUNDED = """
-    SELECT p.*, la.human_actions AS stored_human_actions FROM prs p
-    JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
-    WHERE p.chatbot_id = $1
-      AND p.status IN ('analyzed', 'labeled')
-      AND ($2::timestamptz IS NULL OR p.bot_reviewed_at >= $2)
-      AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
-      AND (la.model_name IS NULL OR la.model_name <> $4)
-    ORDER BY p.bot_reviewed_at DESC NULLS LAST
-    LIMIT $5
-"""
-
-DELETE_PR_LABELS = """
-    DELETE FROM pr_labels WHERE pr_id = $1 AND chatbot_id = $2
-"""
-
 # Per-day capped variants: sample up to N PRs per day (bot_reviewed_at date),
 # randomly within each day. Uses ROW_NUMBER with random() ordering so repeated
 # runs pick different PRs from overpopulated days.
@@ -270,15 +251,6 @@ UPDATE_PR_ENRICHMENT_DONE = """
 UPDATE_PR_ASSEMBLED = """
     UPDATE prs SET assembled = $1, status = 'assembled', assembled_at = $2
     WHERE id = $3
-"""
-
-UPDATE_PR_ERROR_MESSAGE = """
-    UPDATE prs SET error_message = $1 WHERE id = $2
-"""
-
-COUNT_REANALYSIS_GAVE_UP = """
-    SELECT COUNT(*) AS n FROM prs
-    WHERE chatbot_id = $1 AND status = 'error' AND error_message LIKE 'reanalyze failed%'
 """
 
 UPDATE_PR_ERROR = """

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import UTC
 from datetime import datetime
 import json
-import re
 from typing import Any
 
 from db import queries as q
@@ -32,7 +30,6 @@ class PRRepository:
 
     def __init__(self, db: DBAdapter):
         self.db = db
-        self._tx_lock = asyncio.Lock()
 
     # -- Chatbots --------------------------------------------------------------
 
@@ -192,20 +189,6 @@ class PRRepository:
             return await self.db.fetchall(q.GET_ASSEMBLED_PRS_NOT_ANALYZED, (chatbot_id, limit))
         return await self.db.fetchall(q.GET_ALL_ASSEMBLED_NOT_ANALYZED, (limit,))
 
-    async def get_analyzed_prs(
-        self,
-        chatbot_id: int,
-        limit: int = 100,
-        since: str | None = None,
-        until: str | None = None,
-        current_model_name: str | None = None,
-    ) -> list[dict[str, Any]]:
-        """Analyzed PRs with bot_reviewed_at in [since, until), newest first, whose stored
-        model_name differs from current_model_name; each row carries stored_human_actions."""
-        return await self.db.fetchall(
-            q.GET_ANALYZED_PRS_BOUNDED, (chatbot_id, since, until, current_model_name or "", limit)
-        )
-
     # -- Locking ---------------------------------------------------------------
 
     async def lock_pr(self, pr_id: int, worker_id: str, lock_timeout_minutes: int = 30) -> bool:
@@ -321,39 +304,6 @@ class PRRepository:
         )
         now = datetime.now(UTC).isoformat()
         await self.db.execute(q.UPDATE_PR_ANALYZED, (now, pr_id))
-
-    async def replace_analysis(self, pr_id: int, chatbot_id: int, **analysis: Any) -> None:
-        """For a re-analysis: write the new analysis, the status update and the deletion of the PR's
-        labels in one transaction, so a failure anywhere leaves the old analysis (with its old
-        model_name stamp) and labels in place and the PR is selected again by the next re-analysis.
-
-        `analysis` takes the keyword arguments of insert_analysis. Transactions on the adapter are
-        serialized with a lock, because a transaction routes every statement on the adapter through
-        one connection while it is open.
-        """
-        async with self._tx_lock, self.db.transaction():
-            await self.insert_analysis(pr_id=pr_id, chatbot_id=chatbot_id, **analysis)
-            await self.db.execute(q.DELETE_PR_LABELS, (pr_id, chatbot_id))
-            await self.db.execute(q.UPDATE_PR_ERROR_MESSAGE, (None, pr_id))
-
-    async def record_reanalysis_failure(
-        self, pr_id: int, previous_message: str | None, reason: str, max_attempts: int
-    ) -> bool:
-        """Count a failed re-analysis in the PR's error_message ("reanalyze failed N times: ...").
-        At max_attempts the PR gets status 'error' (its old analysis stays) so `--reanalyze` stops
-        selecting it. Returns True when the PR was given up on."""
-        m = re.match(r"reanalyze failed (\d+) times?", previous_message or "")
-        n = (int(m.group(1)) if m else 0) + 1
-        message = f"reanalyze failed {n} time{'s' if n > 1 else ''}: {reason}"[:1000]
-        if n >= max_attempts:
-            await self.db.execute(q.UPDATE_PR_ERROR, (message, pr_id))
-            return True
-        await self.db.execute(q.UPDATE_PR_ERROR_MESSAGE, (message, pr_id))
-        return False
-
-    async def count_reanalysis_gave_up(self, chatbot_id: int) -> int:
-        row = await self.db.fetchone(q.COUNT_REANALYSIS_GAVE_UP, (chatbot_id,))
-        return int(row["n"]) if row else 0
 
     # -- PR labels -------------------------------------------------------------
 

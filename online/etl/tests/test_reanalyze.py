@@ -312,3 +312,24 @@ async def test_a_failed_label_deletion_rolls_back_the_whole_replacement(db: DBAd
         await analyze_mod.analyze_prs(cfg, db, cid, "reviewer[bot]", limit=10, reanalyze=True, dry_run=True, **window)
         == 1
     )
+
+
+@pytest.mark.asyncio
+async def test_reanalysis_never_marks_an_analyzed_pr_skipped(db: DBAdapter, monkeypatch) -> None:
+    import pipeline.analyze as analyze_mod
+
+    monkeypatch.setattr(analyze_mod, "LLMClient", _StubLLM)
+    _StubLLM.calls, _StubLLM.fail = [], False
+    repo = PRRepository(db)
+    cid = await _seed(repo)  # these analyzed PRs carry no commits data
+    window = {"since": "2026-04-17T00:00:00+00:00"}
+
+    assert await analyze_mod.analyze_prs(DBConfig(), db, cid, "reanalyze[bot]", limit=10, reanalyze=True, **window) == 0
+
+    rows = await db.fetchall("SELECT pr_number, status FROM prs WHERE chatbot_id = $1", (cid,))
+    assert {r["pr_number"]: r["status"] for r in rows} == {
+        100: "analyzed",
+        101: "analyzed",
+        102: "analyzed",
+        103: "assembled",
+    }

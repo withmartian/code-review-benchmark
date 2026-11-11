@@ -15,7 +15,7 @@ a different prompt, model or input set are never mixed in. With --pr-list, a CSV
 column selects (bot, pr_url) pairs; one with only pr_url selects every bot's analysis of the PR.
 
     uv run python -m prompt_eval.compare_prompts --dry-run
-    uv run python -m prompt_eval.compare_prompts --baseline-ref origin/main \\
+    uv run python -m prompt_eval.compare_prompts \\
         --pr-list prompt_eval/extraction_scope_prs.csv --draws 2 --out compare.jsonl
 """
 
@@ -51,6 +51,10 @@ from pipeline.analyze import _format_suggestions
 from pipeline.analyze import _split_commits_at_hash
 
 logger = logging.getLogger(__name__)
+
+# The upstream main commit before this prompt change: the default baseline, so a comparison does not
+# silently change meaning once the change is merged and origin/main moves.
+PRE_CHANGE_REF = "e616e849755441da38f18bf3adba2c9583b03803"
 
 
 def prompt_at_ref(ref: str) -> str:
@@ -386,7 +390,11 @@ async def run_jobs(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--baseline-ref", default="origin/main")
+    ap.add_argument(
+        "--baseline-ref",
+        default=PRE_CHANGE_REF,
+        help=f"git ref of the baseline prompt (default {PRE_CHANGE_REF}, the upstream main before this prompt change)",
+    )
     ap.add_argument("--baseline-file", help="a prompts.py to read the baseline prompt from, instead of --baseline-ref")
     ap.add_argument(
         "--pr-list",

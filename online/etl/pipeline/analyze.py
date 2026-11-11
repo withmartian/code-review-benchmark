@@ -334,7 +334,8 @@ async def analyze_single_pr(
         logger.warning(
             f"No commits data for {pr_row['repo_name']}#{pr_row['pr_number']} — skipping (possible repo rename/301)"
         )
-        await repo.mark_skipped(pr_row["id"], "Enrichment incomplete: no commits data (possible repo rename)")
+        if stored_actions is None:  # a re-analysis leaves an analyzed PR as it is
+            await repo.mark_skipped(pr_row["id"], "Enrichment incomplete: no commits data (possible repo rename)")
         return False
 
     commit_details = _parse_json_col("commit_details")

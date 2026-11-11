@@ -89,19 +89,50 @@ def test_controls_generation_offers_and_run_metadata_are_not_findings() -> None:
     assert "Review status and run metadata: counts of comments posted" in rules
 
 
-def test_tool_output_listed_as_context_is_not_a_finding_but_tool_results_the_bot_presents_are() -> None:
+def test_inputs_the_bot_lists_and_raw_tool_output_are_not_findings() -> None:
     rules = _rules()
 
-    assert "Tool output the bot lists as context is not a finding" in rules
-    assert "Tool results the bot presents as its own findings" in rules
-    assert "are findings." in rules
+    assert "Inputs the bot lists as having used for its review" in rules
+    assert "Do not extract findings from these inputs, even when a listed tool result names a file and line" in rules
+    assert (
+        "Raw tool output quoted in a comment is not its own finding: only problems the bot states in its "
+        "own words are findings." in rules
+    )
+    assert "A linter or static-analysis result is a finding when the bot writes it up as a problem" in rules
 
 
-def test_findings_inside_collapsed_sections_are_still_findings() -> None:
+def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findings() -> None:
     rules = _rules()
 
     assert "These rules depend on what a piece of text is, not on where it sits." in rules
-    assert "A concrete finding inside a collapsed or nested section" in rules
+    assert (
+        "A concrete finding listed in a review-body section rather than as an inline comment, or inside a "
+        "collapsed or nested section, is still a finding: extract it." in rules
+    )
+
+
+# The prompt text each EXTRACTION_PROMPT_VERSION was released with. Changing EXTRACT_BOT_SUGGESTIONS or
+# JUDGE_MATCHING fails this test until the version is bumped (so stored analyses and the API's filter
+# can tell the two prompts apart) and the new hashes are recorded here.
+PROMPT_SHA256_BY_VERSION = {
+    "extract-v2": {
+        "EXTRACT_BOT_SUGGESTIONS": "cf4460fb2d6d4b725ba6f221e3f88c51c1d6b7e9cdc24d13f6a81d6621721912",
+        "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
+    },
+}
+
+
+def test_prompt_version_is_pinned_to_the_extraction_and_matching_prompt_text() -> None:
+    import hashlib
+
+    from llm import prompts
+
+    pinned = PROMPT_SHA256_BY_VERSION[prompts.EXTRACTION_PROMPT_VERSION]
+    for name, digest in pinned.items():
+        text = getattr(prompts, name)
+        assert hashlib.sha256(text.encode()).hexdigest() == digest, (
+            f"{name} changed: bump EXTRACTION_PROMPT_VERSION and record the new sha256 here"
+        )
 
 
 def test_located_rule_violations_are_findings_only_aggregate_results_are_excluded() -> None:
@@ -124,15 +155,6 @@ def test_remarks_about_the_pull_request_itself_are_not_findings_but_remarks_abou
     assert (
         "A remark about the content of a file the pull request changes is about the code, even when that "
         "file is documentation or configuration: extract it." in rules
-    )
-
-
-def test_tool_output_quoted_inside_a_bot_comment_supports_that_comment() -> None:
-    rules = _rules()
-
-    assert (
-        "Tool output quoted inside one of the bot's comments (for example a collapsed tool-results section "
-        "under an inline comment) is supporting context for that comment, not a separate finding." in rules
     )
 
 

@@ -1,8 +1,11 @@
 """Prompt templates for the LLM analysis pipeline."""
 
-# Stamped into llm_analyses.model_name as "<model>+<version>" so analyses from different extraction
-# prompts can be told apart and `analyze --reanalyze` can find the ones not yet re-run. Bump it
-# whenever EXTRACT_BOT_SUGGESTIONS, EXTRACT_HUMAN_ACTIONS or JUDGE_MATCHING changes.
+# Stamped into llm_analyses.model_name as "<model>+<version>" so analyses scored with different
+# prompts can be told apart, `analyze --reanalyze` can find the ones not yet re-run, and the API
+# serves only rows with the current stamp. Bump it whenever EXTRACT_BOT_SUGGESTIONS or JUDGE_MATCHING
+# changes (tests/test_prompts.py pins their sha256 to this version). A re-analysis re-runs only those
+# two steps and reuses the stored human actions; a change to EXTRACT_HUMAN_ACTIONS needs fresh
+# analyses instead.
 EXTRACTION_PROMPT_VERSION = "extract-v2"
 
 EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.
@@ -69,17 +72,17 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   even when the bot attaches such a remark to a line of the diff as an inline comment. A remark
   about the content of a file the pull request changes is about the code, even when that file is
   documentation or configuration: extract it.
-- Context the bot lists as input to its review, such as quoted linter or static-analysis output,
-  code guidelines, or path instructions (for example under a heading like "context used"). Tool
-  output the bot lists as context is not a finding: do not extract findings from it.
-  Tool output quoted inside one of the bot's comments (for example a collapsed tool-results
-  section under an inline comment) is supporting context for that comment, not a separate
-  finding. Tool results the bot presents as its own findings (in its own comment text, outside
-  the quoted output) are findings.
+- Inputs the bot lists as having used for its review, such as linter or static-analysis output,
+  code guidelines, or path instructions (for example a section where the bot lists the inputs or
+  context it used). Do not extract findings from these inputs, even when a listed tool result
+  names a file and line of the changed code: the bot did not raise it as its own comment.
+- Raw tool output quoted in a comment is not its own finding: only problems the bot states in its
+  own words are findings. A linter or static-analysis result is a finding when the bot writes it
+  up as a problem in its own comment text.
 
-These rules depend on what a piece of text is, not on where it sits. A concrete finding inside a
-collapsed or nested section (for example a nitpick or an outside-diff comment listed in a review
-body) is still a finding: extract it.
+These rules depend on what a piece of text is, not on where it sits. A concrete finding listed in
+a review-body section rather than as an inline comment, or inside a collapsed or nested section,
+is still a finding: extract it.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

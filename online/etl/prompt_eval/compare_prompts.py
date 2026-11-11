@@ -17,7 +17,10 @@ Without --pr-list the script compares every analyzed PR in the DB, so it asks fo
 (cap it with --limit-per-bot).
 extraction_scope_prs.csv lists the public PRs of the measurement made when the non-finding rules
 were added, and extraction_scope_results.jsonl holds that measurement's per-PR metrics (bot, arm,
-suggestion and action counts, precision, recall; no review text).
+suggestion and action counts, precision, recall; no review text). That measurement came from a
+separate harness on public PRs; this script is an independent check that covers only the listed PRs
+already analyzed in your DB, and it prints how many listed entries it found and which are missing.
+With --pr-list the analyses are filtered by PR URL in SQL.
 
     uv run python -m prompt_eval.compare_prompts --all-analyzed --limit-per-bot 50 --dry-run
     uv run python -m prompt_eval.compare_prompts \\
@@ -43,6 +46,7 @@ from db.connection import DBAdapter
 from db.repository import PRRepository
 from llm.client import LLMClient
 from llm.prompts import EXTRACT_BOT_SUGGESTIONS
+from llm.prompts import EXTRACTION_PROMPT_VERSION
 from llm.prompts import JUDGE_MATCHING
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import MatchingResponse
@@ -54,6 +58,7 @@ from pipeline.analyze import _format_bot_comments
 from pipeline.analyze import _format_commits_with_diffs
 from pipeline.analyze import _format_suggestions
 from pipeline.analyze import _split_commits_at_hash
+from pipeline.prompt_pins import pinned_inputs
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +179,8 @@ def paired_ci(pairs: list[tuple[dict, dict]], stat, n: int = 2000, seed: int = 7
     if not vals:
         return None
     vals.sort()
-    return vals[int(0.025 * len(vals))], vals[int(0.975 * len(vals)) - 1]
+    k = int(0.025 * len(vals))  # the same number of values cut from each tail
+    return vals[k], vals[len(vals) - 1 - k]
 
 
 # Every delta is against this arm; run() names arms "<baseline|candidate> draw <n>".
@@ -260,6 +266,46 @@ def is_selected(bot: str, pr_url: str, urls: set[str] | None, pairs: set[tuple[s
     return urls is None or pr_url in urls
 
 
+ANALYSES_FOR_URLS_SQL = """
+    SELECT la.*, p.pr_url
+    FROM llm_analyses la
+    JOIN prs p ON la.pr_id = p.id
+    WHERE la.chatbot_id = $1 AND p.pr_url IN ({urls})
+"""
+
+
+async def analyses_for_urls(repo: PRRepository, chatbot_id: int, urls: set[str], chunk: int = 500) -> list[dict]:
+    """A bot's analyses of the listed PRs only (filtered in SQL, newest first)."""
+    rows: list[dict] = []
+    ordered = sorted(urls)
+    for i in range(0, len(ordered), chunk):
+        part = ordered[i : i + chunk]
+        sql = ANALYSES_FOR_URLS_SQL.format(urls=", ".join(f"${j + 2}" for j in range(len(part))))
+        rows += await repo.db.fetchall(sql, (chatbot_id, *part))
+    rows.sort(key=lambda r: str(r.get("analyzed_at") or ""), reverse=True)
+    return rows
+
+
+def coverage_line(
+    units: list[dict], urls: set[str], pairs: set[tuple[str, str]] | None, bots: set[str] | None = None
+) -> str:
+    """How much of a --pr-list this DB can score: listed entries found as scorable analyses vs missing."""
+    if pairs is not None:
+        listed = {p for p in pairs if bots is None or p[0] in bots}
+        found = {(normalize_github_actor(u["bot"]), u["pr_url"]) for u in units}
+        missing = sorted(listed - found)
+        what, shown = "(bot, PR) pairs", [f"{b} {u}" for b, u in missing[:10]]
+    else:
+        listed = urls
+        missing = sorted(urls - {u["pr_url"] for u in units})
+        what, shown = "PRs", missing[:10]
+    line = (
+        f"--pr-list: {len(listed) - len(missing)} of {len(listed)} listed {what} found as scorable analyses "
+        f"in this DB, {len(missing)} missing"
+    )
+    return line + (f" (first missing: {', '.join(shown)})" if shown else "")
+
+
 def _actions(an: dict) -> list[dict]:
     raw = an["human_actions"]
     return json.loads(raw) if isinstance(raw, str) else raw
@@ -271,11 +317,14 @@ def _sha(obj: object) -> str:
 
 def experiment_fingerprint(templates: dict[str, str], model: dict, units: list[dict]) -> str:
     """Hash of everything a stored row depends on: both extraction prompts, the matching prompt,
+    the prompt version and the digests it pins (response schemas, input formatters, metric code),
     the model configuration (no credentials), and each unit's step 1 input and stored actions."""
     return _sha(
         {
             "extraction_prompts": {k: _sha(v) for k, v in sorted(templates.items())},
             "matching_prompt": _sha(JUDGE_MATCHING),
+            "prompt_version": EXTRACTION_PROMPT_VERSION,
+            "pinned_inputs": pinned_inputs(),
             "model": model,
             "units": sorted([u["bot"], u["pr_url"], _sha(u["fields"]), _sha(u["actions"])] for u in units),
         }
@@ -320,7 +369,10 @@ async def _run(args: argparse.Namespace, cfg: DBConfig, repo: PRRepository) -> i
         if bots and normalize_github_actor(bot) not in bots:
             continue
         n = 0
-        for an in await repo.get_analyses(cb["id"]):
+        analyses = (
+            await analyses_for_urls(repo, cb["id"], urls) if urls is not None else await repo.get_analyses(cb["id"])
+        )
+        for an in analyses:
             # analyses with no stored human actions are kept: precision is still defined, recall is not,
             # and dropping them would bias suggestions/PR and matched/PR
             if not is_selected(bot, an["pr_url"], urls, pairs):
@@ -334,12 +386,16 @@ async def _run(args: argparse.Namespace, cfg: DBConfig, repo: PRRepository) -> i
             if args.limit_per_bot and n >= args.limit_per_bot:
                 break
     no_actions = sum(1 for u in units if not u["actions"])
+    if urls is not None:
+        print(coverage_line(units, urls, pairs, bots))
     print(
         f"{len(units)} analyzed PRs ({no_actions} with no stored human actions, so no recall); "
         f"{len(units) * args.draws * 4} LLM calls at most"
     )
     if args.dry_run:
         return 0
+    if not (cfg.martian_model_name or "").strip():
+        raise SystemExit("MARTIAN_MODEL_NAME is empty: set the model to run steps 1 and 3 with")
     baseline = (
         prompt_in_source(Path(args.baseline_file).read_text())
         if args.baseline_file

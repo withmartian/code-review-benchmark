@@ -388,3 +388,119 @@ def test_cli_requires_a_pr_list_or_an_explicit_all_analyzed(capsys) -> None:
         main(["--dry-run"])
     assert exc.value.code == 2
     assert "--pr-list, or pass --all-analyzed" in capsys.readouterr().err
+
+
+def test_fingerprint_changes_with_the_prompt_version_and_the_pinned_inputs(monkeypatch) -> None:
+    import prompt_eval.compare_prompts as cp
+
+    templates = {"baseline": "A {bot_comments}", "candidate": "B {bot_comments}"}
+    model = {"base_url": "", "model_name": "m1"}
+    fp = experiment_fingerprint(templates, model, _units())
+
+    monkeypatch.setattr(cp, "EXTRACTION_PROMPT_VERSION", "extract-v999")
+    assert experiment_fingerprint(templates, model, _units()) != fp
+    monkeypatch.undo()
+
+    pins = cp.pinned_inputs()
+    monkeypatch.setattr(cp, "pinned_inputs", lambda: {**pins, "llm.schemas.MatchingResponse": "0" * 64})
+    assert experiment_fingerprint(templates, model, _units()) != fp
+
+
+def test_paired_ci_cuts_the_same_number_of_values_from_each_tail() -> None:
+    import random
+
+    pairs = [({"x": i}, {"x": i * i}) for i in range(7)]
+
+    def stat(rows: list[dict]) -> float:
+        return sum(r["x"] for r in rows) / len(rows)
+
+    rng = random.Random(7)
+    vals = []
+    for _ in range(10):
+        s = [pairs[rng.randrange(len(pairs))] for _ in pairs]
+        vals.append(stat([y for _, y in s]) - stat([x for x, _ in s]))
+    vals.sort()
+
+    # 10 resamples: 2.5% of 10 rounds down to 0 from each tail, so the interval is the full range
+    assert paired_ci(pairs, stat, n=10) == (vals[0], vals[-1])
+
+
+async def _db_with_analyses(tmp_path: Path, numbers: tuple[int, ...]):
+    from db.connection import DBAdapter
+    from db.repository import PRRepository
+    from db.schema import create_tables
+
+    db = DBAdapter(f"sqlite:///{tmp_path / 'x.db'}")
+    await db.connect()
+    await create_tables(db)
+    repo = PRRepository(db)
+    cid = await repo.upsert_chatbot("reviewer[bot]")
+    row = _pr_row()
+    for n in numbers:
+        await repo.insert_pr(
+            chatbot_id=cid, repo_name="org/repo", pr_number=n, pr_url=f"https://github.com/org/repo/pull/{n}"
+        )
+        pr = await repo.get_pr(cid, "org/repo", n)
+        await repo.update_commits(pr["id"], json.loads(row["commits"]))
+        await repo.mark_assembled(pr["id"], json.loads(row["assembled"]))
+        await repo.insert_analysis(
+            pr_id=pr["id"],
+            chatbot_id=cid,
+            bot_suggestions=[],
+            human_actions=[{"action_id": "A1", "description": "fix"}],
+            matching_results=[],
+            total_bot_comments=0,
+            matched_bot_comments=0,
+            precision=None,
+            recall=None,
+            f_beta=None,
+            model_name="m",
+        )
+    return db, repo
+
+
+async def test_a_pr_list_is_filtered_in_sql_and_reports_found_and_missing_pairs(tmp_path: Path, capsys) -> None:
+    import argparse
+
+    from config import DBConfig
+    from prompt_eval.compare_prompts import _run
+
+    db, repo = await _db_with_analyses(tmp_path, (1, 2, 3))
+
+    async def no_full_scan(*_: object) -> list:
+        raise AssertionError("a --pr-list run must not read every analysis of a bot")
+
+    repo.get_analyses = no_full_scan
+    pr_list = tmp_path / "prs.csv"
+    pr_list.write_text(
+        "pr_url,bot\n"
+        "https://github.com/org/repo/pull/1,reviewer[bot]\n"
+        "https://github.com/org/repo/pull/9,reviewer[bot]\n"
+    )
+    args = argparse.Namespace(pr_list=str(pr_list), bots=None, limit_per_bot=None, draws=2, dry_run=True)
+    try:
+        assert await _run(args, DBConfig(), repo) == 0
+    finally:
+        await db.close()
+
+    out = capsys.readouterr().out
+    assert "1 of 2 listed (bot, PR) pairs found as scorable analyses in this DB, 1 missing" in out
+    assert "reviewer https://github.com/org/repo/pull/9" in out
+    assert "1 analyzed PRs" in out
+
+
+async def test_a_run_with_an_empty_model_name_stops_before_any_call(tmp_path: Path) -> None:
+    import argparse
+
+    from config import DBConfig
+    from prompt_eval.compare_prompts import _run
+
+    db, repo = await _db_with_analyses(tmp_path, (1,))
+    cfg = DBConfig()
+    cfg.martian_model_name = ""
+    args = argparse.Namespace(pr_list=None, bots=None, limit_per_bot=None, draws=2, dry_run=False)
+    try:
+        with pytest.raises(SystemExit, match="MARTIAN_MODEL_NAME is empty"):
+            await _run(args, cfg, repo)
+    finally:
+        await db.close()

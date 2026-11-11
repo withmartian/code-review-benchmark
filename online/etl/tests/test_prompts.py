@@ -163,3 +163,12 @@ def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:
     from pipeline.analyze import stamped_model_name
 
     assert stamped_model_name("some-model") == f"some-model+{EXTRACTION_PROMPT_VERSION}"
+
+
+def test_api_service_serves_the_same_prompt_version() -> None:
+    from pathlib import Path
+
+    from llm.prompts import EXTRACTION_PROMPT_VERSION
+
+    db_rs = (Path(__file__).parents[2] / "api_service" / "src" / "db.rs").read_text()
+    assert f'pub const EXTRACTION_PROMPT_VERSION: &str = "{EXTRACTION_PROMPT_VERSION}";' in db_rs

@@ -138,6 +138,21 @@ uv run python main.py analyze --all --reanalyze --since 2026-08-01 --until 2026-
 
 `--sort sweep` ignores `--since`/`--until` — it orders by `assembled_at DESC` to pick up PRs that were discovered long ago but only recently assembled (e.g., merged weeks after the bot reviewed them).
 
+### Rolling out a prompt change
+
+Analyses store `model_name` as `"<model>+<EXTRACTION_PROMPT_VERSION>"` (`llm/prompts.py`), and the API
+service serves only rows with the current stamp (`EXTRACTION_PROMPT_VERSION` in
+`../api_service/src/db.rs`; a test checks the two agree). After a change that bumps the version, in
+this order:
+
+1. Pause the scheduled analyze job (`jobs/analyze_job.py`), so the backfill runs alone.
+2. Backfill: `analyze --all --reanalyze --since ... --until ... --limit 100000`, rerun until its
+   `--dry-run` counts 0 for every bot (a failed re-analysis keeps its old row and is retried).
+3. Run `label --all --since ... --until ... --limit 100000`: re-analysis deletes the affected labels.
+4. Restart or redeploy the API service: it loads analyses only at start, and serves only the
+   rows with the current stamp. Restarting earlier is safe but shows only the rows re-analyzed so far.
+5. Resume the `analyze` job.
+
 ### Label PRs
 
 ```bash

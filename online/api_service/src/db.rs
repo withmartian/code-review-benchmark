@@ -2,11 +2,22 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::postgres::PgPoolOptions;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::model::*;
 
-/// Load all analyzed PR data from Postgres into an in-memory Snapshot.
+/// The extraction-prompt version the ETL stamps into `llm_analyses.model_name` as
+/// `"<model>+<version>"`. It must equal `EXTRACTION_PROMPT_VERSION` in `online/etl/llm/prompts.py`
+/// (both sides have a test). Only analyses with this stamp are served, so a window that is only
+/// partly re-scored after a prompt change never mixes two prompts in one leaderboard.
+pub const EXTRACTION_PROMPT_VERSION: &str = "extract-v2";
+
+/// SQL LIKE pattern matching a `model_name` stamped with the current extraction-prompt version.
+pub fn model_name_stamp_pattern() -> String {
+    format!("%+{EXTRACTION_PROMPT_VERSION}")
+}
+
+/// Load analyzed PR data (current extraction-prompt stamp only) from Postgres into an in-memory Snapshot.
 pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> {
     let pool = PgPoolOptions::new()
         .max_connections(2)
@@ -34,11 +45,27 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
         JOIN chatbots c ON la.chatbot_id = c.id
         LEFT JOIN pr_labels pl ON pl.pr_id = la.pr_id AND pl.chatbot_id = la.chatbot_id
         WHERE p.pr_merged = TRUE
+          AND la.model_name LIKE $1
         ORDER BY p.bot_reviewed_at ASC NULLS FIRST
         "#,
     )
+    .bind(model_name_stamp_pattern())
     .fetch_all(&pool)
     .await?;
+
+    let (unstamped,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM llm_analyses WHERE model_name IS NULL OR model_name NOT LIKE $1",
+    )
+    .bind(model_name_stamp_pattern())
+    .fetch_one(&pool)
+    .await?;
+    if unstamped > 0 {
+        warn!(
+            "Not serving {} analyses scored with another extraction prompt (model_name without \"+{}\"); \
+             re-analyze them with `analyze --reanalyze` and restart",
+            unstamped, EXTRACTION_PROMPT_VERSION
+        );
+    }
 
     // Load ignored tools
     let ignored_rows: Vec<(String,)> = sqlx::query_as(

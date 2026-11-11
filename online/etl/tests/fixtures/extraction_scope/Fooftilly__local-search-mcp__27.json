@@ -39,12 +39,6 @@
    "pattern": "(?i)all reported issues"
   },
   {
-   "kind": "linked_issue_check",
-   "quote": "Bound pending requests globally and per registrable site",
-   "pattern": null,
-   "not_asserted": "a linked-issue requirement row that names no problem; linked-issue checks are left to the general rules, so it is asserted neither way"
-  },
-  {
    "kind": "control",
    "quote": "Turn on auto-fix | Re-trigger cubic",
    "pattern": "(?i)auto-fix|re-trigger"
@@ -69,6 +63,13 @@
    "path": "tests/test_policy.py",
    "quote": "This does not independently exercise the per-site cap",
    "pattern": "(?i)per-site|MAX_PENDING_PER_SITE|hourly limit"
+  }
+ ],
+ "neutral": [
+  {
+   "kind": "linked_issue_check",
+   "quote": "Bound pending requests globally and per registrable site",
+   "reason": "a linked-issue requirement row that names no problem: linked-issue checks are left to the general rules, so it is labelled neither a finding nor a non-finding"
   }
  ]
 }

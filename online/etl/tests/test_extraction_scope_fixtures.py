@@ -84,7 +84,7 @@ def test_labelled_text_reaches_the_extraction_input(path: Path) -> None:
     fx = _load(path)
     formatted = _format_bot_comments(fx["events"], fx["bot_username"])
 
-    for item in fx["findings"] + fx["non_findings"]:
+    for item in fx["findings"] + fx["non_findings"] + fx.get("neutral", []):
         assert item["quote"] in formatted, item
 
 
@@ -94,7 +94,7 @@ def test_prompt_states_a_rule_for_every_labelled_kind_before_the_inputs(path: Pa
     rendered = flat(_render(fx))
     rules = rendered[: rendered.index("=== Bot Review Comments ===")]
 
-    for item in fx["findings"] + fx["non_findings"]:
+    for item in fx["findings"] + fx["non_findings"] + fx.get("neutral", []):
         assert RULE_FOR_KIND[item["kind"]] in rules, item["kind"]
 
 
@@ -153,3 +153,11 @@ def test_every_label_has_a_pattern_or_a_reason_it_is_not_asserted(path: Path) ->
     fx = _load(path)
     for label in fx["findings"] + fx["non_findings"]:
         assert label.get("pattern") or label.get("not_asserted"), label["quote"]
+
+
+@pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.stem)
+def test_neutral_labels_say_why_and_are_never_asserted(path: Path) -> None:
+    fx = _load(path)
+    for label in fx.get("neutral", []):
+        assert label.get("reason"), label["quote"]
+        assert "pattern" not in label, label["quote"]

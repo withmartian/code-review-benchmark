@@ -41,31 +41,56 @@ ANALYSES_SQL = """
       AND ($2::timestamptz IS NULL OR p.bot_reviewed_at >= $2)
       AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
 """
-_PCT = r"\d+(\.\d+)?\s*%"
-_EXCLUDED = {
-    # "Docstring coverage is 25.00% which is insufficient", "test coverage 61% is below the required 80%"
-    "coverage": re.compile(
-        rf"\b(docstring|test) coverage\b[^.;]*?\b(is|of|at|reported|measured|only|below|under)\b[^.;]*?{_PCT}"
-        rf"|{_PCT}[^.;]*?\b(docstring|test) coverage\b"
-        rf"|\b(docstring|test) coverage (check|gate|threshold)\b",
+# Whole-text templates (anchored, matched on the whitespace-normalized description) of the fixed gate,
+# rating and status lines bots post, as the extraction step paraphrases them. Anything that does not
+# match a whole template is a finding.
+_N = r"~?\d+(?:\.\d+)?\s*%"
+_SCOPE = r"\(?(?:for|on|in) [^.;:()]*?(?:functions?|diff|changes?)[^.;:()]*\)?"
+_COVERAGE_TEMPLATE = (
+    r"(?:\(?(?:ci/)?(?:pre-merge|ci|doc) check\)?(?: (?:failure|failed|finding|warning|reports|indicates|flagged|warns))?:? )?"
+    r"(?:insufficient |only )?(?:the )?(?:ci )?(?:docstring|test) coverage(?: pre-merge| ci)?(?: check| gate| warning)?"
+    rf"(?: {_SCOPE})?"
+    r"(?: (?:is failing|is below(?: the)?(?: required)?(?: threshold)?|failed|fails|failing|is insufficient"
+    r"|is far below(?: the)?(?: required)? threshold|is only|is|flagged|warns(?: that)?|is inconclusive/failing(?: threshold)?"
+    r"|warns coverage is (?:too low|(?:far )?below(?: the)?(?: required)? threshold)|reported as|at))?:?"
+    rf"(?: (?:docstring |test )?coverage(?: {_SCOPE})? is)?(?: only)? \(?{_N}(?: (?:docstring |test )?coverage)?\)?"
+    rf"(?:,? \(?(?:vs\.?|<|versus|below)(?: the)?(?: required)?(?: threshold)?(?: of)? {_N}(?: threshold)?\)?"
+    rf"| which is insufficient(?: \(required {_N}\))?)?"
+    rf"(?:,? {_SCOPE})?"
+    r"(?:[,.;:] (?:so |add|please add|missing|consider adding|bot (?:requests|recommends))[^.]*)?\.?"
+    r"(?: (?:add|missing)[^.]*\.?)?"
+)
+_TEMPLATES = {
+    "coverage": re.compile(_COVERAGE_TEMPLATE, re.I),
+    # "Estimated code review effort: 3 (Moderate) | ~20 minutes", "Confidence Score: 4/5", "Priority: Normal"
+    "rating": re.compile(
+        r"(?:(?:the )?(?:estimated )?(?:code )?(?:review effort|risk|impact|priority|confidence score)(?: rating)?"
+        r"(?: is|:)? \(?(?:\d+(?:/\d+)?|low|medium|moderate|high|normal|simple|complex)\)?"
+        r"(?: \((?:low|medium|moderate|high|simple|complex)\))?(?:[ ,;|]+~?\d+\+? ?minutes)?"
+        r"|\[?(?:low|medium|moderate|high) (?:impact|risk|priority)\]?(?: rating)?)\.?",
         re.I,
     ),
+    # "Actionable comments posted: 2", "Bot review was paused for this user, so no ... were produced ..."
     "run_status": re.compile(
-        r"\bactionable comments posted\b|\bno actionable comments\b|\breview (was |has been )?(paused|skipped)\b"
-        r"|\b(free|included) (oss )?reviews?\b[^.]*\b(used|limit)",
+        r"(?:actionable comments posted: \d+|no actionable comments(?: were generated)?"
+        r"|(?:the )?(?:bot )?review (?:was|has been) (?:paused|skipped)(?: for this (?:user|pull request|pr))?"
+        r"(?:,? so no (?:automated )?(?:code-review )?findings were produced(?: in the pr comments)?)?)\.?",
         re.I,
     ),
-    "rating": re.compile(r"\b(estimated )?(code )?review effort\b|\bconfidence score\b", re.I),
-    "generation_offer": re.compile(r"\bgenerate (unit tests|docstrings)\b", re.I),
+    # "Offers to generate unit tests (beta)", "The bot offers to generate docstrings for this PR"
+    "generation_offer": re.compile(
+        r"(?:the bot )?offers? to generate (?:unit tests|docstrings)(?: \(beta\))?(?: for (?:this|the) (?:pr|pull request))?\.?",
+        re.I,
+    ),
 }
 
 
 def excluded_kind(suggestion: dict) -> str | None:
-    """The excluded kind an unlocated suggestion states unambiguously, else None (a finding)."""
+    """The template an unlocated suggestion's whole text matches, else None (a finding)."""
     if suggestion.get("file_path"):
         return None
-    text = suggestion.get("description") or ""
-    return next((kind for kind, pattern in _EXCLUDED.items() if pattern.search(text)), None)
+    text = " ".join((suggestion.get("description") or "").split())
+    return next((kind for kind, pattern in _TEMPLATES.items() if pattern.fullmatch(text)), None)
 
 
 def is_coverage_item(suggestion: dict) -> bool:

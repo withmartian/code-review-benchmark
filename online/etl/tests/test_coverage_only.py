@@ -24,32 +24,54 @@ FOOFTILLY = json.loads(
 FOOFTILLY_FINDING = next(f["quote"] for f in FOOFTILLY["findings"] if f["kind"] == "check_finding")
 
 
-def test_unambiguous_aggregate_statements_are_excluded() -> None:
-    assert excluded_kind(COVERAGE) == "coverage"
-    assert excluded_kind({"description": "Test coverage is 61% below the required 80%", "file_path": None}) == (
-        "coverage"
-    )
-    assert excluded_kind({"description": "42.86% docstring coverage vs required 80%", "file_path": None}) == (
-        "coverage"
-    )
-    assert excluded_kind(PAUSED) == "run_status"
-    assert excluded_kind({"description": "Actionable comments posted: 3", "file_path": None}) == "run_status"
-    assert excluded_kind({"description": "Estimated code review effort: 3 (Moderate)", "file_path": None}) == "rating"
+@pytest.mark.parametrize(
+    ("description", "kind"),
+    [
+        # the forms the extraction step writes for the fixed gate, rating and status lines (results data)
+        ("Docstring coverage check failed (52.63% vs required 80%) for functions touched by the diff.", "coverage"),
+        (
+            "Docstring coverage check is failing (28% vs required 80%) for touched functions with cyclomatic "
+            "complexity >= 2; add missing docstrings to meet the threshold.",
+            "coverage",
+        ),
+        ("Pre-merge check failure: docstring coverage is 0% for functions touched by this diff.", "coverage"),
+        ("Docstring coverage is 25.00% which is insufficient", "coverage"),
+        ("Test coverage is 61% below the required 80%", "coverage"),
+        ("Estimated code review effort: 3 (Moderate) | ~20 minutes", "rating"),
+        ("Confidence Score: 4/5", "rating"),
+        ("Priority: Normal", "rating"),
+        ("Medium impact", "rating"),
+        ("Actionable comments posted: 2", "run_status"),
+        ("Bot review was paused for this user, so no automated code-review findings were produced.", "run_status"),
+        ("Review was skipped.", "run_status"),
+        ("Offers to generate unit tests (beta)", "generation_offer"),
+    ],
+)
+def test_whole_text_templates_of_fixed_lines_are_excluded(description: str, kind: str) -> None:
+    assert excluded_kind({"description": description, "file_path": None}) == kind
 
 
 @pytest.mark.parametrize(
-    ("description", "file_path"),
+    "description",
     [
-        (FOOFTILLY_FINDING, None),  # names "rate-limit", but is a concrete finding
-        ("Add test coverage for the required null-input error path in parse().", "src/parse.py"),
-        ("Add test coverage for the required-field validation in parse_config", "src/config.py"),
-        ("The docstring for retry() says the threshold defaults to 5 but the code uses 3", None),
-        ("Docstring claims the function returns a value in 0-100% but it returns a fraction", None),
-        ("Missing test coverage for the error path; this branch is required for the fallback", None),
+        FOOFTILLY_FINDING,  # names "rate-limit", but is a concrete finding
+        "Add test coverage for the required null-input error path in parse().",
+        "Add test coverage for the required-field validation in parse_config",
+        "The docstring for retry() says the threshold defaults to 5 but the code uses 3",
+        "Docstring claims the function returns a value in 0-100% but it returns a fraction",
+        "Missing test coverage for the error path; this branch is required for the fallback",
+        "The test coverage gate passes even when pytest exits nonzero; propagate the failure.",
+        "Generate unit tests for parse_token() to cover expired tokens.",
+        "The confidence score returned by classify() is never clamped to [0, 1]",
+        "Splitting this PR would reduce review effort; the migration and refactor are unrelated",
+        "The PR lowers the test coverage threshold in jest.config.js from 80% to 50%",
+        "Test coverage is missing for the retry path, which handles 100% of transient failures",
+        "Review was skipped for generated files, but src/gen/handler.py contains hand-written logic with a bug",
+        "The CLI's --generate docstrings flag crashes when the output directory does not exist",
     ],
 )
-def test_ambiguous_or_concrete_items_are_left_as_findings(description: str, file_path: str | None) -> None:
-    item = {"description": description, "file_path": file_path}
+def test_anything_else_is_a_finding_even_without_a_file(description: str) -> None:
+    item = {"description": description, "file_path": None}
     assert excluded_kind(item) is None
     assert not is_coverage_item(item)
 

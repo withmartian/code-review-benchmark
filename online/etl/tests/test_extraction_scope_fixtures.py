@@ -35,7 +35,10 @@ RULE_FOR_KIND = {
     "change_overview": "walkthroughs, change summaries, per-file tables, release notes",
     "rating": "Effort, risk, priority, impact, or confidence ratings themselves.",
     "run_status": "Review status and run metadata: counts of comments posted",
-    "control": "Interactive controls and product text: checkboxes, buttons",
+    "control": (
+        "Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage "
+        "tips, links to dashboards, and configuration or review-settings details."
+    ),
     "generation_offer": "offers to generate code for the author, for example to write docstrings or tests",
     "pr_remark": "is a finding, wherever it sits: extract it.",
     "resolved_finding": "A finding stays a finding when the bot later marks it resolved",

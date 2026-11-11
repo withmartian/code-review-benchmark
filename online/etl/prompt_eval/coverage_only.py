@@ -14,11 +14,11 @@ matches a template of a fixed line as the extraction step writes it: a coverage 
 percentage, an effort / risk / impact / priority / confidence rating, a review status line, or an
 offer to generate code. Everything else is a finding, so the figures are an estimate; --show prints
 the classified items for a hand check. The templates follow the lines CodeRabbit writes, so f is
-understated more for the other bots than for CodeRabbit and is not comparable across bots; --bot
-all prints that caveat once. The population follows the API: merged PRs with a review date, the
-secondary Qodo account shown under the primary one, bots in ignored_tools hidden unless
---include-ignored, and the bundled dashboard's default of at most 2000 changed lines
-(--diff-lines-max). --since / --until bound the review date, --until including its whole day as the
+understated more for the other bots than for CodeRabbit and is not comparable across bots; that
+caveat prints for --bot all and for any bot other than CodeRabbit. The population follows the API:
+merged PRs with a review date, the secondary Qodo account shown under the primary one, bots in
+ignored_tools hidden unless --include-ignored, and the bundled dashboard's default of at most 2000
+changed lines (--diff-lines-max). --since / --until bound the review date, --until including its whole day as the
 API's end_date does; "daily" figures are pooled over that window, not per day (min_scored_prs in
 daily_metrics counts PRs with a precision, not PRs with both). Nothing is written and no LLM is called.
 
@@ -50,6 +50,7 @@ ANALYSES_SQL = """
 # (static/index.html) filters diff_lines to at most 2000 (a PR without diff_lines passes).
 MERGE_INTO = {"qodo-free-for-open-source-projects[bot]": "qodo-code-review[bot]"}
 DEFAULT_DIFF_LINES_MAX = 2000
+CODERABBIT = "coderabbitai[bot]"
 CROSS_BOT_CAVEAT = (
     "f is not comparable across bots: the templates follow CodeRabbit's lines, so f is understated "
     "more for the other bots."
@@ -294,15 +295,15 @@ def main(argv: list[str] | None = None) -> None:
             args.include_ignored,
         )
     )
-    print(render_all(summaries, args.show, all_bots=bot is None))
+    print(render_all(summaries, args.show, caveat=bot != CODERABBIT))
 
 
-def render_all(summaries: dict[str, dict], show: int = 0, all_bots: bool = False) -> str:
-    """Every bot's block; with --bot all, one caveat line first, since f is not comparable across bots."""
+def render_all(summaries: dict[str, dict], show: int = 0, caveat: bool = False) -> str:
+    """Every bot's block, with the cross-bot caveat first when asked (--bot all, or any bot but CodeRabbit)."""
     blocks = "\n\n".join(report(b, s, show) for b, s in summaries.items())
     if not blocks:
         return "no analyses in this window"
-    return f"{CROSS_BOT_CAVEAT}\n\n{blocks}" if all_bots else blocks
+    return f"{CROSS_BOT_CAVEAT}\n\n{blocks}" if caveat else blocks
 
 
 if __name__ == "__main__":

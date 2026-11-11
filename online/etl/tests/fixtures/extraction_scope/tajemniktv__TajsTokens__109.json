@@ -62,7 +62,7 @@
    "pattern": "(?i)compliance rules"
   },
   {
-   "kind": "run_status",
+   "kind": "control",
    "quote": "Review mode: <code>Auto: 🧠 Deep</code>",
    "pattern": "(?i)review mode"
   },

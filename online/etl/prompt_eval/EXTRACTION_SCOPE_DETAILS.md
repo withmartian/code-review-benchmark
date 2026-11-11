@@ -3,7 +3,8 @@
 Supporting detail for the step 1 extraction change (`EXTRACT_BOT_SUGGESTIONS`, version `extract-v2`).
 The per-PR metrics behind the tables are in `extraction_scope_results.jsonl` next to this file
 (public PR URLs, bot, arm, counts, precision, recall and per-type item counts; no review text), and
-`extraction_scope_prs.csv` lists the PRs and bots. Judge `gpt-5.2-2025-12-11` at temperature 1.0;
+`extraction_scope_prs.csv` lists the PRs and bots of the per-bot table; the 171 step-1-only PRs are
+in the results file's "step-1 only" rows, not in the CSV. Judge `gpt-5.2-2025-12-11` at temperature 1.0;
 intervals are 95% paired PR bootstrap (2,000 resamples) against the current prompt's first draw.
 
 Arms: the current prompt (upstream main, two draws); an earlier revision `cf4460fb` that also
@@ -251,9 +252,12 @@ three, each counted over the targeted draws plus the live draws:
   Qodo fixture 6 of 6), so it was not adopted either. The fixture test maps this label to the
   sentence that judges other PR-level content like any other comment. Both rejected tries extracted
   the scylla CodeRabbit description-check row less often (3 of 6 and 1 of 6, against 6 of 8 on the
-  head), so adopting either would have favoured CodeRabbit's score and rejecting them went against
-  our interest (unlike the resolved-findings wording choice above, whose small differences favour
-  CodeRabbit).
+  head), which would have favoured CodeRabbit. Try 1 also kept the zizmor tool lines out less often
+  (2 of 6, try 2 5 of 6, against 6 of 6), which would have counted against CodeRabbit. Both tries
+  extracted Qodo's TajsTokens dismissed finding more often (2 of 6 and 3 of 6, against 1 of 8), which
+  would have favoured Qodo. These counts come from different sessions and are within draw-to-draw
+  noise (the same row moved from 13 of 18 to 4 of 8 between sessions on one prompt); neither try
+  fixed the cubic row.
 
 The scylla description-check row passed this live draw (6 of 8 on the head in all). The same
 pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).
@@ -273,9 +277,9 @@ the note is the PR's only item.
 `coverage_only.py`'s whole-text templates catch 2 and 0 of them, and 76 of 119 and 61 of 112 of
 CodeRabbit's unlocated docstring-coverage items in the two current-prompt draws, so its f is a
 lower bound. It is not comparable across bots: the templates follow CodeRabbit's lines, so f is
-understated more for the other bots (`--bot all` prints this caveat). It finds two excluded-only
-PRs in our rows, harshanandak/forge#98 (Codex) and
-Heretek-AI/claude-4-opencode#4 (Qodo).
+understated more for the other bots (the script prints this caveat for `--bot all` and for any bot
+other than CodeRabbit). It finds two excluded-only PRs in our rows, harshanandak/forge#98 (Codex)
+and Heretek-AI/claude-4-opencode#4 (Qodo).
 
 **Offline dataset (`offline/results/benchmark_data.json`), 20 PRs x 8 tools.** Each tool's
 published comments; golden comments stand in for the extracted actions (commit diffs are not

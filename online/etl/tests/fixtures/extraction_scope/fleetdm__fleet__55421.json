@@ -41,7 +41,8 @@
   {
    "kind": "change_overview",
    "quote": "Adds the generated HTML email template for Fleet’s October 2026 newsletter.",
-   "pattern": null
+   "pattern": null,
+   "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
   },
   {
    "kind": "rating",
@@ -56,7 +57,7 @@
   {
    "kind": "description_check",
    "quote": "The PR description is freeform and omits the required template sections",
-   "pattern": null,
+   "pattern": "(?i)PR description|template section|AI section",
    "not_asserted": "known miss: the prompt says a description-template check is a gate result on any surface, but gpt-5.2-2025-12-11 still extracts this inline one (4 of 4 draws)"
   }
  ],

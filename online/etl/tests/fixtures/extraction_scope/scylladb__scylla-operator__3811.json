@@ -39,17 +39,18 @@
   {
    "kind": "description_check",
    "quote": "Description is only 'Backport of `#3793`.'",
-   "pattern": "(?i)(PR|pull request) description|description is only|template"
+   "pattern": "(?i)(PR|pull request) description|description is only|template section"
   },
   {
    "kind": "change_overview",
    "quote": "End-to-end test runs can now use custom ScyllaDB, Manager, and Manager Agent image references",
-   "pattern": null
+   "pattern": null,
+   "not_asserted": "overview sentence: no text pattern separates it from findings about the same code"
   },
   {
    "kind": "rating",
    "quote": "<strong>Priority:  Normal</strong>",
-   "pattern": "(?i)\\bpriority\\b"
+   "pattern": "(?i)priority:?\\s+(normal|low|high)|review priority"
   },
   {
    "kind": "run_status",

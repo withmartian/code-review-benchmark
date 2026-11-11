@@ -49,7 +49,8 @@
   {
    "kind": "change_overview",
    "quote": "Token-amount fields without a token reference are now emitted with an unknown-token adjustment",
-   "pattern": null
+   "pattern": null,
+   "not_asserted": "overview sentence: no text pattern separates it from findings about the same code"
   },
   {
    "kind": "rating",

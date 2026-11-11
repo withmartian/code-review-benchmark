@@ -43,7 +43,8 @@
   {
    "kind": "change_overview",
    "quote": "Preserve source timestamp provenance in Codex replay and accounting",
-   "pattern": null
+   "pattern": null,
+   "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
   },
   {
    "kind": "rating",
@@ -88,7 +89,7 @@
    "kind": "body_finding",
    "path": null,
    "quote": "Linux/macOS refreshes re-hash whole rollouts",
-   "pattern": null,
+   "pattern": "(?i)re-?hash|HashThrough|cachedPrefix|prefix",
    "not_asserted": "struck through and marked dismissed in the bot's own comment; whether a dismissed finding still counts is outside this PR"
   }
  ]

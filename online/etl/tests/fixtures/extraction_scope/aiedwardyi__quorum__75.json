@@ -40,7 +40,8 @@
   {
    "kind": "change_overview",
    "quote": "In think-hard mode, fires one `/api/search` call in parallel with the panel",
-   "pattern": null
+   "pattern": null,
+   "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
   },
   {
    "kind": "praise",

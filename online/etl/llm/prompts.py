@@ -51,7 +51,9 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   coverage threshold is met is a gate result, wherever it appears. A comment on a specific
   location in the changed code (a named function or file and line) that asks for documentation
   of that code, for a reason other than meeting a threshold, is a documentation finding: extract
-  it.
+  it. Only aggregate results (a status, or a metric against a threshold) are excluded: a
+  violation of a repository rule or guideline reported at a specific location in the changed
+  code is a finding.
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, such as "generate docstrings" or "generate unit tests".

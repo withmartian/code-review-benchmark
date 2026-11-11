@@ -34,7 +34,7 @@
   {
    "kind": "run_status",
    "quote": "| 📝 **Code Review** | ✅ **Completed**",
-   "pattern": "(?i)review (status|completed)|\\bcompleted\\b"
+   "pattern": "(?i)review (status|completed)|code review.{0,20}completed"
   },
   {
    "kind": "product_tip",

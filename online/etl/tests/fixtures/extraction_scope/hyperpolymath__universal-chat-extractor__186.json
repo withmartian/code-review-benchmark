@@ -49,7 +49,8 @@
   {
    "kind": "change_overview",
    "quote": "The Pages workflow increases the build timeout, updates checkout and Cabal cache settings",
-   "pattern": null
+   "pattern": null,
+   "not_asserted": "overview sentence: no text pattern separates it from findings about the same code"
   },
   {
    "kind": "rating",

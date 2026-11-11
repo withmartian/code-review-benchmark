@@ -1,6 +1,8 @@
-"""Tests for llm/prompts.py: the extraction prompt renders and carries its scope rules.
+"""Change detectors for llm/prompts.py: each test pins the wording of one extraction-scope rule.
 
-Rule text is compared with whitespace collapsed, so rewrapping the prompt does not break a test.
+They fail whenever that rule's text changes, on purpose: a reviewer then checks that the change is
+intended and updates the pinned sentence. Whitespace is collapsed, so rewrapping alone does not fail.
+Model behavior is measured separately (test_extraction_scope_live.py and prompt_eval/).
 """
 
 from __future__ import annotations
@@ -100,3 +102,12 @@ def test_findings_inside_collapsed_sections_are_still_findings() -> None:
 
     assert "These rules depend on what a piece of text is, not on where it sits." in rules
     assert "A concrete finding inside a collapsed or nested section" in rules
+
+
+def test_located_rule_violations_are_findings_only_aggregate_results_are_excluded() -> None:
+    rules = _rules()
+
+    assert (
+        "Only aggregate results (a status, or a metric against a threshold) are excluded: a violation of a "
+        "repository rule or guideline reported at a specific location in the changed code is a finding." in rules
+    )

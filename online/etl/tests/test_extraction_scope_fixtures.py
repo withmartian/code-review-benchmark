@@ -44,6 +44,7 @@ RULE_FOR_KIND = {
     "tool_finding": "Tool results the bot presents as its own findings",
     "praise": "Skip generic praise",
     "check_finding": "Extract a finding from a check result only when it names a concrete problem in the changed code",
+    "located_rule_violation": "a violation of a repository rule or guideline reported at a specific location in the changed code is a finding",
 }
 
 
@@ -116,7 +117,7 @@ def test_live_check_reports_a_dropped_check_finding_when_only_inline_findings_ar
     inline_bodies = [e["data"] for e in fx["events"] if e["event_type"] == "review_comment"]
     only_inline = [{"description": d["body"], "file_path": d["path"]} for d in inline_bodies]
 
-    problems = check_labels(fx, only_inline)
+    problems = check_labels(fx, only_inline, include_unasserted=True)
 
     assert any(p.startswith("finding not extracted (check_finding)") for p in problems)
     assert not any("(inline)" in p for p in problems)
@@ -142,3 +143,10 @@ def test_label_patterns_match_their_own_quote_and_no_other_finding(path: Path) -
         for other in fx["findings"]:
             if other is not label:
                 assert not re.search(label["pattern"], _other_finding_text(fx, other)), (label["quote"], other["quote"])
+
+
+@pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.stem)
+def test_every_label_has_a_pattern_or_a_reason_it_is_not_asserted(path: Path) -> None:
+    fx = _load(path)
+    for label in fx["findings"] + fx["non_findings"]:
+        assert label.get("pattern") or label.get("not_asserted"), label["quote"]

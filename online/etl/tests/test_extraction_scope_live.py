@@ -7,8 +7,8 @@ Makes one paid LLM call per fixture, so it is skipped unless all of these are se
 
 A labelled finding passes when some extracted suggestion matches its ``pattern`` (and its file, when
 the label names one). A labelled non-finding passes when no extracted suggestion matches its
-``pattern``. Labels whose pattern is null are not checked here (a ``not_asserted`` field says why,
-including one known miss of this prompt). One draw at temperature 1.0 can
+``pattern``. Labels with a ``not_asserted`` field are not checked here; the field says why
+(including one known miss of this prompt). One draw at temperature 1.0 can
 flip a borderline item, so a single failure is a prompt to look, not proof of a regression.
 """
 
@@ -43,11 +43,18 @@ def _same_file(a: str | None, b: str) -> bool:
     return bool(a) and (a == b or a.endswith("/" + b) or b.endswith("/" + a))
 
 
-def check_labels(fx: dict, suggestions: list[dict]) -> list[str]:
-    """Return one message per label the suggestions violate."""
+def _checked(label: dict, include_unasserted: bool) -> bool:
+    return bool(label.get("pattern")) and (include_unasserted or not label.get("not_asserted"))
+
+
+def check_labels(fx: dict, suggestions: list[dict], include_unasserted: bool = False) -> list[str]:
+    """Return one message per label the suggestions violate.
+
+    Labels with a ``not_asserted`` reason are skipped unless include_unasserted is set.
+    """
     problems = []
     for label in fx["findings"]:
-        if not label.get("pattern"):
+        if not _checked(label, include_unasserted):
             continue
         hit = any(
             re.search(label["pattern"], s.get("description") or "")
@@ -57,7 +64,7 @@ def check_labels(fx: dict, suggestions: list[dict]) -> list[str]:
         if not hit:
             problems.append(f"finding not extracted ({label['kind']}): {label['quote']}")
     for label in fx["non_findings"]:
-        if not label.get("pattern"):
+        if not _checked(label, include_unasserted):
             continue
         for s in suggestions:
             if re.search(label["pattern"], s.get("description") or ""):

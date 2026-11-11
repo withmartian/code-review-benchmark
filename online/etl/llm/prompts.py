@@ -70,8 +70,8 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   about the content of a file the pull request changes is about the code, even when that file is
   documentation or configuration: extract it.
 - Context the bot lists as input to its review, such as quoted linter or static-analysis output,
-  code guidelines, or path instructions (for example a section listing the context the review
-  used). Tool output the bot lists as context is not a finding: do not extract findings from it.
+  code guidelines, or path instructions (for example under a heading like "context used"). Tool
+  output the bot lists as context is not a finding: do not extract findings from it.
   Tool output quoted inside one of the bot's comments (for example a collapsed tool-results
   section under an inline comment) is supporting context for that comment, not a separate
   finding. Tool results the bot presents as its own findings (in its own comment text, outside

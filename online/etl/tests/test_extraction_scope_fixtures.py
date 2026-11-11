@@ -1,15 +1,15 @@
 """Extraction-scope checks on trimmed real review bodies.
 
-Each fixture under tests/fixtures/extraction_scope/ holds one public github.com PR's bot events
-(walkthrough issue comment, first review body, up to two inline comments) in the pipeline's event shape,
-trimmed by removing hidden HTML comments and whole sections (image markup, static-analysis transcripts, agent prompts,
-suggested code, file lists, table rows past the second). Labels are verbatim quotes:
-``non_findings`` is PR-level content the prompt says not to extract, ``findings`` are review
-findings it must keep, including ones inside collapsed sections.
+Each fixture under tests/fixtures/extraction_scope/ holds one public github.com PR's events for one
+bot (its issue comments, a review body, a few inline comments) in the pipeline's event shape,
+trimmed by removing hidden HTML comments and whole sections (image markup, static-analysis
+transcripts, agent prompts, suggested code, file lists, table rows past the second). Labels are
+verbatim quotes: ``non_findings`` is PR-level content the prompt says not to extract,
+``findings`` are review findings it must keep, including ones inside collapsed sections. Each
+label's optional ``pattern`` is used by the opt-in model check in test_extraction_scope_live.py.
 
 These tests are deterministic: they check that both kinds of text reach the extraction prompt and
-that the prompt states a rule for every labelled kind. Whether the model follows the rules needs
-a model call and is measured outside the unit suite.
+that the prompt states a rule for every labelled kind.
 """
 
 from __future__ import annotations
@@ -90,3 +90,18 @@ def test_prompt_states_a_rule_for_every_labelled_kind_before_the_inputs(path: Pa
 
     for item in fx["findings"] + fx["non_findings"]:
         assert RULE_FOR_KIND[item["kind"]] in rules, item["kind"]
+
+
+def test_live_check_flags_a_coverage_item_and_a_missing_finding() -> None:
+    from tests.test_extraction_scope_live import check_labels
+
+    fx = _load(next(p for p in FIXTURES if "trezor" in p.stem))
+    kept = [
+        {"description": label["quote"], "file_path": label["path"]} for label in fx["findings"] if label.get("pattern")
+    ]
+    assert check_labels(fx, kept) == []
+
+    coverage = {"description": "Docstring coverage is 25% vs the required 80%", "file_path": None}
+    problems = check_labels(fx, [*kept[1:], coverage])
+    assert any(p.startswith("non-finding extracted (coverage_check)") for p in problems)
+    assert any(p.startswith("finding not extracted (inline)") for p in problems)

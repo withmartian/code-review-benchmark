@@ -168,11 +168,17 @@ def paired_ci(pairs: list[tuple[dict, dict]], stat, n: int = 2000, seed: int = 7
     return vals[int(0.025 * len(vals))], vals[int(0.975 * len(vals)) - 1]
 
 
+# Every delta is against this arm; run() names arms "<baseline|candidate> draw <n>".
+REFERENCE_ARM = "baseline draw 1"
+
+
 def report(rows: list[dict]) -> str:
     """Markdown table per bot from --out rows (the fingerprint header line is skipped).
 
-    Each arm's columns use every PR scored in that arm ("PRs scored"). Deltas against the
-    baseline's first draw are paired: they use only the PRs scored in both arms ("paired PRs").
+    Each arm's columns use every PR scored in that arm ("PRs scored"). Deltas are always against
+    REFERENCE_ARM (the baseline's first draw) and paired: they use only the PRs scored in both arms
+    ("paired PRs"). When the reference has no scored PRs for a bot, deltas read "unavailable" with
+    the reason; another arm is never substituted.
     """
     rows = [r for r in rows if "arm" in r]
     by: dict[tuple[str, str], dict[str, dict]] = {}
@@ -181,12 +187,16 @@ def report(rows: list[dict]) -> str:
     arms = sorted({r["arm"] for r in rows}, key=lambda a: (not a.startswith("baseline"), a))
     if not arms:
         return ""
-    base = arms[0]
+    base = REFERENCE_ARM
     fmt = lambda v: "n/a" if v is None else f"{v * 100:.1f}"  # noqa: E731
     out = []
     for bot in sorted({b for b, _ in by}):
         keys = [k for k in by if k[0] == bot]
         out.append(f"\n### {bot}\n")
+        if not any(base in by[k] for k in keys):
+            out.append(
+                f"No PR has a scored {base} row for this bot (every job failed or none ran): deltas unavailable.\n"
+            )
         out.append(
             "| arm | PRs scored | suggestions/PR | matched/PR | P | R | paired PRs "
             "| dP vs baseline draw 1 | dR vs baseline draw 1 | invalid-id matches |"
@@ -204,6 +214,8 @@ def report(rows: list[dict]) -> str:
             if a != base:
                 pairs = [(by[k][base], by[k][a]) for k in keys if base in by[k] and a in by[k]]
                 n_pairs = str(len(pairs))
+                if not pairs:
+                    cells = [f"unavailable: no PR scored in both {base} and this arm"] * 2
                 for i, f in enumerate((lambda x: leaderboard(x)[0], lambda x: leaderboard(x)[1])):
                     if not pairs:
                         break

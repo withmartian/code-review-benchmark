@@ -267,3 +267,26 @@ def test_every_bot_in_the_packaged_pr_list_resolves_to_a_tracked_bot() -> None:
     assert {bot for bot, _ in pairs} <= tracked
     # Copilot is listed under its reviewer account but stored as "Copilot": both resolve to one name
     assert is_selected("Copilot", next(u for b, u in pairs if b == "copilot"), urls, pairs)
+
+
+def test_deltas_never_fall_back_to_another_arm_when_baseline_draw_1_has_no_rows() -> None:
+    def row(arm: str, i: int, p: float) -> dict:
+        return {
+            "arm": arm,
+            "bot": "b[bot]",
+            "pr_url": f"https://github.com/o/r/pull/{i}",
+            "total_suggestions": 4,
+            "matched_suggestions": int(4 * p),
+            "precision": p,
+            "recall": 0.5,
+        }
+
+    # every baseline draw 1 job failed; draw 2 and the candidate succeeded
+    rows = [row("baseline draw 2", i, 0.5) for i in range(10)] + [row("candidate draw 1", i, 0.75) for i in range(10)]
+    table = report(rows)
+
+    assert "No PR has a scored baseline draw 1 row for this bot" in table
+    assert "+25.0" not in table
+    unavailable = "unavailable: no PR scored in both baseline draw 1 and this arm"
+    assert f"| candidate draw 1 | 10 | 4.00 | 3.00 | 75.0 | 50.0 | 0 | {unavailable} | {unavailable} | 0 |" in table
+    assert f"| baseline draw 2 | 10 | 4.00 | 2.00 | 50.0 | 50.0 | 0 | {unavailable} | {unavailable} | 0 |" in table

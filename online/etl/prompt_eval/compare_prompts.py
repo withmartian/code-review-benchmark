@@ -13,11 +13,13 @@ extraction prompts, the matching prompt, the model configuration and every input
 a rerun resumes that file only when the fingerprint matches and otherwise refuses it, so rows from
 a different prompt, model or input set are never mixed in. With --pr-list, a CSV that has a bot
 column selects (bot, pr_url) pairs; one with only pr_url selects every bot's analysis of the PR.
+Without --pr-list the script compares every analyzed PR in the DB, so it asks for --all-analyzed
+(cap it with --limit-per-bot).
 extraction_scope_prs.csv lists the public PRs of the measurement made when the non-finding rules
 were added, and extraction_scope_results.jsonl holds that measurement's per-PR metrics (bot, arm,
 suggestion and action counts, precision, recall; no review text).
 
-    uv run python -m prompt_eval.compare_prompts --dry-run
+    uv run python -m prompt_eval.compare_prompts --all-analyzed --limit-per-bot 50 --dry-run
     uv run python -m prompt_eval.compare_prompts \\
         --pr-list prompt_eval/extraction_scope_prs.csv --draws 2 --out compare.jsonl
 """
@@ -397,7 +399,7 @@ async def run_jobs(
     return failures
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument(
         "--baseline-ref",
@@ -407,7 +409,13 @@ def main() -> None:
     ap.add_argument("--baseline-file", help="a prompts.py to read the baseline prompt from, instead of --baseline-ref")
     ap.add_argument(
         "--pr-list",
-        help="CSV with a pr_url column (and optionally bot: then only those pairs); default: every analyzed PR",
+        help="CSV with a pr_url column (and optionally bot: then only those pairs)",
+    )
+    ap.add_argument(
+        "--all-analyzed",
+        action="store_true",
+        help="without --pr-list, compare every analyzed PR in the DB (each one costs 4 LLM calls per draw; "
+        "cap it with --limit-per-bot)",
     )
     ap.add_argument("--bots", help="comma-separated bot usernames; default: all")
     ap.add_argument("--limit-per-bot", type=int)
@@ -416,7 +424,9 @@ def main() -> None:
     ap.add_argument("--out", default="compare_prompts.jsonl")
     ap.add_argument("--report-only", action="store_true", help="print the table from --out and exit")
     ap.add_argument("--dry-run", action="store_true")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
+    if not (args.report_only or args.pr_list or args.all_analyzed):
+        ap.error("select PRs with --pr-list, or pass --all-analyzed to compare every analyzed PR in the DB")
     if args.report_only:
         print(report([json.loads(x) for x in Path(args.out).read_text().splitlines()]))
         return

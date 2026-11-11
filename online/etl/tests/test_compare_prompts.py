@@ -371,3 +371,14 @@ async def test_score_arm_with_no_actions_defines_precision_but_not_recall() -> N
     assert res["total_suggestions"] == 2
     assert res["precision"] == 0.0
     assert res["recall"] is None
+
+
+def test_cli_requires_a_pr_list_or_an_explicit_all_analyzed(capsys) -> None:
+    import pytest
+
+    from prompt_eval.compare_prompts import main
+
+    with pytest.raises(SystemExit) as exc:
+        main(["--dry-run"])
+    assert exc.value.code == 2
+    assert "--pr-list, or pass --all-analyzed" in capsys.readouterr().err

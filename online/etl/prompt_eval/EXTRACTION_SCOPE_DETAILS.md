@@ -217,13 +217,31 @@ than measuring it.
 - Copilot's description remark on fleetdm/fleet#55421: extracted in every draw of the scoped-intro
   prompts.
 
+### Finding labels that are not asserted
+
+Two finding labels stay unasserted because neither the head nor the current upstream prompt
+(`e616e849`) extracts them in a majority of draws (6 draws each, every label checked):
+
+- CodeRabbit's rating-explanation finding on pcsx-redux/pcsx-redux#2544 (a concrete problem named
+  only in the merge-risk explanation, which the rule says to extract): 0 of 6 on the head, 1 of 6
+  with the current upstream prompt (earlier: 1 of 5 and 0 of 5).
+- cubic's linked-issue table row on Fooftilly/local-search-mcp#27 that names a concrete problem:
+  0 of 6 on the head and 0 of 6 with the current upstream prompt (earlier: 0 of 3 and 0 of 4).
+
+The same pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).
+
 ## Status notes and the coverage-only templates
 
 The type patterns behind `items_*` were written on CodeRabbit's text, so the six other bots'
-unlocated items were read by hand and their run-status notes typed `items_run_status`: Codex "did
-not complete" and "usage limits reached", Qodo "reviews are paused", Claude "could not confirm CI"
-or "could not run the checks", Greptile "no user flows identified". There are 5 in the current
-prompt's first draw and 6 in its second; the head extracts 3 (two Claude notes, one Greptile).
+unlocated items were read by hand and their run-status notes typed `items_run_status`: Codex
+review-incomplete and usage-limit notes, Qodo paused-review notes, Claude notes that the bot could
+not verify CI or run the checks, and a Greptile note that no user flows were identified. There are 5
+in the current prompt's first draw and 6 in its second; the head extracts 3. So the dropout lands
+unevenly: the head drops the Codex and Qodo notes (harshanandak/forge#98 and
+Heretek-AI/claude-4-opencode#4 leave the means), but still extracts the two Claude notes
+(RiGuJeCaAb/agente-editais#18, shakacode/react-on-rails-demo-flagship#91) and the Greptile one
+(ever-co/ever-gauzy#11009), as the current prompt does, so those PRs stay in; on agente-editais#18
+the note is the PR's only item.
 `coverage_only.py`'s whole-text templates catch 2 and 0 of them, and 76 of 119 and 61 of 112 of
 CodeRabbit's unlocated docstring-coverage items in the two current-prompt draws, so its f is a
 lower bound. It finds two excluded-only PRs in our rows, harshanandak/forge#98 (Codex) and

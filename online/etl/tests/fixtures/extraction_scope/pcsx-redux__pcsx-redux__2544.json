@@ -93,7 +93,7 @@
    "path": null,
    "quote": "bound the frame waits so an emulator regression fails the tests rather than leaving them suspended.",
    "pattern": "(?i)frame waits?|unbounded wait|tests? (can )?(hang|stay suspended|be left suspended)",
-   "not_asserted": "a concrete problem named only in a rating's explanation, which the rule says to extract; gpt-5.2-2025-12-11 extracts it in 1 of 5 draws with the current prompt and 0 of 5 with this one"
+   "not_asserted": "a concrete problem named only in a rating's explanation, which the rule says to extract; gpt-5.2-2025-12-11 extracts it in 1 of 6 draws with the current upstream prompt and 0 of 6 with this one"
   }
  ]
 }

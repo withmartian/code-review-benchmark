@@ -50,7 +50,7 @@
    "path": null,
    "quote": "The hourly count includes only currently pending rows, so deciding a row removes it from the rate-limit count.",
    "pattern": "(?i)only (currently )?pending|pending rows|decid\\w* (a |the )?(row|request|host)|from the (rate[- ]limit |hourly )?count",
-   "not_asserted": "a linked-issue check row that names a concrete problem, a finding under the general rules; gpt-5.2-2025-12-11 extracts it with neither the current prompt (0 of 3 draws) nor this one (0 of 4)"
+   "not_asserted": "a linked-issue check row that names a concrete problem, a finding under the general rules; gpt-5.2-2025-12-11 extracts it with neither the current upstream prompt (0 of 6 draws) nor this one (0 of 6)"
   },
   {
    "kind": "inline",

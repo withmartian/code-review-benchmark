@@ -197,6 +197,10 @@ quoted tool output, on scylla the description-check row:
 | 2. wording 1 + ", including in a summary that lists its findings: extract it." (**chosen**) | 6/6 | 6/6 | 5/6 | 1/6 |
 | 3. wording 1 + ", wherever it is listed and whatever status or counts the bot shows beside it: extract it." | 6/6 | 4/6 | 5/6 | 0/6 |
 
+Wording 2 was chosen as the one with the most clean draws over the four fixtures: 18 of 24, against
+17 and 15. Its two CodeRabbit differences from the others (the scylla row 5 vs 6 of 6, zizmor kept
+out 6 vs 4 of 6) are within 6-draw noise.
+
 The first live run on wording 2 passed 10 of 12 fixtures (the pcsx-redux and local-search-mcp
 findings were not yet asserted). It failed the scylla row in its one draw and the TajsTokens
 dismissed finding. That finding is also missed by the current upstream prompt (`e616e849`: 0 of 6
@@ -221,7 +225,8 @@ than measuring it.
 
 Rule: a finding label stays asserted whatever its pass rate, and its failures are disclosed here.
 Only the 10 overview sentences carry no pattern (no text pattern separates them from findings on
-the same code), so the live run does not check overviews. With every finding asserted, the live run
+the same code), plus one neutral linked-issue row that names no problem
+(Fooftilly/local-search-mcp#27), so the live run does not check overviews. With every finding asserted, the live run
 on the head (one draw per fixture, after the wording draws) passes 9 of 12 and fails exactly these
 three, each counted over the targeted draws plus the live draws:
 

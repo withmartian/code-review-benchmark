@@ -4,11 +4,11 @@ Reads extraction_scope_results.jsonl (no LLM call, nothing written) and, per bot
 on the leaderboard means (precision and recall averaged over the PRs that have both, as the API's
 compute.rs does):
 
-- dropouts and entries: PRs whose precision is defined in one arm and undefined in the other, with
-  the shift their leaving or entering causes in that arm's means;
+- the change of each mean split exactly into PRs leaving, PRs entering and PRs in both arms (see
+  bot_moves), with each leaving or entering PR's part;
 - the PRs whose own value changes and that move each mean most, among those scored in both arms,
-  with their contribution (value in the second arm / its PR count minus value in the first / its
-  PR count) and values;
+  with their contribution (the change in their value over the number of PRs in both arms) and
+  values;
 - for every PR listed, its matched suggestions in each arm of the file, so a flip can be read
   against the other draws.
 
@@ -34,34 +34,41 @@ def _both(rows: dict[str, dict]) -> dict[str, dict]:
 
 
 def bot_moves(by_arm: dict[str, dict[str, dict]], base: str, arm: str, top: int = 3) -> dict:
-    """The moves of one bot from `base` to `arm`. by_arm: {arm: {pr_url: row}}."""
+    """The moves of one bot from `base` to `arm`, as an exact additive decomposition.
+
+    With A and B the PRs that have both values in each arm and R = A & B the retained ones, each mean's
+    change is split as (mean over R in the base - base mean), the cohort effect of the PRs that leave,
+    computed on base values; plus the mean change over R; plus (arm mean - mean over R in the arm),
+    the cohort effect of the PRs that enter. A leaving PR i contributes (base mean over R - a_i) / |A|,
+    an entering PR (b_i - arm mean over R) / |B|, a retained PR (b_i - a_i) / |R|; the parts sum to the
+    total. by_arm: {arm: {pr_url: row}}."""
     a, b = _both(by_arm[base]), _both(by_arm[arm])
-    out: dict = {"n": (len(a), len(b))}
+    kept = sorted(set(a) & set(b))
+    out: dict = {"n": (len(a), len(b), len(kept)), "dropouts": [], "entries": []}
+    for url in sorted(set(a) - set(b)):
+        out["dropouts"].append({"pr_url": url, "base": a[url], "arm": by_arm[arm].get(url), "effect": {}})
+    for url in sorted(set(b) - set(a)):
+        out["entries"].append({"pr_url": url, "base": by_arm[base].get(url), "arm": b[url], "effect": {}})
     for key in ("precision", "recall"):
         ma, mb = _mean([r[key] for r in a.values()]), _mean([r[key] for r in b.values()])
-        out[key] = (ma, mb)
-    dropouts, entries = [], []
-    for url in sorted(set(by_arm[base]) | set(by_arm[arm])):
-        ra, rb = by_arm[base].get(url), by_arm[arm].get(url)
-        if ra is None or rb is None:
-            continue
-        if url in a and rb["precision"] is None:
-            rest = [r for u, r in a.items() if u != url]
-            shift = {k: _mean([r[k] for r in rest]) - out[k][0] for k in ("precision", "recall")}
-            dropouts.append({"pr_url": url, "base": ra, "arm": rb, "shift": shift})
-        if url in b and ra["precision"] is None:
-            rest = [r for u, r in b.items() if u != url]
-            shift = {k: out[k][1] - _mean([r[k] for r in rest]) for k in ("precision", "recall")}
-            entries.append({"pr_url": url, "base": ra, "arm": rb, "shift": shift})
-    out["dropouts"], out["entries"] = dropouts, entries
-    common = sorted(set(a) & set(b))
-    for key in ("precision", "recall"):
-        # PRs whose own value changed; a changed PR count moves the others too, which the dropout and
-        # entry shifts above account for
-        contrib = [(b[u][key] / len(b) - a[u][key] / len(a), u) for u in common if b[u][key] != a[u][key]]
-        contrib.sort(key=lambda c: (-abs(c[0]), c[1]))
+        ka = _mean([a[u][key] for u in kept])
+        kb = _mean([b[u][key] for u in kept])
+        for d in out["dropouts"]:
+            d["effect"][key] = ((ka if ka is not None else 0.0) - d["base"][key]) / len(a)
+        for e in out["entries"]:
+            e["effect"][key] = (e["arm"][key] - (kb if kb is not None else 0.0)) / len(b)
+        retained = [((b[u][key] - a[u][key]) / len(kept), u) for u in kept if b[u][key] != a[u][key]]
+        retained.sort(key=lambda c: (-abs(c[0]), c[1]))
+        out[key] = {
+            "base": ma,
+            "arm": mb,
+            "total": (mb or 0.0) - (ma or 0.0),
+            "dropouts": sum(d["effect"][key] for d in out["dropouts"]),
+            "entries": sum(e["effect"][key] for e in out["entries"]),
+            "retained": sum(c for c, _ in retained),
+        }
         out[f"top_{key}"] = [
-            {"pr_url": u, "contribution": c, "base": a[u][key], "arm": b[u][key]} for c, u in contrib[:top]
+            {"pr_url": u, "contribution": c, "base": a[u][key], "arm": b[u][key]} for c, u in retained[:top]
         ]
     return out
 
@@ -87,17 +94,21 @@ def _matched(by_arm: dict[str, dict[str, dict]], url: str) -> str:
 
 def render(bot: str, by_arm: dict[str, dict[str, dict]], base: str, arm: str, top: int = 3) -> str:
     m = bot_moves(by_arm, base, arm, top)
-    (pa, pb), (ra, rb) = m["precision"], m["recall"]
-    lines = [
-        f"**{bot}**: precision {_v(pa)} -> {_v(pb)} ({100 * (pb - pa):+.1f}), recall {_v(ra)} -> {_v(rb)} "
-        f"({100 * (rb - ra):+.1f}), PRs with both {m['n'][0]} -> {m['n'][1]}"
-    ]
-    for label, items in (("drops out", m["dropouts"]), ("enters", m["entries"])):
+    lines = [f"**{bot}**: PRs with both {m['n'][0]} -> {m['n'][1]} ({m['n'][2]} in both arms)"]
+    for key in ("precision", "recall"):
+        k = m[key]
+        lines.append(
+            f"- {key} {_v(k['base'])} -> {_v(k['arm'])} ({100 * k['total']:+.1f}) = PRs leaving "
+            f"{100 * k['dropouts']:+.1f} + PRs entering {100 * k['entries']:+.1f} + PRs in both {100 * k['retained']:+.1f}"
+        )
+    for label, items in (("leaves", m["dropouts"]), ("enters", m["entries"])):
         for d in items:
+            before = d["base"] or {"precision": None, "recall": None}
+            after = d["arm"] or {"precision": None, "recall": None}
             lines.append(
-                f"- {_pr(d['pr_url'])} {label}: precision {_v(d['base']['precision'])} -> {_v(d['arm']['precision'])}, "
-                f"recall {_v(d['base']['recall'])} -> {_v(d['arm']['recall'])}; shifts the mean precision "
-                f"{100 * d['shift']['precision']:+.1f} and recall {100 * d['shift']['recall']:+.1f}"
+                f"- {_pr(d['pr_url'])} {label}: precision {_v(before['precision'])} -> {_v(after['precision'])}, "
+                f"recall {_v(before['recall'])} -> {_v(after['recall'])}; effect on precision "
+                f"{100 * d['effect']['precision']:+.1f}, on recall {100 * d['effect']['recall']:+.1f}"
             )
     for key in ("precision", "recall"):
         for t in m[f"top_{key}"]:

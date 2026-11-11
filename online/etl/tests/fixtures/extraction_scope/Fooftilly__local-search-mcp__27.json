@@ -1,0 +1,72 @@
+{
+ "source": "https://github.com/Fooftilly/local-search-mcp/pull/27",
+ "bot_username": "cubic-dev-ai[bot]",
+ "events": [
+  {
+   "actor": "cubic-dev-ai[bot]",
+   "event_type": "review",
+   "timestamp": "2026-10-17T16:44:48Z",
+   "data": {
+    "state": "commented",
+    "body": "## cubic analysis\n\n\n**All reported issues were addressed** across 6 files\n\n\n## Linked issue analysis\n\n<table>\n  <thead>\n    <tr>\n      <th width=\"100\" align=\"center\">Status</th>\n      <th width=\"300\">Acceptance criteria</th>\n      <th width=\"300\">Notes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td width=\"100\" align=\"center\"><strong>✅</strong></td>\n      <td width=\"300\">Bound pending requests globally and per registrable site</td>\n      <td width=\"300\">request checks both pending counts inside a write transaction before inserting a new hostname.</td>\n    </tr>\n    <tr>\n      <td width=\"100\" align=\"center\"><strong>⚠️</strong></td>\n      <td width=\"300\">Rate-limit new hosts per site over a rolling hour</td>\n      <td width=\"300\">The hourly count includes only currently pending rows, so deciding a row removes it from the rate-limit count.</td>\n    </tr>\n    <tr>\n      <td width=\"100\" align=\"center\"><strong>✅</strong></td>\n      <td width=\"300\">Update repeat requests without consuming another queue slot</td>\n      <td width=\"300\">The test confirms a repeat updates request statistics while leaving the pending count unchanged.</td>\n    </tr>\n    <tr>\n      <td width=\"100\" align=\"center\"><strong>✅</strong></td>\n      <td width=\"300\">Keep saved allow and deny rules visible during a pending flood</td>\n      <td width=\"300\">The dashboard queries decided rules separately, and the test verifies both remain visible with 2,105 pending rows.</td>\n    </tr>\n  </tbody>\n</table>\n\n<sub>Reply with feedback, questions, or to request a fix.<br /><br />Turn on auto-fix | Re-trigger cubic</sub>\n"
+   }
+  },
+  {
+   "actor": "cubic-dev-ai[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-17T16:44:48Z",
+   "data": {
+    "path": "README.md",
+    "line": 59,
+    "body": "P2: A queue-full hostname is not stored, so freeing a slot does not enqueue or unblock it by itself. Clarify that the caller must retry after capacity becomes available to put it in the queue for approval.\n"
+   }
+  },
+  {
+   "actor": "cubic-dev-ai[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-17T16:44:48Z",
+   "data": {
+    "path": "tests/test_policy.py",
+    "line": 464,
+    "body": "P2: This does not independently exercise the per-site cap: the hourly limit alone rejects the second hostname. Raise the hourly limit here (for example, to 5) so this assertion specifically verifies `MAX_PENDING_PER_SITE`.\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "run_status",
+   "quote": "**All reported issues were addressed** across 6 files",
+   "pattern": "(?i)all reported issues"
+  },
+  {
+   "kind": "description_check",
+   "quote": "Bound pending requests globally and per registrable site",
+   "pattern": null
+  },
+  {
+   "kind": "control",
+   "quote": "Turn on auto-fix | Re-trigger cubic",
+   "pattern": "(?i)auto-fix|re-trigger"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "check_finding",
+   "path": null,
+   "quote": "The hourly count includes only currently pending rows, so deciding a row removes it from the rate-limit count.",
+   "pattern": "(?i)hourly|rolling hour|rate[- ]limit"
+  },
+  {
+   "kind": "inline",
+   "path": "README.md",
+   "quote": "A queue-full hostname is not stored, so freeing a slot does not enqueue or unblock it by itself.",
+   "pattern": "(?i)queue|retry|slot"
+  },
+  {
+   "kind": "inline",
+   "path": "tests/test_policy.py",
+   "quote": "This does not independently exercise the per-site cap",
+   "pattern": "(?i)per-site|MAX_PENDING_PER_SITE|hourly limit"
+  }
+ ]
+}

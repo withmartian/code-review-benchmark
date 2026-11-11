@@ -42,6 +42,8 @@ RULE_FOR_KIND = {
     "collapsed_follow_up": "A concrete finding inside a collapsed or nested section",
     "rating_explanation": "that problem is a finding: extract it, even when no other comment states it.",
     "tool_finding": "Tool results the bot presents as its own findings",
+    "praise": "Skip generic praise",
+    "check_finding": "Extract a finding from a check result only when it names a concrete problem in the changed code",
 }
 
 

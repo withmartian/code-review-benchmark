@@ -1,0 +1,71 @@
+{
+ "source": "https://github.com/aiedwardyi/quorum/pull/75",
+ "bot_username": "claude[bot]",
+ "events": [
+  {
+   "actor": "claude[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-16T16:13:14Z",
+   "data": {
+    "path": "src/lib/web-sources.ts",
+    "line": 31,
+    "body": "URL length is uncapped here while `title` and `snippet` are bounded. A Perplexity result with a very long URL (e.g. 2 000-char query-string URL) will bloat the verdict prompt and waste tokens. Consider adding a cap, e.g.:\n\n\nor add an `export const MAX_SOURCE_URL = 500` constant alongside the others.\n"
+   }
+  },
+  {
+   "actor": "claude[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-16T16:13:16Z",
+   "data": {
+    "path": "src/lib/host-spend.ts",
+    "line": 26,
+    "body": "The arithmetic doesn't match: $5 / 1 000 = $0.005 = 0.5 ¢, not 1 ¢. The value of `1` is a deliberate conservative overestimate, but the comment implies it's derived directly from the list price. Suggest:\n"
+   }
+  },
+  {
+   "actor": "claude[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-10-16T16:13:36Z",
+   "data": {
+    "body": "## Review: feat: no-guess panel rule and web-checked think hard verdict\n\nOverall this is a clean, well-tested addition. The architecture (fire-and-forget search beside the panel, grace-window await, double-sanitize on client and server) is sound and the test suite is thorough. Three minor issues flagged inline; nothing blocking.\n\n### What the PR does\n- Adds a \"never guess exact names/codes\" line to the panelist system prompt (both modes/phases).\n- In think-hard mode, fires one `/api/search` call in parallel with the panel; the verdict receives those sources as context to cross-check drug names, codes, and criteria.\n- New `/api/search` route proxies Perplexity, gated and spend-tracked exactly like `/api/chat`.\n\n### Correctness / edge cases\n- `sanitizeSources` is called on both sides (client in `fetchSources`, server in `consensus/route.ts`) — defence-in-depth is intentional and fine.\n- `awaitSources` correctly clears the timer via `.finally()` regardless of which branch wins the race.\n- `searchQueryFor` blocks documents (`--- File:`) and oversized queries before touching the network — correct.\n- Fast-fallback path strips `sources` and `thinkHard` from the retry body — tested and correct.\n\n### Issues (inline)\n1. **`web-sources.ts:31`** — URL field is unbounded; a long query-string URL will bloat the verdict prompt. Add a `MAX_SOURCE_URL` cap.\n2. **`host-spend.ts:26`** — Comment says \"$5 per 1k requests\" but the constant is 1 ¢, not 0.5 ¢. The rounding-up is fine; just update the comment.\n3. **`useDebateEngine.ts:218`** — `fetchSources` has no `AbortSignal`, so the request outlives a user \"Stop\". The server-side 6 s timeout bounds the leak, but worth a note or wiring to the engine's cancel token.\n\n### Security\n- `javascript:` / `ftp:` / `file:` URLs are correctly rejected by `httpUrl`.\n- Perplexity error body is passed through `redactSecrets` before logging.\n- Prompt injection via source snippets is an inherent RAG risk; the 500-char snippet cap and \"may be incomplete or off-topic\" framing in the prompt are reasonable mitigations.\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "praise",
+   "quote": "Overall this is a clean, well-tested addition.",
+   "pattern": "(?i)clean, well-tested|well[- ]tested addition"
+  },
+  {
+   "kind": "change_overview",
+   "quote": "In think-hard mode, fires one `/api/search` call in parallel with the panel",
+   "pattern": null
+  },
+  {
+   "kind": "praise",
+   "quote": "`javascript:` / `ftp:` / `file:` URLs are correctly rejected by `httpUrl`.",
+   "pattern": "(?i)correctly rejected"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "inline",
+   "path": "src/lib/web-sources.ts",
+   "quote": "URL length is uncapped here while `title` and `snippet` are bounded.",
+   "pattern": "(?i)url"
+  },
+  {
+   "kind": "inline",
+   "path": "src/lib/host-spend.ts",
+   "quote": "The arithmetic doesn't match: $5 / 1 000 = $0.005 = 0.5 ¢, not 1 ¢.",
+   "pattern": "(?i)comment|arithmetic|0\\.5|cent|¢"
+  },
+  {
+   "kind": "body_finding",
+   "path": null,
+   "quote": "`fetchSources` has no `AbortSignal`, so the request outlives a user \"Stop\".",
+   "pattern": "(?i)abort|cancel|stop"
+  }
+ ]
+}

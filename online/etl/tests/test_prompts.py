@@ -156,7 +156,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
         "previous": None,
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "093c763af266cf9237d2f5a1482247225d14acf80fc4820760606ac85711ddaf",
+            "EXTRACT_BOT_SUGGESTIONS": "a2fcbe5111ff9a0362f936a18dad7652360bcf52d7851412d23e02381a770d7d",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

@@ -86,11 +86,10 @@
    "pattern": "(?i)legacy|duplicate|fingerprint|LegacyUnverified"
   },
   {
-   "kind": "body_finding",
+   "kind": "dismissed_finding",
    "path": null,
    "quote": "Linux/macOS refreshes re-hash whole rollouts",
-   "pattern": "(?i)re-?hash|HashThrough|cachedPrefix|prefix",
-   "not_asserted": "struck through and marked dismissed in the bot's own comment; whether a dismissed finding still counts is outside this PR"
+   "pattern": "(?i)re-?hash|HashThrough|cachedPrefix|prefix"
   }
  ]
 }

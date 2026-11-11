@@ -35,6 +35,8 @@ RULE_FOR_KIND = {
     "control": "Interactive controls and product text: checkboxes, buttons",
     "generation_offer": "offers to generate code for the author, for example to write docstrings or tests",
     "pr_remark": "is a finding, wherever it sits: extract it.",
+    "resolved_finding": "So is a finding the bot posted and later marked resolved, fixed, outdated or dismissed",
+    "dismissed_finding": "So is a finding the bot posted and later marked resolved, fixed, outdated or dismissed",
     "product_tip": "usage tips, links to dashboards",
     "tool_context": "Do not extract findings from these inputs",
     "nested_tool_output": "Tool output quoted as supporting context inside a comment",

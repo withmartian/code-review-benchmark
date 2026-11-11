@@ -86,7 +86,11 @@ still a finding, as each item says.
 
 These rules depend on what a piece of text is, not on where it sits. A concrete finding listed in
 a review-body section rather than as an inline comment, or inside a collapsed or nested section,
-is still a finding: extract it.
+is still a finding: extract it. So is a finding the bot posted and later marked resolved, fixed,
+outdated or dismissed, or struck through, whether in the comment that raised it or in a summary or
+tracking comment that lists the bot's findings: that marker is the finding's state, not review
+status or run metadata, and the skip for follow-up comments that merely confirm a fix covers only
+the confirmation, not the finding it refers to.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

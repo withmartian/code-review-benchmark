@@ -280,7 +280,13 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
     rows = [json.loads(line) for line in (here / "extraction_scope_results.jsonl").open()]
     pr_url = re.compile(r"^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/pull/[1-9]\d*$")
     metrics = {"total_suggestions", "matched_suggestions", "total_actions", "matched_actions", "precision", "recall"}
-    arms = {"current", "current, 2nd draw", "this PR", "this PR, 2nd draw"}
+    arms = {
+        "current",
+        "current, 2nd draw",
+        "earlier revision cf4460fb",
+        "earlier revision cf4460fb, 2nd draw",
+        "this PR at head, one draw",
+    }
 
     assert all(pr_url.match(r["pr_url"]) for r in rows)
     assert all(set(r) <= {"table", "bot", "pr_url", "arm"} | metrics for r in rows)
@@ -292,8 +298,8 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
     )
     per_bot = [r for r in rows if r["table"] == "per-bot"]
     assert {(r["bot"], r["pr_url"]) for r in per_bot} == listed
-    # every listed PR is scored in all four arms, once each
-    assert len(per_bot) == 4 * len(listed)
+    # every listed PR is scored in all five arms, once each
+    assert len(per_bot) == len(arms) * len(listed)
     assert {r["arm"] for r in per_bot} == arms
 
 

@@ -15,6 +15,7 @@ from db.repository import PRRepository
 from llm.client import LLMClient
 from llm.prompts import EXTRACT_BOT_SUGGESTIONS
 from llm.prompts import EXTRACT_HUMAN_ACTIONS
+from llm.prompts import EXTRACTION_PROMPT_VERSION
 from llm.prompts import JUDGE_MATCHING
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
@@ -289,6 +290,11 @@ def _format_actions(actions: list[dict]) -> str:
     return "\n".join(lines) if lines else "(no actions)"
 
 
+def stamped_model_name(model_name: str | None) -> str:
+    """The model_name stored with an analysis: the model plus the extraction prompt version."""
+    return f"{model_name or 'unknown'}+{EXTRACTION_PROMPT_VERSION}"
+
+
 async def analyze_single_pr(
     llm: LLMClient,
     repo: PRRepository,
@@ -296,8 +302,13 @@ async def analyze_single_pr(
     chatbot_username: str,
     model_name: str,
     beta: float = 1.0,
+    stored_actions: list[dict] | None = None,
 ) -> bool:
-    """Run 3-step LLM analysis on a single assembled PR. Returns True if successful."""
+    """Run 3-step LLM analysis on a single assembled PR. Returns True if successful.
+
+    With `stored_actions` (a re-analysis), step 2 is skipped and those human actions are reused, so
+    only the bot-suggestion extraction and the matching are re-run against a fixed ground truth.
+    """
     assembled = pr_row.get("assembled")
     if assembled is None:
         return False
@@ -360,17 +371,20 @@ async def analyze_single_pr(
     suggestions_resp = await llm.structured_completion(prompt1, BotSuggestionsResponse)
     suggestions = [s.model_dump() for s in suggestions_resp.suggestions]
 
-    # Step 2: Extract human actions
-    prompt2 = EXTRACT_HUMAN_ACTIONS.format(
-        bot_username=chatbot_username,
-        pr_title=pr_title,
-        pr_author=pr_author,
-        repo_name=repo_name,
-        post_review_commits=_format_commits_with_diffs(post_commits, details_by_sha),
-        post_review_activity=post_review_activity,
-    )
-    actions_resp = await llm.structured_completion(prompt2, HumanActionsResponse)
-    actions = [a.model_dump() for a in actions_resp.actions]
+    # Step 2: Extract human actions (a re-analysis reuses the stored ones)
+    if stored_actions is not None:
+        actions = stored_actions
+    else:
+        prompt2 = EXTRACT_HUMAN_ACTIONS.format(
+            bot_username=chatbot_username,
+            pr_title=pr_title,
+            pr_author=pr_author,
+            repo_name=repo_name,
+            post_review_commits=_format_commits_with_diffs(post_commits, details_by_sha),
+            post_review_activity=post_review_activity,
+        )
+        actions_resp = await llm.structured_completion(prompt2, HumanActionsResponse)
+        actions = [a.model_dump() for a in actions_resp.actions]
 
     # Step 3: Judge matching
     prompt3 = JUDGE_MATCHING.format(
@@ -414,7 +428,7 @@ async def analyze_single_pr(
         precision=precision,
         recall=recall,
         f_beta=f_beta,
-        model_name=model_name,
+        model_name=stamped_model_name(model_name),
     )
 
     logger.info(
@@ -447,18 +461,36 @@ async def analyze_prs(
     upper bound. `sort_by` controls priority: "reviewed" (bot_reviewed_at DESC) or
     "sweep" (assembled_at DESC, for catching late-discovered PRs).
     `max_per_day` caps PRs per bot_reviewed_at date (requires `since`).
-    `reanalyze` selects already-analyzed PRs in the window instead and re-runs all three steps;
-    the analysis row is replaced (upsert), so rerunning is safe. A failed re-analysis keeps the
-    previous row. `dry_run` only counts the PRs that would be analyzed.
+    `reanalyze` selects already-analyzed PRs in the window whose stored model_name is not the
+    current `<model>+<prompt version>` stamp, re-runs steps 1 and 3 against the stored human
+    actions (step 2 is not redrawn), replaces the analysis row (upsert) with the new stamp, and
+    deletes the PR's labels so `label` recomputes them from the new analysis. A re-analyzed PR is
+    not selected again; a failed one keeps its previous, unstamped row and status and is retried by
+    the next run. `dry_run` only counts the PRs that would be analyzed.
     Returns the number of PRs analyzed (or, with `dry_run`, selected).
     """
     repo = PRRepository(db)
     if reanalyze:
-        prs = await repo.get_analyzed_prs(chatbot_id=chatbot_id, limit=limit, since=since, until=until)
+        prs = await repo.get_analyzed_prs(
+            chatbot_id=chatbot_id,
+            limit=limit,
+            since=since,
+            until=until,
+            current_model_name=stamped_model_name(cfg.martian_model_name),
+        )
     else:
         prs = await repo.get_assembled_not_analyzed(
-            chatbot_id=chatbot_id, limit=limit, since=since, until=until,
-            sort_by=sort_by, max_per_day=max_per_day,
+            chatbot_id=chatbot_id,
+            limit=limit,
+            since=since,
+            until=until,
+            sort_by=sort_by,
+            max_per_day=max_per_day,
+        )
+    if reanalyze and len(prs) >= limit:
+        logger.warning(
+            f"{chatbot_username}: the re-analysis selection reached --limit {limit}; more PRs may remain. "
+            "Rerun the same command (PRs already re-analyzed are not selected again) or raise --limit."
         )
 
     verb = "re-analyze" if reanalyze else "analyze"
@@ -486,9 +518,22 @@ async def analyze_prs(
     async def _run(pr_row: dict) -> bool:
         async with sem:
             try:
-                return await analyze_single_pr(
-                    llm, repo, pr_row, chatbot_username, cfg.martian_model_name, beta=cfg.f_beta
+                stored = None
+                if reanalyze:
+                    raw = pr_row.get("stored_human_actions")
+                    stored = json.loads(raw) if isinstance(raw, str) else (raw or [])
+                ok = await analyze_single_pr(
+                    llm,
+                    repo,
+                    pr_row,
+                    chatbot_username,
+                    cfg.martian_model_name,
+                    beta=cfg.f_beta,
+                    stored_actions=stored,
                 )
+                if ok and reanalyze:
+                    await repo.delete_labels(pr_row["id"], pr_row["chatbot_id"])
+                return ok
             except BadRequestError as exc:
                 logger.error(f"LLM 400 for {pr_row['repo_name']}#{pr_row['pr_number']}: {exc}")
                 if not reanalyze:  # a failed re-analysis keeps the previous analysis and status

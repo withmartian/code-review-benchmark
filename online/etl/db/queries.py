@@ -152,17 +152,23 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_BOUNDED = """
     LIMIT $3
 """
 
-# Already-analyzed PRs in a bot_reviewed_at window, for `analyze --reanalyze` (re-running the
-# analysis after a prompt change). The analysis row is upserted, so a rerun replaces it.
+# Already-analyzed PRs in a bot_reviewed_at window whose stored analysis was not made with the
+# current "<model>+<prompt version>" stamp, for `analyze --reanalyze`. The stored human actions
+# come along so step 2 is not redrawn. The analysis row is upserted, so a rerun replaces it.
 GET_ANALYZED_PRS_BOUNDED = """
-    SELECT p.* FROM prs p
+    SELECT p.*, la.human_actions AS stored_human_actions FROM prs p
     JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
     WHERE p.chatbot_id = $1
-      AND p.status = 'analyzed'
+      AND p.status IN ('analyzed', 'labeled')
       AND ($2::timestamptz IS NULL OR p.bot_reviewed_at >= $2)
       AND ($3::timestamptz IS NULL OR p.bot_reviewed_at < $3)
+      AND (la.model_name IS NULL OR la.model_name <> $4)
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
-    LIMIT $4
+    LIMIT $5
+"""
+
+DELETE_PR_LABELS = """
+    DELETE FROM pr_labels WHERE pr_id = $1 AND chatbot_id = $2
 """
 
 # Per-day capped variants: sample up to N PRs per day (bot_reviewed_at date),

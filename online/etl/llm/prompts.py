@@ -1,5 +1,10 @@
 """Prompt templates for the LLM analysis pipeline."""
 
+# Stamped into llm_analyses.model_name as "<model>+<version>" so analyses from different extraction
+# prompts can be told apart and `analyze --reanalyze` can find the ones not yet re-run. Bump it
+# whenever EXTRACT_BOT_SUGGESTIONS, EXTRACT_HUMAN_ACTIONS or JUDGE_MATCHING changes.
+EXTRACTION_PROMPT_VERSION = "extract-v2"
+
 EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.
 
 The bot's username is: {bot_username}
@@ -56,14 +61,21 @@ finding, even when it is phrased as advice or sits inside a review body or issue
   code is a finding.
 - Interactive controls and product text: checkboxes, buttons, commands the reader can run, usage
   tips, links to dashboards, and configuration or review-settings details. This includes offers
-  to generate code for the author, such as "generate docstrings" or "generate unit tests".
+  to generate code for the author, for example to write docstrings or tests.
 - Review status and run metadata: counts of comments posted, lists of files reviewed or skipped,
   the commit range reviewed, run or plan details, and quota or allowance notes.
+- Remarks about the pull request itself rather than the changed code: its title, description,
+  template sections, linked issue or ticket, test plan, or review and merge process. This holds
+  even when the bot attaches such a remark to a line of the diff as an inline comment. A remark
+  about the content of a file the pull request changes is about the code, even when that file is
+  documentation or configuration: extract it.
 - Context the bot lists as input to its review, such as quoted linter or static-analysis output,
-  code guidelines, or path instructions (for example under a heading like "context used"). Tool
-  output the bot lists as context is not a finding: do not extract findings from it. Tool
-  results the bot presents as its own findings (in its own comment, outside the quoted
-  context) are findings.
+  code guidelines, or path instructions (for example a section listing the context the review
+  used). Tool output the bot lists as context is not a finding: do not extract findings from it.
+  Tool output quoted inside one of the bot's comments (for example a collapsed tool-results
+  section under an inline comment) is supporting context for that comment, not a separate
+  finding. Tool results the bot presents as its own findings (in its own comment text, outside
+  the quoted output) are findings.
 
 These rules depend on what a piece of text is, not on where it sits. A concrete finding inside a
 collapsed or nested section (for example a nitpick or an outside-diff comment listed in a review

@@ -207,9 +207,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--reanalyze",
         action="store_true",
         help=(
-            "Re-run the analysis for PRs already analyzed in the --since/--until window (for example after "
-            "a prompt change), replacing their stored analysis. Rerunning is safe; a failed re-analysis keeps "
-            "the previous analysis. Requires --since."
+            "Re-run steps 1 and 3 for PRs already analyzed in the --since/--until window whose stored "
+            "model_name is not the current <model>+<prompt version> stamp (for example after a prompt "
+            "change), reusing their stored human actions and replacing the analysis; their labels are "
+            "deleted so `label` recomputes them. Re-analyzed PRs are not selected again, failed ones are "
+            "retried by the next run. Requires --since; mind --limit (default 100 per bot)."
         ),
     )
     p_ana.add_argument(

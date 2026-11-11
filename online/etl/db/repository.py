@@ -195,9 +195,16 @@ class PRRepository:
         limit: int = 100,
         since: str | None = None,
         until: str | None = None,
+        current_model_name: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Already-analyzed PRs with bot_reviewed_at in [since, until), newest first."""
-        return await self.db.fetchall(q.GET_ANALYZED_PRS_BOUNDED, (chatbot_id, since, until, limit))
+        """Analyzed PRs with bot_reviewed_at in [since, until), newest first, whose stored
+        model_name differs from current_model_name; each row carries stored_human_actions."""
+        return await self.db.fetchall(
+            q.GET_ANALYZED_PRS_BOUNDED, (chatbot_id, since, until, current_model_name or "", limit)
+        )
+
+    async def delete_labels(self, pr_id: int, chatbot_id: int) -> None:
+        await self.db.execute(q.DELETE_PR_LABELS, (pr_id, chatbot_id))
 
     # -- Locking ---------------------------------------------------------------
 

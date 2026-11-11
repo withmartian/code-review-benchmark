@@ -85,7 +85,7 @@ def test_controls_generation_offers_and_run_metadata_are_not_findings() -> None:
     rules = _rules()
 
     assert "checkboxes, buttons, commands the reader can run" in rules
-    assert '"generate docstrings" or "generate unit tests"' in rules
+    assert "offers to generate code for the author, for example to write docstrings or tests" in rules
     assert "Review status and run metadata: counts of comments posted" in rules
 
 
@@ -111,3 +111,33 @@ def test_located_rule_violations_are_findings_only_aggregate_results_are_exclude
         "Only aggregate results (a status, or a metric against a threshold) are excluded: a violation of a "
         "repository rule or guideline reported at a specific location in the changed code is a finding." in rules
     )
+
+
+def test_remarks_about_the_pull_request_itself_are_not_findings_but_remarks_about_changed_files_are() -> None:
+    rules = _rules()
+
+    assert (
+        "Remarks about the pull request itself rather than the changed code: its title, description, "
+        "template sections, linked issue or ticket, test plan, or review and merge process." in rules
+    )
+    assert "even when the bot attaches such a remark to a line of the diff as an inline comment" in rules
+    assert (
+        "A remark about the content of a file the pull request changes is about the code, even when that "
+        "file is documentation or configuration: extract it." in rules
+    )
+
+
+def test_tool_output_quoted_inside_a_bot_comment_supports_that_comment() -> None:
+    rules = _rules()
+
+    assert (
+        "Tool output quoted inside one of the bot's comments (for example a collapsed tool-results section "
+        "under an inline comment) is supporting context for that comment, not a separate finding." in rules
+    )
+
+
+def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:
+    from llm.prompts import EXTRACTION_PROMPT_VERSION
+    from pipeline.analyze import stamped_model_name
+
+    assert stamped_model_name("some-model") == f"some-model+{EXTRACTION_PROMPT_VERSION}"

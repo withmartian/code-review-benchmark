@@ -8,7 +8,11 @@ It prints, per bot: suggestions/PR, matched suggestions/PR, leaderboard precisio
 (mean over PRs where both are defined), and paired PR bootstrap intervals for each arm minus the
 baseline's first draw. The baseline's second draw is the run-to-run noise floor.
 
-Nothing is written to the DB. Results go to --out (JSONL, resumable).
+Nothing is written to the DB. Results go to --out (JSONL). Its first line is a fingerprint of both
+extraction prompts, the matching prompt, the model configuration and every input and action set;
+a rerun resumes that file only when the fingerprint matches and otherwise refuses it, so rows from
+a different prompt, model or input set are never mixed in. With --pr-list, a CSV that has a bot
+column selects (bot, pr_url) pairs; one with only pr_url selects every bot's analysis of the PR.
 
     uv run python -m prompt_eval.compare_prompts --dry-run
     uv run python -m prompt_eval.compare_prompts --baseline-ref origin/main \\
@@ -21,10 +25,13 @@ import argparse
 import ast
 import asyncio
 import csv
+import hashlib
 import json
+import logging
 from pathlib import Path
 import random
 import subprocess
+import sys
 
 from config import DBConfig
 from db.connection import DBAdapter
@@ -41,6 +48,8 @@ from pipeline.analyze import _format_bot_comments
 from pipeline.analyze import _format_commits_with_diffs
 from pipeline.analyze import _format_suggestions
 from pipeline.analyze import _split_commits_at_hash
+
+logger = logging.getLogger(__name__)
 
 
 def prompt_at_ref(ref: str) -> str:
@@ -148,7 +157,8 @@ def paired_ci(pairs: list[tuple[dict, dict]], stat, n: int = 2000, seed: int = 7
 
 
 def report(rows: list[dict]) -> str:
-    """Markdown table per bot from --out rows."""
+    """Markdown table per bot from --out rows (the fingerprint header line is skipped)."""
+    rows = [r for r in rows if "arm" in r]
     by: dict[tuple[str, str], dict[str, dict]] = {}
     for r in rows:
         by.setdefault((r["bot"], r["pr_url"]), {})[r["arm"]] = r
@@ -180,82 +190,168 @@ def report(rows: list[dict]) -> str:
     return "\n".join(out)
 
 
-async def run(args: argparse.Namespace) -> None:
+def read_pr_list(path: str) -> tuple[set[str], set[tuple[str, str]] | None]:
+    """PR URLs from a CSV with a pr_url column, and (bot, pr_url) pairs when it has a bot column.
+
+    With a bot column, a PR is selected only for the bots it is listed with: a PR listed for one
+    bot does not admit another bot's stored analysis of the same PR.
+    """
+    with open(path) as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        has_bot = "bot" in (reader.fieldnames or [])
+    urls = {r["pr_url"] for r in rows}
+    pairs = {(r["bot"], r["pr_url"]) for r in rows} if has_bot else None
+    return urls, pairs
+
+
+def is_selected(bot: str, pr_url: str, urls: set[str] | None, pairs: set[tuple[str, str]] | None) -> bool:
+    if pairs is not None:
+        return (bot, pr_url) in pairs
+    return urls is None or pr_url in urls
+
+
+def _actions(an: dict) -> list[dict]:
+    raw = an["human_actions"]
+    return json.loads(raw) if isinstance(raw, str) else raw
+
+
+def _sha(obj: object) -> str:
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def experiment_fingerprint(templates: dict[str, str], model: dict, units: list[dict]) -> str:
+    """Hash of everything a stored row depends on: both extraction prompts, the matching prompt,
+    the model configuration (no credentials), and each unit's step 1 input and stored actions."""
+    return _sha(
+        {
+            "extraction_prompts": {k: _sha(v) for k, v in sorted(templates.items())},
+            "matching_prompt": _sha(JUDGE_MATCHING),
+            "model": model,
+            "units": sorted([u["bot"], u["pr_url"], _sha(u["fields"]), _sha(u["actions"])] for u in units),
+        }
+    )
+
+
+def open_output(out: Path, fingerprint: str) -> set[tuple[str, str, str]]:
+    """Start --out with a fingerprint header, or resume it when its fingerprint matches.
+
+    Returns the (arm, bot, pr_url) keys already scored. An existing file written for a different
+    prompt, model or input set is refused, so stale rows are never mixed into a new comparison.
+    """
+    if not out.exists() or out.stat().st_size == 0:
+        out.write_text(json.dumps({"fingerprint": fingerprint}) + "\n")
+        return set()
+    lines = out.read_text().splitlines()
+    header = json.loads(lines[0]) if lines else {}
+    if header.get("fingerprint") != fingerprint:
+        raise SystemExit(
+            f"{out} was written for a different experiment (prompts, model or inputs changed); pass a new --out path"
+        )
+    return {(r["arm"], r["bot"], r["pr_url"]) for r in map(json.loads, lines[1:])}
+
+
+async def run(args: argparse.Namespace) -> int:
+    """Returns the number of jobs that failed."""
     cfg = DBConfig()
     db = DBAdapter(cfg.database_url)
     await db.connect()
-    repo = PRRepository(db)
-    wanted = None
-    if args.pr_list:
-        with open(args.pr_list) as f:
-            wanted = {r["pr_url"] for r in csv.DictReader(f)}
+    try:
+        return await _run(args, cfg, PRRepository(db))
+    finally:  # an open DB connection keeps the process alive after an exception
+        await db.close()
+
+
+async def _run(args: argparse.Namespace, cfg: DBConfig, repo: PRRepository) -> int:
+    urls, pairs = read_pr_list(args.pr_list) if args.pr_list else (None, None)
     bots = set(args.bots.split(",")) if args.bots else None
     units = []
     for cb in await repo.get_all_chatbots():
-        if bots and cb["github_username"] not in bots:
+        bot = cb["github_username"]
+        if bots and bot not in bots:
             continue
         n = 0
         for an in await repo.get_analyses(cb["id"]):
-            if wanted is not None and an["pr_url"] not in wanted:
+            if not is_selected(bot, an["pr_url"], urls, pairs) or not _actions(an):
                 continue
-            actions = json.loads(an["human_actions"]) if isinstance(an["human_actions"], str) else an["human_actions"]
-            if not actions:
+            pr_row = await repo.get_pr_by_id(an["pr_id"])
+            fields = step1_fields(pr_row, bot) if pr_row else None
+            if fields is None:
                 continue
-            units.append((cb["github_username"], an))
+            units.append({"bot": bot, "pr_url": an["pr_url"], "fields": fields, "actions": _actions(an)})
             n += 1
             if args.limit_per_bot and n >= args.limit_per_bot:
                 break
     print(f"{len(units)} analyzed PRs with stored actions; {len(units) * args.draws * 4} LLM calls at most")
     if args.dry_run:
-        await db.close()
-        return
+        return 0
     baseline = (
         prompt_in_source(Path(args.baseline_file).read_text())
         if args.baseline_file
         else prompt_at_ref(args.baseline_ref)
     )
     templates = {"baseline": baseline, "candidate": EXTRACT_BOT_SUGGESTIONS}
+    model = {"base_url": cfg.martian_base_url, "model_name": cfg.martian_model_name}
     out = Path(args.out)
-    done = set()
-    if out.exists():
-        done = {(r["arm"], r["bot"], r["pr_url"]) for r in map(json.loads, out.open())}
+    done = open_output(out, experiment_fingerprint(templates, model, units))
     llm = LLMClient(base_url=cfg.martian_base_url, api_key=cfg.martian_api_key, model_name=cfg.martian_model_name)
-    sem = asyncio.Semaphore(args.concurrency)
+    try:
+        failures = await run_jobs(llm, units, templates, args.draws, done, out, args.concurrency)
+    finally:
+        await llm.close()
+    print(report([json.loads(x) for x in out.read_text().splitlines()]))
+    if failures:
+        print(f"\n{len(failures)} job(s) failed and were not scored; rerun with the same --out to retry them.")
+    return len(failures)
 
-    async def one(bot: str, an: dict, arm: str, template: str) -> dict | None:
-        if (arm, bot, an["pr_url"]) in done:
-            return None
-        pr_row = await repo.get_pr_by_id(an["pr_id"])
-        fields = step1_fields(pr_row, bot) if pr_row else None
-        if fields is None:
-            return None
-        actions = json.loads(an["human_actions"]) if isinstance(an["human_actions"], str) else an["human_actions"]
-        async with sem:
-            res = await score_arm(llm, template, fields, actions)
-        return {"arm": arm, "bot": bot, "pr_url": an["pr_url"], **res}
+
+async def run_jobs(
+    llm, units: list[dict], templates: dict[str, str], draws: int, done: set, out: Path, concurrency: int
+) -> list[dict]:
+    """Score every (unit, arm) not in `done`, appending each result to `out` as it finishes.
+
+    A job whose LLM call fails is logged and returned in the failure list; it writes no row, so a
+    rerun with the same --out retries it, and it is never counted as a scored result.
+    """
+    sem = asyncio.Semaphore(concurrency)
+
+    async def one(u: dict, arm: str, template: str) -> dict:
+        key = {"arm": arm, "bot": u["bot"], "pr_url": u["pr_url"]}
+        try:
+            async with sem:
+                res = await score_arm(llm, template, u["fields"], u["actions"])
+        except Exception as exc:
+            logger.warning("job failed %s: %s: %s", key, type(exc).__name__, exc)
+            return {**key, "error": f"{type(exc).__name__}: {exc}"}
+        return {**key, **res}
 
     jobs = [
-        one(bot, an, f"{name} draw {d + 1}", tmpl)
-        for bot, an in units
+        one(u, f"{name} draw {d + 1}", tmpl)
+        for u in units
         for name, tmpl in templates.items()
-        for d in range(args.draws)
+        for d in range(draws)
+        if (f"{name} draw {d + 1}", u["bot"], u["pr_url"]) not in done
     ]
+    failures = []
     with out.open("a") as f:
         for coro in asyncio.as_completed(jobs):
             r = await coro
-            if r:
-                f.write(json.dumps(r) + "\n")
-                f.flush()
-    await llm.close()
-    await db.close()
-    print(report([json.loads(x) for x in out.open()]))
+            if "error" in r:
+                failures.append(r)
+                continue
+            f.write(json.dumps(r) + "\n")
+            f.flush()
+    return failures
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--baseline-ref", default="origin/main")
     ap.add_argument("--baseline-file", help="a prompts.py to read the baseline prompt from, instead of --baseline-ref")
-    ap.add_argument("--pr-list", help="CSV with a pr_url column; default: every analyzed PR")
+    ap.add_argument(
+        "--pr-list",
+        help="CSV with a pr_url column (and optionally bot: then only those pairs); default: every analyzed PR",
+    )
     ap.add_argument("--bots", help="comma-separated bot usernames; default: all")
     ap.add_argument("--limit-per-bot", type=int)
     ap.add_argument("--draws", type=int, default=2)
@@ -267,7 +363,8 @@ def main() -> None:
     if args.report_only:
         print(report([json.loads(x) for x in Path(args.out).read_text().splitlines()]))
         return
-    asyncio.run(run(args))
+    if asyncio.run(run(args)):
+        sys.exit(1)  # some jobs failed; rerunning with the same --out retries only those
 
 
 if __name__ == "__main__":

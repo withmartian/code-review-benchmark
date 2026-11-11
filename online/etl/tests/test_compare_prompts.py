@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+
+import pytest
 
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import MatchingResponse
+from prompt_eval.compare_prompts import experiment_fingerprint
+from prompt_eval.compare_prompts import is_selected
 from prompt_eval.compare_prompts import leaderboard
 from prompt_eval.compare_prompts import metrics
+from prompt_eval.compare_prompts import open_output
 from prompt_eval.compare_prompts import paired_ci
+from prompt_eval.compare_prompts import read_pr_list
 from prompt_eval.compare_prompts import report
 from prompt_eval.compare_prompts import score_arm
 from prompt_eval.compare_prompts import step1_fields
@@ -120,3 +127,85 @@ def test_leaderboard_paired_ci_and_report() -> None:
     table = report(rows)
     assert "### reviewer[bot] (20 PRs)" in table
     assert "| candidate draw 1 | 4.00 | 3.00 | 75.0 | 50.0 | +25.0 [+25.0, +25.0] |" in table
+
+
+def test_pr_list_with_a_bot_column_selects_only_the_listed_pairs(tmp_path: Path) -> None:
+    csv_path = tmp_path / "prs.csv"
+    csv_path.write_text("pr_url,bot\nhttps://github.com/o/r/pull/1,greptile-apps[bot]\n")
+    urls, pairs = read_pr_list(str(csv_path))
+
+    # one PR with stored analyses for two bots: only the listed pair is selected
+    assert is_selected("greptile-apps[bot]", "https://github.com/o/r/pull/1", urls, pairs)
+    assert not is_selected("reviewer[bot]", "https://github.com/o/r/pull/1", urls, pairs)
+    assert not is_selected("greptile-apps[bot]", "https://github.com/o/r/pull/2", urls, pairs)
+
+
+def test_pr_list_without_a_bot_column_selects_every_bot_for_listed_urls(tmp_path: Path) -> None:
+    csv_path = tmp_path / "prs.csv"
+    csv_path.write_text("pr_url\nhttps://github.com/o/r/pull/1\n")
+    urls, pairs = read_pr_list(str(csv_path))
+
+    assert pairs is None
+    assert is_selected("reviewer[bot]", "https://github.com/o/r/pull/1", urls, pairs)
+    assert not is_selected("reviewer[bot]", "https://github.com/o/r/pull/2", urls, pairs)
+    assert is_selected("reviewer[bot]", "https://github.com/o/r/pull/2", None, None)
+
+
+def _units() -> list[dict]:
+    fields = step1_fields(_pr_row(), "reviewer[bot]")
+    actions = [{"action_id": "A1", "description": "guard null", "category": "bug", "action_type": "fix"}]
+    return [{"bot": "reviewer[bot]", "pr_url": "https://github.com/o/r/pull/1", "fields": fields, "actions": actions}]
+
+
+def test_fingerprint_changes_with_prompts_model_and_inputs() -> None:
+    templates = {"baseline": "A {bot_comments}", "candidate": "B {bot_comments}"}
+    model = {"base_url": "", "model_name": "m1"}
+    fp = experiment_fingerprint(templates, model, _units())
+
+    assert fp == experiment_fingerprint(dict(templates), dict(model), _units())
+    assert fp != experiment_fingerprint({**templates, "candidate": "C {bot_comments}"}, model, _units())
+    assert fp != experiment_fingerprint(templates, {**model, "model_name": "m2"}, _units())
+    changed = _units()
+    changed[0]["actions"][0]["description"] = "something else"
+    assert fp != experiment_fingerprint(templates, model, changed)
+
+
+def test_open_output_resumes_a_compatible_file_and_refuses_a_stale_one(tmp_path: Path) -> None:
+    out = tmp_path / "compare.jsonl"
+    assert open_output(out, "fp-1") == set()
+    with out.open("a") as f:
+        f.write(json.dumps({"arm": "baseline draw 1", "bot": "reviewer[bot]", "pr_url": "u1"}) + "\n")
+
+    assert open_output(out, "fp-1") == {("baseline draw 1", "reviewer[bot]", "u1")}
+    with pytest.raises(SystemExit, match="pass a new --out path"):
+        open_output(out, "fp-2")
+    assert report([json.loads(out.read_text().splitlines()[0])]) == ""  # the header is not a row
+
+
+class _FlakyLLM(_StubLLM):
+    """Fails every step 1 call whose prompt starts with FAIL."""
+
+    async def structured_completion(self, prompt: str, response_model):
+        if prompt.startswith("FAIL"):
+            raise RuntimeError("provider error")
+        return await super().structured_completion(prompt, response_model)
+
+
+async def test_a_failed_job_is_reported_and_not_scored_while_the_others_complete(tmp_path: Path) -> None:
+    from prompt_eval.compare_prompts import run_jobs
+
+    out = tmp_path / "compare.jsonl"
+    open_output(out, "fp")
+    templates = {"baseline": "OK {bot_comments}", "candidate": "FAIL {bot_comments}"}
+
+    failures = await run_jobs(_FlakyLLM(), _units(), templates, 2, set(), out, 4)
+
+    rows = [json.loads(x) for x in out.read_text().splitlines()[1:]]
+    assert sorted(r["arm"] for r in rows) == ["baseline draw 1", "baseline draw 2"]
+    assert all("error" not in r for r in rows)
+    assert sorted(f["arm"] for f in failures) == ["candidate draw 1", "candidate draw 2"]
+    # a rerun with the same output retries only the failed jobs
+    assert open_output(out, "fp") == {
+        ("baseline draw 1", "reviewer[bot]", "https://github.com/o/r/pull/1"),
+        ("baseline draw 2", "reviewer[bot]", "https://github.com/o/r/pull/1"),
+    }

@@ -111,51 +111,118 @@ def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findin
     )
 
 
+ANALYZE_FUNCTIONS = (
+    "_find_bot_review_commit",
+    "_split_commits_at_hash",
+    "_build_details_by_sha",
+    "_format_commits_with_diffs",
+    "_clean_bot_comment_body",
+    "_format_bot_comments",
+    "_format_suggestions",
+    "_format_actions",
+)
+RESPONSE_SCHEMAS = ("BotSuggestionsResponse", "HumanActionsResponse", "MatchingResponse")
+
+
 def _pinned_inputs() -> dict[str, str]:
-    """sha256 of everything an analysis depends on: the three step prompts and the code that renders
-    step 1 and step 3 input (whitespace and comments in that code count, on purpose)."""
+    """sha256 of everything an analysis depends on: the three step prompts, the code that splits the
+    commits at the reviewed one and renders every step's input (whitespace and comments in that code
+    count, on purpose), and the JSON schema of each step's structured response."""
     import hashlib
     import inspect
+    import json
 
     from llm import prompts
+    from llm import schemas
     from pipeline import analyze
 
     texts = {
         name: getattr(prompts, name) for name in ("EXTRACT_BOT_SUGGESTIONS", "EXTRACT_HUMAN_ACTIONS", "JUDGE_MATCHING")
     }
-    for fn in ("_clean_bot_comment_body", "_format_bot_comments", "_format_suggestions", "_format_actions"):
+    for fn in ANALYZE_FUNCTIONS:
         texts[f"pipeline.analyze.{fn}"] = inspect.getsource(getattr(analyze, fn))
+    for model in RESPONSE_SCHEMAS:
+        texts[f"llm.schemas.{model}"] = json.dumps(getattr(schemas, model).model_json_schema(), sort_keys=True)
     return {name: hashlib.sha256(text.encode()).hexdigest() for name, text in texts.items()}
 
 
-# What each EXTRACTION_PROMPT_VERSION was released with. Never edit an existing entry: when any pinned
-# input changes, bump EXTRACTION_PROMPT_VERSION in llm/prompts.py and add a new entry, so stored
-# analyses made with the two can be told apart.
+def _entry_digest(entry: dict) -> str:
+    import hashlib
+    import json
+
+    return hashlib.sha256(json.dumps(entry, sort_keys=True).encode()).hexdigest()
+
+
+def _ledger_problems(ledger: dict[str, dict]) -> list[str]:
+    """Each entry names the sha256 of the entry before it, so a past entry cannot change without
+    rewriting every later link (which a review of the diff shows)."""
+    problems, previous = [], None
+    for version, entry in ledger.items():
+        if entry.get("previous") != previous:
+            problems.append(f"{version}: 'previous' does not match the entry before it (a past entry changed)")
+        previous = _entry_digest(entry)
+    inputs = [tuple(sorted(e["inputs"].items())) for e in ledger.values()]
+    if len(set(inputs)) != len(inputs):
+        problems.append("two versions share the same inputs")
+    return problems
+
+
+# What each EXTRACTION_PROMPT_VERSION was released with, oldest first. Append only: never edit an
+# existing entry. When any pinned input changes, bump EXTRACTION_PROMPT_VERSION in llm/prompts.py and
+# append a new entry whose "previous" is _entry_digest() of the entry before it, so stored analyses
+# made with the two can be told apart.
 PINNED_INPUTS_BY_VERSION = {
     "extract-v2": {
-        "EXTRACT_BOT_SUGGESTIONS": "1ed595f2b0a51171a87ae2ab8c392d1fb9080d9541c1339f6501b84033e5ca6b",
-        "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
-        "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
-        "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
-        "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
-        "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
-        "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
+        "previous": None,
+        "inputs": {
+            "EXTRACT_BOT_SUGGESTIONS": "1ed595f2b0a51171a87ae2ab8c392d1fb9080d9541c1339f6501b84033e5ca6b",
+            "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
+            "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
+            "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
+            "pipeline.analyze._split_commits_at_hash": "a35eec4a52654a2808becab0b0d3c4cf3000eb7156fecf35dfb02f656b2c5915",
+            "pipeline.analyze._build_details_by_sha": "7ee4ea52b9b58f9aa97f4e4ba2344ff6528e4621d02b1c44612686cd317f1103",
+            "pipeline.analyze._format_commits_with_diffs": "4c24815cc71086530723fa6eb6a4346896622098e5c08d0f19358646ae635f9b",
+            "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
+            "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
+            "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
+            "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
+            "llm.schemas.BotSuggestionsResponse": "5969e73467cf574786325ea59d8470b0d6e817c82b7d02ce206d8e612e48b110",
+            "llm.schemas.HumanActionsResponse": "34ad210bbaa719035d8e38a22d73f22e316e3efcc59b53133e946f8a175d880c",
+            "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
+        },
     },
 }
 
 
-def test_prompt_version_is_pinned_to_every_prompt_and_formatter() -> None:
+def test_prompt_version_is_pinned_to_every_prompt_formatter_and_schema() -> None:
     from llm.prompts import EXTRACTION_PROMPT_VERSION
 
-    pinned = PINNED_INPUTS_BY_VERSION[EXTRACTION_PROMPT_VERSION]
+    assert list(PINNED_INPUTS_BY_VERSION)[-1] == EXTRACTION_PROMPT_VERSION, "the current version is the last entry"
+    pinned = PINNED_INPUTS_BY_VERSION[EXTRACTION_PROMPT_VERSION]["inputs"]
     current = _pinned_inputs()
-    changed = sorted(name for name in current if current[name] != pinned.get(name))
-    assert not changed, f"{changed} changed: bump EXTRACTION_PROMPT_VERSION and add a new entry here"
+    assert set(pinned) == set(current)
+    changed = sorted(name for name in current if current[name] != pinned[name])
+    assert not changed, f"{changed} changed: bump EXTRACTION_PROMPT_VERSION and append a new entry here"
 
 
-def test_no_two_prompt_versions_share_a_pinned_input_set() -> None:
-    sets = [tuple(sorted(pins.items())) for pins in PINNED_INPUTS_BY_VERSION.values()]
-    assert len(set(sets)) == len(sets)
+def test_past_prompt_versions_are_unchanged_and_distinct() -> None:
+    assert _ledger_problems(PINNED_INPUTS_BY_VERSION) == []
+
+
+def test_editing_a_past_version_entry_is_detected() -> None:
+    import copy
+
+    v1 = {"previous": None, "inputs": {"EXTRACT_BOT_SUGGESTIONS": "a" * 64}}
+    v2 = {"previous": _entry_digest(v1), "inputs": {"EXTRACT_BOT_SUGGESTIONS": "b" * 64}}
+    ledger = {"v1": v1, "v2": v2}
+    assert _ledger_problems(ledger) == []
+
+    edited = copy.deepcopy(ledger)
+    edited["v1"]["inputs"]["EXTRACT_BOT_SUGGESTIONS"] = "c" * 64
+    assert _ledger_problems(edited) == ["v2: 'previous' does not match the entry before it (a past entry changed)"]
+
+    same = {"v1": v1, "v2": {"previous": _entry_digest(v1), "inputs": dict(v1["inputs"])}}
+    assert _ledger_problems(same) == ["two versions share the same inputs"]
 
 
 def test_located_rule_violations_are_findings_only_aggregate_results_are_excluded() -> None:

@@ -37,6 +37,7 @@ TABLES = [
         reviews             TEXT,
         review_threads      TEXT,
         commit_details      TEXT,
+        issue_comments      TEXT,
         assembled           TEXT,
 
         -- Computed metrics
@@ -115,6 +116,7 @@ MIGRATIONS = [
     "ALTER TABLE prs ADD COLUMN IF NOT EXISTS pr_api_raw TEXT",
     "ALTER TABLE prs ADD COLUMN IF NOT EXISTS repo_id BIGINT",
     "ALTER TABLE prs ADD COLUMN IF NOT EXISTS engagement_signals TEXT",
+    "ALTER TABLE prs ADD COLUMN IF NOT EXISTS issue_comments TEXT",
 ]
 
 # SQLite doesn't support IF NOT EXISTS on ALTER TABLE ADD COLUMN
@@ -123,6 +125,7 @@ MIGRATIONS_SQLITE = [
     ("pr_api_raw", "ALTER TABLE prs ADD COLUMN pr_api_raw TEXT"),
     ("repo_id", "ALTER TABLE prs ADD COLUMN repo_id BIGINT"),
     ("engagement_signals", "ALTER TABLE prs ADD COLUMN engagement_signals TEXT"),
+    ("issue_comments", "ALTER TABLE prs ADD COLUMN issue_comments TEXT"),
 ]
 
 

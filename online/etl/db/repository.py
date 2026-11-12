@@ -232,6 +232,9 @@ class PRRepository:
         diff_lines = self.compute_diff_lines(details)
         await self.db.execute(q.UPDATE_PR_COMMIT_DETAILS, (json.dumps(details), diff_lines, pr_id))
 
+    async def update_issue_comments(self, pr_id: int, issue_comments: list) -> None:
+        await self.db.execute(q.UPDATE_PR_ISSUE_COMMENTS, (json.dumps(issue_comments), pr_id))
+
     async def mark_enrichment_done(self, pr_id: int) -> None:
         now = datetime.now(UTC).isoformat()
         await self.db.execute(q.UPDATE_PR_ENRICHMENT_DONE, (now, pr_id))

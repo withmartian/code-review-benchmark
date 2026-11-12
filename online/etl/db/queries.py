@@ -227,6 +227,10 @@ UPDATE_PR_COMMIT_DETAILS = """
     UPDATE prs SET commit_details = $1, diff_lines = $2, enrichment_step = 'details' WHERE id = $3
 """
 
+UPDATE_PR_ISSUE_COMMENTS = """
+    UPDATE prs SET issue_comments = $1, enrichment_step = 'issue_comments' WHERE id = $2
+"""
+
 UPDATE_PR_DIFF_LINES = """
     UPDATE prs SET diff_lines = $1 WHERE id = $2
 """

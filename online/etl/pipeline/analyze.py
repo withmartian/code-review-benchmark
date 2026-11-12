@@ -20,6 +20,8 @@ from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
+from pipeline.review_coverage import find_review_cutoff
+from pipeline.review_coverage import unreviewed_code_origin
 
 logger = logging.getLogger(__name__)
 
@@ -289,6 +291,65 @@ def _format_actions(actions: list[dict]) -> str:
     return "\n".join(lines) if lines else "(no actions)"
 
 
+def _with_current_issue_comments(events: list[dict], issue_comments: list[dict]) -> list[dict]:
+    """Timeline events with issue comments taken from the API, when they were fetched.
+
+    The timeline holds issue comments only as GH Archive recorded them when first posted, or none
+    for PRs found through the Search API. A bot that edits one status comment in place (to say a
+    later push was not reviewed) says so only in the current body.
+    """
+    if not issue_comments:
+        return events
+    out = [e for e in events if e.get("event_type") != "issue_comment"]
+    for c in issue_comments:
+        out.append(
+            {
+                "timestamp": c.get("created_at") or "",
+                "event_type": "issue_comment",
+                "actor": c.get("author") or "unknown",
+                "data": {"comment_id": c.get("id"), "body": c.get("body"), "updated_at": c.get("updated_at")},
+            }
+        )
+    out.sort(key=lambda e: e.get("timestamp") or "")
+    return out
+
+
+def _exclude_unreviewed_actions(
+    actions: list[dict],
+    matches: list[dict],
+    events: list[dict],
+    commits: list[dict],
+    post_commits: list[dict],
+    details_by_sha: dict[str, dict],
+    chatbot_username: str,
+) -> set[str]:
+    """IDs of the actions left out of recall because the bot never reviewed their code.
+
+    When the bot's own notice says it did not review a later push (a limit, a pause or a failed
+    review), an unmatched action fixed after the last commit the bot reviewed is left out if every
+    line the fix changed was first written after that commit. A matched action always counts: a
+    match shows the bot saw the issue. Excluded actions are marked in place with
+    excluded_from_recall (the reason) and unreviewed_commits.
+    """
+    matched = {m.get("human_action_id") for m in matches if m.get("matched")}
+    unmatched = [a for a in actions if a["action_id"] not in matched]
+    if not post_commits or not unmatched:
+        return set()
+    cutoff = find_review_cutoff(events, commits, post_commits, chatbot_username)
+    if cutoff is None:
+        return set()
+    excluded = set()
+    for a in unmatched:
+        origin, reason = unreviewed_code_origin(a, commits, details_by_sha, cutoff.last_reviewed)
+        if origin == "unreviewed":
+            excluded.add(a["action_id"])
+            a["excluded_from_recall"] = (
+                f"{', '.join(cutoff.reasons)} notice; last reviewed commit {cutoff.last_reviewed[:12]}; {reason}"
+            )
+            a["unreviewed_commits"] = list(cutoff.unreviewed)
+    return excluded
+
+
 async def analyze_single_pr(
     llm: LLMClient,
     repo: PRRepository,
@@ -381,15 +442,28 @@ async def analyze_single_pr(
     matching_resp = await llm.structured_completion(prompt3, MatchingResponse)
     matches = [m.model_dump() for m in matching_resp.matches]
 
+    # Fixes of code written in commits the bot said it did not review are left out of recall.
+    # Deterministic: the bot's own notices and the stored commit patches, no LLM call.
+    excluded_action_ids = _exclude_unreviewed_actions(
+        actions,
+        matches,
+        _with_current_issue_comments(events, _parse_json_col("issue_comments")),
+        commits,
+        post_commits,
+        details_by_sha,
+        chatbot_username,
+    )
+
     # Compute metrics — only count IDs that actually exist in the extracted lists
+    # Recall leaves out the actions excluded above; precision counts every match as before.
     suggestion_id_set = {s["issue_id"] for s in suggestions}
-    action_id_set = {a["action_id"] for a in actions}
+    action_id_set = {a["action_id"] for a in actions} - excluded_action_ids
     total_suggestions = len(suggestions)
     matched_suggestion_ids = {
         m["bot_issue_id"] for m in matches if m["matched"] and m.get("bot_issue_id") in suggestion_id_set
     }
     matched_suggestions = len(matched_suggestion_ids)
-    total_actions = len(actions)
+    total_actions = sum(1 for a in actions if a["action_id"] not in excluded_action_ids)
     matched_action_ids = {
         m["human_action_id"] for m in matches if m["matched"] and m.get("human_action_id") in action_id_set
     }

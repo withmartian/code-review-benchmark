@@ -350,6 +350,62 @@ def test_an_add_only_fix_after_a_refactor_of_reviewed_code_is_kept() -> None:
     assert _origin(_action(D, "dl.py"), details)[0] == "unknown"
 
 
+APP_A = "@@ -0,0 +1,2 @@\n+def parse(text):\n+    return text.split(',')"
+APP_C = (
+    "@@ -1,2 +1,5 @@\n def parse(text):\n     return text.split(',')\n"
+    "+def export(rows):\n+    target = '/tmp/out.csv'\n+    return write(target, rows)"
+)
+EXPORT_FIX_D = (
+    "\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n     return write(target, rows)"
+)
+
+
+def test_a_fix_that_also_adds_lines_to_reviewed_code_in_the_same_commit_is_kept() -> None:
+    # A reviewed parser; C adds an exporter without a review; D adds a null guard to the parser (an
+    # add-only hunk) and replaces the export path (a line C wrote). Both actions on app.py in D get the
+    # same answer, so the parser guard must not be taken for a fix of the unreviewed exporter.
+    fix_d = (
+        "@@ -1,2 +1,4 @@\n def parse(text):\n+    if text is None:\n+        return []\n     return text.split(',')\n"
+        "@@ -3,3 +5,3 @@" + EXPORT_FIX_D
+    )
+    details = _details(
+        (A, "app.py", "added", APP_A), (C, "app.py", "modified", APP_C), (D, "app.py", "modified", fix_d)
+    )
+
+    origin, reason = _origin(_action(D, "app.py"), details)
+
+    assert origin == "unknown"
+    assert "adds lines among code a review read (2 of the 2 lines" in reason
+
+
+def test_a_fix_that_also_adds_lines_to_the_unreviewed_code_is_unreviewed() -> None:
+    # The same commit adds a check inside the exporter C wrote: every hunk is in code no review read.
+    fix_d = (
+        "@@ -3,2 +3,2 @@\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n"
+        "@@ -5 +5,3 @@\n     return write(target, rows)\n+def export_all(rows):\n+    return [export(r) for r in rows]"
+    )
+    details = _details(
+        (A, "app.py", "added", APP_A), (C, "app.py", "modified", APP_C), (D, "app.py", "modified", fix_d)
+    )
+
+    origin, reason = _origin(_action(D, "app.py"), details)
+
+    assert origin == "unreviewed"
+    assert "and the 1 lines around its other additions" in reason
+
+
+def test_a_hunk_that_adds_lines_with_no_code_around_them_is_unknown() -> None:
+    fix_d = "@@ -3,3 +3,3 @@" + EXPORT_FIX_D + "\n@@ -5,0 +6 @@\n+# done"
+    details = _details(
+        (A, "app.py", "added", APP_A), (C, "app.py", "modified", APP_C), (D, "app.py", "modified", fix_d)
+    )
+
+    assert _origin(_action(D, "app.py"), details) == (
+        "unknown",
+        "the fix also adds lines in app.py with no code line around them",
+    )
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

@@ -424,6 +424,18 @@ def _removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
     return [(n, t) for h in hunks for n, t in _removed_all(h) if _CODE_RE.search(t)]
 
 
+def _context(h: _Hunk) -> list[tuple[int, str]]:
+    """(line number before the change, text) of each unchanged line of a hunk that carries code."""
+    out = []
+    old = h.old_start
+    for kind, text in h.lines:
+        if kind == " " and _CODE_RE.search(text):
+            out.append((old, text))
+        if kind != "+":
+            old += 1
+    return out
+
+
 def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
     """Where line ``line`` (of text ``text``) after a commit came from in that commit.
 
@@ -487,11 +499,21 @@ def fix_code_origin(
     fixes was written. The unchanged lines next to the additions are not a safe stand-in: a
     refactor can wrap reviewed logic in new lines. Such a fix is "unknown" and therefore kept.
 
+    The fix's commit can change several places in the file, and every action in that file and
+    commit gets the same answer, so the answer must hold for each place. A hunk that changes no code
+    line (it adds lines, or removes only punctuation) is judged by the code lines it leaves
+    unchanged around its additions, traced the same way. The fix is "unreviewed" only when every
+    hunk is wholly in code no review read: the lines each hunk changed, or, for a hunk that changes
+    none, the lines around its additions. A hunk that adds lines among code a review read, or with
+    no code line around its additions, may be the fix of reviewed code (a null guard added to a
+    reviewed parser in the same commit that rewrites an unreviewed exporter), so the fix is then
+    "unknown" and kept.
+
     Returns (origin, reason, commits): "unreviewed" when no line was reviewed, with the commits that
     wrote or edited the lines; "reviewed" when every line was; "mixed" when some were; and "unknown"
     when the history cannot tell (no file, no patch, a commit without details, a new file, a fix
-    that only adds lines, a patch whose hunks do not add up, or a line whose position does not hold
-    the traced text).
+    that only adds lines, a hunk that adds lines among reviewed code or with no code around them, a
+    patch whose hunks do not add up, or a line whose position does not hold the traced text).
     """
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
     if fix is None or fix <= first_reviewed:
@@ -510,6 +532,11 @@ def fix_code_origin(
     changed = _removed(fix_hunks)
     if not changed:
         return "unknown", "the fix only adds lines, so where the code it fixes was written is not known", ()
+    # The code lines around the additions of each hunk that changes no code line.
+    beside_by_hunk = [_context(h) for h in fix_hunks if not _removed([h])]
+    if any(not b for b in beside_by_hunk):
+        return "unknown", f"the fix also adds lines in {path} with no code line around them", ()
+    beside = [b for bs in beside_by_hunk for b in bs]
 
     history: list[tuple[int, list[_Hunk]]] = []
     for i in range(first_reviewed + 1, fix):
@@ -532,7 +559,7 @@ def fix_code_origin(
     # The commits that wrote each changed line (the commit that first wrote it, then each light edit
     # of it), or None when it was first written before the commits traced.
     writers: list[list[int] | None] = []
-    for line, text in changed:
+    for line, text in [*changed, *beside]:
         wrote: list[int] | None = []
         for i, hunks in reversed(history):
             kind, line, text = _trace(hunks, line, text)
@@ -546,15 +573,28 @@ def fix_code_origin(
             wrote = None
         writers.append(wrote)
 
-    unread = [w for w in writers if w is not None and not any(reviewed_before(i, fix, records) for i in w)]
+    def read(w: list[int] | None) -> bool:
+        return w is None or any(reviewed_before(i, fix, records) for i in w)
+
     n = len(changed)
-    if len(unread) == n:
-        shas = tuple(commits[i]["sha"] for i in sorted({i for w in unread for i in w}))
+    unread = [w for w in writers[:n] if not read(w)]
+    beside_read = sum(1 for w in writers[n:] if read(w))
+    if len(unread) == n and not beside_read:
+        shas = tuple(commits[i]["sha"] for i in sorted({i for w in writers if w is not None for i in w}))
+        added = f" and the {len(beside)} lines around its other additions" if beside else ""
         return (
             "unreviewed",
-            f"all {n} lines the fix changed in {path} were written in commits no review of the bot read "
-            f"before the fix ({', '.join(s[:12] for s in shas)})",
+            f"all {n} lines the fix changed in {path}{added} were written in commits no review of the bot "
+            f"read before the fix ({', '.join(s[:12] for s in shas)})",
             shas,
+        )
+    if len(unread) == n:
+        return (
+            "unknown",
+            f"all {n} lines the fix changed in {path} were written in commits no review of the bot read before "
+            f"the fix, but it also adds lines among code a review read ({beside_read} of the {len(beside)} lines "
+            "around those additions), so the fix may be of that code",
+            (),
         )
     if not unread:
         return "reviewed", f"all {n} lines the fix changed in {path} were in code a review of the bot read", ()

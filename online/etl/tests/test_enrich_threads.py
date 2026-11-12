@@ -107,7 +107,7 @@ def test_parse_gives_the_rest_shape_with_bot_logins_suffixed() -> None:
 async def test_one_request_returns_threads_and_comments() -> None:
     gh = FakeGraphQL({None: _page([_thread("T1")])}, {None: _page([_comment(1, "coderabbitai", "Bot", "summary")])})
 
-    threads, comments = await _fetch_review_threads(gh, "owner", "repo", 7)
+    threads, comments, _ = await _fetch_review_threads(gh, "owner", "repo", 7)
 
     assert [t["id"] for t in threads] == ["T1"]
     assert threads[0]["comments"][0]["reactions"] == {"THUMBS_UP": 2}
@@ -134,7 +134,7 @@ async def test_each_connection_pages_on_its_own_until_it_ends() -> None:
     }
     gh = FakeGraphQL(threads, comments)
 
-    got_threads, got_comments = await _fetch_review_threads(gh, "owner", "repo", 7)
+    got_threads, got_comments, _ = await _fetch_review_threads(gh, "owner", "repo", 7)
 
     assert [t["id"] for t in got_threads] == ["T1", "T2"]
     assert [c["id"] for c in got_comments] == [1, 2, 3]
@@ -149,7 +149,7 @@ async def test_each_connection_pages_on_its_own_until_it_ends() -> None:
 async def test_returns_nothing_when_the_pull_request_cannot_be_read() -> None:
     gh = FakeGraphQL({}, {}, fail=True)
 
-    assert await _fetch_review_threads(gh, "owner", "repo", 7) == ([], [])
+    assert await _fetch_review_threads(gh, "owner", "repo", 7) == ([], [], [])
     assert len(gh.calls) == 1
 
 
@@ -157,8 +157,10 @@ class FakeRepo:
     def __init__(self) -> None:
         self.writes: list[tuple] = []
 
-    async def update_threads(self, pr_id: int, threads: list, issue_comments: list | None = None) -> None:
-        self.writes.append(("threads", pr_id, threads, issue_comments))
+    async def update_threads(
+        self, pr_id: int, threads: list, issue_comments: list | None = None, comment_edits: list | None = None
+    ) -> None:
+        self.writes.append(("threads", pr_id, threads, issue_comments, comment_edits))
 
     async def update_commit_details(self, pr_id: int, details: list) -> None:
         self.writes.append(("details", pr_id, details))
@@ -177,7 +179,8 @@ async def test_the_threads_step_stores_the_comments_with_the_threads() -> None:
     await enrich_single_pr(gh, repo, pr_row)
 
     assert len(gh.calls) == 1
-    kind, pr_id, threads, comments = repo.writes[0]
+    kind, pr_id, threads, comments, edits = repo.writes[0]
     assert (kind, pr_id, [t["id"] for t in threads]) == ("threads", 5, ["T1"])
     assert [c["author"] for c in comments] == ["coderabbitai[bot]"]
+    assert edits == []
     assert [w[0] for w in repo.writes] == ["threads", "details", "done"]

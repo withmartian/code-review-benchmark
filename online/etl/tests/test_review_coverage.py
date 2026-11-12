@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_cutoff
+from pipeline.review_coverage import find_review_gaps
 from pipeline.review_coverage import unreviewed_code_origin
 
 CR = "coderabbitai[bot]"
@@ -178,6 +179,90 @@ def test_a_timed_notice_counts_only_after_the_last_completed_review() -> None:
 def test_no_cutoff_without_a_notice_or_post_review_commits() -> None:
     assert find_review_cutoff([review(A), review(B)], COMMITS, COMMITS[1:], CR) is None
     assert find_review_cutoff([issue_comment(summary(rate_limited(A, D)))], COMMITS, [], CR) is None
+
+
+# -- earlier revisions and gaps ------------------------------------------------------
+
+
+def revision(body: str, ts: str, actor: str = CR) -> dict:
+    """An earlier revision of an edited comment, as the analysis adds it from the edit history."""
+    return {"actor": actor, "event_type": "issue_comment", "timestamp": ts, "data": {"body": body, "revision_of": 1}}
+
+
+def test_an_earlier_revision_is_a_notice_posted_at_its_edit_time() -> None:
+    [n] = find_notices([revision(summary(rate_limited(A, C)), ts="2026-07-01T10:30:00Z")], CR)
+
+    assert (n.reason, n.in_place, n.timestamp, n.reviewed_sha, n.unreviewed_sha) == (
+        "limit",
+        False,
+        "2026-07-01T10:30:00Z",
+        A,
+        C,
+    )
+
+
+def test_a_limit_rewritten_away_by_a_later_review_opens_a_gap() -> None:
+    # A reviewed; limited on B and C (only in the comment's history); the bot then reviewed D.
+    events = [
+        review(A),
+        revision(summary(rate_limited(A, C)), ts="2026-07-01T10:30:00Z"),
+        issue_comment(summary(), updated="2026-07-01T12:00:00Z"),
+        review(D, ts="2026-07-01T12:00:00Z"),
+    ]
+
+    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CR)
+
+    assert (gap.last_reviewed, gap.closed_by, gap.unreviewed, gap.reasons) == (A, D, (B, C), ("limit",))
+    assert find_review_cutoff(events, COMMITS, COMMITS[1:], CR) is None
+
+
+def test_a_notice_still_in_the_current_body_opens_a_gap_once_a_review_passes_its_head() -> None:
+    events = [issue_comment(summary(rate_limited(A, C))), review(A), review(D, ts="2026-07-01T12:00:00Z")]
+
+    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CR)
+
+    assert (gap.last_reviewed, gap.closed_by, gap.unreviewed) == (A, D, (B, C))
+
+
+def test_a_later_notice_naming_a_reviewed_commit_closes_the_gap_there() -> None:
+    # The bot reviewed C without posting a review; a later limit notice names C as last reviewed.
+    events = [
+        review(A),
+        revision(summary(rate_limited(A, B)), ts="2026-07-01T10:30:00Z"),
+        revision(summary(rate_limited(C, D)), ts="2026-07-01T11:30:00Z"),
+        review(D, ts="2026-07-01T12:00:00Z"),
+    ]
+
+    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CR)
+
+    assert (gap.last_reviewed, gap.closed_by, gap.unreviewed) == (A, C, (B,))
+
+
+def test_no_gap_without_a_commit_inside_or_a_later_review() -> None:
+    one_commit = [review(A), revision(summary(rate_limited(A, B)), ts="2026-07-01T10:30:00Z"),
+                  review(B, ts="2026-07-01T11:00:00Z")]  # fmt: skip
+    no_later_review = [review(A), revision(summary(rate_limited(A, C)), ts="2026-07-01T10:30:00Z")]
+    head_already_reviewed = [review(B), revision(summary(rate_limited(A, B)), ts="2026-07-01T10:30:00Z"),
+                             review(D, ts="2026-07-01T12:00:00Z")]  # fmt: skip
+    before_any_review = [revision("You have reached your Codex usage limits for code reviews.",
+                                  ts="2026-07-01T09:00:00Z", actor=CODEX),
+                         review(D, ts="2026-07-01T12:00:00Z", actor=CODEX)]  # fmt: skip
+
+    assert find_review_gaps(one_commit, COMMITS, COMMITS[1:], CR) == []
+    assert find_review_gaps(no_later_review, COMMITS, COMMITS[1:], CR) == []
+    assert find_review_cutoff(no_later_review, COMMITS, COMMITS[1:], CR) is not None
+    assert find_review_gaps(head_already_reviewed, COMMITS, COMMITS[2:], CR) == []
+    assert find_review_gaps(before_any_review, COMMITS, COMMITS[1:], CODEX) == []
+
+
+def test_a_timed_notice_without_a_commit_opens_a_gap_from_the_bot_s_reviews() -> None:
+    limit = "You have reached your Codex usage limits for code reviews."
+    events = [review(A, actor=CODEX), issue_comment(limit, ts="2026-07-01T10:30:00Z", actor=CODEX),
+              review(D, ts="2026-07-01T12:00:00Z", actor=CODEX)]  # fmt: skip
+
+    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CODEX)
+
+    assert (gap.last_reviewed, gap.closed_by, gap.reasons) == (A, D, ("limit",))
 
 
 # -- line history ----------------------------------------------------------------

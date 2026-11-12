@@ -21,6 +21,8 @@ from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
 from pipeline.review_coverage import find_review_cutoff
+from pipeline.review_coverage import find_review_gaps
+from pipeline.review_coverage import sha_index
 from pipeline.review_coverage import unreviewed_code_origin
 
 logger = logging.getLogger(__name__)
@@ -314,6 +316,36 @@ def _with_current_issue_comments(events: list[dict], issue_comments: list[dict])
     return out
 
 
+def _with_comment_revisions(events: list[dict], comment_edits: list[dict], issue_comments: list[dict]) -> list[dict]:
+    """Timeline events plus the earlier revisions of edited comments, each at its edit time.
+
+    A bot that rewrites its status comment on each push keeps only the latest state in the current
+    body, so a limit notice it later replaced is visible only in the comment's edit history. Each
+    revision becomes an issue comment posted at its edit time and marked revision_of. The newest
+    revision is the current body, which ``issue_comments`` already holds; it is added only for a
+    comment whose current body was not fetched.
+    """
+    if not comment_edits:
+        return events
+    current = {c.get("id") for c in issue_comments}
+    out = list(events)
+    for c in comment_edits:
+        revisions = sorted(c.get("revisions") or [], key=lambda r: r.get("edited_at") or "")
+        if c.get("id") in current:
+            revisions = revisions[:-1]
+        for r in revisions:
+            out.append(
+                {
+                    "timestamp": r.get("edited_at") or "",
+                    "event_type": "issue_comment",
+                    "actor": c.get("author") or "unknown",
+                    "data": {"comment_id": c.get("id"), "body": r.get("body"), "revision_of": c.get("id")},
+                }
+            )
+    out.sort(key=lambda e: e.get("timestamp") or "")
+    return out
+
+
 def _exclude_unreviewed_actions(
     actions: list[dict],
     matches: list[dict],
@@ -330,23 +362,41 @@ def _exclude_unreviewed_actions(
     line the fix changed was first written after that commit. A matched action always counts: a
     match shows the bot saw the issue. Excluded actions are marked in place with
     excluded_from_recall (the reason) and unreviewed_commits.
+
+    The same holds inside a gap that a notice opened and a later review closed: an unmatched action
+    fixed in the gap is left out if every line the fix changed was first written in the gap, since
+    the later review saw only the gap's final state. When a fix falls in more than one span, the
+    one that starts latest is used.
     """
     matched = {m.get("human_action_id") for m in matches if m.get("matched")}
     unmatched = [a for a in actions if a["action_id"] not in matched]
     if not post_commits or not unmatched:
         return set()
     cutoff = find_review_cutoff(events, commits, post_commits, chatbot_username)
-    if cutoff is None:
+    gaps = find_review_gaps(events, commits, post_commits, chatbot_username)
+    # (start, end) index spans: each gap is (last reviewed, closed by]; the cutoff runs to the head.
+    spans = []
+    for g in gaps:
+        spans.append((sha_index(commits, g.last_reviewed), sha_index(commits, g.closed_by), g))
+    if cutoff is not None:
+        spans.append((sha_index(commits, cutoff.last_reviewed), len(commits) - 1, cutoff))
+    if not spans:
         return set()
     excluded = set()
     for a in unmatched:
-        origin, reason = unreviewed_code_origin(a, commits, details_by_sha, cutoff.last_reviewed)
+        fix = sha_index(commits, (a.get("commit_sha") or "").strip())
+        inside = [(start, span) for start, end, span in spans if fix is not None and start < fix <= end]
+        if not inside:
+            continue
+        _, span = max(inside, key=lambda s: s[0])
+        origin, reason = unreviewed_code_origin(a, commits, details_by_sha, span.last_reviewed)
         if origin == "unreviewed":
             excluded.add(a["action_id"])
-            a["excluded_from_recall"] = (
-                f"{', '.join(cutoff.reasons)} notice; last reviewed commit {cutoff.last_reviewed[:12]}; {reason}"
-            )
-            a["unreviewed_commits"] = list(cutoff.unreviewed)
+            where = f"last reviewed commit {span.last_reviewed[:12]}"
+            if span is not cutoff:
+                where += f", gap closed by the review of {span.closed_by[:12]}"
+            a["excluded_from_recall"] = f"{', '.join(span.reasons)} notice; {where}; {reason}"
+            a["unreviewed_commits"] = list(span.unreviewed)
     return excluded
 
 
@@ -443,11 +493,17 @@ async def analyze_single_pr(
     matches = [m.model_dump() for m in matching_resp.matches]
 
     # Fixes of code written in commits the bot said it did not review are left out of recall.
-    # Deterministic: the bot's own notices and the stored commit patches, no LLM call.
+    # Deterministic: the bot's own notices (current bodies and earlier revisions) and the stored
+    # commit patches, no LLM call.
+    issue_comments = _parse_json_col("issue_comments")
     excluded_action_ids = _exclude_unreviewed_actions(
         actions,
         matches,
-        _with_current_issue_comments(events, _parse_json_col("issue_comments")),
+        _with_comment_revisions(
+            _with_current_issue_comments(events, issue_comments),
+            _parse_json_col("issue_comment_edits"),
+            issue_comments,
+        ),
         commits,
         post_commits,
         details_by_sha,

@@ -216,10 +216,14 @@ class PRRepository:
     async def update_reviews(self, pr_id: int, reviews: list) -> None:
         await self.db.execute(q.UPDATE_PR_REVIEWS, (json.dumps(reviews), pr_id))
 
-    async def update_threads(self, pr_id: int, threads: list, issue_comments: list | None = None) -> None:
-        """Store the review threads and, when they were read with them, the PR's conversation comments."""
+    async def update_threads(
+        self, pr_id: int, threads: list, issue_comments: list | None = None, comment_edits: list | None = None
+    ) -> None:
+        """Store the review threads and, when they were read with them, the PR's conversation comments
+        and the edit history of its bot comments."""
         comments_json = json.dumps(issue_comments) if issue_comments is not None else None
-        await self.db.execute(q.UPDATE_PR_THREADS, (json.dumps(threads), comments_json, pr_id))
+        edits_json = json.dumps(comment_edits) if comment_edits is not None else None
+        await self.db.execute(q.UPDATE_PR_THREADS, (json.dumps(threads), comments_json, edits_json, pr_id))
 
     @staticmethod
     def compute_diff_lines(details: list) -> int:

@@ -7,6 +7,7 @@ import json
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
+from pipeline.analyze import _with_comment_revisions
 from pipeline.analyze import _with_current_issue_comments
 from pipeline.analyze import analyze_single_pr
 
@@ -232,3 +233,79 @@ async def test_without_fetched_issue_comments_nothing_is_excluded() -> None:
     assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
 
     assert repo.stored["recall"] == 0.5
+
+
+SUMMARY = "<!-- This is an auto-generated comment: summarize by coderabbit.ai -->\nWalkthrough"
+
+
+def _gap_row(edits: list[dict] | None) -> dict:
+    # The bot reviewed a and b, was rate limited on c, then reviewed d after the limit reset and
+    # rewrote its summary comment: the limit notice is only in the comment's edit history.
+    row = _pr_row()
+    assembled = json.loads(row["assembled"])
+    assembled["events"].append(_review("d" * 40, "2026-07-01T15:30:00Z", "**Actionable comments posted: 0**"))
+    row["assembled"] = json.dumps(assembled)
+    current = json.loads(row["issue_comments"])
+    current[0]["body"] = SUMMARY
+    row["issue_comments"] = json.dumps(current)
+    row["issue_comment_edits"] = None if edits is None else json.dumps(edits)
+    return row
+
+
+GAP_NOTICE = _notice(
+    "rate limited",
+    "> [!WARNING]\n> ## Review limit reached\n>\n"
+    f"> Reviewing files that changed from the base of the PR and between {'b' * 40} and {'c' * 40}.",
+)
+EDITS = [
+    {
+        "id": 1,
+        "author": BOT,
+        "revisions": [
+            {"edited_at": "2026-07-01T10:01:00Z", "body": SUMMARY},
+            {"edited_at": "2026-07-01T14:01:00Z", "body": f"{SUMMARY}\n{GAP_NOTICE}"},
+            {"edited_at": "2026-07-01T15:31:00Z", "body": SUMMARY},
+        ],
+    }
+]
+
+
+def test_comment_revisions_are_added_at_their_edit_time() -> None:
+    events = [{"actor": BOT, "event_type": "review", "timestamp": "2026-07-01T12:00:00Z", "data": {"body": "x"}}]
+    current = [{"id": 1, "author": BOT, "body": SUMMARY}]
+
+    merged = _with_comment_revisions(events, EDITS, current)
+
+    assert [(e["timestamp"], e["event_type"]) for e in merged] == [
+        ("2026-07-01T10:01:00Z", "issue_comment"),
+        ("2026-07-01T12:00:00Z", "review"),
+        ("2026-07-01T14:01:00Z", "issue_comment"),
+    ]
+    assert merged[2]["data"]["revision_of"] == 1
+    # Without the current body, the newest revision is added as well.
+    assert len(_with_comment_revisions(events, EDITS, [])) == 4
+    assert _with_comment_revisions(events, [], current) is events
+
+
+async def test_a_fix_inside_a_gap_closed_by_a_later_review_is_left_out_of_recall() -> None:
+    # d fixes the export path written in c; the review of d saw only the fixed line.
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, _gap_row(EDITS), BOT, "model")
+
+    assert repo.stored["recall"] == 1.0
+    actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
+    assert actions["A2"]["excluded_from_recall"].startswith(
+        f"limit notice; last reviewed commit {'b' * 12}, gap closed by the review of {'d' * 12}; "
+    )
+    assert actions["A2"]["unreviewed_commits"] == ["c" * 40]
+
+
+async def test_without_the_edit_history_the_gap_is_not_seen() -> None:
+    for edits in (None, []):
+        repo = FakeRepo()
+
+        assert await analyze_single_pr(FakeLLM(), repo, _gap_row(edits), BOT, "model")
+
+        assert repo.stored["recall"] == 0.5
+        assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])

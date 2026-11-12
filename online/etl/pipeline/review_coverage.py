@@ -15,6 +15,13 @@ stored commit patches to tell whether the lines a fix changed were first written
 To support another bot's notice, add a ``NoticePattern`` row for its login. A notice that names
 no commit is placed with the bot's own reviews: the last reviewed commit is the latest one a
 completed review of the bot was posted on.
+
+A bot that rewrites its status comment in place keeps only the latest state in the current body:
+once it reviews again after a limit, the earlier notice is gone. The earlier revisions of a
+comment (its edit history) are read as notices posted at their edit time. A notice whose range a
+later completed review covered opens a gap (``find_review_gaps``): the later review saw only the
+final state of the gap's commits, so a fix made in the gap of code first written in the gap was
+never in any diff the bot reviewed.
 """
 
 from __future__ import annotations
@@ -180,6 +187,8 @@ def find_notices(events: list[dict], chatbot_username: str) -> list[Notice]:
         if not same_github_actor(e.get("actor"), chatbot_username):
             continue
         data = e.get("data") or {}
+        # An earlier revision of an edited comment is tied to its edit time, like a timed notice.
+        revision = data.get("revision_of") is not None
         for p, text in _match_notices(data.get("body") or "", chatbot_username):
             reviewed = p.reviewed.search(text) if p.reviewed else None
             unreviewed = p.unreviewed.search(text) if p.unreviewed else None
@@ -190,7 +199,7 @@ def find_notices(events: list[dict], chatbot_username: str) -> list[Notice]:
             out.append(
                 Notice(
                     reason=p.reason,
-                    in_place=p.in_place,
+                    in_place=p.in_place and not revision,
                     timestamp=_event_time(e),
                     reviewed_sha=reviewed.group(1) if reviewed else None,
                     unreviewed_sha=unreviewed_sha,
@@ -287,6 +296,82 @@ def find_review_cutoff(
         notice_reviewed=commits[max(named)]["sha"] if named else None,
         reviews_reviewed=commits[reviews_idx]["sha"] if reviews_idx is not None else None,
     )
+
+
+@dataclass(frozen=True)
+class ReviewGap:
+    """Post-review commits between two commits the bot reviewed, opened by a notice of the bot.
+
+    last_reviewed is the commit the bot reviewed before the notice; closed_by is the first commit
+    a later review of the bot covered. That review saw only the state at closed_by, so code written
+    in the gap and changed again by closed_by never appeared in a diff the bot reviewed.
+    """
+
+    last_reviewed: str
+    closed_by: str
+    unreviewed: tuple[str, ...]
+    reasons: tuple[str, ...]
+
+
+def find_review_gaps(
+    events: list[dict], commits: list[dict], post_commits: list[dict], chatbot_username: str
+) -> list[ReviewGap]:
+    """Gaps opened by a notice of the bot and closed by a later review, in commit order.
+
+    A commit is known reviewed at a time when a completed review of the bot was posted on it then,
+    or when a notice posted then names it as the last reviewed commit. For a timed notice (posted
+    once, or an earlier revision of an edited comment), the gap starts at the latest commit known
+    reviewed before the notice or named by it as the last reviewed. For a notice in the current body of a rewritten comment, it starts
+    at the last reviewed commit the notice names. The gap ends at the first commit after its start
+    known reviewed after the notice (for a current body, a completed review at or after the
+    notice's head). No gap opens for a notice whose head is at or before the start, a notice before
+    any review, a notice no later review covered (``find_review_cutoff`` reads those), or a gap
+    with no commit inside it.
+    """
+    if not post_commits:
+        return []
+    notices = find_notices(events, chatbot_username)
+    if not notices:
+        return []
+    split = sha_index(commits, post_commits[0].get("sha"))
+    if split is None:
+        return []
+    completed = _completed_reviews(events, commits, chatbot_username)
+    checkpoints = completed + [
+        (i, n.timestamp) for n in notices if (i := sha_index(commits, n.reviewed_sha)) is not None
+    ]
+    gaps: dict[tuple[int, int], set[str]] = {}
+    for n in notices:
+        named = sha_index(commits, n.reviewed_sha)
+        head = sha_index(commits, n.unreviewed_sha)
+        if n.in_place:
+            if named is None or head is None:
+                continue
+            start = named
+            ends = [i for i, _ in completed if i >= head]
+        else:
+            before = [i for i, t in checkpoints if t < n.timestamp] + ([named] if named is not None else [])
+            if not before:
+                continue
+            start = max(before)
+            ends = [i for i, t in checkpoints if t > n.timestamp]
+        start = max(start, split - 1)
+        if head is not None and head <= start:
+            continue
+        ends = [i for i in ends if i > start]
+        if not ends or min(ends) - start < 2:
+            continue
+        gaps.setdefault((start, min(ends)), set()).add(n.reason)
+    post_shas = {c.get("sha") for c in post_commits}
+    return [
+        ReviewGap(
+            last_reviewed=commits[start]["sha"],
+            closed_by=commits[end]["sha"],
+            unreviewed=tuple(c["sha"] for c in commits[start + 1 : end] if c.get("sha") in post_shas),
+            reasons=tuple(sorted(reasons)),
+        )
+        for (start, end), reasons in sorted(gaps.items())
+    ]
 
 
 # -- Where the code a fix changed was first written ----------------------------

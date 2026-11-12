@@ -220,7 +220,8 @@ UPDATE_PR_REVIEWS = """
 """
 
 UPDATE_PR_THREADS = """
-    UPDATE prs SET review_threads = $1, issue_comments = $2, enrichment_step = 'threads' WHERE id = $3
+    UPDATE prs SET review_threads = $1, issue_comments = $2, issue_comment_edits = $3, enrichment_step = 'threads'
+    WHERE id = $4
 """
 
 UPDATE_PR_COMMIT_DETAILS = """

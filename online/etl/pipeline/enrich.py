@@ -21,6 +21,8 @@ REST_BASE = "https://api.github.com"
 
 # The PR's review threads and its conversation (issue) comments, in one request. Each connection
 # pages on its own cursor; a request after the first asks only for the connections with pages left.
+# A comment's userContentEdits is its edit history: each edit's `diff` holds the full text of the
+# comment after that edit, newest first; the oldest is the comment as first posted.
 REVIEW_THREADS_QUERY = """
 query(
   $owner: String!, $repo: String!, $prNumber: Int!,
@@ -31,11 +33,16 @@ query(
     pullRequest(number: $prNumber) {
       comments(first: 100, after: $commentCursor) @include(if: $withComments) {
         nodes {
+          id
           databaseId
           author { __typename login }
           body
           createdAt
           updatedAt
+          userContentEdits(first: 100) {
+            nodes { editedAt diff }
+            pageInfo { hasNextPage endCursor }
+          }
         }
         pageInfo { hasNextPage endCursor }
       }
@@ -61,6 +68,20 @@ query(
             }
           }
         }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+}
+"""
+
+# The rest of one comment's edit history, for a comment with more than 100 edits.
+COMMENT_EDITS_PAGE_QUERY = """
+query($id: ID!, $cursor: String) {
+  node(id: $id) {
+    ... on IssueComment {
+      userContentEdits(first: 100, after: $cursor) {
+        nodes { editedAt diff }
         pageInfo { hasNextPage endCursor }
       }
     }
@@ -298,6 +319,44 @@ def parse_issue_comments(nodes: list[dict]) -> list[dict]:
     return out
 
 
+def parse_comment_edits(nodes: list[dict]) -> list[dict]:
+    """The revisions of each edited comment by a bot, oldest first, from IssueComment nodes.
+
+    Only bot comments are kept (bots rewrite status comments in place; people's edits are not
+    read), and only comments that were edited. Bot logins get the ``[bot]`` suffix of the REST API.
+    """
+    out = []
+    for node in nodes:
+        author = node.get("author") or {}
+        edits = (node.get("userContentEdits") or {}).get("nodes") or []
+        if author.get("__typename") != "Bot" or not edits:
+            continue
+        revisions = [
+            {"edited_at": e.get("editedAt"), "body": e.get("diff")} for e in edits if e.get("diff") is not None
+        ]
+        revisions.sort(key=lambda r: r["edited_at"] or "")
+        if revisions:
+            out.append({"id": node.get("databaseId"), "author": f"{author.get('login')}[bot]", "revisions": revisions})
+    return out
+
+
+async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict]) -> None:
+    """Complete in place the edit history of each bot comment with more than one page of edits."""
+    for node in nodes:
+        if (node.get("author") or {}).get("__typename") != "Bot":
+            continue
+        edits = node.get("userContentEdits") or {}
+        while (edits.get("pageInfo") or {}).get("hasNextPage"):
+            data = await gh.graphql(
+                COMMENT_EDITS_PAGE_QUERY, {"id": node["id"], "cursor": edits["pageInfo"]["endCursor"]}
+            )
+            more = ((data or {}).get("node") or {}).get("userContentEdits")
+            if more is None:
+                break
+            edits["nodes"] = [*(edits.get("nodes") or []), *(more.get("nodes") or [])]
+            edits["pageInfo"] = more.get("pageInfo") or {}
+
+
 def _parse_review_thread(node: dict) -> dict:
     thread = {
         "id": node["id"],
@@ -327,11 +386,12 @@ def _parse_review_thread(node: dict) -> dict:
 
 async def _fetch_review_threads(
     gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
-) -> tuple[list[dict], list[dict]]:
-    """The PR's review threads and conversation comments, from one paginated GraphQL read.
+) -> tuple[list[dict], list[dict], list[dict]]:
+    """The PR's review threads, conversation comments and bot comment edit histories, from one paginated read.
 
-    The first request returns the first page of both. Later requests are made only while a
-    connection has more pages, and ask only for those connections.
+    The first request returns the first page of each. Later requests are made only while a
+    connection has more pages, and ask only for those connections; a bot comment with more than
+    100 edits gets one more request per further 100.
     """
     all_threads: list[dict] = []
     comment_nodes: list[dict] = []
@@ -365,7 +425,8 @@ async def _fetch_review_threads(
             page_info = comments_data.get("pageInfo") or {}
             with_comments = bool(page_info.get("hasNextPage"))
             comment_cursor = page_info.get("endCursor")
-    return all_threads, parse_issue_comments(comment_nodes)
+    await _fetch_long_edit_histories(gh, comment_nodes)
+    return all_threads, parse_issue_comments(comment_nodes), parse_comment_edits(comment_nodes)
 
 
 async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:
@@ -566,9 +627,9 @@ async def enrich_single_pr(
 
     # Step: threads (index 3)
     if step_idx < 3:
-        # The same request returns the conversation comments, stored with the threads.
-        threads, issue_comments = await _fetch_review_threads(gh, owner, repo, pr_number)
-        await repo_obj.update_threads(pr_id, threads, issue_comments)
+        # The same request returns the conversation comments and their edit history, stored with the threads.
+        threads, issue_comments, comment_edits = await _fetch_review_threads(gh, owner, repo, pr_number)
+        await repo_obj.update_threads(pr_id, threads, issue_comments, comment_edits)
         logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)}, {len(issue_comments)} comments)")
 
     # Step: commit details (index 4)

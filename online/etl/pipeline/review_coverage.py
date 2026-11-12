@@ -517,6 +517,73 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
     return "kept", line - offset, text
 
 
+_MOVE_SPAN = 10  # the most consecutive lines a moved or re-wrapped line is compared as one
+
+
+def _span_keys(run: list[str], at: int | None = None) -> set[str]:
+    """The text, with all whitespace removed, of each run of up to ``_MOVE_SPAN`` consecutive lines
+    of ``run`` (those containing index ``at`` when it is given) that carries code."""
+    keys = set()
+    for a in range(len(run)):
+        for b in range(a + 1, min(len(run), a + _MOVE_SPAN) + 1):
+            if at is not None and not a <= at < b:
+                continue
+            key = re.sub(r"\s+", "", "".join(run[a:b]))
+            if _CODE_RE.search(key):
+                keys.add(key)
+    return keys
+
+
+def _runs(h: _Hunk, kind: str) -> list[list[str]]:
+    """The texts of each run of consecutive lines of one kind ("-" or "+") in a hunk."""
+    out: list[list[str]] = []
+    run: list[str] = []
+    for k, text in h.lines:
+        if k == kind:
+            run.append(text)
+            continue
+        if run:
+            out.append(run)
+        run = []
+    if run:
+        out.append(run)
+    return out
+
+
+def _removed_keys(detail: dict) -> set[str]:
+    """``_span_keys`` of every run of removed lines a commit's readable patches hold, in any file."""
+    keys: set[str] = set()
+    for f in detail.get("files") or []:
+        for h in _hunks(f.get("patch") or "") or []:
+            for run in _runs(h, "-"):
+                keys |= _span_keys(run)
+    return keys
+
+
+def _added_keys(hunks: list[_Hunk], line: int) -> set[str]:
+    """``_span_keys`` of the run of added lines that holds line ``line`` after the commit, over the
+    runs that include that line."""
+    for h in hunks:
+        if not h.new_start <= line < h.new_start + h.new_len:
+            continue
+        new = h.new_start
+        run: list[str] = []
+        at = None
+        for kind, text in h.lines:
+            if kind == "+":
+                if new == line:
+                    at = len(run)
+                run.append(text)
+            elif run:
+                if at is not None:
+                    break
+                run = []
+            if kind != "-":
+                new += 1
+        return _span_keys(run, at) if at is not None else set()
+    return set()
+
+
 def _file_entry(detail: dict | None, path: str) -> dict | None:
     for f in (detail or {}).get("files") or []:
         if f.get("filename") == path:
@@ -535,7 +602,12 @@ def fix_code_origin(
     fix, newest first, to the commit that first wrote it, so a copy of a reviewed line added
     elsewhere in the file is not taken for it. An added line that is a light edit of a line its
     hunk removed (``_EDIT_RATIO``) is traced back to that line, so a line edited for another reason
-    keeps the code it carried. A line not written in those commits was in the code the first review
+    keeps the code it carried. A line a commit adds is not taken as written by it when the commit
+    removed the same code elsewhere, whitespace aside: the line, or a run of up to ``_MOVE_SPAN``
+    consecutive added lines holding it, equals a run of removed lines in any hunk of any file of
+    that commit. That is a move, an extraction into another file, or a re-wrap (a copy removes
+    nothing), and the fix is "unknown" and kept, since where the line was first written is not
+    followed. A line not written in those commits was in the code the first review
     read, or in the repository before the pull request. A line counts as reviewed when a review of
     a commit before the fix covered the commit that wrote it or any commit that later edited it
     (``reviewed_before``): that review's diff showed the line.
@@ -559,7 +631,8 @@ def fix_code_origin(
     wrote or edited the lines; "reviewed" when every line was; "mixed" when some were; and "unknown"
     when the history cannot tell (no file, no patch, a commit without details, a new file, a fix
     that only adds lines, a change block that adds lines among reviewed code or with no code around
-    it, a patch whose hunks do not add up, or a line whose position does not hold the traced text).
+    it, a line a commit moved or re-wrapped, a patch whose hunks do not add up, or a line whose
+    position does not hold the traced text).
     """
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
     if fix is None or fix <= first_reviewed:
@@ -605,12 +678,24 @@ def fix_code_origin(
     # The commits that wrote each changed line (the commit that first wrote it, then each light edit
     # of it), or None when it was first written before the commits traced.
     writers: list[list[int] | None] = []
+    removed_keys: dict[int, set[str]] = {}
     for line, text in [*changed, *beside]:
         wrote: list[int] | None = []
         for i, hunks in reversed(history):
+            at = line
             kind, line, text = _trace(hunks, line, text)
             if kind == "mismatch":
                 return "unknown", f"a changed line is not where commit {commits[i]['sha'][:12]} puts it", ()
+            if kind == "added":
+                if i not in removed_keys:
+                    removed_keys[i] = _removed_keys(details_by_sha[commits[i]["sha"]])
+                if _added_keys(hunks, at) & removed_keys[i]:
+                    return (
+                        "unknown",
+                        f"commit {commits[i]['sha'][:12]} moved or re-wrapped a line the fix reads in {path} from "
+                        "code it removed, so where that line was first written is not followed",
+                        (),
+                    )
             if kind in ("edited", "added"):
                 wrote.append(i)
             if kind == "added":

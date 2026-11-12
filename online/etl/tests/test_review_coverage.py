@@ -458,6 +458,49 @@ def test_a_hunk_that_adds_lines_with_no_code_around_them_is_unknown() -> None:
     )
 
 
+def test_reviewed_code_an_unreviewed_commit_moved_or_re_wrapped_keeps_its_fix() -> None:
+    # A reviewed g; C, unreviewed, moves g to the top of the file in two hunks; D fixes g.
+    m_a = "@@ -0,0 +1,14 @@\n+def f(a):\n+    return a + 1\n" + "".join(f"+x{i} = {i}\n" for i in range(10))
+    m_a += "+def g(b):\n+    return b * 2"
+    move_c = "@@ -0,0 +1,2 @@\n+def g(b):\n+    return b * 2\n@@ -13,2 +14,0 @@\n-def g(b):\n-    return b * 2"
+    fix_d = "@@ -1,2 +1,2 @@\n def g(b):\n-    return b * 2\n+    return b * 3"
+    details = _details((A, "m.py", "added", m_a), (C, "m.py", "modified", move_c), (D, "m.py", "modified", fix_d))
+    origin, reason = _origin(_action(D, "m.py"), details)
+    assert origin == "unknown"
+    assert reason.startswith(f"commit {'c' * 12} moved or re-wrapped a line")
+
+    # C extracts a reviewed helper of app.py into a new file, helpers.py; D fixes it there.
+    helper = "+def helper(x):\n+    y = x * 2\n+    return y"
+    details = _details(
+        (A, "app.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+        (C, "app.py", "modified", "@@ -1,3 +0,0 @@\n" + helper.replace("+", "-")),
+        (C, "helpers.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+        (
+            D,
+            "helpers.py",
+            "modified",
+            "@@ -1,3 +1,3 @@\n def helper(x):\n-    y = x * 2\n+    y = x * 3\n     return y",
+        ),
+    )
+    assert _origin(_action(D, "helpers.py"), details)[0] == "unknown"
+
+    # C re-wraps a reviewed call over three lines (a formatter); D changes one argument.
+    r_a = "@@ -0,0 +1,2 @@\n+def run():\n+    result = compute(alpha, beta, gamma, delta)"
+    wrap_c = (
+        "@@ -1,2 +1,4 @@\n def run():\n-    result = compute(alpha, beta, gamma, delta)\n"
+        "+    result = compute(\n+        alpha, beta, gamma, delta\n+    )"
+    )
+    fix_d = "@@ -2,3 +2,3 @@\n     result = compute(\n-        alpha, beta, gamma, delta\n+        alpha, beta, gamma, eps\n     )"
+    details = _details((A, "r.py", "added", r_a), (C, "r.py", "modified", wrap_c), (D, "r.py", "modified", fix_d))
+    assert _origin(_action(D, "r.py"), details)[0] == "unknown"
+
+    # Without the removal, the same lines are new code C wrote: a copy, not a move.
+    copy_c = "@@ -14,0 +15,2 @@\n+def g(b):\n+    return b * 2"
+    fix_copy = "@@ -15,2 +15,2 @@\n def g(b):\n-    return b * 2\n+    return b * 3"
+    details = _details((A, "m.py", "added", m_a), (C, "m.py", "modified", copy_c), (D, "m.py", "modified", fix_copy))
+    assert _origin(_action(D, "m.py"), details)[0] == "unreviewed"
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+
+from pipeline import enrich
 from pipeline.enrich import COMMENT_EDITS_PAGE_QUERY
 from pipeline.enrich import ENRICHMENT_STEPS
 from pipeline.enrich import REVIEW_THREADS_QUERY
+from pipeline.enrich import IncompleteReadError
 from pipeline.enrich import _fetch_review_threads
+from pipeline.enrich import enrich_single_pr
 from pipeline.enrich import parse_comment_edits
 
 
@@ -119,7 +126,8 @@ async def test_pages_through_comments_and_long_histories_of_bot_comments_only() 
     assert [v.get("withThreads") for _, v in gh.calls[:2]] == [True, False]
 
 
-async def test_a_failed_long_history_read_keeps_the_first_page() -> None:
+def _failing_history_gh() -> FakeGraphQL:
+    """A bot comment whose second page of edits cannot be read."""
     bot = _comment("n1", 1, "coderabbitai", "Bot", _edits(("2026-07-01T12:00:00Z", "v2"), next_cursor="e1"))
     gh = FakeGraphQL([{"nodes": [bot], "pageInfo": {"hasNextPage": False, "endCursor": None}}], {})
 
@@ -129,7 +137,69 @@ async def test_a_failed_long_history_read_keeps_the_first_page() -> None:
         return await FakeGraphQL.graphql(gh, query, variables)
 
     gh.graphql = fail_on_history  # type: ignore[method-assign]
+    return gh
 
-    _, _, edits = await _fetch_review_threads(gh, "owner", "repo", 7)
 
-    assert [[r["body"] for r in c["revisions"]] for c in edits] == [["v2"]]
+async def test_a_failed_long_history_read_raises_instead_of_keeping_the_first_page() -> None:
+    # A review recorded only in the unread revisions would read as a push the bot never reviewed.
+    with pytest.raises(IncompleteReadError, match="comment 1 stopped after 1 edits"):
+        await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7)
+
+
+class FakeRepo:
+    def __init__(self) -> None:
+        self.writes: list[tuple] = []
+
+    async def update_threads(self, pr_id: int, *_args: object) -> None:
+        self.writes.append(("threads", pr_id))
+
+    async def update_commit_details(self, pr_id: int, *_args: object) -> None:
+        self.writes.append(("details", pr_id))
+
+    async def mark_enrichment_done(self, pr_id: int) -> None:
+        self.writes.append(("done", pr_id))
+
+    async def lock_pr(self, pr_id: int, *_args: object) -> bool:
+        self.writes.append(("lock", pr_id))
+        return True
+
+    async def unlock_pr(self, pr_id: int) -> None:
+        self.writes.append(("unlock", pr_id))
+
+    async def mark_error(self, pr_id: int, *_args: object) -> None:
+        self.writes.append(("error", pr_id))
+
+
+PR_ROW = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
+
+
+async def test_an_incomplete_history_is_never_stored_so_it_excludes_nothing() -> None:
+    # The threads step is not recorded: no partial history reaches the analysis, and the step stays
+    # undone for the next pass to read again.
+    repo = FakeRepo()
+
+    with pytest.raises(IncompleteReadError):
+        await enrich_single_pr(_failing_history_gh(), repo, dict(PR_ROW))
+
+    assert repo.writes == []
+
+
+async def test_the_loop_releases_a_pr_with_an_incomplete_read_for_the_next_pass(monkeypatch) -> None:
+    repo = FakeRepo()
+    passes = [[dict(PR_ROW)], []]
+
+    async def get_pending_prs(*_args: object, **_kwargs: object) -> list[dict]:
+        return passes.pop(0)
+
+    repo.get_pending_prs = get_pending_prs  # type: ignore[attr-defined]
+
+    async def incomplete(*_args: object) -> None:
+        raise IncompleteReadError("edit history of comment 1 stopped after 100 edits")
+
+    monkeypatch.setattr(enrich, "PRRepository", lambda _db: repo)
+    monkeypatch.setattr(enrich, "enrich_single_pr", incomplete)
+    cfg = SimpleNamespace(github_tokens=["t"], github_token="t", worker_id="w", lock_timeout_minutes=30)
+
+    assert await enrich.enrich_loop(cfg, None, chatbot_id=1, one_shot=True) == 0
+    # Unlocked, not marked as error (an errored PR is never read again) and not marked done.
+    assert repo.writes == [("lock", 5), ("unlock", 5)]

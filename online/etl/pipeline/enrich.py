@@ -110,6 +110,13 @@ class AllTokensInvalidError(Exception):
     Never causes a PR to be marked as error — the enrichment loop aborts instead."""
 
 
+class IncompleteReadError(Exception):
+    """Raised when a read that later analysis relies on as complete stopped partway.
+
+    The step is not recorded and the PR is not marked as error: the enrichment loop releases it,
+    so the next pass reads the step again."""
+
+
 class GitHubEnrichClient:
     """Async GitHub API client with rate limiting and retries — adapted from gh_enrich.py."""
 
@@ -341,7 +348,12 @@ def parse_comment_edits(nodes: list[dict]) -> list[dict]:
 
 
 async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict]) -> None:
-    """Complete in place the edit history of each bot comment with more than one page of edits."""
+    """Complete in place the edit history of each bot comment with more than one page of edits.
+
+    A page that cannot be read raises ``IncompleteReadError`` rather than keeping the pages read so
+    far: the analysis reads the history as every review the bot recorded, so a review recorded
+    only in a missing revision would read as a push the bot never reviewed.
+    """
     for node in nodes:
         if (node.get("author") or {}).get("__typename") != "Bot":
             continue
@@ -352,7 +364,10 @@ async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict]) 
             )
             more = ((data or {}).get("node") or {}).get("userContentEdits")
             if more is None:
-                break
+                raise IncompleteReadError(
+                    f"edit history of comment {node.get('databaseId')} stopped after "
+                    f"{len(edits.get('nodes') or [])} edits"
+                )
             edits["nodes"] = [*(edits.get("nodes") or []), *(more.get("nodes") or [])]
             edits["pageInfo"] = more.get("pageInfo") or {}
 
@@ -391,7 +406,8 @@ async def _fetch_review_threads(
 
     The first request returns the first page of each. Later requests are made only while a
     connection has more pages, and ask only for those connections; a bot comment with more than
-    100 edits gets one more request per further 100.
+    100 edits gets one more request per further 100, and raises ``IncompleteReadError`` when one
+    of those requests fails.
     """
     all_threads: list[dict] = []
     comment_nodes: list[dict] = []
@@ -683,6 +699,7 @@ async def enrich_loop(
 
     enriched_count = 0
     error_count = 0
+    deferred_count = 0  # PRs released for a retry after an incomplete read
     limit = max_prs or 10000
     assemble_interval = 100  # assemble every N enriched PRs
     last_assembled_at = 0
@@ -691,7 +708,7 @@ async def enrich_loop(
     stop_event = asyncio.Event()
 
     async def _worker(worker_id: int) -> None:
-        nonlocal enriched_count, error_count
+        nonlocal enriched_count, error_count, deferred_count
         while True:
             # Stop early if the pool is dead or another worker requested shutdown —
             # avoids locking more PRs we can't actually process.
@@ -745,6 +762,12 @@ async def enrich_loop(
                 finally:
                     if gh is not None:
                         pool.release(gh)
+            except IncompleteReadError as e:
+                # Leave the step undone and release the PR, so the next pass reads it again.
+                logger.warning(f"Worker {worker_id}: incomplete read for {pr_label}, retrying next pass: {e}")
+                with contextlib.suppress(Exception):
+                    await repo_obj.unlock_pr(pr_id)
+                deferred_count += 1
             except AllTokensInvalidError:
                 # Don't mark the PR as error — release the lock so it's picked up
                 # immediately on the next run with valid tokens (instead of waiting
@@ -797,6 +820,7 @@ async def enrich_loop(
                 continue
 
             logger.info(f"Queuing {len(prs)} PRs for enrichment")
+            enriched_before, deferred_before = enriched_count, deferred_count
 
             # Fill queue
             for pr_row in prs:
@@ -822,7 +846,8 @@ async def enrich_loop(
                     await task
 
             logger.info(
-                f"Pass complete: {enriched_count} enriched, {error_count} errors | Tokens: {pool.status_summary()}"
+                f"Pass complete: {enriched_count} enriched, {error_count} errors, "
+                f"{deferred_count} released for a retry | Tokens: {pool.status_summary()}"
             )
 
             # Assemble enriched PRs
@@ -838,6 +863,11 @@ async def enrich_loop(
 
             if one_shot:
                 break
+
+            # Only released PRs are left: wait before reading them again instead of looping on them.
+            if enriched_count == enriched_before and deferred_count > deferred_before:
+                logger.info("Pass enriched nothing and released PRs for a retry, sleeping 5 minutes...")
+                await asyncio.sleep(300)
 
     finally:
         await pool.close()

@@ -345,3 +345,52 @@ def test_unknown_when_the_history_cannot_tell() -> None:
 
     assert _origin(_action(A, "exporter.py"), missing)[0] == "unknown"
     assert _origin({**_action(D, "x.py"), "file_path": None}, missing)[0] == "unknown"
+
+
+F_A = "@@ -0,0 +1,2 @@\n+def f(a):\n+    return a + 1"
+G_C = "@@ -1,2 +1,4 @@\n def f(a):\n     return a + 1\n+def g(a):\n+    return a + 1"
+
+
+def test_a_copy_of_a_reviewed_line_added_later_is_not_the_reviewed_line() -> None:
+    # C copies a reviewed line into a new function; D fixes the reviewed occurrence, then the copy.
+    fix_f = "@@ -1,3 +1,3 @@\n def f(a):\n-    return a + 1\n+    return a - 1\n def g(a):"
+    fix_g = "@@ -2,3 +2,3 @@\n     return a + 1\n def g(a):\n-    return a + 1\n+    return a - 1"
+
+    for fix, origin in ((fix_f, "reviewed"), (fix_g, "unreviewed")):
+        details = _details((A, "p.py", "added", F_A), (C, "p.py", "modified", G_C), (D, "p.py", "modified", fix))
+        assert _origin(_action(D, "p.py"), details)[0] == origin
+
+
+def test_short_lines_are_traced_too() -> None:
+    # `x = 0` has no three-letter word; it was reviewed, and the line after it was written in C.
+    run_a = "@@ -0,0 +1,2 @@\n+def run(items):\n+    x = 0"
+    run_c = "@@ -1,2 +1,3 @@\n def run(items):\n     x = 0\n+    total = compute(items)"
+    fix = (
+        "@@ -1,3 +1,2 @@\n def run(items):\n-    x = 0\n-    total = compute(items)\n+    total = compute(items or [])"
+    )
+    details = _details((A, "run.py", "added", run_a), (C, "run.py", "modified", run_c), (D, "run.py", "modified", fix))
+
+    origin, reason = _origin(_action(D, "run.py"), details)
+
+    assert origin == "mixed"
+    assert reason.startswith("1 of the 2 lines")
+
+
+def test_a_line_not_where_the_history_puts_it_is_unknown() -> None:
+    fix = "@@ -1,3 +1,3 @@\n def f(a):\n-    return a * 2\n+    return a - 1\n def g(a):"
+    garbled = "@@ -1,2 +1,3 @@\n def f(a):\n-    return a\n+    return a"
+    for c_patch, fix_patch in ((G_C, fix), (garbled, fix)):
+        details = _details(
+            (A, "p.py", "added", F_A), (C, "p.py", "modified", c_patch), (D, "p.py", "modified", fix_patch)
+        )
+        assert _origin(_action(D, "p.py"), details)[0] == "unknown"
+
+
+def test_punctuation_lines_do_not_decide_where_code_was_written() -> None:
+    # C rewrote the body; the diff paired its closing brace with the reviewed one. D removes both.
+    body_a = "@@ -0,0 +1,3 @@\n+def check(v) {\n+  return v > 0\n+}"
+    body_c = "@@ -1,3 +1,3 @@\n def check(v) {\n-  return v > 0\n+  return v >= 0 && v < limit\n }"
+    fix = "@@ -1,3 +1,2 @@\n def check(v) {\n-  return v >= 0 && v < limit\n-}\n+  return v >= 0 && v <= limit }"
+    details = _details((A, "c.js", "added", body_a), (C, "c.js", "modified", body_c), (D, "c.js", "modified", fix))
+
+    assert _origin(_action(D, "c.js"), details)[0] == "unreviewed"

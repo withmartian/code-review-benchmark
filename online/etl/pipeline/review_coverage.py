@@ -350,49 +350,112 @@ def reviewed_before(commit: int, fix: int, records: list[ReviewRecord]) -> bool:
 
 # -- Where the code a fix changed was first written ----------------------------
 
-_SIGNIFICANT_RE = re.compile(r"\w{3,}")
 _EDIT_RATIO = 0.8
+_HUNK_RE = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 
-def _significant(line: str) -> bool:
-    """A line that identifies code (not a lone brace, a blank line or punctuation)."""
-    return bool(_SIGNIFICANT_RE.search(line))
+@dataclass(frozen=True)
+class _Hunk:
+    old_start: int
+    old_len: int
+    new_start: int
+    new_len: int
+    lines: tuple[tuple[str, str], ...]  # (" ", "-" or "+", the line stripped)
 
 
-def _removed_lines(patch: str) -> list[str]:
-    """The removed lines of a unified diff (stripped)."""
-    return [raw[1:].strip() for raw in (patch or "").splitlines() if raw.startswith("-")]
+def _hunks(patch: str) -> list[_Hunk] | None:
+    """The hunks of a unified diff, or None when a hunk's lines do not add up to its header."""
+    out: list[_Hunk] = []
+    header: tuple[int, int, int, int] | None = None
+    lines: list[tuple[str, str]] = []
 
-
-def _added_lines(patch: str) -> dict[str, str | None]:
-    """Each added line of a unified diff (stripped), with the removed line it is an edit of, if any.
-
-    An added line is an edit of a removed line of the same hunk when the two are at least
-    ``_EDIT_RATIO`` similar: then the code it carries was written before this commit.
-    """
-    out: dict[str, str | None] = {}
-    removed: list[str] = []
-    added: list[str] = []
-
-    def flush() -> None:
-        for line in added:
-            best = max(removed, key=lambda r: SequenceMatcher(None, r, line).ratio(), default=None)
-            if best is not None and SequenceMatcher(None, best, line).ratio() >= _EDIT_RATIO:
-                out[line] = best
-            else:
-                out.setdefault(line, None)
-        removed.clear()
-        added.clear()
+    def close() -> bool:
+        if header is None:
+            return True
+        old = sum(1 for k, _ in lines if k != "+")
+        new = sum(1 for k, _ in lines if k != "-")
+        if (old, new) != (header[1], header[3]):
+            return False
+        out.append(_Hunk(*header, tuple(lines)))
+        return True
 
     for raw in (patch or "").splitlines():
         if raw.startswith("@@"):
-            flush()
-        elif raw.startswith("-"):
-            removed.append(raw[1:].strip())
-        elif raw.startswith("+"):
-            added.append(raw[1:].strip())
-    flush()
+            m = _HUNK_RE.match(raw)
+            if m is None or not close():
+                return None
+            a, b, c, d = m.groups()
+            header = (int(a), 1 if b is None else int(b), int(c), 1 if d is None else int(d))
+            lines = []
+        elif raw.startswith("\\"):
+            continue  # "\ No newline at end of file"
+        elif header is not None and raw[:1] in (" ", "-", "+"):
+            lines.append((raw[:1], raw[1:].strip()))
+        elif header is not None and raw == "":
+            lines.append((" ", ""))
+        else:
+            return None
+    return out if close() else None
+
+
+def _removed_all(h: _Hunk) -> list[tuple[int, str]]:
+    """(line number before the change, text) of each line a hunk removed."""
+    out = []
+    old = h.old_start
+    for kind, text in h.lines:
+        if kind == "-":
+            out.append((old, text))
+        if kind != "+":
+            old += 1
     return out
+
+
+_CODE_RE = re.compile(r"[A-Za-z0-9]")
+
+
+def _removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
+    """(line number before the change, text) of each removed line that carries code.
+
+    Every line with a letter or a digit counts, however short (``x = 0``). A line of punctuation
+    only (``}``, ``);``) is left out: which of several such lines a diff pairs with an older one is
+    arbitrary, so its position says nothing about where the code around it was written.
+    """
+    return [(n, t) for h in hunks for n, t in _removed_all(h) if _CODE_RE.search(t)]
+
+
+def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
+    """Where line ``line`` (of text ``text``) after a commit came from in that commit.
+
+    Returns ("added", 0, "") when the commit wrote it, ("kept", n, text) when it is line n before
+    the commit (unchanged, or a light edit of the removed line n of its hunk, ``_EDIT_RATIO``), and
+    ("mismatch", 0, "") when the line at that position is not the line traced.
+    """
+    offset = 0
+    for h in hunks:
+        before = line <= h.new_start if h.new_len == 0 else line < h.new_start
+        if before:
+            return "kept", line - offset, text
+        if line < h.new_start + h.new_len:
+            removed = _removed_all(h)
+            old, new = h.old_start, h.new_start
+            for kind, t in h.lines:
+                if kind == "-":
+                    old += 1
+                    continue
+                if new == line:
+                    if t != text:
+                        return "mismatch", 0, ""
+                    if kind == " ":
+                        return "kept", old, text
+                    best = max(removed, key=lambda r: SequenceMatcher(None, r[1], t).ratio(), default=None)
+                    if best is not None and SequenceMatcher(None, best[1], t).ratio() >= _EDIT_RATIO:
+                        return "kept", best[0], best[1]
+                    return "added", 0, ""
+                new += 1
+                if kind == " ":
+                    old += 1
+        offset += h.new_len - h.old_len
+    return "kept", line - offset, text
 
 
 def _file_entry(detail: dict | None, path: str) -> dict | None:
@@ -407,13 +470,15 @@ def fix_code_origin(
 ) -> tuple[str, str, tuple[str, ...]]:
     """Whether a review of the bot read the code a fix after its first review changed.
 
-    The lines the fix changed are the lines its commit removed from the action's file. Each is
-    traced to the commit that first wrote it, among the commits after ``first_reviewed`` (the commit
-    the analysis split at) and before the fix. An added line that is a light edit of a line it
-    replaced (``_EDIT_RATIO``) is traced back to that line, so a line edited for another reason keeps
-    the code it carried. A line not written in those commits was in the code the first review read,
-    or in the repository before the pull request. A line written in a commit counts as reviewed when
-    a review of a commit before the fix covered that commit (``reviewed_before``).
+    The lines the fix changed are the lines its commit removed from the action's file, other than
+    blank and punctuation-only lines (``_removed``). Each is traced by its position, through the
+    hunks of the commits after ``first_reviewed`` (the commit the analysis split at) and before the
+    fix, newest first, to the commit that first wrote it, so a copy of a reviewed line added
+    elsewhere in the file is not taken for it. An added line that is a light edit of a line its
+    hunk removed (``_EDIT_RATIO``) is traced back to that line, so a line edited for another reason
+    keeps the code it carried. A line not written in those commits was in the code the first review
+    read, or in the repository before the pull request. A line written in a commit counts as
+    reviewed when a review of a commit before the fix covered that commit (``reviewed_before``).
 
     A fix that only adds lines changes no earlier line, so its diff does not say where the code it
     fixes was written. The unchanged lines next to the additions are not a safe stand-in: a
@@ -422,7 +487,8 @@ def fix_code_origin(
     Returns (origin, reason, commits): "unreviewed" when no line was reviewed, with the commits the
     lines were written in; "reviewed" when every line was; "mixed" when some were; and "unknown"
     when the history cannot tell (no file, no patch, a commit without details, a new file, a fix
-    that only adds lines).
+    that only adds lines, a patch whose hunks do not add up, or a line whose position does not hold
+    the traced text).
     """
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
     if fix is None or fix <= first_reviewed:
@@ -435,13 +501,14 @@ def fix_code_origin(
         return "unknown", "the fixing commit does not change the fix's file", ()
     if entry.get("status") == "added":
         return "unknown", "the fix adds a new file", ()
-    if not entry.get("patch"):
-        return "unknown", "the fixing commit has no patch for the file", ()
-    changed = [line for line in _removed_lines(entry["patch"]) if _significant(line)]
+    fix_hunks = _hunks(entry.get("patch") or "") if entry.get("patch") else None
+    if fix_hunks is None:
+        return "unknown", "the fixing commit has no readable patch for the file", ()
+    changed = _removed(fix_hunks)
     if not changed:
         return "unknown", "the fix only adds lines, so where the code it fixes was written is not known", ()
 
-    history: list[tuple[int, dict[str, str | None]]] = []
+    history: list[tuple[int, list[_Hunk]]] = []
     for i in range(first_reviewed + 1, fix):
         c = commits[i]
         detail = details_by_sha.get(c.get("sha", ""))
@@ -450,21 +517,27 @@ def fix_code_origin(
         f = _file_entry(detail, path)
         if f is None:
             continue
-        if not f.get("patch") and (f.get("additions") or f.get("status") in ("added", "renamed")):
-            return "unknown", f"commit {c.get('sha', '')[:12]} has no patch for the file", ()
-        history.append((i, _added_lines(f.get("patch") or "")))
+        if not f.get("patch"):
+            if f.get("additions") or f.get("deletions") or f.get("status") in ("added", "renamed"):
+                return "unknown", f"commit {c.get('sha', '')[:12]} has no patch for the file", ()
+            continue
+        hunks = _hunks(f["patch"])
+        if hunks is None:
+            return "unknown", f"the patch of commit {c.get('sha', '')[:12]} for the file does not add up", ()
+        history.append((i, hunks))
 
-    def written_in(line: str) -> int | None:
-        # Newest commit first: a line that edits an older line is traced back to it.
-        for i, added in reversed(history):
-            if line in added:
-                origin = added[line]
-                if origin is None:
-                    return i
-                line = origin
-        return None
+    origins: list[int | None] = []
+    for line, text in changed:
+        origin = None
+        for i, hunks in reversed(history):
+            kind, line, text = _trace(hunks, line, text)
+            if kind == "mismatch":
+                return "unknown", f"a changed line is not where commit {commits[i]['sha'][:12]} puts it", ()
+            if kind == "added":
+                origin = i
+                break
+        origins.append(origin)
 
-    origins = [written_in(line) for line in changed]
     unread = [i for i in origins if i is not None and not reviewed_before(i, fix, records)]
     n = len(changed)
     if len(unread) == n:

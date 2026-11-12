@@ -319,15 +319,23 @@ async def evaluate_review(
             errors.append({"golden": golden, "candidate": candidate, "error": result["error"]})
             continue
 
-        if result.get("match") and result.get("confidence", 0) > golden_matched[golden]["best_confidence"]:
+        if not result.get("match"):
+            continue
+
+        # A candidate the judge matched to a golden comment is not a false positive,
+        # even when another candidate holds the best-confidence match for that golden.
+        candidate_matched[candidate] = True
+        # Propagate to duplicate siblings so they aren't counted as FPs
+        for sibling in sibling_map.get(candidate, set()):
+            candidate_matched[sibling] = True
+
+        # Confidence only decides which matching candidate is reported for the golden.
+        confidence = result.get("confidence", 0)
+        if not golden_matched[golden]["matched"] or confidence > golden_matched[golden]["best_confidence"]:
             golden_matched[golden]["matched"] = True
-            golden_matched[golden]["best_confidence"] = result["confidence"]
+            golden_matched[golden]["best_confidence"] = confidence
             golden_matched[golden]["matched_candidate"] = candidate
             golden_matched[golden]["reasoning"] = result.get("reasoning")
-            candidate_matched[candidate] = True
-            # Propagate to duplicate siblings so they aren't counted as FPs
-            for sibling in sibling_map.get(candidate, set()):
-                candidate_matched[sibling] = True
 
     # Calculate metrics
     true_positives = []

@@ -7,7 +7,8 @@ Makes one paid LLM call per fixture, so it is skipped unless all of these are se
 
 A labelled finding passes when some extracted suggestion matches its ``pattern`` (and its file, when
 the label names one). A labelled non-finding passes when no extracted suggestion matches its
-``pattern``. Labels with a ``not_asserted`` field are not checked here; the field says why.
+``pattern``. Labels with a ``not_asserted`` field are not checked here; the field says why. Nor are
+non-findings of a kind the prompt states no rule for (NO_RULE_KINDS).
 One draw at temperature 1.0 can flip a borderline item, so a single failure is a prompt to look,
 not proof of a regression.
 """
@@ -43,8 +44,17 @@ def _same_file(a: str | None, b: str) -> bool:
     return bool(a) and (a == b or a.endswith("/" + b) or b.endswith("/" + a))
 
 
+# Non-finding kinds EXTRACT_BOT_SUGGESTIONS states no rule for (extract-v3 dropped extract-v2's rules
+# for them): extracting one is not a prompt violation, so they are checked only with include_unasserted.
+NO_RULE_KINDS = frozenset(
+    {"coverage_check", "rating", "control", "generation_offer", "product_tip", "linked_issue_check"}
+)
+
+
 def _checked(label: dict, include_unasserted: bool) -> bool:
-    return bool(label.get("pattern")) and (include_unasserted or not label.get("not_asserted"))
+    return bool(label.get("pattern")) and (
+        include_unasserted or not (label.get("not_asserted") or label["kind"] in NO_RULE_KINDS)
+    )
 
 
 def check_labels(fx: dict, suggestions: list[dict], include_unasserted: bool = False) -> list[str]:

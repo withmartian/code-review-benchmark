@@ -41,70 +41,49 @@ def test_extract_bot_suggestions_renders_with_all_placeholders() -> None:
     assert "}" not in rendered
 
 
-def test_overviews_are_not_findings_but_problems_named_inside_them_are() -> None:
+def test_the_added_paragraph_follows_the_upstream_skip_rules_unchanged() -> None:
     rules = _rules()
 
-    assert "walkthroughs, change summaries, per-file tables, release notes" in rules
-    assert "A concrete problem named inside a summary or walkthrough is still a finding: extract it." in rules
-
-
-def test_ratings_are_not_findings_but_problems_in_their_explanation_are() -> None:
-    rules = _rules()
-
-    assert "Effort, risk, priority, impact, or confidence ratings themselves." in rules
+    # the upstream skip paragraph ends as it did, and the one added paragraph comes right after it,
+    # as the last rule before the PR metadata
     assert (
-        "When the text that explains a rating names a concrete problem in the changed code, "
-        "that problem is a finding: extract it, even when no other comment states it." in rules
+        "say a parent comment was wrong, too broad, pre-existing, already addressed, or out of scope, unless "
+        "that same comment introduces a new distinct code issue. Also skip inputs the bot lists as having used "
+        "for its review" in rules
+    )
+    assert rules.endswith(
+        "or inside a collapsed or nested section, is still a finding: extract it. "
+        "PR Title: Add retry PR Author: dev Repository: org/repo "
     )
 
 
-def test_repository_policy_gates_are_not_findings_on_any_surface() -> None:
-    rules = _rules()
-
-    assert "Repository-policy gates:" in rules
-    assert "coverage thresholds (for example docstring or test coverage percentages)" in rules
-    assert "regardless of which bot posts them or where (summary, review body, or inline comment)" in rules
-    assert "A metric below a threshold is not by itself a finding." in rules
-
-
-def test_documentation_requests_about_specific_code_are_still_findings() -> None:
+def test_inputs_the_bot_lists_are_skipped() -> None:
     rules = _rules()
 
     assert (
-        'A request to add docstrings or tests to "the touched functions" so a coverage threshold is met '
-        "is a gate result, wherever it appears." in rules
+        "Also skip inputs the bot lists as having used for its review, such as linter or static-analysis output, "
+        "code guidelines, or configured review instructions (for example a section where the bot lists the "
+        "inputs or context it used)." in rules
     )
     assert (
-        "A comment on a specific location in the changed code (a named function or file and line) that "
-        "asks for documentation of that code, for a reason other than meeting a threshold, is a "
-        "documentation finding: extract it." in rules
-    )
-    # tie-break between the two sentences above, for a located request whose only reason is the gate
-    assert (
-        "When a request names specific code and its only stated reason is a coverage threshold (for example "
-        '"add a docstring to parse() to meet the 80% docstring coverage rule"), it is a gate result; when it '
-        "cites a documentation or style rule for that specific code, it is a finding." in rules
+        "Do not extract findings from these inputs, even when a listed tool result names a file and line of the "
+        "changed code: the bot did not raise it as its own comment." in rules
     )
 
 
-def test_controls_generation_offers_and_run_metadata_are_not_findings() -> None:
+def test_tool_output_quoted_inside_a_comment_is_not_a_finding() -> None:
     rules = _rules()
 
-    assert "checkboxes, buttons, commands the reader can run" in rules
-    assert "offers to generate code for the author, for example to write docstrings or tests" in rules
-    assert "Review status and run metadata: counts of comments posted" in rules
-
-
-def test_inputs_the_bot_lists_and_raw_tool_output_are_not_findings() -> None:
-    rules = _rules()
-
-    assert "Inputs the bot lists as having used for its review" in rules
-    assert "Do not extract findings from these inputs, even when a listed tool result names a file and line" in rules
     assert (
         "Tool output quoted as supporting context inside a comment, such as a linter or static-analysis log "
-        "next to the bot's own text, is not its own finding: only problems the bot states in its own words "
-        "are findings." in rules
+        "next to the bot's own text, is not its own finding either: only problems the bot states in its own "
+        "words are findings." in rules
     )
+
+
+def test_a_tool_result_the_bot_posts_at_a_location_or_writes_up_itself_is_a_finding() -> None:
+    rules = _rules()
+
     assert (
         "A tool result the bot posts as its own comment at a location in the changed code is a finding, and "
         "so is a linter or static-analysis result the bot writes up as a problem in its own comment text." in rules
@@ -114,11 +93,33 @@ def test_inputs_the_bot_lists_and_raw_tool_output_are_not_findings() -> None:
 def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findings() -> None:
     rules = _rules()
 
-    assert "These rules depend on what a piece of text is, not on where it sits." in rules
     assert (
         "A concrete finding listed in a review-body section rather than as an inline comment, or inside a "
         "collapsed or nested section, is still a finding: extract it." in rules
     )
+
+
+def test_the_longer_revisions_kind_rules_are_not_in_this_prompt() -> None:
+    """extract-v2 also excluded overviews, ratings, coverage gates, controls and run metadata, named
+    resolved findings and title remarks as findings, and listed the excluded kinds. On the default
+    Search API input the current upstream prompt extracts nothing from those kinds (the coverage gate
+    aside, a retired check), so extract-v3 states no rule for them. Re-adding one is a deliberate
+    change: update this test with it."""
+    rules = _rules()
+
+    for dropped in (
+        "Only the kinds listed below are excluded",
+        "walkthroughs, change summaries, per-file tables",
+        "Effort, risk, priority, impact, or confidence ratings themselves.",
+        "Repository-policy gates:",
+        "Interactive controls and product text",
+        "Review status and run metadata",
+        "A finding stays a finding when the bot later marks it resolved",
+        "title, description, or linked issue",
+        "These rules depend on what a piece of text is, not on where it sits.",
+        "(this covers the confirmation, not the finding it refers to)",
+    ):
+        assert dropped not in rules, dropped
 
 
 def _pinned_inputs() -> dict[str, str]:
@@ -177,6 +178,30 @@ PINNED_INPUTS_BY_VERSION = {
             "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
         },
     },
+    "extract-v3": {
+        "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
+        "inputs": {
+            "EXTRACT_BOT_SUGGESTIONS": "1394d0247b0e4673eb350dae76433388d55684186527e9e84574fd3ee1132c42",
+            "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
+            "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
+            "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
+            "pipeline.analyze._split_commits_at_hash": "a35eec4a52654a2808becab0b0d3c4cf3000eb7156fecf35dfb02f656b2c5915",
+            "pipeline.analyze._build_details_by_sha": "7ee4ea52b9b58f9aa97f4e4ba2344ff6528e4621d02b1c44612686cd317f1103",
+            "pipeline.analyze._format_commits_with_diffs": "4c24815cc71086530723fa6eb6a4346896622098e5c08d0f19358646ae635f9b",
+            "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
+            "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
+            "pipeline.analyze._format_post_review_activity": "aed6a6644974acb60a5b40e05d6075a6847c3e26ad331d5f2b7787727332ca38",
+            "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
+            "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
+            "pipeline.analyze.analyze_single_pr": "8f0cfd7d38d9e8318ccb8c89c9034a8ddf72e5fb54e15a4f09a326ea94095a8c",
+            "pipeline.analyze._HTML_COMMENT_RE": "39d3d18fd21298dd2ea96526389f29db50575fe2b20f99d3306ddf6b269e79fa",
+            "pipeline.actors": "d2cf21925cedd789b7ec2cdb6b93a32b7b3062dec265de1cd8f9af96b874b3cd",
+            "llm.client.LLMClient.structured_completion": "8e334213d7602d491ff14ac64efdc147555210d422edd38022d8a41bd8fecf2a",
+            "llm.schemas.BotSuggestionsResponse": "5969e73467cf574786325ea59d8470b0d6e817c82b7d02ce206d8e612e48b110",
+            "llm.schemas.HumanActionsResponse": "34ad210bbaa719035d8e38a22d73f22e316e3efcc59b53133e946f8a175d880c",
+            "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
+        },
+    },
 }
 
 
@@ -209,37 +234,6 @@ def test_editing_a_past_version_entry_is_detected() -> None:
 
     same = {"v1": v1, "v2": {"previous": _entry_digest(v1), "inputs": dict(v1["inputs"])}}
     assert _ledger_problems(same) == ["two versions share the same inputs"]
-
-
-def test_located_rule_violations_are_findings_only_aggregate_results_are_excluded() -> None:
-    rules = _rules()
-
-    assert (
-        "Only aggregate results (a status, or a metric against a threshold) and the located coverage request "
-        "above are excluded: a violation of a "
-        "repository rule or guideline reported at a specific location in the changed code is a finding." in rules
-    )
-
-
-def test_only_the_listed_kinds_are_excluded_and_pull_request_metadata_gaps_are_findings() -> None:
-    rules = _rules()
-
-    assert (
-        "Only the kinds listed below are excluded: they are not code-review findings, even when phrased as "
-        "advice or placed inside a review body or issue comment. Other PR-level content is judged like any "
-        "other comment of the bot." in rules
-    )
-    assert (
-        "a remark or check result that says what the pull request's title, description, or linked issue "
-        "lacks is a finding, wherever it sits: extract it." in rules
-    )
-    assert (
-        "This rule does not cover checks of the pull request's title, description, or linked issue, even when "
-        "they are listed with other check results (see above)." in rules
-    )
-    # remarks about the pull request itself are not excluded by any rule here (left to the maintainers)
-    assert "Remarks about the pull request itself" not in rules
-    assert "title, description, linked-issue, or scope checks" not in rules
 
 
 def test_prompt_version_is_stamped_into_the_stored_model_name() -> None:

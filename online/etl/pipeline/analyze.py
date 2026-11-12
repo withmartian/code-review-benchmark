@@ -378,7 +378,9 @@ async def analyze_single_pr(
     # (added after A) are not recall misses. Matching still sees every action, so
     # precision is computed exactly as before; recall counts only the kept actions.
     scored_actions, dropped_actions = actions, None
-    last_reviewed = find_last_reviewed_commit(_parse_json_col("issue_comments"), chatbot_username)
+    last_reviewed = find_last_reviewed_commit(
+        _parse_json_col("issue_comments"), chatbot_username, reviews, commits, hash_x
+    )
     if last_reviewed is not None:
         scored_actions, dropped_actions = split_actions_at_last_reviewed(
             actions, commits, details_by_sha, last_reviewed[0]

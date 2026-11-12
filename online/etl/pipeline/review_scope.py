@@ -4,8 +4,10 @@ Some bots post a notice when they stop reviewing a PR (rate limit, auto-pause, a
 in progress). Commits pushed after that point were never reviewed, so a fix made to code
 that first appeared in those commits cannot be a recall miss of the bot.
 
-`STOP_NOTICES` lists, per bot, the notice blocks that name the last reviewed commit. A bot
-without an entry is scored exactly as before. The rule that uses the commit is
+`STOP_NOTICES` lists, per bot, the notice blocks that tell where it stopped: either the block
+names the last reviewed commit, or (a skip that names none) the last reviewed commit is the
+newest commit with a non-empty review record from the bot. A bot without an entry is scored
+exactly as before. The rule that uses the commit is
 `split_actions_at_last_reviewed`: an action is dropped only when the lines its fix removed
 were all added after the last reviewed commit (traced back through the stored per-commit
 patches), or its file was created after that commit. Anything else is kept.
@@ -23,7 +25,10 @@ from pipeline.actors import same_github_actor
 class StopNotice:
     kind: str
     block_re: re.Pattern[str]
-    sha_re: re.Pattern[str]
+    # Reads the last reviewed commit from the block; None = newest non-empty bot review record.
+    sha_re: re.Pattern[str] | None
+    # When set, the block counts only if it contains this text.
+    requires: re.Pattern[str] | None = None
 
 
 def _coderabbit_block(kind: str) -> re.Pattern[str]:
@@ -38,14 +43,26 @@ def _coderabbit_block(kind: str) -> re.Pattern[str]:
 _BETWEEN_RE = re.compile(r"between ([0-9a-f]{7,40}) and [0-9a-f]{7,40}")
 _LAST_REVIEWED_RE = re.compile(r"Last reviewed commit: ([0-9a-f]{7,40})")
 
-# Bot username -> notices that name the last reviewed commit. Notices not listed here
-# (e.g. CodeRabbit "skip review", which also covers "no reviewable changes", or "failure")
+# Bot username -> notices that say where the bot stopped. Notices not listed here (e.g. a
+# CodeRabbit "skip review" for "no reviewable changes", which is not a stop, or "failure")
 # do not cut. Matched on the RAW comment body: the markers are HTML comments.
 STOP_NOTICES: dict[str, list[StopNotice]] = {
     "coderabbitai[bot]": [
         StopNotice("rate limited", _coderabbit_block("rate limited"), _BETWEEN_RE),
         StopNotice("review paused", _coderabbit_block("review paused"), _LAST_REVIEWED_RE),
         StopNotice("review in progress", _coderabbit_block("review in progress"), _BETWEEN_RE),
+        StopNotice(
+            "skip review: incremental reviews disabled",
+            _coderabbit_block("skip review"),
+            None,
+            re.compile(r"Auto incremental reviews are disabled on this repository"),
+        ),
+        StopNotice(
+            "skip review: fewer than 10 stars",
+            _coderabbit_block("skip review"),
+            None,
+            re.compile(r"does not receive automatic reviews because it has fewer than 10 stars"),
+        ),
     ],
 }
 
@@ -57,11 +74,38 @@ def _notices_for(chatbot_username: str) -> list[StopNotice]:
     return []
 
 
-def find_last_reviewed_commit(issue_comments: list[dict], chatbot_username: str) -> tuple[str, str] | None:
+def _newest_reviewed_commit(
+    reviews: list[dict], commits: list[dict], chatbot_username: str, hash_x: str | None
+) -> str | None:
+    """Newest commit (by PR commit order) with a non-empty review record from the bot, else hash X.
+
+    Empty-body records are the bot's replies in comment threads, filed by GitHub as reviews of
+    whatever the head was at the time, so they say nothing about what was reviewed.
+    """
+    best: tuple[int, str] | None = None
+    for r in reviews:
+        author = r.get("author") or (r.get("user") or {}).get("login", "")
+        sha = r.get("commit_id")
+        if not sha or not (r.get("body") or "").strip() or not same_github_actor(author, chatbot_username):
+            continue
+        idx = _index_of(commits, sha)
+        if idx is not None and (best is None or idx > best[0]):
+            best = (idx, commits[idx]["sha"])
+    return best[1] if best else hash_x
+
+
+def find_last_reviewed_commit(
+    issue_comments: list[dict],
+    chatbot_username: str,
+    reviews: list[dict] | None = None,
+    commits: list[dict] | None = None,
+    hash_x: str | None = None,
+) -> tuple[str, str] | None:
     """Return (sha, notice kind) from the last stop notice in the bot's issue comments, or None.
 
     Comments are read in stored order (the API returns them oldest first) and their bodies are
-    the current, edited ones. The last notice that names a commit wins.
+    the current, edited ones. The last notice that gives a commit wins. A notice without a commit
+    of its own resolves through `_newest_reviewed_commit` (needs `reviews`, `commits`, `hash_x`).
     """
     notices = _notices_for(chatbot_username)
     if not notices:
@@ -73,9 +117,16 @@ def find_last_reviewed_commit(issue_comments: list[dict], chatbot_username: str)
         body = comment.get("body") or ""
         for notice in notices:
             for m in notice.block_re.finditer(body):
-                shas = notice.sha_re.findall(m.group(1))
-                if shas and (found is None or (ci, m.start()) > found[:2]):
-                    found = (ci, m.start(), shas[-1], notice.kind)
+                block = m.group(1)
+                if notice.requires is not None and not notice.requires.search(block):
+                    continue
+                if notice.sha_re is not None:
+                    shas = notice.sha_re.findall(block)
+                    sha = shas[-1] if shas else None
+                else:
+                    sha = _newest_reviewed_commit(reviews or [], commits or [], chatbot_username, hash_x)
+                if sha and (found is None or (ci, m.start()) > found[:2]):
+                    found = (ci, m.start(), sha, notice.kind)
     return (found[2], found[3]) if found else None
 
 

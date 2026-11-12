@@ -44,6 +44,21 @@ SKIPPED_NO_CHANGES = _block(
     "> Review was skipped as selected files did not have any reviewable changes.\n"
     f"> Reviewing files that changed from the base of the PR and between {A} and {B}.",
 )
+SKIPPED_INCREMENTAL = _block(
+    "skip review", "> ## Review skipped\n> Auto incremental reviews are disabled on this repository."
+)
+SKIPPED_STARS = _block(
+    "skip review",
+    "> ## Review skipped\n> This repository does not receive automatic reviews because it has fewer than 10 stars.",
+)
+SKIPPED_LABEL = _block("skip review", "> ## Review skipped\n> Ignore keyword(s) in the title.")
+
+C1, C2, C3 = (f"{i:040x}" for i in (1, 2, 3))
+PR_COMMITS = [{"sha": C1}, {"sha": C2}, {"sha": C3}]
+
+
+def _review(sha: str, body: str, author: str = BOT) -> dict:
+    return {"author": author, "commit_id": sha, "body": body}
 
 
 # -- Stop notices ---------------------------------------------------------------
@@ -76,6 +91,35 @@ def test_bot_without_entry_has_no_cut() -> None:
 
 def test_notice_quoted_by_a_human_is_ignored() -> None:
     assert find_last_reviewed_commit([_comment(RATE_LIMITED, author="alice")], BOT) is None
+
+
+def test_skip_without_commit_uses_newest_non_empty_review_record() -> None:
+    # Records out of order; the empty-body record on C3 is a thread reply, the human's is not the bot's.
+    reviews = [
+        _review(C2, "Actionable comments posted: 1"),
+        _review(C1, "**Actionable comments posted: 2**"),
+        _review(C3, ""),
+        _review(C3, "LGTM", author="alice"),
+    ]
+    for notice, kind in ((SKIPPED_INCREMENTAL, "incremental reviews disabled"), (SKIPPED_STARS, "fewer than 10 stars")):
+        assert find_last_reviewed_commit([_comment(notice)], BOT, reviews, PR_COMMITS, C1) == (
+            C2,
+            f"skip review: {kind}",
+        )
+
+
+def test_skip_without_commit_falls_back_to_hash_x() -> None:
+    reviews = [_review(C3, "   ")]
+    assert find_last_reviewed_commit([_comment(SKIPPED_STARS)], BOT, reviews, PR_COMMITS, C1) == (
+        C1,
+        "skip review: fewer than 10 stars",
+    )
+
+
+def test_other_skip_reasons_do_not_cut() -> None:
+    reviews = [_review(C2, "Actionable comments posted: 1")]
+    for notice in (SKIPPED_LABEL, SKIPPED_NO_CHANGES):
+        assert find_last_reviewed_commit([_comment(notice)], BOT, reviews, PR_COMMITS, C1) is None
 
 
 def test_last_notice_wins() -> None:
@@ -285,6 +329,21 @@ async def test_analyze_drops_unreviewed_fix_from_recall_only() -> None:
     r = repo.inserted
     assert [a["action_id"] for a in r["human_actions"]] == ["A2"]
     assert [a["action_id"] for a in r["dropped_human_actions"]] == ["A1"]
+    assert (r["precision"], r["recall"]) == (0.5, 1.0)
+
+
+async def test_analyze_skip_notice_cuts_at_newest_reviewed_commit() -> None:
+    repo = _FakeRepo()
+    row = _pr_row([_comment(SKIPPED_INCREMENTAL)])
+    commits = json.loads(row["commits"])
+    row["reviews"] = json.dumps(
+        [_review(commits[0]["sha"], "Actionable comments posted: 1"), _review(commits[3]["sha"], "")]
+    )
+    ok = await analyze_single_pr(_FakeLLM(_RESPONSES), repo, row, BOT, "m")
+    assert ok
+    r = repo.inserted
+    assert [a["action_id"] for a in r["dropped_human_actions"]] == ["A1"]
+    assert r["dropped_human_actions"][0]["last_reviewed_commit"] == commits[0]["sha"]
     assert (r["precision"], r["recall"]) == (0.5, 1.0)
 
 

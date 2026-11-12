@@ -219,6 +219,9 @@ class PRRepository:
     async def update_threads(self, pr_id: int, threads: list) -> None:
         await self.db.execute(q.UPDATE_PR_THREADS, (json.dumps(threads), pr_id))
 
+    async def update_issue_comments(self, pr_id: int, comments: list) -> None:
+        await self.db.execute(q.UPDATE_PR_ISSUE_COMMENTS, (json.dumps(comments), pr_id))
+
     @staticmethod
     def compute_diff_lines(details: list) -> int:
         """Sum additions + deletions across all files in all commits."""
@@ -285,6 +288,7 @@ class PRRepository:
         recall: float | None,
         f_beta: float | None,
         model_name: str | None,
+        dropped_human_actions: list | None = None,
     ) -> None:
         await self.db.execute(
             q.INSERT_LLM_ANALYSIS,
@@ -300,6 +304,7 @@ class PRRepository:
                 recall,
                 f_beta,
                 model_name,
+                json.dumps(dropped_human_actions) if dropped_human_actions is not None else None,
             ),
         )
         now = datetime.now(UTC).isoformat()

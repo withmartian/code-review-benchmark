@@ -227,6 +227,10 @@ UPDATE_PR_COMMIT_DETAILS = """
     UPDATE prs SET commit_details = $1, diff_lines = $2, enrichment_step = 'details' WHERE id = $3
 """
 
+UPDATE_PR_ISSUE_COMMENTS = """
+    UPDATE prs SET issue_comments = $1, enrichment_step = 'issue_comments' WHERE id = $2
+"""
+
 UPDATE_PR_DIFF_LINES = """
     UPDATE prs SET diff_lines = $1 WHERE id = $2
 """
@@ -288,13 +292,13 @@ MERGE_PR_BQ_EVENTS = """
 INSERT_LLM_ANALYSIS = """
     INSERT INTO llm_analyses (pr_id, chatbot_id, bot_suggestions, human_actions,
                               matching_results, total_bot_comments, matched_bot_comments,
-                              precision, recall, f_beta, model_name)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                              precision, recall, f_beta, model_name, dropped_human_actions)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     ON CONFLICT (pr_id, chatbot_id) DO UPDATE SET
         bot_suggestions = $3, human_actions = $4, matching_results = $5,
         total_bot_comments = $6, matched_bot_comments = $7,
         precision = $8, recall = $9, f_beta = $10, model_name = $11,
-        analyzed_at = CURRENT_TIMESTAMP
+        dropped_human_actions = $12, analyzed_at = CURRENT_TIMESTAMP
 """
 
 UPDATE_PR_ANALYZED = """

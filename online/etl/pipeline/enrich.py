@@ -53,7 +53,7 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $threadCursor: String) {
 """
 
 # Steps in order
-ENRICHMENT_STEPS = ["bq_events", "commits", "reviews", "threads", "details", "done"]
+ENRICHMENT_STEPS = ["bq_events", "commits", "reviews", "threads", "details", "issue_comments", "done"]
 
 
 class RateLimitExhaustedError(Exception):
@@ -303,6 +303,27 @@ async def _fetch_review_threads(gh: GitHubEnrichClient, owner: str, repo: str, p
     return all_threads
 
 
+async def _fetch_issue_comments(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = "") -> list[dict]:
+    """Fetch PR conversation comments with their current (edited) bodies.
+
+    Bots such as CodeRabbit edit one summary comment in place; its final body says where the
+    bot stopped reviewing (see pipeline.review_scope).
+    """
+    base = repo_path or f"/repos/{owner}/{repo}"
+    path = f"{base}/issues/{pr_number}/comments"
+    raw = await gh.rest_get_paginated(path)
+    return [
+        {
+            "id": c["id"],
+            "author": (c.get("user") or {}).get("login"),
+            "created_at": c.get("created_at"),
+            "updated_at": c.get("updated_at"),
+            "body": c.get("body") or "",
+        }
+        for c in raw
+    ]
+
+
 async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:
     base = repo_path or f"/repos/{owner}/{repo}"
     resp = await gh.rest_get(f"{base}/commits/{sha}")
@@ -520,6 +541,12 @@ async def enrich_single_pr(
         details = await _fetch_commit_details(gh, owner, repo, commits_data, repo_path=repo_path)
         await repo_obj.update_commit_details(pr_id, details)
         logger.debug(f"  {repo_name}#{pr_number}: commit details done")
+
+    # Step: issue comments (index 5)
+    if step_idx < 5:
+        issue_comments = await _fetch_issue_comments(gh, owner, repo, pr_number, repo_path=repo_path)
+        await repo_obj.update_issue_comments(pr_id, issue_comments)
+        logger.debug(f"  {repo_name}#{pr_number}: issue comments done ({len(issue_comments)})")
 
     # Mark enrichment complete
     await repo_obj.mark_enrichment_done(pr_id)

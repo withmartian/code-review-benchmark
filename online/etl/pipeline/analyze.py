@@ -20,6 +20,8 @@ from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
+from pipeline.review_scope import find_last_reviewed_commit
+from pipeline.review_scope import split_actions_at_last_reviewed
 
 logger = logging.getLogger(__name__)
 
@@ -372,6 +374,20 @@ async def analyze_single_pr(
     actions_resp = await llm.structured_completion(prompt2, HumanActionsResponse)
     actions = [a.model_dump() for a in actions_resp.actions]
 
+    # If the bot's own notice says it stopped at commit A, fixes to code it never saw
+    # (added after A) are not recall misses. Matching still sees every action, so
+    # precision is computed exactly as before; recall counts only the kept actions.
+    scored_actions, dropped_actions = actions, None
+    last_reviewed = find_last_reviewed_commit(_parse_json_col("issue_comments"), chatbot_username)
+    if last_reviewed is not None:
+        scored_actions, dropped_actions = split_actions_at_last_reviewed(
+            actions, commits, details_by_sha, last_reviewed[0]
+        )
+        logger.debug(
+            f"{pr_row['repo_name']}#{pr_row['pr_number']}: {last_reviewed[1]} notice, "
+            f"last reviewed {last_reviewed[0][:12]}, dropped {len(dropped_actions)}/{len(actions)} actions"
+        )
+
     # Step 3: Judge matching
     prompt3 = JUDGE_MATCHING.format(
         bot_username=chatbot_username,
@@ -383,13 +399,13 @@ async def analyze_single_pr(
 
     # Compute metrics — only count IDs that actually exist in the extracted lists
     suggestion_id_set = {s["issue_id"] for s in suggestions}
-    action_id_set = {a["action_id"] for a in actions}
+    action_id_set = {a["action_id"] for a in scored_actions}
     total_suggestions = len(suggestions)
     matched_suggestion_ids = {
         m["bot_issue_id"] for m in matches if m["matched"] and m.get("bot_issue_id") in suggestion_id_set
     }
     matched_suggestions = len(matched_suggestion_ids)
-    total_actions = len(actions)
+    total_actions = len(scored_actions)
     matched_action_ids = {
         m["human_action_id"] for m in matches if m["matched"] and m.get("human_action_id") in action_id_set
     }
@@ -407,7 +423,7 @@ async def analyze_single_pr(
         pr_id=pr_row["id"],
         chatbot_id=pr_row["chatbot_id"],
         bot_suggestions=suggestions,
-        human_actions=actions,
+        human_actions=scored_actions,
         matching_results=matches,
         total_bot_comments=total_suggestions,
         matched_bot_comments=matched_suggestions,
@@ -415,6 +431,7 @@ async def analyze_single_pr(
         recall=recall,
         f_beta=f_beta,
         model_name=model_name,
+        dropped_human_actions=dropped_actions,
     )
 
     logger.info(

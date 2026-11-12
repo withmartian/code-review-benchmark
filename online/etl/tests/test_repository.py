@@ -449,3 +449,21 @@ class TestSqliteIntegration:
         await repo.mark_skipped(pr["id"], "Too large")
         row = await repo.get_pr_by_id(pr["id"])
         assert row["status"] == "skipped"
+
+    @pytest.mark.asyncio
+    async def test_issue_comments_and_dropped_actions_roundtrip(self, db: DBAdapter, repo: PRRepository) -> None:
+        cid = await repo.upsert_chatbot("testbot[bot]")
+        await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=82, pr_url="https://x")
+        pr = await repo.get_pr(cid, "org/repo", 82)
+        await repo.update_issue_comments(pr["id"], [{"id": 1, "author": "testbot[bot]", "body": "b"}])
+        row = await repo.get_pr_by_id(pr["id"])
+        assert row["enrichment_step"] == "issue_comments"
+        assert json.loads(row["issue_comments"])[0]["body"] == "b"
+
+        await repo.insert_analysis(
+            pr_id=pr["id"], chatbot_id=cid, bot_suggestions=[], human_actions=[], matching_results=[],
+            total_bot_comments=0, matched_bot_comments=0, precision=None, recall=None, f_beta=None,
+            model_name="m", dropped_human_actions=[{"action_id": "A1"}],
+        )
+        la = await db.fetchone("SELECT dropped_human_actions FROM llm_analyses WHERE pr_id = $1", (pr["id"],))
+        assert json.loads(la["dropped_human_actions"]) == [{"action_id": "A1"}]

@@ -23,6 +23,7 @@ from pipeline.actors import same_github_actor
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
+from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import sha_index
 
 logger = logging.getLogger(__name__)
@@ -354,6 +355,7 @@ def _exclude_unreviewed_actions(
     post_commits: list[dict],
     details_by_sha: dict[str, dict],
     chatbot_username: str,
+    comments_read: bool = True,
 ) -> set[str]:
     """IDs of the actions left out of recall because no review of the bot read their code.
 
@@ -365,7 +367,15 @@ def _exclude_unreviewed_actions(
     action always counts: a match shows the bot saw the issue. Excluded actions are marked in place
     with excluded_from_recall (the reason) and unreviewed_commits (the commits that wrote or
     edited the lines).
+
+    comments_read is False when the PR's conversation comments were never read (a PR enriched
+    before they were, or one whose pull request was gone when they were read). For a bot that
+    writes its record in those comments (``record_in_issue_comments``), its reviews cannot all be
+    known then, and a review recorded only there would read as a push it never reviewed, so no
+    action is left out.
     """
+    if not comments_read and record_in_issue_comments(chatbot_username):
+        return set()
     matched = {m.get("human_action_id") for m in matches if m.get("matched")}
     unmatched = [a for a in actions if a["action_id"] not in matched]
     if not post_commits or not unmatched:
@@ -499,6 +509,7 @@ async def analyze_single_pr(
         post_commits,
         details_by_sha,
         chatbot_username,
+        comments_read=pr_row.get("issue_comments") is not None,
     )
 
     # Compute metrics — only count IDs that actually exist in the extracted lists

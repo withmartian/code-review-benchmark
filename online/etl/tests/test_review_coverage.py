@@ -6,6 +6,7 @@ from pipeline.review_coverage import ReviewRecord
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
+from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviewed_before
 
 CR = "coderabbitai[bot]"
@@ -230,6 +231,13 @@ def test_other_bots_records() -> None:
     ]
     assert _spans(find_review_records([issue_comment(state, actor=CODEX)], COMMITS, CODEX)) == [(-1, 1, "record")]
     assert find_review_records([issue_comment(summary_g, actor=greptile)], COMMITS, CR) == []
+
+
+def test_which_bots_keep_a_record_in_conversation_comments() -> None:
+    for bot in (CR, "coderabbitai", "greptile-apps[bot]", CODEX):
+        assert record_in_issue_comments(bot)
+    for bot in ("cubic-dev-ai[bot]", "claude[bot]", "Copilot", "qodo-code-review[bot]"):
+        assert not record_in_issue_comments(bot)
 
 
 # -- line history ----------------------------------------------------------------

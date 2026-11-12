@@ -257,12 +257,15 @@ class RecordPattern:
     commit the review's diff started from, so the review covered the commits after ``start`` up to
     ``head``. Without ``start``, the review read the whole pull request at ``head``. ignore, when
     set, matches the parts of a body where the same text describes a review that did not run or has
-    not finished; records inside them do not count.
+    not finished; records inside them do not count. in_issue_comments means the bot writes this
+    record in a PR conversation comment (often a status comment it rewrites on each review), so the
+    record cannot be read for a PR whose conversation comments were not read.
     """
 
     bot: str
     pattern: re.Pattern[str]
     ignore: re.Pattern[str] | None = None
+    in_issue_comments: bool = False
 
 
 RECORD_PATTERNS: tuple[RecordPattern, ...] = (
@@ -276,6 +279,7 @@ RECORD_PATTERNS: tuple[RecordPattern, ...] = (
             r"(?P<start>[0-9a-f]{7,40}) and (?P<head>[0-9a-f]{7,40})"
         ),
         ignore=_CR_UNFINISHED,
+        in_issue_comments=True,
     ),
     # The summary comment's "Last reviewed commit: [<subject>](https://github.com/<o>/<r>/commit/<sha>)".
     RecordPattern(
@@ -283,17 +287,24 @@ RECORD_PATTERNS: tuple[RecordPattern, ...] = (
         pattern=re.compile(
             r"Last reviewed commit: \[[^\n]*?\]\(https://github\.com/[^/\s]+/[^/\s]+/commit/(?P<head>[0-9a-f]{7,40})\)"
         ),
+        in_issue_comments=True,
     ),
     # The review summary's state marker, and the "Reviewed commit" line of a review.
     RecordPattern(
         bot="chatgpt-codex-connector[bot]",
         pattern=re.compile(r'codex-review-state:v1 \{"code_review":\{"commit_sha":"(?P<head>[0-9a-f]{7,40})"'),
+        in_issue_comments=True,
     ),
     RecordPattern(
         bot="chatgpt-codex-connector[bot]",
         pattern=re.compile(r"\*\*Reviewed commit:\*\* `(?P<head>[0-9a-f]{7,40})`"),
     ),
 )
+
+
+def record_in_issue_comments(chatbot_username: str) -> bool:
+    """Whether the bot writes any of its record in PR conversation comments (``RECORD_PATTERNS``)."""
+    return any(p.in_issue_comments and same_github_actor(p.bot, chatbot_username) for p in RECORD_PATTERNS)
 
 
 @dataclass(frozen=True)

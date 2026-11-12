@@ -258,9 +258,31 @@ async def test_a_review_that_posted_nothing_counts_through_the_summary_record() 
     assert repo.stored["recall"] == 0.5
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
-    # Without the fetched comment bodies the record is not seen: only the posted reviews count.
+    # Comments never read (NULL): the record may hold reviews the posted ones do not show, so for a
+    # bot that keeps its record in comments no fix is left out.
     row["issue_comments"] = None
     assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
+async def test_comments_never_read_keep_every_fix_only_for_a_bot_with_a_record_in_comments() -> None:
+    # The rate-limit case leaves the exporter fix out once the comments were read, even when none is
+    # the bot's; with them never read it is kept for CodeRabbit.
+    row = _pr_row()
+    row["issue_comments"] = json.dumps([])
+    repo = FakeRepo()
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert repo.stored["recall"] == 1.0
+
+    row["issue_comments"] = None
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert repo.stored["recall"] == 0.5
+
+    # A bot without a record (its reviews are its posted reviews) is read the same either way.
+    cubic = "cubic-dev-ai[bot]"
+    other = json.loads(json.dumps(row).replace(BOT, cubic))
+    assert await analyze_single_pr(FakeLLM(), repo, other, cubic, "model")
     assert repo.stored["recall"] == 1.0
 
 

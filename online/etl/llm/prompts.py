@@ -73,7 +73,10 @@ still a finding, as each item says.
   tips, links to dashboards, and configuration or review-settings details. This includes offers
   to generate code for the author, for example to write docstrings or tests.
 - Review status and run metadata: counts of comments posted, lists of files reviewed or skipped,
-  the commit range reviewed, run or plan details, and quota or allowance notes.
+  the commit range reviewed, run or plan details, and quota or allowance notes. A comment that only
+  reports that no review was performed or completed (a review, rate or quota limit was reached, the
+  review was paused, skipped or failed) contains no findings: extract nothing from it, and never
+  describe the notice itself as a finding.
 - Inputs the bot lists as having used for its review, such as linter or static-analysis output,
   code guidelines, or configured review instructions (for example a section where the bot lists the
   inputs or context it used). Do not extract findings from these inputs, even when a listed tool

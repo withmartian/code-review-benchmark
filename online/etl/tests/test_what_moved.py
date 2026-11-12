@@ -110,20 +110,20 @@ def test_the_figures_quoted_in_the_pr_description_come_from_the_results_file() -
         return url.split("github.com/")[1]
 
     qodo = bot_moves(data["qodo-code-review[bot]"], "current", head)
-    assert round(100 * qodo["precision"]["total"], 1) == 8.1
+    assert round(100 * qodo["precision"]["total"], 1) == 14.8
     assert round(100 * qodo["precision"]["dropouts"], 1) == 9.7
-    assert round(100 * qodo["precision"]["retained"], 1) == -1.6
+    assert round(100 * qodo["precision"]["retained"], 1) == 5.1
     assert round(100 * qodo["recall"]["dropouts"], 1) == 6.9
-    assert round(100 * qodo["recall"]["retained"], 1) == -14.3
+    assert round(100 * qodo["recall"]["retained"], 1) == -15.9
     assert [short(d["pr_url"]) for d in qodo["dropouts"]] == ["Heretek-AI/claude-4-opencode/pull/4"]
     top_p = {short(t["pr_url"]): round(100 * t["contribution"], 1) for t in qodo["top_precision"]}
     top_r = {short(t["pr_url"]): round(100 * t["contribution"], 1) for t in qodo["top_recall"]}
-    assert top_p == {"varveio/swath/pull/243": -1.6}
-    assert top_r == {"varveio/swath/pull/243": -14.3}
+    assert top_p == {"anolilab/neore/pull/451": 4.8, "TW199501/multica/pull/50": 1.9, "varveio/swath/pull/243": -1.6}
+    assert top_r == {"varveio/swath/pull/243": -14.3, "anolilab/neore/pull/451": -1.6}
 
     codex = bot_moves(data["chatgpt-codex-connector[bot]"], "current", head)
     assert [short(d["pr_url"]) for d in codex["dropouts"]] == ["harshanandak/forge/pull/98"]
     assert round(100 * codex["precision"]["dropouts"], 1) == 5.1
     assert round(100 * codex["recall"]["dropouts"], 1) == 2.4
     assert codex["entries"] == []
-    assert round(100 * codex["precision"]["total"], 1) == 5.1
+    assert round(100 * codex["precision"]["total"], 1) == 5.5

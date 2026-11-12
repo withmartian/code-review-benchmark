@@ -24,7 +24,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 3.53 | 1.76 | 70.1 | 48.8 | 232 | +7.7 [+5.1, +10.4] | -0.3 [-1.7, +0.9] | -0.43 [-0.52, -0.34] |
 |  | previous revision 093c763a | 3.50 | 1.72 | 70.8 | 47.5 | 232 | +8.4 [+5.8, +11.2] | -1.6 [-3.4, +0.0] | -0.46 [-0.55, -0.37] |
 |  | previous revision a2fcbe51 | 3.49 | 1.73 | 70.6 | 47.6 | 232 | +8.2 [+5.5, +10.9] | -1.5 [-3.3, +0.2] | -0.46 [-0.55, -0.38] |
-|  | **this PR (head)** | 3.50 | 1.76 | 70.0 | 48.5 | 232 | +7.6 [+5.2, +10.1] | -0.6 [-2.3, +0.8] | -0.46 [-0.55, -0.37] |
+|  | **this PR (head)** | 3.54 | 1.75 | 70.3 | 48.3 | 232 | +7.9 [+5.6, +10.3] | -0.7 [-1.9, +0.3] | -0.42 [-0.51, -0.33] |
 | Greptile (164) | current | 2.29 | 1.92 | 85.0 | 33.5 | 157 |  |  |  |
 |  | current, 2nd draw | 2.28 | 1.90 | 83.7 | 33.8 | 157 | -1.2 [-3.9, +1.1] | +0.3 [-0.7, +1.6] | -0.01 [-0.05, +0.03] |
 |  | earlier revision | 2.32 | 1.92 | 83.2 | 33.4 | 157 | -1.8 [-4.0, +0.1] | -0.0 [-0.8, +0.9] | +0.04 [+0.00, +0.07] |
@@ -32,7 +32,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 2.30 | 1.92 | 84.8 | 33.8 | 157 | -0.2 [-2.3, +1.8] | +0.3 [-0.5, +1.2] | +0.01 [-0.02, +0.05] |
 |  | previous revision 093c763a | 2.32 | 1.93 | 83.2 | 34.0 | 157 | -1.8 [-3.8, -0.3] | +0.5 [-0.4, +1.7] | +0.04 [-0.01, +0.09] |
 |  | previous revision a2fcbe51 | 2.32 | 1.96 | 84.1 | 34.2 | 157 | -0.9 [-3.0, +0.9] | +0.8 [-0.1, +1.9] | +0.04 [-0.01, +0.09] |
-|  | **this PR (head)** | 2.34 | 1.96 | 84.0 | 34.2 | 157 | -1.0 [-3.7, +1.4] | +0.8 [-0.1, +1.8] | +0.05 [+0.02, +0.10] |
+|  | **this PR (head)** | 2.32 | 1.93 | 84.0 | 33.9 | 157 | -1.0 [-3.3, +1.3] | +0.4 [-0.5, +1.4] | +0.04 [-0.01, +0.09] |
 | cubic (109) | current | 6.92 | 4.07 | 69.1 | 52.7 | 103 |  |  |  |
 |  | current, 2nd draw | 6.77 | 3.93 | 69.0 | 52.3 | 103 | -0.1 [-1.8, +1.6] | -0.4 [-1.6, +0.7] | -0.15 [-0.38, +0.01] |
 |  | earlier revision | 6.76 | 4.11 | 70.2 | 54.6 | 103 | +1.1 [-0.2, +2.7] | +1.9 [-0.0, +4.7] | -0.16 [-0.42, +0.04] |
@@ -40,7 +40,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 6.83 | 3.95 | 68.9 | 53.3 | 103 | -0.2 [-1.7, +1.3] | +0.6 [-1.2, +3.3] | -0.09 [-0.30, +0.04] |
 |  | previous revision 093c763a | 6.85 | 4.01 | 68.6 | 53.3 | 103 | -0.5 [-1.5, +0.3] | +0.6 [-1.3, +3.1] | -0.06 [-0.16, +0.01] |
 |  | previous revision a2fcbe51 | 6.93 | 4.12 | 70.1 | 53.2 | 103 | +1.0 [-0.3, +2.4] | +0.4 [-0.7, +1.6] | +0.01 [-0.06, +0.07] |
-|  | **this PR (head)** | 6.82 | 4.10 | 69.8 | 54.1 | 103 | +0.7 [-0.3, +1.7] | +1.4 [-0.3, +3.8] | -0.10 [-0.34, +0.05] |
+|  | **this PR (head)** | 6.86 | 3.98 | 69.1 | 53.6 | 103 | -0.0 [-1.6, +1.5] | +0.8 [-0.9, +3.5] | -0.06 [-0.26, +0.06] |
 | Claude (66) | current | 5.44 | 2.32 | 53.2 | 41.9 | 58 |  |  |  |
 |  | current, 2nd draw | 5.44 | 2.35 | 51.9 | 42.7 | 59 | -1.2 [-5.9, +2.4] | +0.8 [-3.2, +5.9] | +0.00 [-0.21, +0.21] |
 |  | earlier revision | 5.29 | 2.38 | 53.9 | 43.6 | 57 | +0.7 [-2.9, +3.9] | +1.7 [-2.1, +5.4] | -0.15 [-0.33, +0.02] |
@@ -48,7 +48,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 5.29 | 2.32 | 54.1 | 41.5 | 58 | +0.9 [-0.4, +2.3] | -0.4 [-2.7, +1.5] | -0.15 [-0.27, -0.05] |
 |  | previous revision 093c763a | 5.39 | 2.35 | 54.0 | 43.0 | 58 | +0.8 [-1.4, +3.2] | +1.1 [-2.1, +4.3] | -0.05 [-0.17, +0.06] |
 |  | previous revision a2fcbe51 | 5.35 | 2.32 | 55.1 | 42.8 | 58 | +1.9 [-0.4, +4.7] | +0.9 [-0.8, +2.7] | -0.09 [-0.24, +0.06] |
-|  | **this PR (head)** | 5.47 | 2.26 | 52.0 | 40.8 | 58 | -1.2 [-5.6, +2.6] | -1.2 [-4.2, +1.6] | +0.03 [-0.09, +0.15] |
+|  | **this PR (head)** | 5.29 | 2.36 | 55.4 | 42.7 | 57 | +2.2 [-0.0, +5.0] | +0.7 [-2.8, +4.4] | -0.15 [-0.27, -0.03] |
 | Qodo (13) | current | 2.38 | 1.46 | 68.1 | 48.6 | 8 |  |  |  |
 |  | current, 2nd draw | 2.46 | 1.38 | 59.3 | 32.0 | 9 | -8.8 [-26.7, +0.0] | -16.5 [-45.4, +0.0] | +0.08 [+0.00, +0.23] |
 |  | earlier revision | 1.85 | 1.31 | 85.7 | 39.6 | 7 | +17.7 [-1.4, +44.1] | -8.9 [-40.0, +16.3] | -0.54 [-1.00, -0.15] |
@@ -56,7 +56,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 2.15 | 1.31 | 72.5 | 34.7 | 8 | +4.4 [-3.5, +14.3] | -13.9 [-42.2, +0.0] | -0.23 [-0.62, +0.00] |
 |  | previous revision 093c763a | 1.92 | 1.31 | 82.9 | 39.6 | 7 | +14.8 [-1.9, +40.0] | -8.9 [-40.0, +16.3] | -0.46 [-0.85, -0.08] |
 |  | previous revision a2fcbe51 | 2.46 | 1.38 | 78.1 | 41.2 | 7 | +10.0 [-3.2, +33.9] | -7.3 [-40.0, +17.1] | +0.08 [-0.31, +0.69] |
-|  | **this PR (head)** | 2.23 | 1.38 | 76.2 | 41.2 | 7 | +8.1 [-4.1, +31.5] | -7.3 [-40.0, +17.1] | -0.15 [-0.38, +0.00] |
+|  | **this PR (head)** | 2.31 | 1.31 | 82.9 | 39.6 | 7 | +14.8 [-1.9, +40.0] | -8.9 [-40.0, +16.3] | -0.08 [-0.62, +0.62] |
 | Copilot (18) | current | 2.78 | 1.89 | 81.7 | 50.0 | 15 |  |  |  |
 |  | current, 2nd draw | 2.78 | 1.89 | 81.7 | 50.0 | 15 | +0.1 [-1.7, +1.8] | +0.0 [+0.0, +0.0] | +0.00 [+0.00, +0.00] |
 |  | earlier revision | 2.83 | 1.94 | 81.4 | 50.0 | 15 | -0.3 [-3.0, +1.9] | +0.0 [+0.0, +0.0] | +0.06 [+0.00, +0.17] |
@@ -64,7 +64,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 2.83 | 1.78 | 79.4 | 47.7 | 15 | -2.3 [-4.8, +0.0] | -2.2 [-7.1, +0.0] | +0.06 [+0.00, +0.17] |
 |  | previous revision 093c763a | 2.83 | 2.00 | 82.7 | 50.4 | 15 | +1.0 [+0.0, +2.5] | +0.5 [+0.0, +1.5] | +0.06 [+0.00, +0.17] |
 |  | previous revision a2fcbe51 | 2.83 | 1.89 | 80.6 | 48.2 | 15 | -1.1 [-3.8, +1.2] | -1.7 [-6.7, +1.3] | +0.06 [+0.00, +0.17] |
-|  | **this PR (head)** | 2.83 | 1.78 | 79.4 | 48.2 | 15 | -2.3 [-4.8, +0.0] | -1.7 [-6.7, +1.3] | +0.06 [+0.00, +0.17] |
+|  | **this PR (head)** | 2.78 | 1.78 | 80.5 | 50.0 | 15 | -1.2 [-3.9, +0.0] | +0.0 [+0.0, +0.0] | +0.00 [+0.00, +0.00] |
 | Codex (25) | current | 1.64 | 1.28 | 81.1 | 38.4 | 17 |  |  |  |
 |  | current, 2nd draw | 1.68 | 1.24 | 75.2 | 35.5 | 17 | -5.9 [-22.8, +9.9] | -2.9 [-11.4, +4.7] | +0.04 [-0.12, +0.24] |
 |  | earlier revision | 1.56 | 1.20 | 79.9 | 36.1 | 16 | -1.2 [-17.6, +13.3] | -2.3 [-10.5, +5.1] | -0.08 [-0.20, +0.00] |
@@ -72,7 +72,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 1.60 | 1.28 | 86.1 | 40.8 | 16 | +5.1 [+0.0, +16.1] | +2.4 [+0.0, +7.8] | -0.04 [-0.12, +0.00] |
 |  | previous revision 093c763a | 1.56 | 1.28 | 86.6 | 39.3 | 16 | +5.5 [+0.0, +16.4] | +0.8 [-4.2, +6.7] | -0.08 [-0.20, +0.00] |
 |  | previous revision a2fcbe51 | 1.64 | 1.28 | 81.5 | 36.9 | 17 | +0.5 [-13.8, +14.2] | -1.5 [-8.8, +5.1] | +0.00 [-0.16, +0.24] |
-|  | **this PR (head)** | 1.56 | 1.24 | 86.1 | 39.3 | 16 | +5.1 [+0.0, +16.1] | +0.8 [-4.2, +6.7] | -0.08 [-0.20, +0.00] |
+|  | **this PR (head)** | 1.60 | 1.32 | 86.6 | 40.8 | 16 | +5.5 [+0.0, +16.4] | +2.4 [+0.0, +7.8] | -0.04 [-0.12, +0.00] |
 | six other bots pooled (395) | current | 4.08 | 2.52 | 74.6 | 41.6 | 358 |  |  |  |
 |  | current, 2nd draw | 4.04 | 2.48 | 73.2 | 41.3 | 360 | -1.4 [-3.1, +0.2] | -0.4 [-1.6, +0.8] | -0.04 [-0.11, +0.02] |
 |  | earlier revision | 4.00 | 2.54 | 74.6 | 42.2 | 355 | +0.0 [-1.4, +1.5] | +0.5 [-0.6, +1.8] | -0.07 [-0.15, -0.01] |
@@ -80,7 +80,7 @@ and the head, one draw. The results file maps each arm to its prompt sha256.
 |  | previous revision cee5e6cc | 4.02 | 2.48 | 74.8 | 41.6 | 357 | +0.2 [-0.9, +1.3] | -0.0 [-1.1, +1.0] | -0.05 [-0.11, -0.01] |
 |  | previous revision 093c763a | 4.05 | 2.52 | 74.3 | 42.1 | 356 | -0.2 [-1.3, +0.8] | +0.4 [-0.7, +1.6] | -0.03 [-0.07, +0.01] |
 |  | previous revision a2fcbe51 | 4.08 | 2.55 | 74.9 | 41.9 | 357 | +0.4 [-0.9, +1.7] | +0.3 [-0.7, +1.2] | +0.01 [-0.03, +0.05] |
-|  | **this PR (head)** | 4.07 | 2.53 | 74.4 | 42.0 | 356 | -0.2 [-1.7, +1.2] | +0.4 [-0.7, +1.4] | -0.01 [-0.07, +0.05] |
+|  | **this PR (head)** | 4.05 | 2.50 | 75.0 | 42.1 | 355 | +0.5 [-0.9, +1.8] | +0.5 [-0.7, +1.6] | -0.03 [-0.09, +0.02] |
 
 ## Two precision figures
 
@@ -97,7 +97,7 @@ bots every scored PR has both.
 | previous revision cee5e6cc | 51.9 (313) | +5.7 [+3.7, +7.8] | 70.1 (232) | +7.7 [+5.1, +10.4] |
 | previous revision 093c763a | 52.5 (313) | +6.3 [+4.2, +8.3] | 70.8 (232) | +8.4 [+5.8, +11.2] |
 | previous revision a2fcbe51 | 52.3 (313) | +6.1 [+4.0, +8.2] | 70.6 (232) | +8.2 [+5.5, +10.9] |
-| **this PR (head)** | 51.9 (313) | +5.7 [+3.8, +7.6] | 70.0 (232) | +7.6 [+5.2, +10.1] |
+| **this PR (head)** | 52.1 (313) | +5.9 [+4.2, +7.7] | 70.3 (232) | +7.9 [+5.6, +10.3] |
 
 ## CodeRabbit items by type
 
@@ -107,21 +107,21 @@ their `matched_items_` counterparts); the rest also needs the review bodies.
 
 | item type | current | current, 2nd draw | earlier revision | earlier revision, 2nd draw | cee5e6cc | 093c763a | a2fcbe51 | this PR (head) |
 |---|---|---|---|---|---|---|---|---|
-| coverage-threshold gate | 124 (1) | 116 (2) | 0 | 0 | 0 | 0 | 0 | 1 (0) |
-| title / description / linked-issue check | 18 (1) | 18 (0) | 3 (1) | 4 (1) | 22 (0) | 19 (0) | 19 (2) | 21 (1) |
+| coverage-threshold gate | 124 (1) | 116 (2) | 0 | 0 | 0 | 0 | 0 | 0 |
+| title / description / linked-issue check | 18 (1) | 18 (0) | 3 (1) | 4 (1) | 22 (0) | 19 (0) | 19 (2) | 23 (1) |
 | quoted tool output | 2 (0) | 3 (0) | 0 | 0 | 0 | 0 | 0 | 0 |
 | run status | 0 | 1 (0) | 0 | 0 | 0 | 0 | 0 | 0 |
-| other unlocated issue-comment item | 10 (2) | 19 (7) | 14 (4) | 13 (4) | 13 (3) | 10 (4) | 9 (2) | 13 (5) |
-| code findings | 1084 (547) | 1072 (549) | 1059 (541) | 1076 (552) | 1069 (549) | 1065 (534) | 1065 (539) | 1059 (546) |
-| posted inline comments still extracted | 789/797 | 787/797 | 790/797 | 792/797 | 790/797 | 789/797 | 791/797 | 791/797 |
-| collapsed review-body findings still extracted | 154/175 | 156/175 | 155/175 | 155/175 | 158/175 | 156/175 | 154/175 | 157/175 |
+| other unlocated issue-comment item | 10 (2) | 19 (7) | 14 (4) | 13 (4) | 13 (3) | 10 (4) | 9 (2) | 19 (3) |
+| code findings | 1084 (547) | 1072 (549) | 1059 (541) | 1076 (552) | 1069 (549) | 1065 (534) | 1065 (539) | 1065 (544) |
+| posted inline comments still extracted | 789/797 | 787/797 | 790/797 | 792/797 | 790/797 | 789/797 | 791/797 | 792/797 |
+| collapsed review-body findings still extracted | 154/175 | 156/175 | 155/175 | 155/175 | 158/175 | 156/175 | 154/175 | 155/175 |
 
 ## Other tracked bots: step 1 only
 
 For each remaining tracked bot with at least 10 public PRs found (merged 2026-10-05 to 11-06, one PR
 per repository, co-reviewed with CodeRabbit), step 1 alone, once per prompt: suggestions per PR over
 the PRs with bot review output. Commit diffs are not passed. The head moves suggestions per PR by
--0.18 to +0.33 against the current prompt (one draw per prompt, so small
+-0.09 to +0.33 against the current prompt (one draw per prompt, so small
 shifts are expected noise). Of the 19 tracked bots not in the full table, 4 had no public PR
 co-reviewed with CodeRabbit in this window (`kiloconnect[bot]`, `propel-code-bot[bot]`,
 `mesa-dot-dev[bot]`, `linearb[bot]`) and `bito-code-review[bot]` had 6 with no review output.
@@ -131,14 +131,14 @@ co-reviewed with CodeRabbit in this window (`kiloconnect[bot]`, `propel-code-bot
 | augmentcode[bot] | 15 | 0.60 | 0.53 | 0.67 | 0.67 | 0.67 | 0.67 |
 | baz-reviewer[bot] | 7 | 2.71 | 2.57 | 2.71 | 2.71 | 2.71 | 2.71 |
 | codeant-ai[bot] | 15 | 4.73 | 4.67 | 4.73 | 4.73 | 4.73 | 4.73 |
-| cursor[bot] | 11 | 2.91 | 3.27 | 3.00 | 2.91 | 2.64 | 2.73 |
-| devin-ai-integration[bot] | 14 | 1.79 | 1.79 | 1.79 | 1.71 | 1.86 | 1.86 |
-| entelligence-ai-pr-reviews[bot] | 12 | 7.42 | 7.50 | 7.50 | 7.50 | 7.50 | 7.50 |
-| factory-droid[bot] | 6 | 1.83 | 1.50 | 1.83 | 1.67 | 1.67 | 1.67 |
+| cursor[bot] | 11 | 2.91 | 3.27 | 3.00 | 2.91 | 2.64 | 2.82 |
+| devin-ai-integration[bot] | 14 | 1.79 | 1.79 | 1.79 | 1.71 | 1.86 | 1.79 |
+| entelligence-ai-pr-reviews[bot] | 12 | 7.42 | 7.50 | 7.50 | 7.50 | 7.50 | 7.42 |
+| factory-droid[bot] | 6 | 1.83 | 1.50 | 1.83 | 1.67 | 1.67 | 1.83 |
 | gemini-code-assist[bot] | 8 | 1.25 | 1.25 | 1.25 | 1.25 | 1.25 | 1.25 |
-| graphite-app[bot] | 12 | 1.83 | 1.83 | 2.00 | 1.92 | 1.83 | 1.92 |
+| graphite-app[bot] | 12 | 1.83 | 1.83 | 2.00 | 1.92 | 1.83 | 2.00 |
 | kody-ai[bot] | 12 | 1.92 | 1.75 | 1.92 | 1.75 | 1.75 | 1.83 |
-| macroscopeapp[bot] | 15 | 1.80 | 1.80 | 1.67 | 1.67 | 1.60 | 1.67 |
+| macroscopeapp[bot] | 15 | 1.80 | 1.80 | 1.67 | 1.67 | 1.60 | 1.80 |
 | qodo-free-for-open-source-projects[bot] | 15 | 2.20 | 2.33 | 2.27 | 2.13 | 2.27 | 2.53 |
 | sentry[bot] | 15 | 1.53 | 1.53 | 1.53 | 1.47 | 1.60 | 1.53 |
 | sourcery-ai[bot] | 14 | 0.86 | 0.57 | 0.86 | 0.79 | 1.00 | 0.79 |
@@ -148,12 +148,17 @@ co-reviewed with CodeRabbit in this window (`kiloconnect[bot]`, `propel-code-bot
 Qodo keeps its earlier findings in its summary comment, struck through and marked as resolved (the
 author fixed it) or as dismissed. 7 of the 13 Qodo PRs carry such marks. Items extracted on them
 (matched in parentheses): current 30 (19) and 30 (18), earlier revision 24 (17) and 27 (18),
-`cee5e6cc` 27 (17), `093c763a` 25 (17), `a2fcbe51` 32 (18), head 29 (18). `093c763a` dropped 5 such
+`cee5e6cc` 27 (17), `093c763a` 25 (17), `a2fcbe51` 32 (18), head 30 (17). `093c763a` dropped 5 such
 findings that both current-prompt draws extract, on anolilab/neore#451 (two resolved, one of them
 matched to the author's fix in both baseline draws), varveio/swath#243 (one resolved, matched in the
-first baseline draw; one dismissed) and TW199501/multica#50 (one dismissed). The head extracts 4 of
-the 5: both neore findings (neore is back to 2 of 3 matched, as with the current prompt), swath's
-resolved finding and multica's dismissed one; swath's dismissed one is not. swath's resolved finding
+first baseline draw; one dismissed) and TW199501/multica#50 (one dismissed). The head's one draw
+extracts swath's resolved finding (copytree symlinks) and neither neore finding (neore has 1 item,
+matched) nor multica's dismissed one (token rotation). It also extracts swath's dismissed "Azure
+version proof can cite only old bytes" item, which may be the one `093c763a` dropped (not verified).
+Three extra step-1 draws per prompt on these 7 PRs, for the head and the previous head (prompt
+`6d8d28f4`): neore has all 3 of its items in every one of the 6 draws, and multica's dismissed finding
+is extracted in 2 of 3 head draws against 3 of 3 previous-head draws, so neore's single item in the
+head's draw is an outlier. swath's resolved finding
 is extracted but not matched: the judge matched it in 1 of the 5 draws that extracted it (the
 current prompt's first), so swath#243's -14.3 recall at the head is the matching draw. No other
 bot's comments in the sample carry such marks except one cubic PR (5 matched in every arm) and
@@ -172,7 +177,7 @@ The first prompt without the exclusion (99d049f, measured at 04e8de3) kept an in
 PR-level content is not a finding, and the intro won (CodeRabbit 18 and 18 such items in two draws
 of the current prompt, 6 with 04e8de3). With the scoped intro, one draw each, CodeRabbit's counts
 were 19 at 5c683e4, 22 at c35f464 (prompt `cee5e6cc`), 19 at `093c763a`, 19 at `a2fcbe51` and
-21 at the head; Claude's were 6, 5, 4, 8 and 5 (current 6 and 4). The 04e8de3 and
+23 at the head; Claude's were 6, 5, 4, 8 and 5 (current 6 and 4). The 04e8de3 and
 5c683e4 draws are not in the results file, so the first values of each list cannot be recomputed
 from it; the rest are `items_other_check`, counted by the fixed text patterns of the type table.
 
@@ -217,10 +222,10 @@ than measuring it.
 
 - scylladb/scylla-operator#3811 description-check row: 6 of 6 draws with the scoped intro, 5 of 6
   before the two `093c763a` rewordings, 13 of 18 on `093c763a` (4 of 8 in a later run), 1 of 9 on
-  `a2fcbe51`, 6 of 8 on the head.
+  `a2fcbe51`, 5 of 8 on the head.
 - hyperpolymath/universal-chat-extractor#186 zizmor lines: extracted in 0 of 14 targeted draws with
   the "configured review instructions" wording, 1 of 13 after the quoted-tool-output rule was
-  narrowed, 1 of 9 on `a2fcbe51`, 0 of 8 on the head (6 targeted draws and both live draws).
+  narrowed, 1 of 9 on `a2fcbe51`, 0 of 8 on the head (8 draws in one session).
 - Copilot's description remark on fleetdm/fleet#55421: extracted in every draw of the scoped-intro
   prompts.
 
@@ -230,16 +235,16 @@ Rule: a finding label stays asserted whatever its pass rate, and its failures ar
 Only the 10 overview sentences carry no pattern (no text pattern separates them from findings on
 the same code), plus one neutral linked-issue row that names no problem
 (Fooftilly/local-search-mcp#27), so the live run does not check overviews. With every finding asserted, the live run
-on the head (one draw per fixture, after the wording draws) passes 9 of 12 and fails exactly these
-three, each counted over the targeted draws plus the live draws:
+on the head (one draw per fixture) passes 9 of 12 and fails exactly these
+three, each counted over 8 head draws per fixture in one session (the first is the live draw):
 
-- Qodo's dismissed finding on tajemniktv/TajsTokens#109: 1 of 8 on the head, 2 of 9 on
+- Qodo's dismissed finding on tajemniktv/TajsTokens#109: 3 of 8 on the head, 2 of 9 on
   `a2fcbe51`, 0 of 8 on `093c763a`, 0 of 6 with the current upstream prompt (`e616e849`).
 - CodeRabbit's rating-explanation finding on pcsx-redux/pcsx-redux#2544 (a concrete problem named
-  only in the merge-risk explanation, which the rule says to extract): 0 of 7 on the head, 1 of 6
+  only in the merge-risk explanation, which the rule says to extract): 0 of 8 on the head, 1 of 6
   with the current upstream prompt (earlier: 1 of 5 and 0 of 5).
 - cubic's linked-issue table row on Fooftilly/local-search-mcp#27 that names a concrete problem:
-  0 of 7 on the head, 0 of 6 with the current upstream prompt (earlier: 0 of 3 and 0 of 4). The
+  0 of 8 on the head, 0 of 6 with the current upstream prompt (earlier: 0 of 3 and 0 of 4). The
   prompt's intro calls a remark or check result that says what "the pull request's title,
   description, or linked issue lacks" a finding; a linked-issue row reports what the change lacks
   against the issue, which that wording does not literally cover, so it may contribute to this miss.
@@ -252,16 +257,16 @@ three, each counted over the targeted draws plus the live draws:
   row 1 of 6, zizmor kept out 5 of 6) and better on TajsTokens (3 of 6), with the Qodo fixture at 6
   of 6, so it was not adopted either. The fixture test maps this label to the
   sentence that judges other PR-level content like any other comment. Both rejected tries extracted
-  the scylla CodeRabbit description-check row less often (3 of 6 and 1 of 6, against 6 of 8 on the
+  the scylla CodeRabbit description-check row less often (3 of 6 and 1 of 6, against 5 of 8 on the
   head), which would have favoured CodeRabbit. Both kept the zizmor tool lines out less often (2 of
   6 and 5 of 6, against 8 of 8 on the head), which would have counted against CodeRabbit. Both tries
-  extracted Qodo's TajsTokens dismissed finding more often (2 of 6 and 3 of 6, against 1 of 8), which
-  would have favoured Qodo. These counts come from different sessions and are within draw-to-draw
+  extracted Qodo's TajsTokens dismissed finding about as often as the head (2 of 6 and 3 of 6,
+  against 3 of 8). These counts come from different sessions and are within draw-to-draw
   noise (the same row moved from 13 of 18 to 4 of 8 between sessions on one prompt); neither try
   fixed the cubic row.
 
-The scylla description-check row passed this live draw (6 of 8 on the head in all). The same
-pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (5 of 6).
+The scylla description-check row passed this live draw (5 of 8 on the head in all). The same
+pcsx-redux draws missed one asserted collapsed follow-up finding once on the head (7 of 8).
 
 ## Status notes and the coverage-only templates
 
@@ -269,12 +274,15 @@ The type patterns behind `items_*` were written on CodeRabbit's text, so the six
 unlocated items were read by hand and their run-status notes typed `items_run_status`: Codex
 review-incomplete and usage-limit notes, Qodo paused-review notes, Claude notes that the bot could
 not verify CI or run the checks, and a Greptile note that no user flows were identified. There are 5
-in the current prompt's first draw and 6 in its second; the head extracts 3. So the dropout lands
-unevenly: the head drops the Codex and Qodo notes (harshanandak/forge#98 and
-Heretek-AI/claude-4-opencode#4 leave the means), but still extracts the two Claude notes
-(RiGuJeCaAb/agente-editais#18, shakacode/react-on-rails-demo-flagship#91) and the Greptile one
-(ever-co/ever-gauzy#11009), as the current prompt does, so those PRs stay in; on agente-editais#18
-the note is the PR's only item.
+in the current prompt's first draw and 6 in its second; the head extracts 1. So the dropout lands
+unevenly: the head drops the Codex and Qodo notes and the Claude note on
+shakacode/react-on-rails-demo-flagship#91 (harshanandak/forge#98, Heretek-AI/claude-4-opencode#4
+and react-on-rails-demo-flagship#91 leave the means) and the Greptile one (ever-co/ever-gauzy#11009,
+which stays in on its located finding), but still extracts the other Claude note
+(RiGuJeCaAb/agente-editais#18, "could not run ruff, mypy, or pytest"), as the current prompt does,
+so that PR stays in; there the note is the PR's only item. Of the six bots' 53 unlocated items in the
+head's draw, the patterns type 47 as code findings and 6 as other checks; this note is one of the 6,
+and is typed `items_run_status` by hand.
 `coverage_only.py`'s whole-text templates catch 2 and 0 of them, and 76 of 119 and 61 of 112 of
 CodeRabbit's unlocated docstring-coverage items in the two current-prompt draws, so its f is a
 lower bound. It is not comparable across bots: the templates follow CodeRabbit's lines, so f is
@@ -311,93 +319,93 @@ mean over the PRs in both) / PRs after) and PRs in both (each adds its change / 
 listed PRs in both are the largest contributions to the last part.
 
 **chatgpt-codex-connector[bot]**: PRs with both 17 -> 16 (16 in both arms)
-- precision 81.1 -> 86.1 (+5.1) = PRs leaving +5.1 + PRs entering +0.0 + PRs in both +0.0
-- recall 38.4 -> 39.3 (+0.8) = PRs leaving +2.4 + PRs entering +0.0 + PRs in both -1.6
+- precision 81.1 -> 86.6 (+5.5) = PRs leaving +5.1 + PRs entering +0.0 + PRs in both +0.5
+- recall 38.4 -> 40.8 (+2.4) = PRs leaving +2.4 + PRs entering +0.0 + PRs in both +0.0
 - harshanandak/forge#98 leaves: precision 0.0 -> undefined, recall 0.0 -> 0.0; effect on precision +5.1, on recall +2.4
-- jfox85/devx#98: recall 50.0 -> 25.0, contributes -1.6
+- jbcom/yuka-kit#21: precision 61.5 -> 69.2, contributes +0.5
   - harshanandak/forge#98 matched/extracted by arm: current: 0/1; current, 2nd draw: 0/0; earlier revision cf4460fb: 0/0; earlier revision cf4460fb, 2nd draw: 0/0; previous revision 093c763a, one draw: 0/0; previous revision a2fcbe51, one draw: 0/0; previous revision cee5e6cc, one draw: 0/0; this PR at head, one draw: 0/0
-  - jfox85/devx#98 matched/extracted by arm: current: 2/2; current, 2nd draw: 2/2; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 2/2; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 2/2; this PR at head, one draw: 1/1
+  - jbcom/yuka-kit#21 matched/extracted by arm: current: 8/13; current, 2nd draw: 8/13; earlier revision cf4460fb: 8/13; earlier revision cf4460fb, 2nd draw: 9/13; previous revision 093c763a, one draw: 9/13; previous revision a2fcbe51, one draw: 9/13; previous revision cee5e6cc, one draw: 8/13; this PR at head, one draw: 9/13
 
-**claude[bot]**: PRs with both 58 -> 58 (58 in both arms)
-- precision 53.2 -> 52.0 (-1.2) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -1.2
-- recall 41.9 -> 40.8 (-1.2) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -1.2
-- RiGuJeCaAb/agente-editais#18: precision 100.0 -> 0.0, contributes -1.7
-- GluuFederation/flex#3143: precision 50.0 -> 100.0, contributes +0.9
-- escoffier-labs/brigade#2330: precision 75.0 -> 100.0, contributes +0.4
+**claude[bot]**: PRs with both 58 -> 57 (57 in both arms)
+- precision 53.2 -> 55.4 (+2.2) = PRs leaving +0.9 + PRs entering +0.0 + PRs in both +1.3
+- recall 41.9 -> 42.7 (+0.7) = PRs leaving +0.7 + PRs entering +0.0 + PRs in both +0.0
+- shakacode/react-on-rails-demo-flagship#91 leaves: precision 0.0 -> undefined, recall 0.0 -> 0.0; effect on precision +0.9, on recall +0.7
+- Latina-Dev/latina-dev#296: precision 75.0 -> 100.0, contributes +0.4
+- johnrclem/hashtracks-web#2774: precision 60.0 -> 80.0, contributes +0.4
+- booyajones/fqe#36: precision 50.0 -> 33.3, contributes -0.3
 - ckeller42/xrdp-nvidia-ppa#6: recall 100.0 -> 50.0, contributes -0.9
+- mattcowan/EditRail#63: recall 0.0 -> 50.0, contributes +0.9
 - breathless-youth/frontend#373: recall 66.7 -> 33.3, contributes -0.6
-- GluuFederation/flex#3143: recall 25.0 -> 50.0, contributes +0.4
-  - GluuFederation/flex#3143 matched/extracted by arm: current: 1/2; current, 2nd draw: 1/2; earlier revision cf4460fb: 1/2; earlier revision cf4460fb, 2nd draw: 1/2; previous revision 093c763a, one draw: 1/2; previous revision a2fcbe51, one draw: 2/2; previous revision cee5e6cc, one draw: 1/2; this PR at head, one draw: 2/2
-  - RiGuJeCaAb/agente-editais#18 matched/extracted by arm: current: 1/1; current, 2nd draw: 0/1; earlier revision cf4460fb: 0/0; earlier revision cf4460fb, 2nd draw: 0/0; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 0/1
+  - Latina-Dev/latina-dev#296 matched/extracted by arm: current: 3/4; current, 2nd draw: 2/3; earlier revision cf4460fb: 3/4; earlier revision cf4460fb, 2nd draw: 2/3; previous revision 093c763a, one draw: 2/4; previous revision a2fcbe51, one draw: 3/4; previous revision cee5e6cc, one draw: 2/3; this PR at head, one draw: 4/4
+  - booyajones/fqe#36 matched/extracted by arm: current: 3/6; current, 2nd draw: 3/9; earlier revision cf4460fb: 2/6; earlier revision cf4460fb, 2nd draw: 2/5; previous revision 093c763a, one draw: 2/5; previous revision a2fcbe51, one draw: 3/7; previous revision cee5e6cc, one draw: 2/5; this PR at head, one draw: 2/6
   - breathless-youth/frontend#373 matched/extracted by arm: current: 2/9; current, 2nd draw: 2/10; earlier revision cf4460fb: 2/10; earlier revision cf4460fb, 2nd draw: 2/10; previous revision 093c763a, one draw: 2/9; previous revision a2fcbe51, one draw: 2/8; previous revision cee5e6cc, one draw: 2/9; this PR at head, one draw: 1/9
-  - ckeller42/xrdp-nvidia-ppa#6 matched/extracted by arm: current: 2/15; current, 2nd draw: 1/17; earlier revision cf4460fb: 1/15; earlier revision cf4460fb, 2nd draw: 1/14; previous revision 093c763a, one draw: 1/15; previous revision a2fcbe51, one draw: 2/13; previous revision cee5e6cc, one draw: 1/14; this PR at head, one draw: 1/16
-  - escoffier-labs/brigade#2330 matched/extracted by arm: current: 3/4; current, 2nd draw: 4/5; earlier revision cf4460fb: 2/3; earlier revision cf4460fb, 2nd draw: 3/5; previous revision 093c763a, one draw: 3/4; previous revision a2fcbe51, one draw: 3/4; previous revision cee5e6cc, one draw: 3/4; this PR at head, one draw: 4/4
+  - ckeller42/xrdp-nvidia-ppa#6 matched/extracted by arm: current: 2/15; current, 2nd draw: 1/17; earlier revision cf4460fb: 1/15; earlier revision cf4460fb, 2nd draw: 1/14; previous revision 093c763a, one draw: 1/15; previous revision a2fcbe51, one draw: 2/13; previous revision cee5e6cc, one draw: 1/14; this PR at head, one draw: 1/14
+  - johnrclem/hashtracks-web#2774 matched/extracted by arm: current: 3/5; current, 2nd draw: 4/5; earlier revision cf4460fb: 4/5; earlier revision cf4460fb, 2nd draw: 2/5; previous revision 093c763a, one draw: 2/5; previous revision a2fcbe51, one draw: 4/5; previous revision cee5e6cc, one draw: 3/5; this PR at head, one draw: 4/5
+  - mattcowan/EditRail#63 matched/extracted by arm: current: 0/6; current, 2nd draw: 1/6; earlier revision cf4460fb: 0/5; earlier revision cf4460fb, 2nd draw: 0/6; previous revision 093c763a, one draw: 0/6; previous revision a2fcbe51, one draw: 0/6; previous revision cee5e6cc, one draw: 0/6; this PR at head, one draw: 1/6
+  - shakacode/react-on-rails-demo-flagship#91 matched/extracted by arm: current: 0/2; current, 2nd draw: 0/1; earlier revision cf4460fb: 0/0; earlier revision cf4460fb, 2nd draw: 0/0; previous revision 093c763a, one draw: 0/2; previous revision a2fcbe51, one draw: 0/2; previous revision cee5e6cc, one draw: 0/2; this PR at head, one draw: 0/0
 
 **coderabbitai[bot]**: PRs with both 232 -> 232 (232 in both arms)
-- precision 62.4 -> 70.0 (+7.6) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +7.6
-- recall 49.1 -> 48.5 (-0.6) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -0.6
+- precision 62.4 -> 70.3 (+7.9) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +7.9
+- recall 49.1 -> 48.3 (-0.7) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -0.7
 - EntryDSM/entrydsm-platform#418: precision 33.3 -> 100.0, contributes +0.3
-- coleam00/Archon#5303: precision 33.3 -> 100.0, contributes +0.3
-- hyperpolymath/universal-chat-extractor#186: precision 33.3 -> 100.0, contributes +0.3
-- Altinn/altinn-studio#20952: recall 100.0 -> 0.0, contributes -0.4
-- valkey-io/valkey#5129: recall 100.0 -> 0.0, contributes -0.4
+- dim0627/shu#15: precision 33.3 -> 100.0, contributes +0.3
+- essinghigh-org/terrence#1065: precision 33.3 -> 100.0, contributes +0.3
+- WingedGuardian/GENesis-AGI#3942: recall 100.0 -> 50.0, contributes -0.2
 - knowall-ai/zapdesk#594: recall 50.0 -> 0.0, contributes -0.2
-  - Altinn/altinn-studio#20952 matched/extracted by arm: current: 1/3; current, 2nd draw: 0/3; earlier revision cf4460fb: 0/3; earlier revision cf4460fb, 2nd draw: 0/3; previous revision 093c763a, one draw: 0/3; previous revision a2fcbe51, one draw: 0/3; previous revision cee5e6cc, one draw: 1/3; this PR at head, one draw: 0/3
+- momens-works/momens-android#118: recall 50.0 -> 0.0, contributes -0.2
   - EntryDSM/entrydsm-platform#418 matched/extracted by arm: current: 1/3; current, 2nd draw: 1/2; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 1/1
-  - coleam00/Archon#5303 matched/extracted by arm: current: 1/3; current, 2nd draw: 1/2; earlier revision cf4460fb: 1/2; earlier revision cf4460fb, 2nd draw: 1/2; previous revision 093c763a, one draw: 1/2; previous revision a2fcbe51, one draw: 1/2; previous revision cee5e6cc, one draw: 1/2; this PR at head, one draw: 2/2
-  - hyperpolymath/universal-chat-extractor#186 matched/extracted by arm: current: 1/3; current, 2nd draw: 1/3; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 1/1
+  - WingedGuardian/GENesis-AGI#3942 matched/extracted by arm: current: 2/17; current, 2nd draw: 1/17; earlier revision cf4460fb: 0/15; earlier revision cf4460fb, 2nd draw: 1/15; previous revision 093c763a, one draw: 0/15; previous revision a2fcbe51, one draw: 0/15; previous revision cee5e6cc, one draw: 3/15; this PR at head, one draw: 1/15
+  - dim0627/shu#15 matched/extracted by arm: current: 1/3; current, 2nd draw: 1/3; earlier revision cf4460fb: 1/2; earlier revision cf4460fb, 2nd draw: 1/2; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/2; previous revision cee5e6cc, one draw: 1/2; this PR at head, one draw: 1/1
+  - essinghigh-org/terrence#1065 matched/extracted by arm: current: 1/3; current, 2nd draw: 1/3; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 1/1
   - knowall-ai/zapdesk#594 matched/extracted by arm: current: 1/3; current, 2nd draw: 0/1; earlier revision cf4460fb: 1/2; earlier revision cf4460fb, 2nd draw: 1/3; previous revision 093c763a, one draw: 0/1; previous revision a2fcbe51, one draw: 0/1; previous revision cee5e6cc, one draw: 0/1; this PR at head, one draw: 0/1
-  - valkey-io/valkey#5129 matched/extracted by arm: current: 1/2; current, 2nd draw: 1/2; earlier revision cf4460fb: 0/1; earlier revision cf4460fb, 2nd draw: 0/1; previous revision 093c763a, one draw: 0/1; previous revision a2fcbe51, one draw: 0/1; previous revision cee5e6cc, one draw: 0/1; this PR at head, one draw: 0/1
+  - momens-works/momens-android#118 matched/extracted by arm: current: 1/4; current, 2nd draw: 1/4; earlier revision cf4460fb: 1/3; earlier revision cf4460fb, 2nd draw: 1/3; previous revision 093c763a, one draw: 1/3; previous revision a2fcbe51, one draw: 1/2; previous revision cee5e6cc, one draw: 1/2; this PR at head, one draw: 0/1
 
 **copilot-pull-request-reviewer[bot]**: PRs with both 15 -> 15 (15 in both arms)
-- precision 81.7 -> 79.4 (-2.3) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -2.3
-- recall 50.0 -> 48.2 (-1.7) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -1.7
-- inclunet/assistente#1029: precision 75.0 -> 60.0, contributes -1.0
-- saulpatinojr/HCW-HybridCloudWorks#1042: precision 20.0 -> 10.0, contributes -0.7
-- sensslen/Cgf.CameraControl.Net#61: precision 63.6 -> 54.5, contributes -0.6
-- saulpatinojr/HCW-HybridCloudWorks#1042: recall 66.7 -> 33.3, contributes -2.2
-- sensslen/Cgf.CameraControl.Net#61: recall 35.7 -> 42.9, contributes +0.5
-  - inclunet/assistente#1029 matched/extracted by arm: current: 3/4; current, 2nd draw: 3/4; earlier revision cf4460fb: 3/5; earlier revision cf4460fb, 2nd draw: 3/4; previous revision 093c763a, one draw: 4/5; previous revision a2fcbe51, one draw: 3/5; previous revision cee5e6cc, one draw: 3/5; this PR at head, one draw: 3/5
-  - saulpatinojr/HCW-HybridCloudWorks#1042 matched/extracted by arm: current: 2/10; current, 2nd draw: 3/10; earlier revision cf4460fb: 3/10; earlier revision cf4460fb, 2nd draw: 1/10; previous revision 093c763a, one draw: 3/10; previous revision a2fcbe51, one draw: 1/10; previous revision cee5e6cc, one draw: 1/10; this PR at head, one draw: 1/10
-  - sensslen/Cgf.CameraControl.Net#61 matched/extracted by arm: current: 7/11; current, 2nd draw: 6/11; earlier revision cf4460fb: 7/11; earlier revision cf4460fb, 2nd draw: 5/11; previous revision 093c763a, one draw: 7/11; previous revision a2fcbe51, one draw: 8/11; previous revision cee5e6cc, one draw: 6/11; this PR at head, one draw: 6/11
+- precision 81.7 -> 80.5 (-1.2) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -1.2
+- recall 50.0 -> 50.0 (+0.0) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +0.0
+- sensslen/Cgf.CameraControl.Net#61: precision 63.6 -> 45.5, contributes -1.2
+  - sensslen/Cgf.CameraControl.Net#61 matched/extracted by arm: current: 7/11; current, 2nd draw: 6/11; earlier revision cf4460fb: 7/11; earlier revision cf4460fb, 2nd draw: 5/11; previous revision 093c763a, one draw: 7/11; previous revision a2fcbe51, one draw: 8/11; previous revision cee5e6cc, one draw: 6/11; this PR at head, one draw: 5/11
 
 **cubic-dev-ai[bot]**: PRs with both 103 -> 103 (103 in both arms)
-- precision 69.1 -> 69.8 (+0.7) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +0.7
-- recall 52.7 -> 54.1 (+1.4) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +1.4
-- marionettejs/marionette#3761: precision 33.3 -> 66.7, contributes +0.3
-- Fooftilly/local-search-mcp#27: precision 50.0 -> 75.0, contributes +0.2
-- praveenjuge/vadivam#51: precision 66.7 -> 50.0, contributes -0.2
+- precision 69.1 -> 69.1 (-0.0) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -0.0
+- recall 52.7 -> 53.6 (+0.8) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +0.8
+- ParadevAI/Paradev#9273: precision 94.7 -> 36.8, contributes -0.6
+- assistant-ui/assistant-ui#9180: precision 50.0 -> 100.0, contributes +0.5
+- lemon07r/tonewave-atlas#12: precision 33.3 -> 50.0, contributes +0.2
 - bompus/codegraph#510: recall 0.0 -> 100.0, contributes +1.0
-- zerostrat/awesome-coderabbit#1: recall 0.0 -> 20.0, contributes +0.2
-- recoupable/skills#202: recall 50.0 -> 66.7, contributes +0.2
-  - Fooftilly/local-search-mcp#27 matched/extracted by arm: current: 2/4; current, 2nd draw: 2/4; earlier revision cf4460fb: 2/4; earlier revision cf4460fb, 2nd draw: 2/4; previous revision 093c763a, one draw: 2/4; previous revision a2fcbe51, one draw: 2/4; previous revision cee5e6cc, one draw: 2/4; this PR at head, one draw: 3/4
+- ParadevAI/Paradev#9273: recall 64.7 -> 35.3, contributes -0.3
+- assistant-ui/assistant-ui#9180: recall 25.0 -> 50.0, contributes +0.2
+  - ParadevAI/Paradev#9273 matched/extracted by arm: current: 18/19; current, 2nd draw: 8/19; earlier revision cf4460fb: 17/19; earlier revision cf4460fb, 2nd draw: 19/19; previous revision 093c763a, one draw: 18/19; previous revision a2fcbe51, one draw: 18/19; previous revision cee5e6cc, one draw: 7/19; this PR at head, one draw: 7/19
+  - assistant-ui/assistant-ui#9180 matched/extracted by arm: current: 1/2; current, 2nd draw: 2/2; earlier revision cf4460fb: 2/2; earlier revision cf4460fb, 2nd draw: 2/2; previous revision 093c763a, one draw: 1/2; previous revision a2fcbe51, one draw: 2/2; previous revision cee5e6cc, one draw: 2/2; this PR at head, one draw: 2/2
   - bompus/codegraph#510 matched/extracted by arm: current: 0/17; current, 2nd draw: 0/16; earlier revision cf4460fb: 1/18; earlier revision cf4460fb, 2nd draw: 0/17; previous revision 093c763a, one draw: 1/18; previous revision a2fcbe51, one draw: 0/17; previous revision cee5e6cc, one draw: 1/18; this PR at head, one draw: 1/18
-  - marionettejs/marionette#3761 matched/extracted by arm: current: 1/3; current, 2nd draw: 2/3; earlier revision cf4460fb: 2/3; earlier revision cf4460fb, 2nd draw: 2/3; previous revision 093c763a, one draw: 1/3; previous revision a2fcbe51, one draw: 2/3; previous revision cee5e6cc, one draw: 1/3; this PR at head, one draw: 2/3
-  - praveenjuge/vadivam#51 matched/extracted by arm: current: 4/6; current, 2nd draw: 4/6; earlier revision cf4460fb: 4/6; earlier revision cf4460fb, 2nd draw: 4/6; previous revision 093c763a, one draw: 4/6; previous revision a2fcbe51, one draw: 3/6; previous revision cee5e6cc, one draw: 4/6; this PR at head, one draw: 3/6
-  - recoupable/skills#202 matched/extracted by arm: current: 3/15; current, 2nd draw: 2/15; earlier revision cf4460fb: 2/15; earlier revision cf4460fb, 2nd draw: 3/15; previous revision 093c763a, one draw: 2/15; previous revision a2fcbe51, one draw: 1/15; previous revision cee5e6cc, one draw: 3/15; this PR at head, one draw: 4/15
-  - zerostrat/awesome-coderabbit#1 matched/extracted by arm: current: 0/16; current, 2nd draw: 0/16; earlier revision cf4460fb: 1/16; earlier revision cf4460fb, 2nd draw: 2/16; previous revision 093c763a, one draw: 0/16; previous revision a2fcbe51, one draw: 1/16; previous revision cee5e6cc, one draw: 0/16; this PR at head, one draw: 1/16
+  - lemon07r/tonewave-atlas#12 matched/extracted by arm: current: 2/6; current, 2nd draw: 2/6; earlier revision cf4460fb: 4/6; earlier revision cf4460fb, 2nd draw: 2/6; previous revision 093c763a, one draw: 3/6; previous revision a2fcbe51, one draw: 3/6; previous revision cee5e6cc, one draw: 2/6; this PR at head, one draw: 3/6
 
 **greptile-apps[bot]**: PRs with both 157 -> 157 (157 in both arms)
 - precision 85.0 -> 84.0 (-1.0) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both -1.0
-- recall 33.5 -> 34.2 (+0.8) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +0.8
+- recall 33.5 -> 33.9 (+0.4) = PRs leaving +0.0 + PRs entering +0.0 + PRs in both +0.4
 - ParadevAI/Paradev#9074: precision 0.0 -> 100.0, contributes +0.6
 - float-ritual-stack/ep0ch#861: precision 100.0 -> 0.0, contributes -0.6
-- lusky3/SportsPress-Admin-Tools#242: precision 100.0 -> 0.0, contributes -0.6
+- K-Cheddar/worship-sync#416: precision 100.0 -> 50.0, contributes -0.3
 - classroomio/classroomio#1425: recall 50.0 -> 100.0, contributes +0.3
-- FranciscoMoretti/chat-js#925: recall 33.3 -> 66.7, contributes +0.2
-- getstoop/stoop#386: recall 25.0 -> 50.0, contributes +0.2
-  - FranciscoMoretti/chat-js#925 matched/extracted by arm: current: 1/2; current, 2nd draw: 1/2; earlier revision cf4460fb: 1/2; earlier revision cf4460fb, 2nd draw: 1/2; previous revision 093c763a, one draw: 1/2; previous revision a2fcbe51, one draw: 2/2; previous revision cee5e6cc, one draw: 1/2; this PR at head, one draw: 2/2
+- ViceVerse-cz/Serein#638: recall 25.0 -> 50.0, contributes +0.2
+- engineersftw/esg-static#97: recall 50.0 -> 25.0, contributes -0.2
+  - K-Cheddar/worship-sync#416 matched/extracted by arm: current: 1/1; current, 2nd draw: 1/1; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/2; previous revision a2fcbe51, one draw: 1/2; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 1/2
   - ParadevAI/Paradev#9074 matched/extracted by arm: current: 0/1; current, 2nd draw: 1/1; earlier revision cf4460fb: 0/1; earlier revision cf4460fb, 2nd draw: 0/1; previous revision 093c763a, one draw: 0/1; previous revision a2fcbe51, one draw: 0/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 1/1
+  - ViceVerse-cz/Serein#638 matched/extracted by arm: current: 1/1; current, 2nd draw: 1/1; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 2/2; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 2/2
   - classroomio/classroomio#1425 matched/extracted by arm: current: 1/1; current, 2nd draw: 2/2; earlier revision cf4460fb: 2/2; earlier revision cf4460fb, 2nd draw: 2/2; previous revision 093c763a, one draw: 2/2; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 2/2
+  - engineersftw/esg-static#97 matched/extracted by arm: current: 2/2; current, 2nd draw: 1/1; earlier revision cf4460fb: 2/2; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 2/2; previous revision cee5e6cc, one draw: 2/2; this PR at head, one draw: 1/1
   - float-ritual-stack/ep0ch#861 matched/extracted by arm: current: 1/1; current, 2nd draw: 0/1; earlier revision cf4460fb: 0/1; earlier revision cf4460fb, 2nd draw: 0/1; previous revision 093c763a, one draw: 0/1; previous revision a2fcbe51, one draw: 0/1; previous revision cee5e6cc, one draw: 0/1; this PR at head, one draw: 0/1
-  - getstoop/stoop#386 matched/extracted by arm: current: 1/1; current, 2nd draw: 1/1; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 2/2
-  - lusky3/SportsPress-Admin-Tools#242 matched/extracted by arm: current: 1/1; current, 2nd draw: 0/1; earlier revision cf4460fb: 2/2; earlier revision cf4460fb, 2nd draw: 1/1; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 1/1; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 0/1
 
 **qodo-code-review[bot]**: PRs with both 8 -> 7 (7 in both arms)
-- precision 68.1 -> 76.2 (+8.1) = PRs leaving +9.7 + PRs entering +0.0 + PRs in both -1.6
-- recall 48.6 -> 41.2 (-7.3) = PRs leaving +6.9 + PRs entering +0.0 + PRs in both -14.3
+- precision 68.1 -> 82.9 (+14.8) = PRs leaving +9.7 + PRs entering +0.0 + PRs in both +5.1
+- recall 48.6 -> 39.6 (-8.9) = PRs leaving +6.9 + PRs entering +0.0 + PRs in both -15.9
 - Heretek-AI/claude-4-opencode#4 leaves: precision 0.0 -> undefined, recall 0.0 -> 0.0; effect on precision +9.7, on recall +6.9
+- anolilab/neore#451: precision 66.7 -> 100.0, contributes +4.8
+- TW199501/multica#50: precision 66.7 -> 80.0, contributes +1.9
 - varveio/swath#243: precision 11.1 -> 0.0, contributes -1.6
 - varveio/swath#243: recall 100.0 -> 0.0, contributes -14.3
+- anolilab/neore#451: recall 22.2 -> 11.1, contributes -1.6
   - Heretek-AI/claude-4-opencode#4 matched/extracted by arm: current: 0/1; current, 2nd draw: 0/1; earlier revision cf4460fb: 0/0; earlier revision cf4460fb, 2nd draw: 0/0; previous revision 093c763a, one draw: 0/0; previous revision a2fcbe51, one draw: 0/0; previous revision cee5e6cc, one draw: 0/1; this PR at head, one draw: 0/0
-  - varveio/swath#243 matched/extracted by arm: current: 1/9; current, 2nd draw: 0/9; earlier revision cf4460fb: 0/7; earlier revision cf4460fb, 2nd draw: 0/7; previous revision 093c763a, one draw: 0/7; previous revision a2fcbe51, one draw: 0/12; previous revision cee5e6cc, one draw: 0/9; this PR at head, one draw: 0/8
+  - TW199501/multica#50 matched/extracted by arm: current: 4/6; current, 2nd draw: 4/6; earlier revision cf4460fb: 4/4; earlier revision cf4460fb, 2nd draw: 4/5; previous revision 093c763a, one draw: 4/5; previous revision a2fcbe51, one draw: 4/5; previous revision cee5e6cc, one draw: 4/5; this PR at head, one draw: 4/5
+  - anolilab/neore#451 matched/extracted by arm: current: 2/3; current, 2nd draw: 2/3; earlier revision cf4460fb: 1/1; earlier revision cf4460fb, 2nd draw: 2/3; previous revision 093c763a, one draw: 1/1; previous revision a2fcbe51, one draw: 2/3; previous revision cee5e6cc, one draw: 1/1; this PR at head, one draw: 1/1
+  - varveio/swath#243 matched/extracted by arm: current: 1/9; current, 2nd draw: 0/9; earlier revision cf4460fb: 0/7; earlier revision cf4460fb, 2nd draw: 0/7; previous revision 093c763a, one draw: 0/7; previous revision a2fcbe51, one draw: 0/12; previous revision cee5e6cc, one draw: 0/9; this PR at head, one draw: 0/12

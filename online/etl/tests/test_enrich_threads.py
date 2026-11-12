@@ -8,6 +8,7 @@ from pipeline.enrich import ENRICHMENT_STEPS
 from pipeline.enrich import REVIEW_THREADS_QUERY
 from pipeline.enrich import GitHubEnrichClient
 from pipeline.enrich import IncompleteReadError
+from pipeline.enrich import RateLimitExhaustedError
 from pipeline.enrich import _fetch_review_threads
 from pipeline.enrich import parse_issue_comments
 
@@ -189,8 +190,8 @@ async def test_a_pull_request_that_is_not_there_reads_as_no_threads_and_unread_c
 
 
 class _Response:
-    def __init__(self, status: int, body: dict) -> None:
-        self.status_code, self._body, self.headers, self.text = status, body, {}, ""
+    def __init__(self, status: int, body: dict, headers: dict | None = None, text: str = "") -> None:
+        self.status_code, self._body, self.headers, self.text = status, body, headers or {}, text
 
     def json(self) -> dict:
         return self._body
@@ -212,9 +213,12 @@ class _Client:
         (200, {"data": {"repository": None}, "errors": [{"type": "NOT_FOUND"}]}, {"repository": None}),
         (200, {"data": None, "errors": [{"type": "NOT_FOUND"}]}, {}),
         (200, {"errors": [{"type": "FORBIDDEN"}, {"type": "NOT_FOUND"}]}, {}),
-        (403, {}, {}),
         (200, {"data": None, "errors": [{"message": "Something went wrong while executing your query."}]}, None),
         (200, {"errors": [{"type": "NOT_FOUND"}, {"type": "INTERNAL"}]}, None),
+        # A server error or timeout inside a non-null connection nulls the pull request above it: an
+        # answer with data but an error that is not NOT_FOUND or FORBIDDEN is no answer, so it retries.
+        (200, {"data": {"repository": {"pullRequest": None}}, "errors": [{"message": "timeout"}]}, None),
+        (200, {"data": {"repository": {"pullRequest": None}}, "errors": [{"type": "INTERNAL"}]}, None),
     ],
 )
 async def test_graphql_tells_an_answer_that_nothing_is_there_from_no_answer(
@@ -224,6 +228,25 @@ async def test_graphql_tells_an_answer_that_nothing_is_there_from_no_answer(
     gh._client = _Client(_Response(status, body))  # type: ignore[assignment]
 
     assert await gh.graphql(REVIEW_THREADS_QUERY, {}) == data
+
+
+async def test_graphql_reads_a_forbidden_answer_as_nothing_there_only_when_it_is_not_a_rate_limit() -> None:
+    # A 403 for the resource itself (here: an organization's SAML rule) is final, like a REST 403.
+    gh = GitHubEnrichClient("token")
+    forbidden = _Response(403, {}, {"X-RateLimit-Remaining": "4000"}, "Resource protected by organization SAML")
+    gh._client = _Client(forbidden)  # type: ignore[assignment]
+    assert await gh.graphql(REVIEW_THREADS_QUERY, {}) == {}
+
+    # A secondary rate limit (Retry-After, or its message with requests remaining) is transient: it
+    # raises so the token is rotated and the read retried, never read as a pull request not there.
+    for headers, text in (
+        ({"X-RateLimit-Remaining": "4000", "Retry-After": "60"}, ""),
+        ({"X-RateLimit-Remaining": "4000"}, "You have exceeded a secondary rate limit. Please wait."),
+        ({"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "1700000000"}, ""),
+    ):
+        gh._client = _Client(_Response(403, {}, headers, text))  # type: ignore[assignment]
+        with pytest.raises(RateLimitExhaustedError):
+            await gh.graphql(REVIEW_THREADS_QUERY, {})
 
 
 async def test_a_failed_later_page_of_threads_raises_instead_of_keeping_the_first_page() -> None:

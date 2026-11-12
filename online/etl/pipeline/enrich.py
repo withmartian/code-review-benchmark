@@ -231,10 +231,15 @@ class GitHubEnrichClient:
         """The ``data`` of a GraphQL answer, or None when no answer came.
 
         None means the request failed (a server error or a network failure after the retries, or an
-        answer with errors and no data for another reason): a caller that needs the read may retry
-        it later. An answer that the object is not there or not visible to the token is an answer:
-        GitHub's data with the missing object as null, or ``{}`` for a forbidden request or an
-        answer whose errors are all NOT_FOUND or FORBIDDEN, as the REST reads treat a 403 or 404.
+        answer with an error other than NOT_FOUND or FORBIDDEN, with or without data: a server error
+        or timeout inside a non-null connection nulls the objects above it, so such data can look
+        like a missing pull request): a caller that needs the read may retry it later. An answer that
+        the object is not there or not visible to the token is an answer: GitHub's data with the
+        missing object as null and only NOT_FOUND or FORBIDDEN errors, or ``{}`` for a 403 that is
+        not a rate limit, primary or secondary (``_is_rate_limited``: no remaining requests, a
+        Retry-After header, or a rate-limit message, which raise ``RateLimitExhaustedError``), or
+        for errors that are all NOT_FOUND or FORBIDDEN with no data, as the REST reads treat a 403 or
+        404.
         """
         async with self.semaphore:
             client = await self._get_client()
@@ -259,11 +264,9 @@ class GitHubEnrichClient:
                     data = resp.json()
                     if "errors" in data:
                         logger.warning(f"GraphQL errors: {data['errors']}")
-                        if data.get("data") is not None:
-                            return data["data"]
-                        if all((e or {}).get("type") in ("NOT_FOUND", "FORBIDDEN") for e in data["errors"] or [None]):
-                            return {}
-                        return None
+                        if not all((e or {}).get("type") in ("NOT_FOUND", "FORBIDDEN") for e in data["errors"] or [None]):
+                            return None
+                        return data["data"] if data.get("data") is not None else {}
                     return data.get("data")
                 except (RateLimitExhaustedError, TokenInvalidError):
                     raise

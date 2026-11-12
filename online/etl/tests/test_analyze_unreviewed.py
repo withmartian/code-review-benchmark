@@ -338,6 +338,36 @@ def test_comment_revisions_are_added_at_their_edit_time() -> None:
     assert _with_comment_revisions(events, [], current) is events
 
 
+def _revision_bodies(events: list[dict]) -> list[str]:
+    return [e["data"]["body"] for e in events if e["data"].get("revision_of") is not None]
+
+
+def test_the_current_body_is_left_out_by_its_text_when_two_edits_share_a_time() -> None:
+    # The record and the current body were saved in the same second; sorted by time, the record can
+    # come last. Only the revision that is the current body is left out.
+    record = f"{SUMMARY}\n{_recent_review('b' * 40, 'c' * 40)}"
+    edits = [{"id": 1, "author": BOT, "revisions": [
+        {"edited_at": "2026-07-01T14:01:00Z", "body": SUMMARY},
+        {"edited_at": "2026-07-01T14:01:00Z", "body": record},
+    ]}]  # fmt: skip
+    current = [{"id": 1, "author": BOT, "body": SUMMARY}]
+
+    assert _revision_bodies(_with_comment_revisions([], edits, current)) == [record]
+
+
+def test_every_revision_is_kept_when_the_current_body_is_not_among_them() -> None:
+    # GitHub kept no text for the edit that wrote the current body (a null diff, filtered out), so the
+    # newest revision left is an earlier state holding the record: it is kept.
+    record = f"{SUMMARY}\n{_recent_review('b' * 40, 'c' * 40)}"
+    edits = [{"id": 1, "author": BOT, "revisions": [
+        {"edited_at": "2026-07-01T10:01:00Z", "body": SUMMARY},
+        {"edited_at": "2026-07-01T14:01:00Z", "body": record},
+    ]}]  # fmt: skip
+    current = [{"id": 1, "author": BOT, "body": f"{SUMMARY}\nrewritten"}]
+
+    assert _revision_bodies(_with_comment_revisions([], edits, current)) == [SUMMARY, record]
+
+
 @pytest.mark.parametrize("edits", [EDITS, None, []])
 async def test_a_fix_reviewed_only_in_its_fixed_state_is_left_out_with_or_without_the_notice(
     edits: list[dict] | None,

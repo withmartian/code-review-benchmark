@@ -323,17 +323,23 @@ def _with_comment_revisions(events: list[dict], comment_edits: list[dict], issue
     A bot that rewrites its status comment on each push keeps only the latest state in the current
     body, so an earlier review's record, or a limit notice it later replaced, is visible only in the
     comment's edit history. Each revision becomes an issue comment posted at its edit time and marked
-    revision_of. The newest revision is the current body, which ``issue_comments`` already holds; it
-    is added only for a comment whose current body was not fetched.
+    revision_of. The current body, which ``issue_comments`` already holds, is normally also the
+    newest revision; the one newest revision whose text is that current body is left out, and every
+    other revision is kept. The match is by text, not by position: two edits with the same time can
+    sort either way, and an edit whose text GitHub no longer keeps is not in the list, so the last
+    revision is not always the current body.
     """
     if not comment_edits:
         return events
-    current = {c.get("id") for c in issue_comments}
+    current = {c.get("id"): c.get("body") for c in issue_comments}
     out = list(events)
     for c in comment_edits:
         revisions = sorted(c.get("revisions") or [], key=lambda r: r.get("edited_at") or "")
         if c.get("id") in current:
-            revisions = revisions[:-1]
+            body = current[c.get("id")]
+            same = [i for i, r in enumerate(revisions) if r.get("body") == body]
+            if same:
+                revisions = revisions[: same[-1]] + revisions[same[-1] + 1 :]
         for r in revisions:
             out.append(
                 {

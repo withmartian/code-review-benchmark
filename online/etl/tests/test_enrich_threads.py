@@ -46,6 +46,7 @@ def _comment(db_id: int, login: str | None, typename: str, body: str) -> dict:
         "body": body,
         "createdAt": "2026-07-01T09:00:00Z",
         "updatedAt": "2026-07-01T12:00:00Z",
+        "userContentEdits": {"nodes": [], "pageInfo": {"hasNextPage": False, "endCursor": None}},
     }
 
 

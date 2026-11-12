@@ -362,12 +362,16 @@ async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict]) 
 
     A page that cannot be read raises ``IncompleteReadError`` rather than keeping the pages read so
     far: the analysis reads the history as every review the bot recorded, so a review recorded
-    only in a missing revision would read as a push the bot never reviewed.
+    only in a missing revision would read as a push the bot never reviewed. That includes the first
+    page: a bot comment whose ``userContentEdits`` is missing or null (a partial answer with errors)
+    would otherwise be stored as a complete history with no edits.
     """
     for node in nodes:
         if (node.get("author") or {}).get("__typename") != "Bot":
             continue
-        edits = node.get("userContentEdits") or {}
+        edits = node.get("userContentEdits")
+        if not isinstance(edits, dict) or edits.get("nodes") is None:
+            raise IncompleteReadError(f"edit history of comment {node.get('databaseId')} could not be read")
         while (edits.get("pageInfo") or {}).get("hasNextPage"):
             data = await gh.graphql(
                 COMMENT_EDITS_PAGE_QUERY, {"id": node["id"], "cursor": edits["pageInfo"]["endCursor"]}

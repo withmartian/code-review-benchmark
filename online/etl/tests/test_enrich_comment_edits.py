@@ -146,6 +146,24 @@ async def test_a_failed_long_history_read_raises_instead_of_keeping_the_first_pa
         await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7)
 
 
+@pytest.mark.parametrize("missing", ["null", "absent", "no nodes"])
+async def test_a_bot_comment_whose_first_page_of_edits_is_missing_raises(missing: str) -> None:
+    # A partial answer (errors beside data) can leave a comment's userContentEdits null or out. Read as
+    # no edits, it would be stored as a complete history that holds no earlier review.
+    bot = _comment("IC_1", 1, "coderabbitai", "Bot", _edits())
+    if missing == "null":
+        bot["userContentEdits"] = None
+    elif missing == "absent":
+        del bot["userContentEdits"]
+    else:
+        bot["userContentEdits"] = {"nodes": None, "pageInfo": {"hasNextPage": False, "endCursor": None}}
+    person = _comment("IC_2", 2, "dev", "User", None)  # a person's history is not read, so not checked
+    page = {"nodes": [bot, person], "pageInfo": {"hasNextPage": False, "endCursor": None}}
+
+    with pytest.raises(IncompleteReadError, match="edit history of comment 1 could not be read"):
+        await _fetch_review_threads(FakeGraphQL([page], {}), "owner", "repo", 7)
+
+
 class FakeRepo:
     def __init__(self) -> None:
         self.writes: list[tuple] = []

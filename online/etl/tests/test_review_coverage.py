@@ -298,6 +298,27 @@ def test_a_line_lightly_edited_after_the_last_review_keeps_its_reviewed_origin()
     assert _origin(_action(D, "parser.py"), details)[0] == "reviewed"
 
 
+def test_a_line_written_unreviewed_then_edited_in_a_reviewed_commit_is_reviewed() -> None:
+    # A was reviewed; B wrote the line without a review; C lightly edited it and a review read B..C,
+    # so that review's diff showed the faulty delimiter; D fixes it.
+    parser_b = "@@ -1 +1,2 @@\n def parse(text):\n+    return text.split(',')"
+    edit_c = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(',')[:100]"
+    fix_d = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')[:100]\n+    return text.split(';')[:100]"
+    details = _details(
+        (A, "parser.py", "added", "@@ -0,0 +1 @@\n+def parse(text):"),
+        (B, "parser.py", "modified", parser_b),
+        (C, "parser.py", "modified", edit_c),
+        (D, "parser.py", "modified", fix_d),
+    )
+    action = _action(D, "parser.py")
+    reviewed_c = [ReviewRecord(-1, 0, "record"), ReviewRecord(1, 2, "record")]
+
+    assert fix_code_origin(action, COMMITS, details, reviewed_c, 0)[0] == "reviewed"
+    # Without the review of C, neither commit that wrote the line was read: the fix is unreviewed.
+    origin, _, written = fix_code_origin(action, COMMITS, details, [ReviewRecord(-1, 0, "record")], 0)
+    assert (origin, written) == ("unreviewed", (B, C))
+
+
 def test_a_fix_that_only_adds_lines_is_kept_even_beside_new_lines() -> None:
     # The lines beside the additions were written after the last review, but the fix changes no earlier
     # line, so the diff cannot say where the code it fixes was written: it is kept.

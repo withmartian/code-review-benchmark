@@ -15,10 +15,11 @@ its earlier revisions (its edit history) give every review's range. A completed 
 record counts as a review of the whole pull request at the commit it was posted on, and so does
 the last reviewed commit a notice of the bot names (``NOTICE_PATTERNS``).
 
-``fix_code_origin`` then reads the stored commit patches to find the commit each line a fix
-changed was first written in. A line counts as reviewed when a review of an earlier commit than
-the fix covered the commit it was written in: a review of the fixed state cannot have shown the
-bot code the fix already removed.
+``fix_code_origin`` then reads the stored commit patches to find the commits that wrote each line
+a fix changed: the commit it was first written in and every commit that lightly edited it after.
+A line counts as reviewed when a review of an earlier commit than the fix covered one of those
+commits, since that review's diff showed the line: a review of the fixed state cannot have shown
+the bot code the fix already removed.
 
 To support another bot's record, add a ``RecordPattern`` row for its login.
 """
@@ -427,8 +428,9 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
     """Where line ``line`` (of text ``text``) after a commit came from in that commit.
 
     Returns ("added", 0, "") when the commit wrote it, ("kept", n, text) when it is line n before
-    the commit (unchanged, or a light edit of the removed line n of its hunk, ``_EDIT_RATIO``), and
-    ("mismatch", 0, "") when the line at that position is not the line traced.
+    the commit, unchanged, ("edited", n, removed text) when it is a light edit of the removed line n
+    of its hunk (``_EDIT_RATIO``), and ("mismatch", 0, "") when the line at that position is not the
+    line traced.
     """
     offset = 0
     for h in hunks:
@@ -449,7 +451,7 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
                         return "kept", old, text
                     best = max(removed, key=lambda r: SequenceMatcher(None, r[1], t).ratio(), default=None)
                     if best is not None and SequenceMatcher(None, best[1], t).ratio() >= _EDIT_RATIO:
-                        return "kept", best[0], best[1]
+                        return "edited", best[0], best[1]
                     return "added", 0, ""
                 new += 1
                 if kind == " ":
@@ -477,15 +479,16 @@ def fix_code_origin(
     elsewhere in the file is not taken for it. An added line that is a light edit of a line its
     hunk removed (``_EDIT_RATIO``) is traced back to that line, so a line edited for another reason
     keeps the code it carried. A line not written in those commits was in the code the first review
-    read, or in the repository before the pull request. A line written in a commit counts as
-    reviewed when a review of a commit before the fix covered that commit (``reviewed_before``).
+    read, or in the repository before the pull request. A line counts as reviewed when a review of
+    a commit before the fix covered the commit that wrote it or any commit that later edited it
+    (``reviewed_before``): that review's diff showed the line.
 
     A fix that only adds lines changes no earlier line, so its diff does not say where the code it
     fixes was written. The unchanged lines next to the additions are not a safe stand-in: a
     refactor can wrap reviewed logic in new lines. Such a fix is "unknown" and therefore kept.
 
-    Returns (origin, reason, commits): "unreviewed" when no line was reviewed, with the commits the
-    lines were written in; "reviewed" when every line was; "mixed" when some were; and "unknown"
+    Returns (origin, reason, commits): "unreviewed" when no line was reviewed, with the commits that
+    wrote or edited the lines; "reviewed" when every line was; "mixed" when some were; and "unknown"
     when the history cannot tell (no file, no patch, a commit without details, a new file, a fix
     that only adds lines, a patch whose hunks do not add up, or a line whose position does not hold
     the traced text).
@@ -526,22 +529,27 @@ def fix_code_origin(
             return "unknown", f"the patch of commit {c.get('sha', '')[:12]} for the file does not add up", ()
         history.append((i, hunks))
 
-    origins: list[int | None] = []
+    # The commits that wrote each changed line (the commit that first wrote it, then each light edit
+    # of it), or None when it was first written before the commits traced.
+    writers: list[list[int] | None] = []
     for line, text in changed:
-        origin = None
+        wrote: list[int] | None = []
         for i, hunks in reversed(history):
             kind, line, text = _trace(hunks, line, text)
             if kind == "mismatch":
                 return "unknown", f"a changed line is not where commit {commits[i]['sha'][:12]} puts it", ()
+            if kind in ("edited", "added"):
+                wrote.append(i)
             if kind == "added":
-                origin = i
                 break
-        origins.append(origin)
+        else:
+            wrote = None
+        writers.append(wrote)
 
-    unread = [i for i in origins if i is not None and not reviewed_before(i, fix, records)]
+    unread = [w for w in writers if w is not None and not any(reviewed_before(i, fix, records) for i in w)]
     n = len(changed)
     if len(unread) == n:
-        shas = tuple(commits[i]["sha"] for i in sorted(set(unread)))
+        shas = tuple(commits[i]["sha"] for i in sorted({i for w in unread for i in w}))
         return (
             "unreviewed",
             f"all {n} lines the fix changed in {path} were written in commits no review of the bot read "

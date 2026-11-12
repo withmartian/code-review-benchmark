@@ -357,13 +357,14 @@ def _exclude_unreviewed_actions(
 ) -> set[str]:
     """IDs of the actions left out of recall because no review of the bot read their code.
 
-    An unmatched action is left out when every line its fix changed was first written in a commit
-    that no review of the bot covered before the fix, whatever the reason the bot did not review it.
+    An unmatched action is left out when every line its fix changed was written, and edited after,
+    only in commits that no review of the bot covered before the fix, whatever the reason the bot
+    did not review them.
     The reviews come from the bot's own record of each review's range, else from its completed
     reviews and the last reviewed commit its notices name (``find_review_records``). A matched
     action always counts: a match shows the bot saw the issue. Excluded actions are marked in place
-    with excluded_from_recall (the reason) and unreviewed_commits (the commits the lines were
-    written in).
+    with excluded_from_recall (the reason) and unreviewed_commits (the commits that wrote or
+    edited the lines).
     """
     matched = {m.get("human_action_id") for m in matches if m.get("matched")}
     unmatched = [a for a in actions if a["action_id"] not in matched]

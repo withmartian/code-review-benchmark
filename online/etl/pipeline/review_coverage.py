@@ -435,15 +435,44 @@ def _removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
     return [(n, t) for h in hunks for n, t in _removed_all(h) if _CODE_RE.search(t)]
 
 
-def _context(h: _Hunk) -> list[tuple[int, str]]:
-    """(line number before the change, text) of each unchanged line of a hunk that carries code."""
-    out = []
+def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
+    """Each change block of a hunk (a run of removed and added lines between unchanged ones).
+
+    For each block: whether it removes a line that carries code, and the code lines around it, as
+    (line number before the change, text): the unchanged lines that carry code in the runs of
+    unchanged lines just before and just after it, or, when those runs carry none, the nearest
+    unchanged code line on each side within the hunk.
+    """
+    rows: list[tuple[str, int, str]] = []
     old = h.old_start
     for kind, text in h.lines:
-        if kind == " " and _CODE_RE.search(text):
-            out.append((old, text))
+        rows.append((kind, old, text))
         if kind != "+":
             old += 1
+
+    def code(part: list[tuple[str, int, str]]) -> list[tuple[int, str]]:
+        return [(n, t) for k, n, t in part if k == " " and _CODE_RE.search(t)]
+
+    out = []
+    i = 0
+    while i < len(rows):
+        if rows[i][0] == " ":
+            i += 1
+            continue
+        j = i
+        while j < len(rows) and rows[j][0] != " ":
+            j += 1
+        a, b = i, j
+        while a > 0 and rows[a - 1][0] == " ":
+            a -= 1
+        while b < len(rows) and rows[b][0] == " ":
+            b += 1
+        around = code(rows[a:i]) + code(rows[j:b])
+        if not around:
+            around = code(rows[:i])[-1:] + code(rows[j:])[:1]
+        removes_code = any(k == "-" and _CODE_RE.search(t) for k, _, t in rows[i:j])
+        out.append((removes_code, around))
+        i = j
     return out
 
 
@@ -511,20 +540,21 @@ def fix_code_origin(
     refactor can wrap reviewed logic in new lines. Such a fix is "unknown" and therefore kept.
 
     The fix's commit can change several places in the file, and every action in that file and
-    commit gets the same answer, so the answer must hold for each place. A hunk that changes no code
-    line (it adds lines, or removes only punctuation) is judged by the code lines it leaves
-    unchanged around its additions, traced the same way. The fix is "unreviewed" only when every
-    hunk is wholly in code no review read: the lines each hunk changed, or, for a hunk that changes
-    none, the lines around its additions. A hunk that adds lines among code a review read, or with
-    no code line around its additions, may be the fix of reviewed code (a null guard added to a
-    reviewed parser in the same commit that rewrites an unreviewed exporter), so the fix is then
-    "unknown" and kept.
+    commit gets the same answer, so the answer must hold for each place. Each change block (a run
+    of removed and added lines between unchanged ones, ``_blocks``) that changes no code line (it
+    adds lines, or removes only punctuation) is judged by the unchanged code lines just around it,
+    traced the same way, whether or not other blocks of its hunk remove code. The fix is
+    "unreviewed" only when every block is wholly in code no review read: the lines each block
+    changed, or, for a block that changes none, the lines around it. A block that adds lines among
+    code a review read, or with no code line around it, may be the fix of reviewed code (a null
+    guard added to a reviewed parser in the same commit that rewrites an unreviewed exporter), so
+    the fix is then "unknown" and kept.
 
     Returns (origin, reason, commits): "unreviewed" when no line was reviewed, with the commits that
     wrote or edited the lines; "reviewed" when every line was; "mixed" when some were; and "unknown"
     when the history cannot tell (no file, no patch, a commit without details, a new file, a fix
-    that only adds lines, a hunk that adds lines among reviewed code or with no code around them, a
-    patch whose hunks do not add up, or a line whose position does not hold the traced text).
+    that only adds lines, a change block that adds lines among reviewed code or with no code around
+    it, a patch whose hunks do not add up, or a line whose position does not hold the traced text).
     """
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
     if fix is None or fix <= first_reviewed:
@@ -543,11 +573,11 @@ def fix_code_origin(
     changed = _removed(fix_hunks)
     if not changed:
         return "unknown", "the fix only adds lines, so where the code it fixes was written is not known", ()
-    # The code lines around the additions of each hunk that changes no code line.
-    beside_by_hunk = [_context(h) for h in fix_hunks if not _removed([h])]
-    if any(not b for b in beside_by_hunk):
+    # The code lines around each change block that changes no code line, in any hunk.
+    beside_by_block = [around for h in fix_hunks for removes_code, around in _blocks(h) if not removes_code]
+    if any(not b for b in beside_by_block):
         return "unknown", f"the fix also adds lines in {path} with no code line around them", ()
-    beside = [b for bs in beside_by_hunk for b in bs]
+    beside = list(dict.fromkeys(b for bs in beside_by_block for b in bs))
 
     history: list[tuple[int, list[_Hunk]]] = []
     for i in range(first_reviewed + 1, fix):

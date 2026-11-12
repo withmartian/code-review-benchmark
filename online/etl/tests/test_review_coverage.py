@@ -386,6 +386,34 @@ def test_a_fix_that_also_adds_lines_to_reviewed_code_in_the_same_commit_is_kept(
     assert "adds lines among code a review read (2 of the 2 lines" in reason
 
 
+def test_an_addition_in_the_same_hunk_as_an_unreviewed_change_is_judged_on_its_own() -> None:
+    # The parser guard and the export path change of the test above, merged into one hunk: the guard is
+    # its own change block, among reviewed parser lines, so the fix is still kept.
+    fix_d = (
+        "@@ -1,5 +1,7 @@\n def parse(text):\n+    if text is None:\n+        return []\n     return text.split(',')"
+        "\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n     return write(target, rows)"
+    )
+    details = _details(
+        (A, "app.py", "added", APP_A), (C, "app.py", "modified", APP_C), (D, "app.py", "modified", fix_d)
+    )
+
+    origin, reason = _origin(_action(D, "app.py"), details)
+
+    assert origin == "unknown"
+    assert "adds lines among code a review read (2 of the 3 lines" in reason
+
+    # A block of the same hunk that adds a line after the unreviewed exporter is in unreviewed code.
+    fix_d = (
+        "@@ -3,3 +3,4 @@\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n"
+        "     return write(target, rows)\n+export_all = export"
+    )
+    details = _details(
+        (A, "app.py", "added", APP_A), (C, "app.py", "modified", APP_C), (D, "app.py", "modified", fix_d)
+    )
+
+    assert _origin(_action(D, "app.py"), details)[0] == "unreviewed"
+
+
 def test_a_fix_that_also_adds_lines_to_the_unreviewed_code_is_unreviewed() -> None:
     # The same commit adds a check inside the exporter C wrote: every hunk is in code no review read.
     fix_d = (

@@ -300,10 +300,24 @@ def _with_current_issue_comments(events: list[dict], issue_comments: list[dict])
     The timeline holds issue comments only as GH Archive recorded them when first posted, or none
     for PRs found through the Search API. A bot that edits one status comment in place (to say a
     later push was not reviewed) says so only in the current body.
+
+    A timeline comment whose id the API list does not hold (deleted since, by the bot when it
+    re-posted its summary or by a person hiding it) is kept: its record of a review is still
+    evidence. It is kept as an earlier state of the comment (``revision_of``), since its body is the
+    one first posted, not necessarily the last. Timeline comments the API list holds, or without an
+    id, are replaced by the API's current bodies.
     """
     if not issue_comments:
         return events
-    out = [e for e in events if e.get("event_type") != "issue_comment"]
+    fetched = {c.get("id") for c in issue_comments}
+    out = []
+    for e in events:
+        if e.get("event_type") != "issue_comment":
+            out.append(e)
+            continue
+        comment_id = (e.get("data") or {}).get("comment_id")
+        if comment_id is not None and comment_id not in fetched:
+            out.append({**e, "data": {**(e.get("data") or {}), "revision_of": comment_id}})
     for c in issue_comments:
         out.append(
             {

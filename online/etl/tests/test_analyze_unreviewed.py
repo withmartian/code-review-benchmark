@@ -12,6 +12,7 @@ from llm.schemas import MatchingResponse
 from pipeline.analyze import _with_comment_revisions
 from pipeline.analyze import _with_current_issue_comments
 from pipeline.analyze import analyze_single_pr
+from pipeline.review_coverage import find_review_records
 
 BOT = "coderabbitai[bot]"
 
@@ -336,6 +337,34 @@ def test_comment_revisions_are_added_at_their_edit_time() -> None:
     # Without the current body, the newest revision is added as well.
     assert len(_with_comment_revisions(events, EDITS, [])) == 4
     assert _with_comment_revisions(events, [], current) is events
+
+
+def test_a_timeline_comment_the_api_no_longer_returns_keeps_its_record() -> None:
+    # Greptile's summary recorded a review of c; the comment was deleted before the comments were read,
+    # so the API list holds only a person's comment. Its record still shows c reviewed.
+    greptile = "greptile-apps[bot]"
+    summary = "Last reviewed commit: [Exporter](https://github.com/owner/repo/commit/" + "c" * 40 + ")"
+    events = [
+        _review("a" * 40, "2026-07-01T11:00:00Z", "Null check missing."),
+        {
+            "actor": greptile,
+            "event_type": "issue_comment",
+            "timestamp": "2026-07-01T13:00:00Z",
+            "data": {"comment_id": 9, "body": summary},
+        },
+    ]
+    events[0]["actor"] = greptile
+    current = [{"id": 5, "author": "dev", "body": "thanks", "created_at": "2026-07-01T14:00:00Z"}]
+    commits = [{"sha": s * 40} for s in "abcd"]
+
+    merged = _with_current_issue_comments(events, current)
+
+    assert [r.head for r in find_review_records(merged, commits, greptile)] == [0, 2]
+    kept = next(e for e in merged if e["data"].get("comment_id") == 9)
+    assert kept["data"]["revision_of"] == 9  # the body first posted, not known to be the last
+    # A timeline comment the API list holds is replaced by its current body, as before.
+    current.append({"id": 9, "author": greptile, "body": "rewritten", "created_at": "2026-07-01T13:00:00Z"})
+    assert [e["data"]["body"] for e in _with_current_issue_comments(events, current)][1:] == ["rewritten", "thanks"]
 
 
 def _revision_bodies(events: list[dict]) -> list[str]:

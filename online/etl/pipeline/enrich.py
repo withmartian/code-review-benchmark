@@ -228,6 +228,14 @@ class GitHubEnrichClient:
         return results
 
     async def graphql(self, query: str, variables: dict) -> dict | None:
+        """The ``data`` of a GraphQL answer, or None when no answer came.
+
+        None means the request failed (a server error or a network failure after the retries, or an
+        answer with errors and no data for another reason): a caller that needs the read may retry
+        it later. An answer that the object is not there or not visible to the token is an answer:
+        GitHub's data with the missing object as null, or ``{}`` for a forbidden request or an
+        answer whose errors are all NOT_FOUND or FORBIDDEN, as the REST reads treat a 403 or 404.
+        """
         async with self.semaphore:
             client = await self._get_client()
             for attempt in range(4):
@@ -243,7 +251,7 @@ class GitHubEnrichClient:
                             reset_time = resp.headers.get("X-RateLimit-Reset")
                             raise RateLimitExhaustedError(int(reset_time or time.time() + 60))
                         logger.warning("403 Forbidden on GraphQL query — skipping")
-                        return None
+                        return {}
                     await self._check_rate_limit(resp)
                     if resp.status_code >= 500:
                         await asyncio.sleep(2**attempt)
@@ -253,6 +261,8 @@ class GitHubEnrichClient:
                         logger.warning(f"GraphQL errors: {data['errors']}")
                         if data.get("data") is not None:
                             return data["data"]
+                        if all((e or {}).get("type") in ("NOT_FOUND", "FORBIDDEN") for e in data["errors"] or [None]):
+                            return {}
                         return None
                     return data.get("data")
                 except (RateLimitExhaustedError, TokenInvalidError):
@@ -401,15 +411,17 @@ def _parse_review_thread(node: dict) -> dict:
 
 async def _fetch_review_threads(
     gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
-) -> tuple[list[dict], list[dict], list[dict]]:
+) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
     """The PR's review threads, conversation comments and bot comment edit histories, from one paginated read.
 
     The first request returns the first page of each. Later requests are made only while a
     connection has more pages, and ask only for those connections; a bot comment with more than
-    100 edits gets one more request per further 100. A pull request whose first request cannot be
-    read returns nothing. A later request that fails, for a page of threads, comments or edits,
-    raises ``IncompleteReadError`` instead of returning the pages read so far: a missing comment or
-    revision can hold the only record of a review.
+    100 edits gets one more request per further 100. A request that fails, the first one included,
+    or an answer without a connection it asked for, raises ``IncompleteReadError`` instead of
+    returning what was read: a missing comment or revision can hold the only record of a review,
+    so the step must not be stored as read. A first answer that the repository or the pull request
+    is not there (deleted, or not visible to the token) is final, as a REST 404 is: it returns no
+    threads and None for the comments and edits, which were not read.
     """
     all_threads: list[dict] = []
     comment_nodes: list[dict] = []
@@ -428,16 +440,17 @@ async def _fetch_review_threads(
         }
         data = await gh.graphql(REVIEW_THREADS_QUERY, variables)
         pr_data = ((data or {}).get("repository") or {}).get("pullRequest")
-        if not first:
-            wanted = [name for name, on in (("reviewThreads", with_threads), ("comments", with_comments)) if on]
-            missing = [name for name in wanted if (pr_data or {}).get(name) is None]
-            if missing:
-                raise IncompleteReadError(
-                    f"a further page of {' and '.join(missing)} could not be read after "
-                    f"{len(all_threads)} threads and {len(comment_nodes)} comments"
-                )
-        elif pr_data is None:
-            break
+        if first and data is not None and pr_data is None:
+            logger.warning(f"{owner}/{repo}#{pr_number}: the pull request is not there, no threads or comments read")
+            return [], None, None
+        wanted = [name for name, on in (("reviewThreads", with_threads), ("comments", with_comments)) if on]
+        missing = [name for name in wanted if (pr_data or {}).get(name) is None]
+        if missing:
+            page = "the first page" if first else "a further page"
+            raise IncompleteReadError(
+                f"{page} of {' and '.join(missing)} could not be read after "
+                f"{len(all_threads)} threads and {len(comment_nodes)} comments"
+            )
         first = False
         if with_threads:
             threads_data = pr_data.get("reviewThreads") or {}
@@ -656,7 +669,8 @@ async def enrich_single_pr(
         # The same request returns the conversation comments and their edit history, stored with the threads.
         threads, issue_comments, comment_edits = await _fetch_review_threads(gh, owner, repo, pr_number)
         await repo_obj.update_threads(pr_id, threads, issue_comments, comment_edits)
-        logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)}, {len(issue_comments)} comments)")
+        n_comments = "comments not read" if issue_comments is None else f"{len(issue_comments)} comments"
+        logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)}, {n_comments})")
 
     # Step: commit details (index 4)
     if step_idx < 4:

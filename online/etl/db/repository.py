@@ -216,8 +216,10 @@ class PRRepository:
     async def update_reviews(self, pr_id: int, reviews: list) -> None:
         await self.db.execute(q.UPDATE_PR_REVIEWS, (json.dumps(reviews), pr_id))
 
-    async def update_threads(self, pr_id: int, threads: list) -> None:
-        await self.db.execute(q.UPDATE_PR_THREADS, (json.dumps(threads), pr_id))
+    async def update_threads(self, pr_id: int, threads: list, issue_comments: list | None = None) -> None:
+        """Store the review threads and, when they were read with them, the PR's conversation comments."""
+        comments_json = json.dumps(issue_comments) if issue_comments is not None else None
+        await self.db.execute(q.UPDATE_PR_THREADS, (json.dumps(threads), comments_json, pr_id))
 
     @staticmethod
     def compute_diff_lines(details: list) -> int:
@@ -231,9 +233,6 @@ class PRRepository:
     async def update_commit_details(self, pr_id: int, details: list) -> None:
         diff_lines = self.compute_diff_lines(details)
         await self.db.execute(q.UPDATE_PR_COMMIT_DETAILS, (json.dumps(details), diff_lines, pr_id))
-
-    async def update_issue_comments(self, pr_id: int, issue_comments: list) -> None:
-        await self.db.execute(q.UPDATE_PR_ISSUE_COMMENTS, (json.dumps(issue_comments), pr_id))
 
     async def mark_enrichment_done(self, pr_id: int) -> None:
         now = datetime.now(UTC).isoformat()

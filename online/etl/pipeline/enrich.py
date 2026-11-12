@@ -19,11 +19,27 @@ logger = logging.getLogger(__name__)
 GRAPHQL_URL = "https://api.github.com/graphql"
 REST_BASE = "https://api.github.com"
 
+# The PR's review threads and its conversation (issue) comments, in one request. Each connection
+# pages on its own cursor; a request after the first asks only for the connections with pages left.
 REVIEW_THREADS_QUERY = """
-query($owner: String!, $repo: String!, $prNumber: Int!, $threadCursor: String) {
+query(
+  $owner: String!, $repo: String!, $prNumber: Int!,
+  $threadCursor: String, $commentCursor: String,
+  $withThreads: Boolean!, $withComments: Boolean!
+) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $prNumber) {
-      reviewThreads(first: 100, after: $threadCursor) {
+      comments(first: 100, after: $commentCursor) @include(if: $withComments) {
+        nodes {
+          databaseId
+          author { __typename login }
+          body
+          createdAt
+          updatedAt
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+      reviewThreads(first: 100, after: $threadCursor) @include(if: $withThreads) {
         nodes {
           id
           isResolved
@@ -53,7 +69,7 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $threadCursor: String) {
 """
 
 # Steps in order
-ENRICHMENT_STEPS = ["bq_events", "commits", "reviews", "threads", "details", "issue_comments", "done"]
+ENRICHMENT_STEPS = ["bq_events", "commits", "reviews", "threads", "details", "done"]
 
 
 class RateLimitExhaustedError(Exception):
@@ -258,67 +274,98 @@ async def _fetch_reviews(gh: GitHubEnrichClient, owner: str, repo: str, pr_numbe
     ]
 
 
-async def _fetch_issue_comments(
-    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = ""
-) -> list[dict]:
-    """PR conversation comments with their current bodies (bots often edit a status comment in place)."""
-    base = repo_path or f"/repos/{owner}/{repo}"
-    raw = await gh.rest_get_paginated(f"{base}/issues/{pr_number}/comments")
-    return [
-        {
-            "id": c["id"],
-            "author": (c.get("user") or {}).get("login"),
-            "body": c.get("body", ""),
-            "created_at": c.get("created_at"),
-            "updated_at": c.get("updated_at"),
-        }
-        for c in raw
-    ]
+def parse_issue_comments(nodes: list[dict]) -> list[dict]:
+    """PR conversation comments with their current bodies (bots often edit a status comment in place).
+
+    From IssueComment nodes, in the shape the REST issue-comments API gave: a bot's login carries the
+    ``[bot]`` suffix that GraphQL leaves off.
+    """
+    out = []
+    for node in nodes:
+        author = node.get("author") or {}
+        login = author.get("login")
+        if login and author.get("__typename") == "Bot" and not login.endswith("[bot]"):
+            login = f"{login}[bot]"
+        out.append(
+            {
+                "id": node.get("databaseId"),
+                "author": login,
+                "body": node.get("body", ""),
+                "created_at": node.get("createdAt"),
+                "updated_at": node.get("updatedAt"),
+            }
+        )
+    return out
 
 
-async def _fetch_review_threads(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> list[dict]:
+def _parse_review_thread(node: dict) -> dict:
+    thread = {
+        "id": node["id"],
+        "is_resolved": node["isResolved"],
+        "resolved_by": (node.get("resolvedBy") or {}).get("login"),
+        "comments": [],
+    }
+    for comment in (node.get("comments") or {}).get("nodes", []):
+        reactions = {}
+        for rg in comment.get("reactionGroups") or []:
+            reactions[rg["content"]] = rg["reactors"]["totalCount"]
+        thread["comments"].append(
+            {
+                "id": comment["databaseId"],
+                "body": comment["body"],
+                "path": comment.get("path"),
+                "line": comment.get("line"),
+                "original_line": comment.get("originalLine"),
+                "diff_hunk": comment.get("diffHunk"),
+                "author": (comment.get("author") or {}).get("login"),
+                "created_at": comment.get("createdAt"),
+                "reactions": reactions,
+            }
+        )
+    return thread
+
+
+async def _fetch_review_threads(
+    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
+) -> tuple[list[dict], list[dict]]:
+    """The PR's review threads and conversation comments, from one paginated GraphQL read.
+
+    The first request returns the first page of both. Later requests are made only while a
+    connection has more pages, and ask only for those connections.
+    """
     all_threads: list[dict] = []
-    cursor = None
-    while True:
-        variables = {"owner": owner, "repo": repo, "prNumber": pr_number, "threadCursor": cursor}
+    comment_nodes: list[dict] = []
+    thread_cursor = comment_cursor = None
+    with_threads = with_comments = True
+    while with_threads or with_comments:
+        variables = {
+            "owner": owner,
+            "repo": repo,
+            "prNumber": pr_number,
+            "threadCursor": thread_cursor,
+            "commentCursor": comment_cursor,
+            "withThreads": with_threads,
+            "withComments": with_comments,
+        }
         data = await gh.graphql(REVIEW_THREADS_QUERY, variables)
         if data is None:
             break
         pr_data = (data.get("repository") or {}).get("pullRequest")
         if pr_data is None:
             break
-        threads_data = pr_data.get("reviewThreads", {})
-        for node in threads_data.get("nodes", []):
-            thread = {
-                "id": node["id"],
-                "is_resolved": node["isResolved"],
-                "resolved_by": (node.get("resolvedBy") or {}).get("login"),
-                "comments": [],
-            }
-            for comment in (node.get("comments") or {}).get("nodes", []):
-                reactions = {}
-                for rg in comment.get("reactionGroups") or []:
-                    reactions[rg["content"]] = rg["reactors"]["totalCount"]
-                thread["comments"].append(
-                    {
-                        "id": comment["databaseId"],
-                        "body": comment["body"],
-                        "path": comment.get("path"),
-                        "line": comment.get("line"),
-                        "original_line": comment.get("originalLine"),
-                        "diff_hunk": comment.get("diffHunk"),
-                        "author": (comment.get("author") or {}).get("login"),
-                        "created_at": comment.get("createdAt"),
-                        "reactions": reactions,
-                    }
-                )
-            all_threads.append(thread)
-        page_info = threads_data.get("pageInfo", {})
-        if page_info.get("hasNextPage"):
-            cursor = page_info["endCursor"]
-        else:
-            break
-    return all_threads
+        if with_threads:
+            threads_data = pr_data.get("reviewThreads") or {}
+            all_threads.extend(_parse_review_thread(node) for node in threads_data.get("nodes") or [])
+            page_info = threads_data.get("pageInfo") or {}
+            with_threads = bool(page_info.get("hasNextPage"))
+            thread_cursor = page_info.get("endCursor")
+        if with_comments:
+            comments_data = pr_data.get("comments") or {}
+            comment_nodes.extend(comments_data.get("nodes") or [])
+            page_info = comments_data.get("pageInfo") or {}
+            with_comments = bool(page_info.get("hasNextPage"))
+            comment_cursor = page_info.get("endCursor")
+    return all_threads, parse_issue_comments(comment_nodes)
 
 
 async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:
@@ -519,9 +566,10 @@ async def enrich_single_pr(
 
     # Step: threads (index 3)
     if step_idx < 3:
-        threads = await _fetch_review_threads(gh, owner, repo, pr_number)
-        await repo_obj.update_threads(pr_id, threads)
-        logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)})")
+        # The same request returns the conversation comments, stored with the threads.
+        threads, issue_comments = await _fetch_review_threads(gh, owner, repo, pr_number)
+        await repo_obj.update_threads(pr_id, threads, issue_comments)
+        logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)}, {len(issue_comments)} comments)")
 
     # Step: commit details (index 4)
     if step_idx < 4:
@@ -538,12 +586,6 @@ async def enrich_single_pr(
         details = await _fetch_commit_details(gh, owner, repo, commits_data, repo_path=repo_path)
         await repo_obj.update_commit_details(pr_id, details)
         logger.debug(f"  {repo_name}#{pr_number}: commit details done")
-
-    # Step: issue comments (index 5)
-    if step_idx < 5:
-        issue_comments = await _fetch_issue_comments(gh, owner, repo, pr_number, repo_path=repo_path)
-        await repo_obj.update_issue_comments(pr_id, issue_comments)
-        logger.debug(f"  {repo_name}#{pr_number}: issue comments done ({len(issue_comments)})")
 
     # Mark enrichment complete
     await repo_obj.mark_enrichment_done(pr_id)

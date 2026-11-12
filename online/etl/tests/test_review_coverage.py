@@ -156,6 +156,22 @@ def test_a_review_body_records_the_range_it_read() -> None:
     assert _spans(find_review_records(events, COMMITS, CR)) == [(-1, 0, "record"), (0, 2, "record")]
 
 
+def test_the_start_of_a_range_is_a_reviewed_commit() -> None:
+    # The review of C read the range B..C, so the bot had reviewed B, though B's own record (say, a
+    # summary revision GitHub no longer keeps) was not read. The notice parser reads the same sentence
+    # with B as the last reviewed commit.
+    events = [review(A, body=f"**Actionable comments posted: 1**\n{review_range(BASE, A)}"),
+              review(C, body=f"**Actionable comments posted: 2**\n{review_range(B, C)}")]  # fmt: skip
+
+    records = find_review_records(events, COMMITS, CR)
+
+    assert _spans(records) == [(-1, 0, "record"), (-1, 1, "record-start"), (1, 2, "record")]
+    assert reviewed_before(1, 3, records)
+    # Where a record already has the start as its head, nothing is added.
+    events.insert(1, review(B, body=f"**Actionable comments posted: 0**\n{review_range(A, B)}"))
+    assert [r.source for r in find_review_records(events, COMMITS, CR)] == ["record"] * 3
+
+
 def test_a_review_that_found_nothing_is_recorded_in_the_summary() -> None:
     # The review of C posted nothing; only the summary comment (a later revision) records it.
     events = [review(A, body=review_range(BASE, A)),

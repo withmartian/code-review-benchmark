@@ -312,9 +312,10 @@ class ReviewRecord:
     """The commits one review of the bot read, as indices into the PR's commits.
 
     The review covered the commits after start up to head; start is -1 when it read the pull
-    request from its base. source is "record" (the bot's own record), "review" (a completed review
-    with no record, read as a review of the whole pull request at its commit) or "notice" (the last
-    reviewed commit a notice names, read the same way).
+    request from its base. source is "record" (the bot's own record), "record-start" (the commit a
+    record's range starts from, which the bot names there as its last reviewed commit), "review" (a
+    completed review with no record) or "notice" (the last reviewed commit a notice names); the last
+    three are read as a review of the whole pull request at that commit.
     """
 
     start: int
@@ -327,8 +328,11 @@ def find_review_records(events: list[dict], commits: list[dict], chatbot_usernam
 
     The record is read from the bot's reviews and from its comments, current bodies and earlier
     revisions alike. A record naming a head missing from the commit list (a rebased push) is dropped;
-    a start missing from it (the PR's base, or an older push) is read as the base. A completed review
-    or a notice adds a review only at a commit that no record already shows reviewed.
+    a start missing from it (the PR's base, or an older push) is read as the base. The start X of a
+    range "between X and Y" is the commit the bot last reviewed, as its limit notice reads the same
+    sentence, so it adds a review at X ("record-start") where no record has X as its head: a review
+    of X whose own record was not read (a revision GitHub no longer keeps) still counts. A completed
+    review or a notice adds a review only at a commit that no record already shows reviewed.
     """
     out: set[ReviewRecord] = set()
     patterns = [p for p in RECORD_PATTERNS if same_github_actor(p.bot, chatbot_username)]
@@ -346,7 +350,8 @@ def find_review_records(events: list[dict], commits: list[dict], chatbot_usernam
                 start = sha_index(commits, m.groupdict().get("start"))
                 out.add(ReviewRecord(start=-1 if start is None or start >= head else start, head=head, source="record"))
     heads = {r.head for r in out}
-    fallback = [(i, "review") for i, _ in _completed_reviews(events, commits, chatbot_username)]
+    fallback = [(r.start, "record-start") for r in sorted(out, key=lambda r: (r.head, r.start)) if r.start >= 0]
+    fallback += [(i, "review") for i, _ in _completed_reviews(events, commits, chatbot_username)]
     fallback += [(sha_index(commits, n.reviewed_sha), "notice") for n in find_notices(events, chatbot_username)]
     for i, source in fallback:
         if i is not None and i not in heads:

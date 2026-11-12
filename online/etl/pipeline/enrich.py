@@ -406,13 +406,16 @@ async def _fetch_review_threads(
 
     The first request returns the first page of each. Later requests are made only while a
     connection has more pages, and ask only for those connections; a bot comment with more than
-    100 edits gets one more request per further 100, and raises ``IncompleteReadError`` when one
-    of those requests fails.
+    100 edits gets one more request per further 100. A pull request whose first request cannot be
+    read returns nothing. A later request that fails, for a page of threads, comments or edits,
+    raises ``IncompleteReadError`` instead of returning the pages read so far: a missing comment or
+    revision can hold the only record of a review.
     """
     all_threads: list[dict] = []
     comment_nodes: list[dict] = []
     thread_cursor = comment_cursor = None
     with_threads = with_comments = True
+    first = True
     while with_threads or with_comments:
         variables = {
             "owner": owner,
@@ -424,11 +427,18 @@ async def _fetch_review_threads(
             "withComments": with_comments,
         }
         data = await gh.graphql(REVIEW_THREADS_QUERY, variables)
-        if data is None:
+        pr_data = ((data or {}).get("repository") or {}).get("pullRequest")
+        if not first:
+            wanted = [name for name, on in (("reviewThreads", with_threads), ("comments", with_comments)) if on]
+            missing = [name for name in wanted if (pr_data or {}).get(name) is None]
+            if missing:
+                raise IncompleteReadError(
+                    f"a further page of {' and '.join(missing)} could not be read after "
+                    f"{len(all_threads)} threads and {len(comment_nodes)} comments"
+                )
+        elif pr_data is None:
             break
-        pr_data = (data.get("repository") or {}).get("pullRequest")
-        if pr_data is None:
-            break
+        first = False
         if with_threads:
             threads_data = pr_data.get("reviewThreads") or {}
             all_threads.extend(_parse_review_thread(node) for node in threads_data.get("nodes") or [])

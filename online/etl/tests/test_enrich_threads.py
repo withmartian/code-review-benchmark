@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import pytest
+
 from pipeline.enrich import ENRICHMENT_STEPS
 from pipeline.enrich import REVIEW_THREADS_QUERY
+from pipeline.enrich import IncompleteReadError
 from pipeline.enrich import _fetch_review_threads
 from pipeline.enrich import parse_issue_comments
 
@@ -151,6 +154,40 @@ async def test_returns_nothing_when_the_pull_request_cannot_be_read() -> None:
 
     assert await _fetch_review_threads(gh, "owner", "repo", 7) == ([], [], [])
     assert len(gh.calls) == 1
+
+
+async def test_a_failed_later_page_of_threads_raises_instead_of_keeping_the_first_page() -> None:
+    threads = {None: _page([_thread("T1")], "t1")}
+    gh = FakeGraphQL(threads, {None: _page([_comment(1, "coderabbitai", "Bot", "summary")])})
+    read = gh.graphql
+
+    async def fail_second_request(query: str, variables: dict) -> dict | None:
+        return None if gh.calls else await read(query, variables)
+
+    gh.graphql = fail_second_request  # type: ignore[method-assign]
+
+    with pytest.raises(IncompleteReadError, match="reviewThreads could not be read after 1 threads"):
+        await _fetch_review_threads(gh, "owner", "repo", 7)
+
+
+async def test_a_failed_later_page_of_comments_raises_instead_of_keeping_the_first_page() -> None:
+    # The second page answers with errors and no comments connection: the comments it held, and any
+    # review recorded in them, would be missing.
+    comments = {None: _page([_comment(1, "coderabbitai", "Bot", "summary")], "c1")}
+    gh = FakeGraphQL({None: _page([_thread("T1")])}, comments)
+    read = gh.graphql
+
+    async def drop_comments_on_second_request(query: str, variables: dict) -> dict | None:
+        if not gh.calls:
+            return await read(query, variables)
+        gh.calls.append(variables)
+        return {"repository": {"pullRequest": {"comments": None}}}
+
+    gh.graphql = drop_comments_on_second_request  # type: ignore[method-assign]
+
+    with pytest.raises(IncompleteReadError, match="comments could not be read after 1 threads and 1 comments"):
+        await _fetch_review_threads(gh, "owner", "repo", 7)
+    assert [(v["withThreads"], v["withComments"]) for v in gh.calls] == [(True, True), (False, True)]
 
 
 class FakeRepo:

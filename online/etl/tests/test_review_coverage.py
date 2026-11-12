@@ -240,11 +240,35 @@ def test_a_line_lightly_edited_after_the_cutoff_keeps_its_reviewed_origin() -> N
     assert unreviewed_code_origin(_action(D, "parser.py"), COMMITS, details, B)[0] == "reviewed"
 
 
-def test_a_fix_that_only_adds_lines_is_placed_by_the_lines_beside_it() -> None:
+def test_a_fix_that_only_adds_lines_is_kept_even_beside_new_lines() -> None:
+    # The lines beside the additions were written after the cutoff, but the fix changes no earlier
+    # line, so the diff cannot say where the code it fixes was written: it is kept.
     fix = "@@ -1,3 +1,5 @@\n def export(rows):\n     target = '/tmp/out.csv'\n+    if not rows:\n+        return None\n     return write(target, rows)"
     details = _details((C, "exporter.py", "added", EXPORTER_C), (D, "exporter.py", "modified", fix))
 
-    assert unreviewed_code_origin(_action(D, "exporter.py"), COMMITS, details, B)[0] == "unreviewed"
+    origin, reason = unreviewed_code_origin(_action(D, "exporter.py"), COMMITS, details, B)
+
+    assert origin == "unknown"
+    assert "only adds lines" in reason
+
+
+def test_an_add_only_fix_after_a_refactor_of_reviewed_code_is_kept() -> None:
+    # A reviews a read loop; C moves it into a new helper (new wrapper lines, the loop lines unchanged
+    # in text); D adds a check after the loop. The defect (no short-read check) was in reviewed code.
+    loop_a = "@@ -0,0 +1,3 @@\n+def download(r):\n+    while chunk := r.read1(1024):\n+        yield chunk"
+    refactor_c = (
+        "@@ -1,3 +1,6 @@\n-def download(r):\n+def _read_body(r):\n+    # Read the body in chunks.\n"
+        "     while chunk := r.read1(1024):\n         yield chunk\n+def download(r):\n+    return _read_body(r)"
+    )
+    fix_d = (
+        "@@ -1,4 +1,6 @@\n def _read_body(r):\n     # Read the body in chunks.\n"
+        "     while chunk := r.read1(1024):\n         yield chunk\n+    if r.length:\n+        raise IOError('short read')"
+    )
+    details = _details(
+        (A, "dl.py", "added", loop_a), (C, "dl.py", "modified", refactor_c), (D, "dl.py", "modified", fix_d)
+    )
+
+    assert unreviewed_code_origin(_action(D, "dl.py"), COMMITS, details, B)[0] == "unknown"
 
 
 def test_unknown_when_the_history_cannot_tell() -> None:

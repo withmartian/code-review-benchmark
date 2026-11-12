@@ -300,27 +300,9 @@ def _significant(line: str) -> bool:
     return bool(_SIGNIFICANT_RE.search(line))
 
 
-def _patch_lines(patch: str) -> tuple[list[str], list[str]]:
-    """Removed lines, and the unchanged lines next to added lines, of a unified diff (stripped)."""
-    removed: list[str] = []
-    beside_added: list[str] = []
-    prev = None
-    lines = (patch or "").splitlines()
-    for i, raw in enumerate(lines):
-        if raw.startswith("@@"):
-            prev = None
-            continue
-        tag, text = raw[:1], raw[1:].strip()
-        if tag == "-":
-            removed.append(text)
-        elif tag == "+":
-            if prev is not None and prev[0] == " ":
-                beside_added.append(prev[1])
-            nxt = lines[i + 1] if i + 1 < len(lines) else ""
-            if nxt.startswith(" "):
-                beside_added.append(nxt[1:].strip())
-        prev = (tag, text)
-    return removed, beside_added
+def _removed_lines(patch: str) -> list[str]:
+    """The removed lines of a unified diff (stripped)."""
+    return [raw[1:].strip() for raw in (patch or "").splitlines() if raw.startswith("-")]
 
 
 def _added_lines(patch: str) -> dict[str, str | None]:
@@ -366,16 +348,20 @@ def unreviewed_code_origin(
 ) -> tuple[str, str]:
     """Where the code a fix made after the cutoff changed was first written.
 
-    The lines the fix changed are the lines its commit removed from the action's file, or, for a
-    fix that only adds lines, the unchanged lines next to them. Each is looked up in the lines the
-    commits after the cutoff and before the fix added to that file. An added line that is a light
-    edit of a line it replaced (``_EDIT_RATIO``) is traced back to that line, so a line edited
-    after the cutoff for another reason keeps the code it carried from before.
+    The lines the fix changed are the lines its commit removed from the action's file. Each is
+    looked up in the lines the commits after the cutoff and before the fix added to that file. An
+    added line that is a light edit of a line it replaced (``_EDIT_RATIO``) is traced back to that
+    line, so a line edited after the cutoff for another reason keeps the code it carried from before.
+
+    A fix that only adds lines changes no earlier line, so its diff does not say where the code it
+    fixes was written. The unchanged lines next to the additions are not a safe stand-in: a
+    refactor after the cutoff can wrap reviewed logic in new lines. Such a fix is "unknown" and
+    therefore kept.
 
     Returns (origin, reason): "unreviewed" when every such line was added after the cutoff,
     "reviewed" when none was (it was in code the bot reviewed, or in the repository before the
     pull request), "mixed" when some were, and "unknown" when the history cannot tell (no file,
-    no patch, a commit without details).
+    no patch, a commit without details, a fix that only adds lines).
     """
     cut = sha_index(commits, cutoff_sha)
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
@@ -391,10 +377,9 @@ def unreviewed_code_origin(
         return "unknown", "the fix adds a new file"
     if not entry.get("patch"):
         return "unknown", "the fixing commit has no patch for the file"
-    removed, beside = _patch_lines(entry["patch"])
-    changed = [line for line in removed if _significant(line)] or [line for line in beside if _significant(line)]
+    changed = [line for line in _removed_lines(entry["patch"]) if _significant(line)]
     if not changed:
-        return "unknown", "the fix changes no identifiable line"
+        return "unknown", "the fix only adds lines, so where the code it fixes was written is not known"
 
     history: list[dict[str, str | None]] = []
     for c in commits[cut + 1 : fix]:

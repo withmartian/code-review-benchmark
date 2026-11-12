@@ -1,11 +1,12 @@
-"""Tests for reading a bot's own not-reviewed notices and the line history of a fix."""
+"""Tests for reading what a bot reviewed (its record, reviews and notices) and the line history of a fix."""
 
 from __future__ import annotations
 
+from pipeline.review_coverage import ReviewRecord
 from pipeline.review_coverage import find_notices
-from pipeline.review_coverage import find_review_cutoff
-from pipeline.review_coverage import find_review_gaps
-from pipeline.review_coverage import unreviewed_code_origin
+from pipeline.review_coverage import find_review_records
+from pipeline.review_coverage import fix_code_origin
+from pipeline.review_coverage import reviewed_before
 
 CR = "coderabbitai[bot]"
 CODEX = "chatgpt-codex-connector[bot]"
@@ -104,83 +105,6 @@ def test_notices_belong_to_the_bot_they_are_written_for() -> None:
     assert [n.reason for n in find_notices([issue_comment(codex, actor=CODEX)], CODEX)] == ["limit"]
 
 
-def test_cutoff_is_the_last_reviewed_commit_the_notice_names() -> None:
-    events = [issue_comment(summary(rate_limited(B, D))), review(A), review(B, ts="2026-07-01T11:00:00Z")]
-
-    cut = find_review_cutoff(events, COMMITS, COMMITS[1:], CR)
-
-    assert cut is not None
-    assert (cut.last_reviewed, cut.unreviewed, cut.reasons) == (B, (C, D), ("limit",))
-    assert (cut.notice_reviewed, cut.reviews_reviewed) == (B, B)
-
-
-def test_a_review_without_a_review_event_still_counts_when_the_notice_names_it() -> None:
-    # The bot reviewed B without posting a review (nothing to comment), and says so in the notice.
-    cut = find_review_cutoff([issue_comment(summary(rate_limited(B, D))), review(A)], COMMITS, COMMITS[1:], CR)
-
-    assert cut is not None
-    assert (cut.last_reviewed, cut.notice_reviewed, cut.reviews_reviewed) == (B, B, A)
-
-
-def test_a_later_completed_review_makes_the_notice_stale() -> None:
-    events = [issue_comment(summary(rate_limited(A, B))), review(A), review(C, ts="2026-07-01T12:00:00Z")]
-
-    cut = find_review_cutoff(events, COMMITS, COMMITS[1:], CR)
-
-    assert cut is None
-
-
-def test_thread_replies_do_not_count_as_reviews() -> None:
-    reply_review = review(D, body="", ts="2026-07-01T13:00:00Z")
-    reply = {
-        "actor": CR,
-        "event_type": "review_comment",
-        "timestamp": "2026-07-01T13:00:00Z",
-        "data": {"original_commit_id": D, "in_reply_to_id": 9, "body": "Thanks for the fix."},
-    }
-    events = [issue_comment(summary(rate_limited(B, D))), review(A), reply_review, reply]
-
-    cut = find_review_cutoff(events, COMMITS, COMMITS[1:], CR)
-
-    assert cut is not None and cut.last_reviewed == B
-
-
-def test_a_new_inline_comment_counts_as_a_review() -> None:
-    inline = {
-        "actor": CR,
-        "event_type": "review_comment",
-        "timestamp": "2026-07-01T13:00:00Z",
-        "data": {"original_commit_id": C, "body": "Finding."},
-    }
-    events = [issue_comment(summary(paused(B))), review(A), inline]
-
-    cut = find_review_cutoff(events, COMMITS, COMMITS[1:], CR)
-
-    assert cut is not None and (cut.last_reviewed, cut.unreviewed) == (C, (D,))
-
-
-def test_a_notice_head_missing_from_the_commit_list_still_stands() -> None:
-    cut = find_review_cutoff([issue_comment(summary(rate_limited(B, "e" * 40))), review(A)], COMMITS, COMMITS[1:], CR)
-
-    assert cut is not None and cut.unreviewed == (C, D)
-
-
-def test_a_timed_notice_counts_only_after_the_last_completed_review() -> None:
-    limit = "You have reached your Codex usage limits for code reviews."
-    before = [review(A, actor=CODEX), issue_comment(limit, ts="2026-07-01T10:30:00Z", actor=CODEX),
-              review(B, ts="2026-07-01T11:00:00Z", actor=CODEX)]  # fmt: skip
-    after = [*before, issue_comment(limit, ts="2026-07-01T12:00:00Z", actor=CODEX)]
-
-    assert find_review_cutoff(before, COMMITS, COMMITS[1:], CODEX) is None
-    cut = find_review_cutoff(after, COMMITS, COMMITS[1:], CODEX)
-    assert cut is not None and (cut.last_reviewed, cut.unreviewed) == (B, (C, D))
-
-
-def test_no_cutoff_without_a_notice_or_post_review_commits() -> None:
-    assert find_review_cutoff([review(A), review(B)], COMMITS, COMMITS[1:], CR) is None
-    assert find_review_cutoff([issue_comment(summary(rate_limited(A, D)))], COMMITS, [], CR) is None
-
-
 # -- earlier revisions and gaps ------------------------------------------------------
 
 
@@ -201,68 +125,111 @@ def test_an_earlier_revision_is_a_notice_posted_at_its_edit_time() -> None:
     )
 
 
-def test_a_limit_rewritten_away_by_a_later_review_opens_a_gap() -> None:
-    # A reviewed; limited on B and C (only in the comment's history); the bot then reviewed D.
-    events = [
-        review(A),
-        revision(summary(rate_limited(A, C)), ts="2026-07-01T10:30:00Z"),
-        issue_comment(summary(), updated="2026-07-01T12:00:00Z"),
-        review(D, ts="2026-07-01T12:00:00Z"),
+# -- the bot's own record of what it reviewed ------------------------------------
+
+
+def review_range(start: str, head: str) -> str:
+    return (
+        "<details>\n<summary>📥 Commits</summary>\n\n"
+        f"Reviewing files that changed from the base of the PR and between {start} and {head}.\n\n</details>"
+    )
+
+
+def recent_review(
+    start: str, head: str, found: str = "No actionable comments were generated in the recent review. 🎉"
+) -> str:
+    return f"<!-- recent_review_start -->\n\n{found}\n\n{review_range(start, head)}\n\n<!-- recent_review_end -->"
+
+
+BASE = "f" * 40  # the PR's base commit: not one of its commits
+
+
+def _spans(records: list[ReviewRecord]) -> list[tuple[int, int, str]]:
+    return [(r.start, r.head, r.source) for r in records]
+
+
+def test_a_review_body_records_the_range_it_read() -> None:
+    events = [review(A, body=f"**Actionable comments posted: 1**\n{review_range(BASE, A)}"),
+              review(C, body=f"**Actionable comments posted: 2**\n{review_range(A, C)}")]  # fmt: skip
+
+    assert _spans(find_review_records(events, COMMITS, CR)) == [(-1, 0, "record"), (0, 2, "record")]
+
+
+def test_a_review_that_found_nothing_is_recorded_in_the_summary() -> None:
+    # The review of C posted nothing; only the summary comment (a later revision) records it.
+    events = [review(A, body=review_range(BASE, A)),
+              revision(summary(recent_review(A, C)), ts="2026-07-01T11:00:00Z")]  # fmt: skip
+
+    records = find_review_records(events, COMMITS, CR)
+
+    assert _spans(records) == [(-1, 0, "record"), (0, 2, "record")]
+    assert reviewed_before(2, 3, records)
+    assert not reviewed_before(3, 3, records)
+
+
+def test_ranges_in_unfinished_or_refused_blocks_are_not_reviews() -> None:
+    in_progress = _block("review in progress", f"> Currently processing new changes.\n> {review_range(A, D)}")
+    stars = _block(
+        "skip review",
+        "> - [ ] Trigger review\n>\n> This repository does not receive automatic reviews because it has fewer than "
+        f"10 stars.\n> {review_range(A, D)}",
+    )
+    events = [review(A, body=review_range(BASE, A)), issue_comment(summary(in_progress, stars, rate_limited(A, D)))]
+
+    assert _spans(find_review_records(events, COMMITS, CR)) == [(-1, 0, "record")]
+
+
+def test_a_review_of_the_fixed_commit_or_later_did_not_read_the_code_the_fix_removed() -> None:
+    # A limit was rewritten away: the bot reviewed A, skipped B and C, then reviewed A..D at once.
+    events = [review(A, body=review_range(BASE, A)),
+              revision(summary(rate_limited(A, C)), ts="2026-07-01T10:30:00Z"),
+              review(D, body=review_range(A, D), ts="2026-07-01T12:00:00Z")]  # fmt: skip
+
+    records = find_review_records(events, COMMITS, CR)
+
+    assert _spans(records) == [(-1, 0, "record"), (0, 3, "record")]
+    assert not reviewed_before(2, 3, records)  # code written in C, for a fix in D
+    assert reviewed_before(2, 4, records)  # the same code, for a fix after D
+
+
+def test_a_completed_review_without_a_record_reads_the_whole_pull_request() -> None:
+    inline = {"actor": CR, "event_type": "review_comment", "timestamp": "2026-07-01T13:00:00Z",
+              "data": {"original_commit_id": C, "body": "Finding."}}  # fmt: skip
+    reply = {"actor": CR, "event_type": "review_comment", "timestamp": "2026-07-01T13:00:00Z",
+             "data": {"original_commit_id": D, "in_reply_to_id": 9, "body": "Thanks."}}  # fmt: skip
+    events = [review(A), inline, reply, review(D, body="")]
+
+    assert _spans(find_review_records(events, COMMITS, CR)) == [(-1, 0, "review"), (-1, 2, "review")]
+
+
+def test_a_notice_s_last_reviewed_commit_counts_only_where_no_record_shows_one() -> None:
+    no_record = [review(A), issue_comment(summary(rate_limited(B, D)))]
+    with_record = [review(A, body=review_range(BASE, A)), review(B, body=review_range(A, B)),
+                   issue_comment(summary(rate_limited(B, D)))]  # fmt: skip
+
+    assert _spans(find_review_records(no_record, COMMITS, CR)) == [(-1, 0, "review"), (-1, 1, "notice")]
+    assert _spans(find_review_records(with_record, COMMITS, CR)) == [(-1, 0, "record"), (0, 1, "record")]
+
+
+def test_a_record_naming_a_rebased_commit_is_dropped() -> None:
+    gone = "e" * 40
+    events = [review(A, body=review_range(BASE, A)), review(gone, body=review_range(A, gone))]
+
+    assert _spans(find_review_records(events, COMMITS, CR)) == [(-1, 0, "record")]
+
+
+def test_other_bots_records() -> None:
+    greptile = "greptile-apps[bot]"
+    summary_g = (
+        f'<sub>Reviews (2) · Last reviewed commit: ["fix: the parser..."](https://github.com/o/r/commit/{C})</sub>'
+    )
+    state = f'<!-- codex-review-state:v1 {{"code_review":{{"commit_sha":"{B}","has_any_findings":false}}}} -->'
+
+    assert _spans(find_review_records([issue_comment(summary_g, actor=greptile)], COMMITS, greptile)) == [
+        (-1, 2, "record")
     ]
-
-    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CR)
-
-    assert (gap.last_reviewed, gap.closed_by, gap.unreviewed, gap.reasons) == (A, D, (B, C), ("limit",))
-    assert find_review_cutoff(events, COMMITS, COMMITS[1:], CR) is None
-
-
-def test_a_notice_still_in_the_current_body_opens_a_gap_once_a_review_passes_its_head() -> None:
-    events = [issue_comment(summary(rate_limited(A, C))), review(A), review(D, ts="2026-07-01T12:00:00Z")]
-
-    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CR)
-
-    assert (gap.last_reviewed, gap.closed_by, gap.unreviewed) == (A, D, (B, C))
-
-
-def test_a_later_notice_naming_a_reviewed_commit_closes_the_gap_there() -> None:
-    # The bot reviewed C without posting a review; a later limit notice names C as last reviewed.
-    events = [
-        review(A),
-        revision(summary(rate_limited(A, B)), ts="2026-07-01T10:30:00Z"),
-        revision(summary(rate_limited(C, D)), ts="2026-07-01T11:30:00Z"),
-        review(D, ts="2026-07-01T12:00:00Z"),
-    ]
-
-    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CR)
-
-    assert (gap.last_reviewed, gap.closed_by, gap.unreviewed) == (A, C, (B,))
-
-
-def test_no_gap_without_a_commit_inside_or_a_later_review() -> None:
-    one_commit = [review(A), revision(summary(rate_limited(A, B)), ts="2026-07-01T10:30:00Z"),
-                  review(B, ts="2026-07-01T11:00:00Z")]  # fmt: skip
-    no_later_review = [review(A), revision(summary(rate_limited(A, C)), ts="2026-07-01T10:30:00Z")]
-    head_already_reviewed = [review(B), revision(summary(rate_limited(A, B)), ts="2026-07-01T10:30:00Z"),
-                             review(D, ts="2026-07-01T12:00:00Z")]  # fmt: skip
-    before_any_review = [revision("You have reached your Codex usage limits for code reviews.",
-                                  ts="2026-07-01T09:00:00Z", actor=CODEX),
-                         review(D, ts="2026-07-01T12:00:00Z", actor=CODEX)]  # fmt: skip
-
-    assert find_review_gaps(one_commit, COMMITS, COMMITS[1:], CR) == []
-    assert find_review_gaps(no_later_review, COMMITS, COMMITS[1:], CR) == []
-    assert find_review_cutoff(no_later_review, COMMITS, COMMITS[1:], CR) is not None
-    assert find_review_gaps(head_already_reviewed, COMMITS, COMMITS[2:], CR) == []
-    assert find_review_gaps(before_any_review, COMMITS, COMMITS[1:], CODEX) == []
-
-
-def test_a_timed_notice_without_a_commit_opens_a_gap_from_the_bot_s_reviews() -> None:
-    limit = "You have reached your Codex usage limits for code reviews."
-    events = [review(A, actor=CODEX), issue_comment(limit, ts="2026-07-01T10:30:00Z", actor=CODEX),
-              review(D, ts="2026-07-01T12:00:00Z", actor=CODEX)]  # fmt: skip
-
-    [gap] = find_review_gaps(events, COMMITS, COMMITS[1:], CODEX)
-
-    assert (gap.last_reviewed, gap.closed_by, gap.reasons) == (A, D, ("limit",))
+    assert _spans(find_review_records([issue_comment(state, actor=CODEX)], COMMITS, CODEX)) == [(-1, 1, "record")]
+    assert find_review_records([issue_comment(summary_g, actor=greptile)], COMMITS, CR) == []
 
 
 # -- line history ----------------------------------------------------------------
@@ -283,7 +250,13 @@ def _action(sha: str, path: str) -> dict:
     return {"action_id": "A1", "commit_sha": sha[:12], "file_path": path, "description": "bug"}
 
 
-def test_a_fix_of_lines_written_after_the_cutoff_is_unreviewed() -> None:
+def _origin(action: dict, details: dict[str, dict]) -> tuple[str, str]:
+    # The analysis split at A; a review read B; nothing after B was reviewed.
+    origin, reason, _ = fix_code_origin(action, COMMITS, details, [ReviewRecord(-1, 1, "record")], 0)
+    return origin, reason
+
+
+def test_a_fix_of_lines_written_after_the_last_review_is_unreviewed() -> None:
     fix = "@@ -1,3 +1,3 @@\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n     return write(target, rows)"
     details = _details(
         (A, "parser.py", "added", PARSER_A),
@@ -291,7 +264,7 @@ def test_a_fix_of_lines_written_after_the_cutoff_is_unreviewed() -> None:
         (D, "exporter.py", "modified", fix),
     )
 
-    origin, reason = unreviewed_code_origin(_action(D, "exporter.py"), COMMITS, details, B)
+    origin, reason = _origin(_action(D, "exporter.py"), details)
 
     assert origin == "unreviewed"
     assert "all 1 lines" in reason
@@ -301,7 +274,7 @@ def test_a_fix_of_reviewed_lines_is_reviewed() -> None:
     fix = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(';')"
     details = _details((A, "parser.py", "added", PARSER_A), (D, "parser.py", "modified", fix))
 
-    assert unreviewed_code_origin(_action(D, "parser.py"), COMMITS, details, B)[0] == "reviewed"
+    assert _origin(_action(D, "parser.py"), details)[0] == "reviewed"
 
 
 def test_a_fix_over_both_reviewed_and_new_lines_is_mixed() -> None:
@@ -311,27 +284,27 @@ def test_a_fix_over_both_reviewed_and_new_lines_is_mixed() -> None:
         (A, "parser.py", "added", PARSER_A), (C, "parser.py", "modified", later), (D, "parser.py", "modified", fix)
     )
 
-    assert unreviewed_code_origin(_action(D, "parser.py"), COMMITS, details, B)[0] == "mixed"
+    assert _origin(_action(D, "parser.py"), details)[0] == "mixed"
 
 
-def test_a_line_lightly_edited_after_the_cutoff_keeps_its_reviewed_origin() -> None:
-    # C appends to a reviewed line; the defect in the reviewed part was there before the cutoff.
+def test_a_line_lightly_edited_after_the_last_review_keeps_its_reviewed_origin() -> None:
+    # C appends to a reviewed line; the defect in the reviewed part was there before the last review.
     edit = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(',')[:100]"
     fix = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')[:100]\n+    return text.split(';')[:100]"
     details = _details(
         (A, "parser.py", "added", PARSER_A), (C, "parser.py", "modified", edit), (D, "parser.py", "modified", fix)
     )
 
-    assert unreviewed_code_origin(_action(D, "parser.py"), COMMITS, details, B)[0] == "reviewed"
+    assert _origin(_action(D, "parser.py"), details)[0] == "reviewed"
 
 
 def test_a_fix_that_only_adds_lines_is_kept_even_beside_new_lines() -> None:
-    # The lines beside the additions were written after the cutoff, but the fix changes no earlier
+    # The lines beside the additions were written after the last review, but the fix changes no earlier
     # line, so the diff cannot say where the code it fixes was written: it is kept.
     fix = "@@ -1,3 +1,5 @@\n def export(rows):\n     target = '/tmp/out.csv'\n+    if not rows:\n+        return None\n     return write(target, rows)"
     details = _details((C, "exporter.py", "added", EXPORTER_C), (D, "exporter.py", "modified", fix))
 
-    origin, reason = unreviewed_code_origin(_action(D, "exporter.py"), COMMITS, details, B)
+    origin, reason = _origin(_action(D, "exporter.py"), details)
 
     assert origin == "unknown"
     assert "only adds lines" in reason
@@ -353,22 +326,22 @@ def test_an_add_only_fix_after_a_refactor_of_reviewed_code_is_kept() -> None:
         (A, "dl.py", "added", loop_a), (C, "dl.py", "modified", refactor_c), (D, "dl.py", "modified", fix_d)
     )
 
-    assert unreviewed_code_origin(_action(D, "dl.py"), COMMITS, details, B)[0] == "unknown"
+    assert _origin(_action(D, "dl.py"), details)[0] == "unknown"
 
 
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
-    assert unreviewed_code_origin(_action(D, "test_exporter.py"), COMMITS, new_file, B)[0] == "unknown"
+    assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"
 
     no_patch = _details(
         (C, "exporter.py", "modified", ""), (D, "exporter.py", "modified", "@@ -1 +1 @@\n-old_line()\n+new_line()")
     )
     no_patch[C]["files"][0]["additions"] = 3
-    assert unreviewed_code_origin(_action(D, "exporter.py"), COMMITS, no_patch, B)[0] == "unknown"
+    assert _origin(_action(D, "exporter.py"), no_patch)[0] == "unknown"
 
     missing = _details((D, "exporter.py", "modified", "@@ -1 +1 @@\n-old_line()\n+new_line()"))
     del missing[C]
-    assert unreviewed_code_origin(_action(D, "exporter.py"), COMMITS, missing, B)[0] == "unknown"
+    assert _origin(_action(D, "exporter.py"), missing)[0] == "unknown"
 
-    assert unreviewed_code_origin(_action(B, "exporter.py"), COMMITS, missing, B)[0] == "unknown"
-    assert unreviewed_code_origin({**_action(D, "x.py"), "file_path": None}, COMMITS, missing, B)[0] == "unknown"
+    assert _origin(_action(A, "exporter.py"), missing)[0] == "unknown"
+    assert _origin({**_action(D, "x.py"), "file_path": None}, missing)[0] == "unknown"

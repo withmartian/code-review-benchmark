@@ -1,27 +1,26 @@
-"""Which post-review commits a bot said it did not review, and which fixes were in code written in them.
+"""Which commits a bot reviewed, and which fixes were in code no review of the bot read.
 
 The analysis splits a PR at the bot's first review and counts every fix made in a later commit
-against the bot's recall. When the bot says, in its own comments, that it did not review a later
-push because of a limit, a pause or a failed review, the fixes of bugs written in those unreviewed
-commits are misses the bot was never given the chance to catch.
+against the bot's recall. A fix of code that no review of the bot read before the fix is a miss
+the bot was never given the chance to catch, whatever the reason it did not review those pushes:
+a usage limit, a pause, a failed review, a skip by the bot's own policy (CodeRabbit's free OSS
+plan skips repositories with too few stars after a manual review), automatic incremental reviews
+turned off, or a fix pushed before the next review ran.
 
-This module reads those notices deterministically, from a table of notice formats keyed by bot
-login (``NOTICE_PATTERNS``), and finds the last commit the bot reviewed (``find_review_cutoff``).
-Only explicit limit, pause and failure notices count. Notices that the bot skips a push by design
-or by configuration (automatic or incremental reviews turned off, too few stars, nothing to
-review) are not in the table and never move the cutoff. ``unreviewed_code_origin`` then reads the
-stored commit patches to tell whether the lines a fix changed were first written after the cutoff.
+The commits a bot reviewed come from the bot's own record where it keeps one
+(``RECORD_PATTERNS``): CodeRabbit states each review's range ("Reviewing files that changed from
+the base of the PR and between X and Y"), in the review's body and in the summary comment it
+rewrites on each review, including a review that posted nothing. The summary's current body and
+its earlier revisions (its edit history) give every review's range. A completed review with no
+record counts as a review of the whole pull request at the commit it was posted on, and so does
+the last reviewed commit a notice of the bot names (``NOTICE_PATTERNS``).
 
-To support another bot's notice, add a ``NoticePattern`` row for its login. A notice that names
-no commit is placed with the bot's own reviews: the last reviewed commit is the latest one a
-completed review of the bot was posted on.
+``fix_code_origin`` then reads the stored commit patches to find the commit each line a fix
+changed was first written in. A line counts as reviewed when a review of an earlier commit than
+the fix covered the commit it was written in: a review of the fixed state cannot have shown the
+bot code the fix already removed.
 
-A bot that rewrites its status comment in place keeps only the latest state in the current body:
-once it reviews again after a limit, the earlier notice is gone. The earlier revisions of a
-comment (its edit history) are read as notices posted at their edit time. A notice whose range a
-later completed review covered opens a gap (``find_review_gaps``): the later review saw only the
-final state of the gap's commits, so a fix made in the gap of code first written in the gap was
-never in any diff the bot reviewed.
+To support another bot's record, add a ``RecordPattern`` row for its login.
 """
 
 from __future__ import annotations
@@ -34,6 +33,9 @@ from pipeline.actors import same_github_actor
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _SHA = r"([0-9a-f]{7,40})"
+
+
+# -- Notices that the bot did not review a push ----------------------------------
 
 
 def _coderabbit_block(kind: str) -> re.Pattern[str]:
@@ -146,17 +148,6 @@ class Notice:
     text: str
 
 
-@dataclass(frozen=True)
-class ReviewCutoff:
-    """The last commit a bot reviewed, and the post-review commits after it that it did not review."""
-
-    last_reviewed: str
-    unreviewed: tuple[str, ...]
-    reasons: tuple[str, ...]
-    notice_reviewed: str | None
-    reviews_reviewed: str | None
-
-
 def _clean(body: str) -> str:
     return _HTML_COMMENT_RE.sub("", body or "").strip()
 
@@ -247,131 +238,114 @@ def _completed_reviews(events: list[dict], commits: list[dict], chatbot_username
     return out
 
 
-def find_review_cutoff(
-    events: list[dict], commits: list[dict], post_commits: list[dict], chatbot_username: str
-) -> ReviewCutoff | None:
-    """The last commit the bot reviewed, when it said it did not review a later push.
+# -- What the bot reviewed, from its own record --------------------------------
 
-    The last reviewed commit is the latest of the commit the analysis split at, the last reviewed
-    commit a notice names, and the latest commit a completed review of the bot was posted on. A
-    notice that names the latest commit it did not review does not count when that commit is at
-    or before the last reviewed commit (a later review covered it); a notice posted at a time (not
-    rewritten in place) counts only if no review completed after it. Returns None when no notice
-    counts or no post-review commit follows the last reviewed commit.
-    """
-    if not post_commits:
-        return None
-    notices = find_notices(events, chatbot_username)
-    if not notices:
-        return None
-    split = sha_index(commits, post_commits[0].get("sha"))
-    if split is None:
-        return None
-    completed = _completed_reviews(events, commits, chatbot_username)
-    reviews_idx = max((i for i, _ in completed), default=None)
-    last_review_time = max((t for _, t in completed), default="")
-
-    live = [n for n in notices if n.in_place or n.timestamp > last_review_time]
-    named = [i for i in (sha_index(commits, n.reviewed_sha) for n in live) if i is not None]
-    cutoff = max([split - 1, *named, *([reviews_idx] if reviews_idx is not None else [])])
-
-    reasons = set()
-    for n in live:
-        # A named head missing from the commit list is a later or rewritten push: the notice stands.
-        head = sha_index(commits, n.unreviewed_sha)
-        if head is not None and head <= cutoff:
-            continue
-        reasons.add(n.reason)
-    if not reasons:
-        return None
-
-    post_shas = {c.get("sha") for c in post_commits}
-    unreviewed = tuple(c["sha"] for c in commits[cutoff + 1 :] if c.get("sha") in post_shas)
-    if not unreviewed:
-        return None
-    return ReviewCutoff(
-        last_reviewed=commits[cutoff]["sha"],
-        unreviewed=unreviewed,
-        reasons=tuple(sorted(reasons)),
-        notice_reviewed=commits[max(named)]["sha"] if named else None,
-        reviews_reviewed=commits[reviews_idx]["sha"] if reviews_idx is not None else None,
-    )
+# CodeRabbit blocks that repeat a review's range for a review that did not run or has not finished.
+_CR_UNFINISHED = re.compile(
+    r"<!-- This is an auto-generated comment: (?P<kind>review in progress|rate limited|skip review|review paused"
+    r"|failure) by coderabbit\.ai -->.*?<!-- end of auto-generated comment: (?P=kind) by coderabbit\.ai -->",
+    re.DOTALL | re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
-class ReviewGap:
-    """Post-review commits between two commits the bot reviewed, opened by a notice of the bot.
+class RecordPattern:
+    """One format in which a bot records the commits a review read.
 
-    last_reviewed is the commit the bot reviewed before the notice; closed_by is the first commit
-    a later review of the bot covered. That review saw only the state at closed_by, so code written
-    in the gap and changed again by closed_by never appeared in a diff the bot reviewed.
+    pattern's ``head`` group is the commit the review read; its optional ``start`` group is the
+    commit the review's diff started from, so the review covered the commits after ``start`` up to
+    ``head``. Without ``start``, the review read the whole pull request at ``head``. ignore, when
+    set, matches the parts of a body where the same text describes a review that did not run or has
+    not finished; records inside them do not count.
     """
 
-    last_reviewed: str
-    closed_by: str
-    unreviewed: tuple[str, ...]
-    reasons: tuple[str, ...]
+    bot: str
+    pattern: re.Pattern[str]
+    ignore: re.Pattern[str] | None = None
 
 
-def find_review_gaps(
-    events: list[dict], commits: list[dict], post_commits: list[dict], chatbot_username: str
-) -> list[ReviewGap]:
-    """Gaps opened by a notice of the bot and closed by a later review, in commit order.
+RECORD_PATTERNS: tuple[RecordPattern, ...] = (
+    # "📥 Commits: Reviewing files that changed from the base of the PR and between X and Y." It is in
+    # each review's body, and in the summary comment's "recent review" block, which a review that
+    # posted nothing also rewrites. The first review's X is the PR's base, not one of its commits.
+    RecordPattern(
+        bot=_CODERABBIT,
+        pattern=re.compile(
+            r"Reviewing files that changed from the base of the PR and between "
+            r"(?P<start>[0-9a-f]{7,40}) and (?P<head>[0-9a-f]{7,40})"
+        ),
+        ignore=_CR_UNFINISHED,
+    ),
+    # The summary comment's "Last reviewed commit: [<subject>](https://github.com/<o>/<r>/commit/<sha>)".
+    RecordPattern(
+        bot="greptile-apps[bot]",
+        pattern=re.compile(
+            r"Last reviewed commit: \[[^\n]*?\]\(https://github\.com/[^/\s]+/[^/\s]+/commit/(?P<head>[0-9a-f]{7,40})\)"
+        ),
+    ),
+    # The review summary's state marker, and the "Reviewed commit" line of a review.
+    RecordPattern(
+        bot="chatgpt-codex-connector[bot]",
+        pattern=re.compile(r'codex-review-state:v1 \{"code_review":\{"commit_sha":"(?P<head>[0-9a-f]{7,40})"'),
+    ),
+    RecordPattern(
+        bot="chatgpt-codex-connector[bot]",
+        pattern=re.compile(r"\*\*Reviewed commit:\*\* `(?P<head>[0-9a-f]{7,40})`"),
+    ),
+)
 
-    A commit is known reviewed at a time when a completed review of the bot was posted on it then,
-    or when a notice posted then names it as the last reviewed commit. For a timed notice (posted
-    once, or an earlier revision of an edited comment), the gap starts at the latest commit known
-    reviewed before the notice or named by it as the last reviewed. For a notice in the current body of a rewritten comment, it starts
-    at the last reviewed commit the notice names. The gap ends at the first commit after its start
-    known reviewed after the notice (for a current body, a completed review at or after the
-    notice's head). No gap opens for a notice whose head is at or before the start, a notice before
-    any review, a notice no later review covered (``find_review_cutoff`` reads those), or a gap
-    with no commit inside it.
+
+@dataclass(frozen=True)
+class ReviewRecord:
+    """The commits one review of the bot read, as indices into the PR's commits.
+
+    The review covered the commits after start up to head; start is -1 when it read the pull
+    request from its base. source is "record" (the bot's own record), "review" (a completed review
+    with no record, read as a review of the whole pull request at its commit) or "notice" (the last
+    reviewed commit a notice names, read the same way).
     """
-    if not post_commits:
-        return []
-    notices = find_notices(events, chatbot_username)
-    if not notices:
-        return []
-    split = sha_index(commits, post_commits[0].get("sha"))
-    if split is None:
-        return []
-    completed = _completed_reviews(events, commits, chatbot_username)
-    checkpoints = completed + [
-        (i, n.timestamp) for n in notices if (i := sha_index(commits, n.reviewed_sha)) is not None
-    ]
-    gaps: dict[tuple[int, int], set[str]] = {}
-    for n in notices:
-        named = sha_index(commits, n.reviewed_sha)
-        head = sha_index(commits, n.unreviewed_sha)
-        if n.in_place:
-            if named is None or head is None:
-                continue
-            start = named
-            ends = [i for i, _ in completed if i >= head]
-        else:
-            before = [i for i, t in checkpoints if t < n.timestamp] + ([named] if named is not None else [])
-            if not before:
-                continue
-            start = max(before)
-            ends = [i for i, t in checkpoints if t > n.timestamp]
-        start = max(start, split - 1)
-        if head is not None and head <= start:
+
+    start: int
+    head: int
+    source: str
+
+
+def find_review_records(events: list[dict], commits: list[dict], chatbot_username: str) -> list[ReviewRecord]:
+    """Every review of the bot that the bot's record, its completed reviews or its notices show.
+
+    The record is read from the bot's reviews and from its comments, current bodies and earlier
+    revisions alike. A record naming a head missing from the commit list (a rebased push) is dropped;
+    a start missing from it (the PR's base, or an older push) is read as the base. A completed review
+    or a notice adds a review only at a commit that no record already shows reviewed.
+    """
+    out: set[ReviewRecord] = set()
+    patterns = [p for p in RECORD_PATTERNS if same_github_actor(p.bot, chatbot_username)]
+    for e in events:
+        if e.get("event_type") not in ("review", "issue_comment"):
             continue
-        ends = [i for i in ends if i > start]
-        if not ends or min(ends) - start < 2:
+        if not same_github_actor(e.get("actor"), chatbot_username):
             continue
-        gaps.setdefault((start, min(ends)), set()).add(n.reason)
-    post_shas = {c.get("sha") for c in post_commits}
-    return [
-        ReviewGap(
-            last_reviewed=commits[start]["sha"],
-            closed_by=commits[end]["sha"],
-            unreviewed=tuple(c["sha"] for c in commits[start + 1 : end] if c.get("sha") in post_shas),
-            reasons=tuple(sorted(reasons)),
-        )
-        for (start, end), reasons in sorted(gaps.items())
-    ]
+        body = (e.get("data") or {}).get("body") or ""
+        for p in patterns:
+            for m in p.pattern.finditer(p.ignore.sub("", body) if p.ignore else body):
+                head = sha_index(commits, m.group("head"))
+                if head is None:
+                    continue
+                start = sha_index(commits, m.groupdict().get("start"))
+                out.add(ReviewRecord(start=-1 if start is None or start >= head else start, head=head, source="record"))
+    heads = {r.head for r in out}
+    fallback = [(i, "review") for i, _ in _completed_reviews(events, commits, chatbot_username)]
+    fallback += [(sha_index(commits, n.reviewed_sha), "notice") for n in find_notices(events, chatbot_username)]
+    for i, source in fallback:
+        if i is not None and i not in heads:
+            out.add(ReviewRecord(start=-1, head=i, source=source))
+            heads.add(i)
+    return sorted(out, key=lambda r: (r.head, r.start, r.source))
+
+
+def reviewed_before(commit: int, fix: int, records: list[ReviewRecord]) -> bool:
+    """Whether a review of a commit before ``fix`` covered ``commit``."""
+    return any(r.start < commit <= r.head < fix for r in records)
 
 
 # -- Where the code a fix changed was first written ----------------------------
@@ -428,72 +402,79 @@ def _file_entry(detail: dict | None, path: str) -> dict | None:
     return None
 
 
-def unreviewed_code_origin(
-    action: dict, commits: list[dict], details_by_sha: dict[str, dict], cutoff_sha: str
-) -> tuple[str, str]:
-    """Where the code a fix made after the cutoff changed was first written.
+def fix_code_origin(
+    action: dict, commits: list[dict], details_by_sha: dict[str, dict], records: list[ReviewRecord], first_reviewed: int
+) -> tuple[str, str, tuple[str, ...]]:
+    """Whether a review of the bot read the code a fix after its first review changed.
 
     The lines the fix changed are the lines its commit removed from the action's file. Each is
-    looked up in the lines the commits after the cutoff and before the fix added to that file. An
-    added line that is a light edit of a line it replaced (``_EDIT_RATIO``) is traced back to that
-    line, so a line edited after the cutoff for another reason keeps the code it carried from before.
+    traced to the commit that first wrote it, among the commits after ``first_reviewed`` (the commit
+    the analysis split at) and before the fix. An added line that is a light edit of a line it
+    replaced (``_EDIT_RATIO``) is traced back to that line, so a line edited for another reason keeps
+    the code it carried. A line not written in those commits was in the code the first review read,
+    or in the repository before the pull request. A line written in a commit counts as reviewed when
+    a review of a commit before the fix covered that commit (``reviewed_before``).
 
     A fix that only adds lines changes no earlier line, so its diff does not say where the code it
     fixes was written. The unchanged lines next to the additions are not a safe stand-in: a
-    refactor after the cutoff can wrap reviewed logic in new lines. Such a fix is "unknown" and
-    therefore kept.
+    refactor can wrap reviewed logic in new lines. Such a fix is "unknown" and therefore kept.
 
-    Returns (origin, reason): "unreviewed" when every such line was added after the cutoff,
-    "reviewed" when none was (it was in code the bot reviewed, or in the repository before the
-    pull request), "mixed" when some were, and "unknown" when the history cannot tell (no file,
-    no patch, a commit without details, a fix that only adds lines).
+    Returns (origin, reason, commits): "unreviewed" when no line was reviewed, with the commits the
+    lines were written in; "reviewed" when every line was; "mixed" when some were; and "unknown"
+    when the history cannot tell (no file, no patch, a commit without details, a new file, a fix
+    that only adds lines).
     """
-    cut = sha_index(commits, cutoff_sha)
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
-    if cut is None or fix is None or fix <= cut:
-        return "unknown", "the fixing commit is not after the last reviewed commit"
+    if fix is None or fix <= first_reviewed:
+        return "unknown", "the fixing commit is not after the first reviewed commit", ()
     path = action.get("file_path")
     if not path:
-        return "unknown", "the fix names no file"
+        return "unknown", "the fix names no file", ()
     entry = _file_entry(details_by_sha.get(commits[fix].get("sha", "")), path)
     if entry is None:
-        return "unknown", "the fixing commit does not change the fix's file"
+        return "unknown", "the fixing commit does not change the fix's file", ()
     if entry.get("status") == "added":
-        return "unknown", "the fix adds a new file"
+        return "unknown", "the fix adds a new file", ()
     if not entry.get("patch"):
-        return "unknown", "the fixing commit has no patch for the file"
+        return "unknown", "the fixing commit has no patch for the file", ()
     changed = [line for line in _removed_lines(entry["patch"]) if _significant(line)]
     if not changed:
-        return "unknown", "the fix only adds lines, so where the code it fixes was written is not known"
+        return "unknown", "the fix only adds lines, so where the code it fixes was written is not known", ()
 
-    history: list[dict[str, str | None]] = []
-    for c in commits[cut + 1 : fix]:
+    history: list[tuple[int, dict[str, str | None]]] = []
+    for i in range(first_reviewed + 1, fix):
+        c = commits[i]
         detail = details_by_sha.get(c.get("sha", ""))
         if detail is None:
-            return "unknown", f"no details for commit {c.get('sha', '')[:12]}"
+            return "unknown", f"no details for commit {c.get('sha', '')[:12]}", ()
         f = _file_entry(detail, path)
         if f is None:
             continue
         if not f.get("patch") and (f.get("additions") or f.get("status") in ("added", "renamed")):
-            return "unknown", f"commit {c.get('sha', '')[:12]} has no patch for the file"
-        history.append(_added_lines(f.get("patch") or ""))
+            return "unknown", f"commit {c.get('sha', '')[:12]} has no patch for the file", ()
+        history.append((i, _added_lines(f.get("patch") or "")))
 
-    def written_after(line: str) -> bool:
+    def written_in(line: str) -> int | None:
         # Newest commit first: a line that edits an older line is traced back to it.
-        for added in reversed(history):
+        for i, added in reversed(history):
             if line in added:
                 origin = added[line]
                 if origin is None:
-                    return True
+                    return i
                 line = origin
-        return False
+        return None
 
-    n_after = sum(written_after(line) for line in changed)
-    if n_after == len(changed):
+    origins = [written_in(line) for line in changed]
+    unread = [i for i in origins if i is not None and not reviewed_before(i, fix, records)]
+    n = len(changed)
+    if len(unread) == n:
+        shas = tuple(commits[i]["sha"] for i in sorted(set(unread)))
         return (
             "unreviewed",
-            f"all {len(changed)} lines the fix changed in {path} were added after the last reviewed commit",
+            f"all {n} lines the fix changed in {path} were written in commits no review of the bot read "
+            f"before the fix ({', '.join(s[:12] for s in shas)})",
+            shas,
         )
-    if n_after == 0:
-        return "reviewed", f"none of the {len(changed)} lines the fix changed in {path} were added after the cutoff"
-    return "mixed", f"{n_after} of the {len(changed)} lines the fix changed in {path} were added after the cutoff"
+    if not unread:
+        return "reviewed", f"all {n} lines the fix changed in {path} were in code a review of the bot read", ()
+    return "mixed", f"{len(unread)} of the {n} lines the fix changed in {path} were in code no review read", ()

@@ -1,8 +1,10 @@
-"""Tests for leaving out of recall the fixes of code the bot said it did not review."""
+"""Tests for leaving out of recall the fixes of code no review of the bot read."""
 
 from __future__ import annotations
 
 import json
+
+import pytest
 
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
@@ -63,6 +65,20 @@ RATE_LIMITED = _notice(
 INCREMENTAL_OFF = _notice(
     "skip review", "> [!IMPORTANT]\n> ## Review skipped\n>\n> Auto incremental reviews are disabled on this repository."
 )
+FEWER_STARS = _notice(
+    "skip review",
+    "> [!IMPORTANT]\n> - [ ] Trigger review\n>\n"
+    "> This repository does not receive automatic reviews because it has fewer than 10 stars.",
+)
+
+
+def _recent_review(start: str, head: str) -> str:
+    """The summary comment's record of a review that posted nothing."""
+    return (
+        "<!-- recent_review_start -->\n\nNo actionable comments were generated in the recent review. 🎉\n\n"
+        "<details>\n<summary>📥 Commits</summary>\n\nReviewing files that changed from the base of the PR and "
+        f"between {start} and {head}.\n\n</details>\n\n<!-- recent_review_end -->"
+    )
 
 
 def test_current_issue_comments_replace_timeline_bodies() -> None:
@@ -182,8 +198,9 @@ async def test_a_fix_of_code_written_after_the_rate_limit_is_left_out_of_recall(
     assert repo.stored["precision"] == 1.0
     actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
     assert "excluded_from_recall" not in actions["A1"]
-    assert actions["A2"]["excluded_from_recall"].startswith(f"limit notice; last reviewed commit {'b' * 12}; ")
-    assert actions["A2"]["unreviewed_commits"] == ["c" * 40, "d" * 40]
+    assert actions["A2"]["excluded_from_recall"].startswith(f"last review before the fix read {'b' * 12}; all 1 lines")
+    assert actions["A2"]["excluded_from_recall"].endswith("; the bot posted limit notices")
+    assert actions["A2"]["unreviewed_commits"] == ["c" * 40]
 
 
 async def test_a_fix_of_reviewed_code_in_an_unreviewed_commit_still_counts() -> None:
@@ -206,13 +223,19 @@ async def test_a_fix_of_reviewed_code_in_an_unreviewed_commit_still_counts() -> 
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
 
-async def test_a_skip_by_configuration_excludes_nothing() -> None:
+@pytest.mark.parametrize("skip", [INCREMENTAL_OFF, FEWER_STARS])
+async def test_pushes_skipped_by_configuration_or_policy_are_covered_without_a_notice(skip: str) -> None:
+    # Incremental reviews off, or the free plan's star rule: the bot reviewed a and b only.
     repo = FakeRepo()
 
-    assert await analyze_single_pr(FakeLLM(), repo, _pr_row(notice=INCREMENTAL_OFF), BOT, "model")
+    assert await analyze_single_pr(FakeLLM(), repo, _pr_row(notice=skip), BOT, "model")
 
-    assert repo.stored["recall"] == 0.5
-    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+    assert repo.stored["recall"] == 1.0
+    actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
+    assert actions["A2"]["excluded_from_recall"] == (
+        f"last review before the fix read {'b' * 12}; all 1 lines the fix changed in exporter.py were written in "
+        f"commits no review of the bot read before the fix ({'c' * 12})"
+    )
 
 
 async def test_an_action_the_bot_matched_always_counts() -> None:
@@ -225,14 +248,20 @@ async def test_an_action_the_bot_matched_always_counts() -> None:
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
 
-async def test_without_fetched_issue_comments_nothing_is_excluded() -> None:
-    row = _pr_row()
-    row["issue_comments"] = None
+async def test_a_review_that_posted_nothing_counts_through_the_summary_record() -> None:
+    # The bot reviewed c without posting anything; its summary comment records the range b..c.
+    row = _pr_row(notice=_recent_review("b" * 40, "c" * 40))
     repo = FakeRepo()
 
     assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
 
     assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # Without the fetched comment bodies the record is not seen: only the posted reviews count.
+    row["issue_comments"] = None
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert repo.stored["recall"] == 1.0
 
 
 SUMMARY = "<!-- This is an auto-generated comment: summarize by coderabbit.ai -->\nWalkthrough"
@@ -287,25 +316,32 @@ def test_comment_revisions_are_added_at_their_edit_time() -> None:
     assert _with_comment_revisions(events, [], current) is events
 
 
-async def test_a_fix_inside_a_gap_closed_by_a_later_review_is_left_out_of_recall() -> None:
-    # d fixes the export path written in c; the review of d saw only the fixed line.
+@pytest.mark.parametrize("edits", [EDITS, None, []])
+async def test_a_fix_reviewed_only_in_its_fixed_state_is_left_out_with_or_without_the_notice(
+    edits: list[dict] | None,
+) -> None:
+    # d fixes the export path written in c; the review of d saw only the fixed line. The rule needs
+    # no notice: the limit notice in the edit history only adds its reason to the label.
     repo = FakeRepo()
 
-    assert await analyze_single_pr(FakeLLM(), repo, _gap_row(EDITS), BOT, "model")
+    assert await analyze_single_pr(FakeLLM(), repo, _gap_row(edits), BOT, "model")
 
     assert repo.stored["recall"] == 1.0
     actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
-    assert actions["A2"]["excluded_from_recall"].startswith(
-        f"limit notice; last reviewed commit {'b' * 12}, gap closed by the review of {'d' * 12}; "
-    )
+    assert actions["A2"]["excluded_from_recall"].startswith(f"last review before the fix read {'b' * 12}; ")
+    assert actions["A2"]["excluded_from_recall"].endswith("; the bot posted limit notices") == (edits == EDITS)
     assert actions["A2"]["unreviewed_commits"] == ["c" * 40]
 
 
-async def test_without_the_edit_history_the_gap_is_not_seen() -> None:
-    for edits in (None, []):
-        repo = FakeRepo()
+async def test_a_review_recorded_only_in_the_edit_history_keeps_the_fix() -> None:
+    # The summary comment once recorded a review of c that posted nothing; the current body no longer does.
+    edits = [{"id": 1, "author": BOT, "revisions": [
+        {"edited_at": "2026-07-01T14:01:00Z", "body": f"{SUMMARY}\n{_recent_review('b' * 40, 'c' * 40)}"},
+        {"edited_at": "2026-07-01T15:31:00Z", "body": SUMMARY},
+    ]}]  # fmt: skip
+    repo = FakeRepo()
 
-        assert await analyze_single_pr(FakeLLM(), repo, _gap_row(edits), BOT, "model")
+    assert await analyze_single_pr(FakeLLM(), repo, _gap_row(edits), BOT, "model")
 
-        assert repo.stored["recall"] == 0.5
-        assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])

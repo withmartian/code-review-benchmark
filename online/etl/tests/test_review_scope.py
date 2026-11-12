@@ -204,6 +204,15 @@ def test_file_created_after_last_reviewed_is_dropped() -> None:
     assert dropped[0]["drop_reason"] == "file_created_after_last_reviewed_commit"
 
 
+def test_file_created_by_the_fix_commit_is_kept() -> None:
+    # The review asked for tests; the fix commit creates the test file. That is a pure addition.
+    commits, details = _commits(
+        [CREATE],
+        [_f("@@ -0,0 +1,2 @@\n+test_a\n+test_b", status="added", name="f_test.py")],
+    )
+    assert _split(commits, details, _action(2, path="f_test.py")) == ([_action(2, path="f_test.py")], [])
+
+
 def test_fix_at_or_before_last_reviewed_is_kept() -> None:
     commits, details = _commits([CREATE], [_f("@@ -8,3 +8,2 @@\n l8\n-l9\n l10")])
     assert _split(commits, details, _action(2), last_reviewed=2)[1] == []
@@ -261,12 +270,17 @@ class _FakeRepo:
         self.inserted = kwargs
 
 
-def _pr_row(issue_comments: list[dict]) -> dict:
+def _pr_row(issue_comments: list[dict], file_lists: list[list[dict]] | None = None) -> dict:
     commits, details = _commits(
-        [CREATE],
-        [_f("@@ -8,2 +8,3 @@\n l8\n+new\n l9")],
-        [_f("@@ -8,3 +8,2 @@\n l8\n-new\n l9")],
-        [_f("@@ -1,3 +1,2 @@\n l1\n-l2\n l3")],
+        *(
+            file_lists
+            or [
+                [CREATE],
+                [_f("@@ -8,2 +8,3 @@\n l8\n+new\n l9")],
+                [_f("@@ -8,3 +8,2 @@\n l8\n-new\n l9")],
+                [_f("@@ -1,3 +1,2 @@\n l1\n-l2\n l3")],
+            ]
+        )
     )
     for c in commits:
         c["date"] = "2026-11-01T00:00:00Z"
@@ -344,6 +358,55 @@ async def test_analyze_skip_notice_cuts_at_newest_reviewed_commit() -> None:
     r = repo.inserted
     assert [a["action_id"] for a in r["dropped_human_actions"]] == ["A1"]
     assert r["dropped_human_actions"][0]["last_reviewed_commit"] == commits[0]["sha"]
+    assert (r["precision"], r["recall"]) == (0.5, 1.0)
+
+
+async def test_analyze_keeps_matched_test_file_created_by_fix() -> None:
+    # sebin-gg-portfolio#115 shape: the review asks for tests (S1), the fix commit creates the test file
+    # (A1, matched), a later commit rewrites lines of that new file (A2, code the bot never saw).
+    test_file = "globals-css.test.ts"
+    row = _pr_row(
+        [_comment(PAUSED.replace(A, f"{1:040x}"))],
+        [
+            [CREATE],
+            [_f("@@ -0,0 +1,3 @@\n+guard_a\n+regex_v1\n+guard_b", status="added", name=test_file)],
+            [_f("@@ -1,3 +1,3 @@\n guard_a\n-regex_v1\n+regex_v2\n guard_b", name=test_file)],
+        ],
+    )
+    responses = dict(_RESPONSES)
+    responses[HumanActionsResponse] = {
+        "actions": [
+            {
+                "action_id": "A1",
+                "description": "d",
+                "category": "other",
+                "file_path": test_file,
+                "commit_sha": f"{2:040x}",
+                "action_type": "improvement",
+            },
+            {
+                "action_id": "A2",
+                "description": "d",
+                "category": "bug",
+                "file_path": test_file,
+                "commit_sha": f"{3:040x}",
+                "action_type": "fix",
+            },
+        ]
+    }
+    responses[MatchingResponse] = {
+        "matches": [
+            {"bot_issue_id": "S1", "human_action_id": "A1", "matched": True, "confidence": 1, "reasoning": "r"},
+            {"bot_issue_id": "S2", "human_action_id": None, "matched": False, "confidence": 1, "reasoning": "r"},
+        ]
+    }
+    repo = _FakeRepo()
+    assert await analyze_single_pr(_FakeLLM(responses), repo, row, BOT, "m")
+    r = repo.inserted
+    assert [a["action_id"] for a in r["human_actions"]] == ["A1"]
+    assert [(a["action_id"], a["drop_reason"]) for a in r["dropped_human_actions"]] == [
+        ("A2", "file_created_after_last_reviewed_commit")
+    ]
     assert (r["precision"], r["recall"]) == (0.5, 1.0)
 
 

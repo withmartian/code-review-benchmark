@@ -10,7 +10,9 @@ newest commit with a non-empty review record from the bot. A bot without an entr
 exactly as before. The rule that uses the commit is
 `split_actions_at_last_reviewed`: an action is dropped only when the lines its fix removed
 were all added after the last reviewed commit (traced back through the stored per-commit
-patches), or its file was created after that commit. Anything else is kept.
+patches), or its file was created after that commit and before the fix (a file the fix commit
+itself creates is a pure addition, e.g. a test written in response to the review). Anything
+else is kept.
 """
 
 from __future__ import annotations
@@ -218,7 +220,8 @@ def _drop_reason(
     if f_idx is None or f_idx <= a_idx:
         return None
 
-    for i in range(a_idx + 1, f_idx + 1):
+    # Up to the commit before the fix: a file the fix commit creates is a pure addition, kept below.
+    for i in range(a_idx + 1, f_idx):
         entry = _file_entry(details_by_sha.get(commits[i]["sha"]), path)
         if entry is not None and entry.get("status") == "added":
             return "file_created_after_last_reviewed_commit"

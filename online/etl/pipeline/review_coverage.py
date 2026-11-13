@@ -989,8 +989,13 @@ def _ws(text: str) -> str:
 
 def _span_keys(run: list[str], at: int | None = None) -> set[str]:
     """The text, with all whitespace removed, of each run of up to ``_MOVE_SPAN`` consecutive lines
-    of ``run`` (those containing index ``at`` when it is given) that carries code."""
+    of ``run`` (those containing index ``at`` when it is given) that carries code, and of the whole
+    run when it is longer: a statement re-wrapped over more lines than that is still matched whole."""
     keys = set()
+    if len(run) > _MOVE_SPAN:
+        whole = _ws("".join(run))
+        if _CODE_RE.search(whole):
+            keys.add(whole)
     for a in range(len(run)):
         for b in range(a + 1, min(len(run), a + _MOVE_SPAN) + 1):
             if at is not None and not a <= at < b:

@@ -513,6 +513,28 @@ def test_a_reviewed_line_copied_over_a_similar_line_then_deleted_is_a_move() -> 
     assert "copy" in reason
 
 
+def test_a_statement_re_wrapped_over_more_than_ten_lines_is_still_a_re_wrap() -> None:
+    # A (reviewed) wrote a call on one line; B (unreviewed) re-wrapped it over 14 lines, one argument
+    # per line; C fixes one argument. The whole re-wrapped run is the reviewed line, so the fix is
+    # not taken for a fix of code B wrote.
+    args = [f"a{n}" for n in range(1, 13)]
+    one_line = f"    compute({', '.join(args)})"
+    wrapped = ["    compute(", *(f"        {a}," for a in args), "    )"]
+    re_wrap = "@@ -1,2 +1,15 @@\n def f():\n-" + one_line[0:] + "\n" + "\n".join("+" + w for w in wrapped)
+    fix = "@@ -6,3 +6,3 @@\n         a4,\n-        a5,\n+        a5 + 1,\n         a6,"
+    details = _details(
+        (A, "calc.py", "added", f"@@ -0,0 +1,2 @@\n+def f():\n+{one_line}"),
+        (B, "calc.py", "modified", re_wrap),
+        (C, "calc.py", "modified", fix),
+    )
+    commits = COMMITS[:3]
+
+    origin, reason, _ = fix_code_origin(_action(C, "calc.py"), commits, details, [ReviewRecord(-1, 0, "record")], 0)
+
+    assert origin == "unknown", reason
+    assert "re-wrapped" in reason
+
+
 def test_a_light_edit_is_matched_within_its_own_change_block() -> None:
     # A (reviewed) wrote f's return; B (unreviewed) added g with a similar return. C edits f's
     # return and replaces g's with `pass`, in two blocks of one hunk: g's removed line is more

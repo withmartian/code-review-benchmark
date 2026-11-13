@@ -4,8 +4,8 @@ An analysis depends on the three step prompts, the code that splits the commits 
 and renders each step's input, the actor matching that decides which comments are the bot's, the
 metric arithmetic in analyze_single_pr, the JSON schema of each step's structured response, and the
 LLM call (LLMClient.structured_completion: message shape, temperature, response format).
-tests/test_prompts.py pins these digests per version, and prompt_eval/compare_prompts.py puts them
-in its resume fingerprint. Whitespace and comments in the pinned code count, on purpose.
+tests/test_prompts.py pins these digests per version. Whitespace and comments in the pinned code
+count, on purpose.
 
 Not pinned, on purpose: the model name and base URL (configuration, stored in model_name next to the
 version), the openai SDK and pydantic versions (uv.lock), and the data an analysis reads (the PR's

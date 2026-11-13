@@ -37,10 +37,8 @@ FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob
 # None: the prompt states no rule for this non-finding kind (NO_RULE_KINDS), so nothing is checked here
 # and the live check does not assert it.
 _ANY_FINDING = "Your job is to identify every distinct substantive finding the bot flagged."
-_SPECIFIC_CHECK = (
-    "Any other check that states a specific problem with the pull request is not aggregate: it is a finding."
-)
-_TITLE_OR_DESCRIPTION_CHECK = "A check of the pull request's title or description is not a finding either"
+_SPECIFIC_CHECK = "So is any other check that states a specific problem with the pull request in the bot's own words"
+_TITLE_OR_DESCRIPTION_CHECK = "A check of the pull request's title or description themselves"
 RULE_FOR_KIND = {
     "coverage_check": "An aggregate check result is not a finding either: a check whose result is a count",
     "pr_description_check": _TITLE_OR_DESCRIPTION_CHECK,

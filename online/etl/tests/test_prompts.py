@@ -2,7 +2,7 @@
 
 They fail whenever that rule's text changes, on purpose: a reviewer then checks that the change is
 intended and updates the pinned sentence. Whitespace is collapsed, so rewrapping alone does not fail.
-Model behavior is measured separately (test_extraction_scope_live.py and prompt_eval/).
+Model behavior is checked separately, by the opt-in test_extraction_scope_live.py.
 """
 
 from __future__ import annotations
@@ -106,19 +106,22 @@ def test_a_title_or_description_check_is_not_a_finding_because_no_commit_can_add
     rules = _rules()
 
     assert (
-        "A check of the pull request's title or description is not a finding either: it is resolved outside "
-        "the code, so no later commit can address it." in rules
+        "A check of the pull request's title or description themselves, such as their format, a missing section "
+        "or missing screenshots, is not a finding either: it is fixed by editing the pull request, so no later "
+        "commit can address it." in rules
     )
+    # a claim that the code does not do what the description says is about the code, not the description
+    assert "A finding that the code does not do what the description says is about the code: it is a finding." in rules
 
 
 def test_a_check_stating_a_specific_problem_with_the_pr_and_a_located_request_are_findings() -> None:
     rules = _rules()
 
+    # "in the bot's own words", so the sentence cannot override the skip of listed linter results
     assert (
-        "Any other check that states a specific problem with the pull request is not aggregate: it is a finding."
-        in rules
+        "So is any other check that states a specific problem with the pull request in the bot's own words, and a "
+        "request that names a function, or a file and line, in the changed code." in rules
     )
-    assert "So is a request that names a function, or a file and line, in the changed code." in rules
 
 
 def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findings() -> None:
@@ -186,7 +189,7 @@ def _ledger_problems(ledger: dict[str, dict]) -> list[str]:
 # whose "previous" is _entry_digest() of the entry before it, so stored analyses made with the two
 # can be told apart. An edit to a past entry is visible in the diff (it breaks or rewrites the links).
 PINNED_INPUTS_BY_VERSION = {
-    # an unreleased draft with longer scope rules, measured in prompt_eval/; kept so an analysis
+    # an unreleased draft with longer scope rules, never shipped; kept so an analysis
     # stamped with it can still be told apart
     "extract-v2": {
         "previous": None,
@@ -216,7 +219,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v3": {
         "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "62810841a65e38b3918941820b7be4dc5a92028d1952a4799afa7154ffcbdae5",
+            "EXTRACT_BOT_SUGGESTIONS": "99e6d050dc795602021c0371f69a1e5c7b47681c16f083291cb661bfe1eb9460",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

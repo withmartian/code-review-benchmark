@@ -476,12 +476,12 @@ def _removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
 def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
     """Each change block of a hunk (a run of removed and added lines between unchanged ones).
 
-    For each block: whether it is judged by the code it was inserted into, and that code, as (line
-    number before the change, text). A block that changes no existing code line (it adds lines, or
-    removes only punctuation) is: by the unchanged lines that carry code in the runs of unchanged
+    For each block: whether it is judged by the code where it is, and that code, as (line number
+    before the change, text). A block that changes no existing code line (it adds lines, removes
+    only punctuation, or both) is, by the unchanged lines that carry code in the runs of unchanged
     lines just before and just after it, or, when those runs carry none, the nearest unchanged code
-    line on each side within the hunk. A block that removes code is judged by the code lines it
-    removes alone, whatever it adds.
+    line on each side within the hunk: a punctuation line it removes (a stray `;`) belongs to that
+    code. A block that removes code is judged by the code lines it removes alone, whatever it adds.
     """
     rows: list[tuple[str, int, str]] = []
     old = h.old_start
@@ -511,7 +511,7 @@ def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
             out.append((False, []))
         else:
             around = code(rows[a:i]) + code(rows[j:b]) or code(rows[:i])[-1:] + code(rows[j:])[:1]
-            out.append((any(k == "+" for k, _, _ in rows[i:j]), around))
+            out.append((True, around))
         i = j
     return out
 
@@ -694,11 +694,15 @@ def fix_code_origin(
         return "unknown", "the fixing commit has no readable patch for the file", ()
     changed = _removed(fix_hunks)
     if not changed:
-        return "unknown", "the fix only adds lines, so where the code it fixes was written is not known", ()
-    # The code lines around each change block that adds lines, in any hunk.
-    beside_by_block = [around for h in fix_hunks for adds, around in _blocks(h) if adds]
+        return (
+            "unknown",
+            "the fix only adds lines or removes punctuation, so where the code it fixes was written is not known",
+            (),
+        )
+    # The code lines around each change block that changes no code line, in any hunk.
+    beside_by_block = [around for h in fix_hunks for by_place, around in _blocks(h) if by_place]
     if any(not b for b in beside_by_block):
-        return "unknown", f"the fix also adds lines in {path} with no code line around them", ()
+        return "unknown", f"the fix also changes lines in {path} with no code line around them", ()
     beside = list(dict.fromkeys(b for bs in beside_by_block for b in bs))
 
     history: list[tuple[int, list[_Hunk]]] = []

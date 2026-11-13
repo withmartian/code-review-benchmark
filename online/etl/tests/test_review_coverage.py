@@ -508,7 +508,7 @@ def test_a_hunk_that_adds_lines_with_no_code_around_them_is_unknown() -> None:
 
     assert _origin(_action(D, "app.py"), details) == (
         "unknown",
-        "the fix also adds lines in app.py with no code line around them",
+        "the fix also changes lines in app.py with no code line around them",
     )
 
 
@@ -602,6 +602,25 @@ def test_a_reviewed_line_removed_then_restored_keeps_its_fix() -> None:
 
     assert origin == "unknown"
     assert reason.startswith(f"commit {'c' * 12} put back in parser.py a line the fix reads that commit {'b' * 12}")
+
+
+def test_a_removed_punctuation_line_is_judged_by_the_code_around_it() -> None:
+    # A reviewed a loop with a stray empty statement; C, unreviewed, appended a log call. D deletes the
+    # `;` (the fix of the reviewed loop) and also rewrites C's call: the `;` block changes reviewed code.
+    loop_a = "@@ -0,0 +1,3 @@\n+while (next())\n+  ;\n+process();"
+    log_c = "@@ -3 +3,2 @@\n process();\n+log('done');"
+    fix_d = "@@ -1,3 +1,2 @@\n while (next())\n-  ;\n process();\n@@ -4 +3 @@\n-log('done');\n+log('finished');"
+    details = _details((A, "w.js", "added", loop_a), (C, "w.js", "modified", log_c), (D, "w.js", "modified", fix_d))
+
+    origin, reason = _origin(_action(D, "w.js"), details)
+
+    assert origin == "unknown"
+    assert "(2 of the 2 lines" in reason
+
+    # Without the `;` deletion the fix changes only C's line and is left out.
+    only_log = "@@ -4 +4 @@\n-log('done');\n+log('finished');"
+    details = _details((A, "w.js", "added", loop_a), (C, "w.js", "modified", log_c), (D, "w.js", "modified", only_log))
+    assert _origin(_action(D, "w.js"), details)[0] == "unreviewed"
 
 
 def test_unknown_when_the_history_cannot_tell() -> None:

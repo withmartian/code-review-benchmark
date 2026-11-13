@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from pipeline.review_coverage import NO_COMMIT
 from pipeline.review_coverage import ReviewRecord
 from pipeline.review_coverage import _is_source
@@ -1013,18 +1015,21 @@ def test_a_line_not_where_the_history_puts_it_is_unknown() -> None:
 
 
 def test_a_removed_punctuation_line_is_traced_by_position_but_never_paired() -> None:
-    # C rewrote the body and kept the reviewed closing brace (unchanged in its diff). D removes C's line
-    # and that brace: the brace is a line a review read, so the fix is not wholly of unreviewed code.
+    # C rewrote the body into two new lines (one removed, two added: not paired, and not a light
+    # edit) and kept the reviewed closing brace (unchanged in its diff). D removes C's line and that
+    # brace: the brace is a line a review read, so the fix is not wholly of unreviewed code.
     body_a = "@@ -0,0 +1,3 @@\n+def check(v) {\n+  return v > 0\n+}"
-    body_c = "@@ -1,3 +1,3 @@\n def check(v) {\n-  return v > 0\n+  return v >= 0 && v < limit\n }"
-    fix = "@@ -1,3 +1,2 @@\n def check(v) {\n-  return v >= 0 && v < limit\n-}\n+  return v >= 0 && v <= limit }"
+    body_c = "@@ -1,3 +1,4 @@\n def check(v) {\n-  return v > 0\n+  const ok = v >= 0\n+  return ok && v < limit\n }"
+    fix = "@@ -1,4 +1,3 @@\n def check(v) {\n   const ok = v >= 0\n-  return ok && v < limit\n-}\n+  return ok && v <= limit }"
     details = _details((A, "c.js", "added", body_a), (C, "c.js", "modified", body_c), (D, "c.js", "modified", fix))
 
     assert _origin(_action(D, "c.js"), details)[0] == "mixed"
 
     # When C's diff removed the reviewed brace and added one of its own, the added brace is C's: which
     # brace a diff pairs with which is arbitrary, so a punctuation line is never a light edit.
-    body_c = "@@ -1,3 +1,3 @@\n def check(v) {\n-  return v > 0\n-}\n+  return v >= 0 && v < limit\n+}"
+    body_c = (
+        "@@ -1,3 +1,4 @@\n def check(v) {\n-  return v > 0\n-}\n+  const ok = v >= 0\n+  return ok && v < limit\n+}"
+    )
     details = _details((A, "c.js", "added", body_a), (C, "c.js", "modified", body_c), (D, "c.js", "modified", fix))
     assert _origin(_action(D, "c.js"), details)[0] == "unreviewed"
 
@@ -1182,3 +1187,34 @@ def test_which_files_of_a_fixing_commit_are_source() -> None:
         "go.sum",
     ):
         assert not _is_source(path), path
+
+
+@pytest.mark.parametrize(
+    ("written", "edited", "fixed"),
+    [
+        # An argument added to a short reviewed call (similarity 0.78).
+        ("return process(data)", "return process(data, timeout=5)", "return process(sanitize(data), timeout=5)"),
+        # A second condition added to a reviewed check (similarity 0.67).
+        (
+            "if user.is_admin:",
+            "if user.is_admin or user.is_staff:",
+            "if user.is_active and (user.is_admin or user.is_staff):",
+        ),
+    ],
+)
+def test_an_edit_of_a_reviewed_line_keeps_its_reviewed_origin(written: str, edited: str, fixed: str) -> None:
+    # A wrote the line (reviewed), unreviewed C edited it one for one, and D fixes the defect A's line
+    # had. A block that removes as many code lines as it adds pairs them by position, however much
+    # each changed, so the line keeps A's reviewed origin and the fix counts.
+    body_a = f"@@ -0,0 +1,2 @@\n+def handle(data, user):\n+    {written}"
+    body_c = f"@@ -1,2 +1,2 @@\n def handle(data, user):\n-    {written}\n+    {edited}"
+    fix = f"@@ -1,2 +1,2 @@\n def handle(data, user):\n-    {edited}\n+    {fixed}"
+    details = _details((A, "h.py", "added", body_a), (C, "h.py", "modified", body_c), (D, "h.py", "modified", fix))
+
+    assert _origin(_action(D, "h.py"), details)[0] == "reviewed"
+
+    # Two lines for one is not a one-for-one edit: the new lines are C's own.
+    body_c = f"@@ -1,2 +1,3 @@\n def handle(data, user):\n-    {written}\n+    check(user)\n+    {edited}"
+    fix = f"@@ -2,2 +2,2 @@\n     check(user)\n-    {edited}\n+    {fixed}"
+    details = _details((A, "h.py", "added", body_a), (C, "h.py", "modified", body_c), (D, "h.py", "modified", fix))
+    assert _origin(_action(D, "h.py"), details)[0] == "unreviewed"

@@ -898,6 +898,53 @@ def test_a_punctuation_line_removed_with_code_is_judged_by_where_it_is() -> None
     assert _origin(_action(D, "w.js"), details)[0] == "unreviewed"
 
 
+def test_every_file_of_the_fixing_commit_is_judged() -> None:
+    # D fixes the exporter C wrote in app.py, and in the same commit guards the loader A reviewed in
+    # loader.py, or changes one of its lines: the commit changes reviewed code, so the fix is kept.
+    loader_a = "@@ -0,0 +1,2 @@\n+def load(p):\n+    return open(p).read()"
+    app_fix = "@@ -1,3 +1,3 @@\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n     return write(target, rows)"
+    guard = "@@ -1,2 +1,4 @@\n def load(p):\n+    if not p:\n+        return ''\n     return open(p).read()"
+    change = "@@ -1,2 +1,2 @@\n def load(p):\n-    return open(p).read()\n+    return open(p, encoding='utf-8').read()"
+    for loader_d, reason in ((guard, "adds lines among code a review read"), (change, "were in code a review")):
+        details = _details(
+            (A, "loader.py", "added", loader_a),
+            (C, "app.py", "added", EXPORTER_C),
+            (D, "app.py", "modified", app_fix),
+            (D, "loader.py", "modified", loader_d),
+        )
+        origin, why = _origin(_action(D, "app.py"), details)
+        assert origin == "unknown"
+        assert why.startswith("the fixing commit also changes loader.py, not wholly in unreviewed code")
+        assert reason in why
+
+    # A new file in the same commit changes no reviewed code: the fix is still left out.
+    details = _details(
+        (A, "loader.py", "added", loader_a),
+        (C, "app.py", "added", EXPORTER_C),
+        (D, "app.py", "modified", app_fix),
+        (D, "test_app.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."),
+    )
+    assert _origin(_action(D, "app.py"), details)[0] == "unreviewed"
+
+    # A side edit of a reviewed test, doc or config file in the same commit is not a fix of reviewed
+    # code: only other source files count.
+    for side in (
+        "tests/test_loader.py",
+        "docs/loader.md",
+        "README.md",
+        ".github/workflows/ci.yml",
+        "config.json",
+        "lint.jsonc",
+    ):
+        details = _details(
+            (A, side, "added", loader_a),
+            (C, "app.py", "added", EXPORTER_C),
+            (D, "app.py", "modified", app_fix),
+            (D, side, "modified", change),
+        )
+        assert _origin(_action(D, "app.py"), details)[0] == "unreviewed", side
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

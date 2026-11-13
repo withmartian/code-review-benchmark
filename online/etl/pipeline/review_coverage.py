@@ -902,10 +902,69 @@ def _file_entry(detail: dict | None, path: str) -> dict | None:
     return None
 
 
+_NOT_SOURCE_RE = re.compile(
+    r"(^|/)(tests?|specs?|__tests__|docs?)/"  # test and doc folders
+    r"|(^|/)\.github/"  # CI
+    r"|(_test\.|\.test\.|\.spec\.|(^|/)test_[^/]*$)"  # test files
+    r"|\.(md|rst|txt|ya?ml|jsonc?|json5|toml|lock)$"  # docs, config and lock files
+    r"|(^|/)(go\.sum|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|Gemfile\.lock)$"
+    r"|(\.|_|-|/)generated(\.|_|-|/)",  # generated files
+    re.IGNORECASE,
+)
+
+
+def _is_source(path: str) -> bool:
+    """Whether a file is source code, for judging the other files of a fixing commit: not a test, a
+    doc, a lock or generated file, or CI and config (.github/, YAML, JSON, TOML)."""
+    return not _NOT_SOURCE_RE.search(path or "")
+
+
 def fix_code_origin(
     action: dict, commits: list[dict], details_by_sha: dict[str, dict], records: list[ReviewRecord], first_reviewed: int
 ) -> tuple[str, str, tuple[str, ...]]:
     """Whether a review of the bot read the code a fix after its first review changed.
+
+    The action's file is judged first (``_origin_in_file``). A fix commit's change spans all its
+    files, so an "unreviewed" answer holds only when every other source file the commit touches
+    (``_is_source``: not a test, a doc, a lock or generated file, or CI and config) is wholly in
+    unreviewed code too: the lines it changes and the code its insertions go into, judged the same
+    way (a new file changes no reviewed code; a file with lines but no readable patch, or a rename,
+    cannot be judged). Otherwise the fix is "unknown" and kept. The side edits a fix commit makes
+    to tests, docs and config are not taken for a fix of reviewed code.
+    """
+    origin, reason, shas = _origin_in_file(action, commits, details_by_sha, records, first_reviewed)
+    if origin != "unreviewed":
+        return origin, reason, shas
+    fix = sha_index(commits, (action.get("commit_sha") or "").strip())
+    others = [
+        f.get("filename")
+        for f in (details_by_sha.get(commits[fix].get("sha", "")) or {}).get("files") or []
+        if f.get("filename") != action.get("file_path") and _is_source(f.get("filename"))
+    ]
+    for other in others:
+        o, why, more = _origin_in_file(
+            {**action, "file_path": other}, commits, details_by_sha, records, first_reviewed, True
+        )
+        if o != "unreviewed":
+            return "unknown", f"the fixing commit also changes {other}, not wholly in unreviewed code: {why}", ()
+        shas = tuple(sorted(set(shas) | set(more), key=lambda s: sha_index(commits, s) or 0))
+    return origin, reason, shas
+
+
+def _origin_in_file(
+    action: dict,
+    commits: list[dict],
+    details_by_sha: dict[str, dict],
+    records: list[ReviewRecord],
+    first_reviewed: int,
+    other_file: bool = False,
+) -> tuple[str, str, tuple[str, ...]]:
+    """Whether a review of the bot read the code a fix after its first review changed in one file.
+
+    other_file is True for a file of the fixing commit other than the action's: a new file there
+    passes (it changes no reviewed code), a file without a readable patch that has changed lines
+    cannot be judged, and a file the commit only adds lines to is judged by the code they go into
+    rather than taken as unknown.
 
     The lines the fix changed are the lines its commit removed from the action's file, other than
     blank and punctuation-only lines (``_removed``). Each is traced by its position, through the
@@ -958,14 +1017,18 @@ def fix_code_origin(
     if entry is None:
         return "unknown", "the fixing commit does not change the fix's file", ()
     if entry.get("status") == "added":
+        if other_file:
+            return "unreviewed", f"{path} is a new file", ()
         return "unknown", "the fix adds a new file", ()
     if entry.get("status") == "renamed":
         return "unknown", "the fixing commit renames the file, and the history is read by file name", ()
+    if other_file and not entry.get("patch") and not entry.get("additions") and not entry.get("deletions"):
+        return "unreviewed", f"no line of {path} changes", ()
     fix_hunks = _file_hunks(entry)
     if fix_hunks is None:
         return "unknown", "the fixing commit has no readable patch for the file (missing, malformed or cut short)", ()
     changed = _removed(fix_hunks)
-    if not changed:
+    if not changed and not other_file:
         return (
             "unknown",
             "the fix only adds lines or removes punctuation, so where the code it fixes was written is not known",

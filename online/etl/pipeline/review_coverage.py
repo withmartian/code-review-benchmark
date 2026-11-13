@@ -1079,6 +1079,10 @@ class _RemovedCode:
         loose = [_loose(k) for k in keys]
         return any(f.hits(keys, loose) for f in self.files)
 
+    def holds(self, loose: str) -> bool:
+        """Whether the loosened text of a removed run holds ``loose`` (a cheap test every hit passes)."""
+        return any(loose in text for f in self.files for text in f.loose)
+
 
 def _removed_keys(
     detail: dict, skip_path: str | None = None, skip: frozenset[int] = frozenset()
@@ -1120,9 +1124,40 @@ def _removed_runs(patch: str, hunks: list[_Hunk], skip: frozenset[int]) -> _Remo
     return cached
 
 
-def _added_keys(hunks: list[_Hunk], line: int) -> set[str]:
-    """``_span_keys`` of the run of added lines that holds line ``line`` after the commit, over the
-    runs that include that line."""
+class _AddedLine:
+    """A line a commit added, as moves and re-wraps are matched: the ``_span_keys`` of its run of
+    added lines over the windows that hold it, and, built only when a removed run could hold them
+    (its loosened text holds the line's), the longer spans up to ``_LONG_SPAN`` lines."""
+
+    def __init__(self, hunks: list[_Hunk], line: int) -> None:
+        self.run, self.at = _added_run(hunks, line)
+        self.keys = _span_keys(self.run, self.at) if self.at is not None else set()
+        self.loose = _loose(self.run[self.at]) if self.at is not None else ""
+        self._long: set[str] | None = None
+
+    def long_keys(self) -> set[str]:
+        if self._long is None:
+            self._long = set()
+            run, at = self.run, self.at
+            if at is not None and len(run) > _MOVE_SPAN:
+                for a in range(max(0, at - _LONG_SPAN + 1), at + 1):
+                    for b in range(max(at + 1, a + _MOVE_SPAN + 1), min(len(run), a + _LONG_SPAN) + 1):
+                        key = _ws("".join(run[a:b]))
+                        if _CODE_RE.search(key):
+                            self._long.add(key)
+        return self._long
+
+    def found_in(self, code: _RemovedCode) -> bool:
+        """Whether a run of removed lines of ``code`` carries this line, alone or in a span."""
+        if code.hits(self.keys):
+            return True
+        if not self.loose or not code.holds(self.loose):
+            return False
+        return code.hits(self.long_keys())
+
+
+def _added_run(hunks: list[_Hunk], line: int) -> tuple[list[str], int | None]:
+    """The run of added lines that holds line ``line`` after the commit, and the line's index in it."""
     for h in hunks:
         if not h.new_start <= line < h.new_start + h.new_len:
             continue
@@ -1140,18 +1175,8 @@ def _added_keys(hunks: list[_Hunk], line: int) -> set[str]:
                 run = []
             if kind != "-":
                 new += 1
-        if at is None:
-            return set()
-        keys = _span_keys(run, at)
-        # A statement re-wrapped over more lines than the window, beside other added lines: the spans
-        # longer than the window that hold the line, up to _LONG_SPAN lines, are matched too.
-        for a in range(max(0, at - _LONG_SPAN + 1), at + 1):
-            for b in range(max(at + 1, a + _MOVE_SPAN + 1), min(len(run), a + _LONG_SPAN) + 1):
-                key = _ws("".join(run[a:b]))
-                if _CODE_RE.search(key):
-                    keys.add(key)
-        return keys
-    return set()
+        return run, at
+    return [], None
 
 
 def _file_entry(detail: dict | None, path: str) -> dict | None:
@@ -1469,8 +1494,8 @@ def _origin_in_file(
             # (whitespace aside) is that line, not a move.
             moved = kind == "added" or (kind == "edited" and _ws(text) != _ws(added_text))
             # Computed once per traced line and commit, for the move, restore and copy checks.
-            added_keys = _added_keys(hunks, at) if moved else set()
-            if moved and keys_removed(i)[0].hits(added_keys):
+            added = _AddedLine(hunks, at) if moved else None
+            if added is not None and added.found_in(keys_removed(i)[0]):
                 return (
                     "unknown",
                     f"commit {commits[i]['sha'][:12]} moved or re-wrapped a line the fix reads in {path} from "
@@ -1481,7 +1506,8 @@ def _origin_in_file(
                 # A line an earlier traced commit removed and this one put back (a revert, or a move whose
                 # removal and addition are in different commits) is restored code, not new code, also
                 # when it lands in place of a similar line.
-                restored = next((k for k in range(first_reviewed + 1, i) if keys_removed(k)[0].hits(added_keys)), None)
+                assert added is not None
+                restored = next((k for k in range(first_reviewed + 1, i) if added.found_in(keys_removed(k)[0])), None)
                 # A line this commit added as a copy of code a later commit, up to the fix, removed
                 # (a move done as copy, then delete) is moved code too. The line's own earlier texts,
                 # which those commits removed as they edited it, are not a copy.
@@ -1490,7 +1516,7 @@ def _origin_in_file(
                     (
                         k
                         for k in range(i + 1, fix + 1)
-                        if keys_removed_skipping(k, own.get(k, frozenset())).hits(added_keys)
+                        if added.found_in(keys_removed_skipping(k, own.get(k, frozenset())))
                     ),
                     None,
                 )

@@ -344,16 +344,36 @@ async def test_the_threads_step_stores_the_comments_with_the_threads() -> None:
     assert [w[0] for w in repo.writes] == ["threads", "details", "done"]
 
 
-async def test_a_failed_first_request_stores_nothing_from_the_step() -> None:
+async def test_a_read_that_keeps_failing_stores_the_step_with_the_comments_unread(monkeypatch) -> None:
+    # The read is tried THREADS_READ_ATTEMPTS times; then the step is stored with the threads read
+    # (none here) and the comments and edits as not read, so the PR is not held at this step and
+    # the analysis reads its history as incomplete (no fix left out).
+    from pipeline import enrich
     from pipeline.enrich import enrich_single_pr
 
+    async def no_sleep(_s: float) -> None:
+        return None
+
+    monkeypatch.setattr(enrich.asyncio, "sleep", no_sleep)
+    calls = 0
     gh = FakeGraphQL({}, {}, fail=True)
+    failing = gh.graphql
+
+    async def counted(query: str, variables: dict) -> dict | None:
+        nonlocal calls
+        calls += 1
+        return await failing(query, variables)
+
+    gh.graphql = counted  # type: ignore[method-assign]
     repo = FakeRepo()
     pr_row = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
 
+    await enrich_single_pr(gh, repo, pr_row)
+
+    assert calls == enrich.THREADS_READ_ATTEMPTS
+    assert repo.writes[0] == ("threads", 5, [], None, None)
     with pytest.raises(IncompleteReadError):
-        await enrich_single_pr(gh, repo, pr_row)
-    assert repo.writes == []
+        await _fetch_review_threads(FakeGraphQL({}, {}, fail=True), "owner", "repo", 7)
 
 
 async def test_a_pull_request_that_is_not_there_stores_the_step_with_the_comments_unread() -> None:

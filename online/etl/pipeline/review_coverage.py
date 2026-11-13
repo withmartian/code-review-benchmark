@@ -1257,6 +1257,14 @@ def _origin_in_file(
             removed_keys[k] = _removed_keys(details_by_sha[commits[k]["sha"]])
         return removed_keys[k]
 
+    # The same commit is checked for copies once per traced line, mostly with the same skipped lines.
+    removed_keys_skipping: dict[tuple[int, frozenset[int]], set[str]] = {}
+
+    def keys_removed_skipping(k: int, skip: frozenset[int]) -> set[str]:
+        if (k, skip) not in removed_keys_skipping:
+            removed_keys_skipping[(k, skip)] = _removed_keys(details_by_sha[commits[k]["sha"]], path, skip)[0]
+        return removed_keys_skipping[(k, skip)]
+
     def unreadable(k: int) -> tuple[str, str, tuple[str, ...]]:
         return (
             "unknown",
@@ -1316,8 +1324,7 @@ def _origin_in_file(
                         (
                             k
                             for k in range(i + 1, fix + 1)
-                            if added_keys
-                            & _removed_keys(details_by_sha[commits[k]["sha"]], path, own.get(k, frozenset()))[0]
+                            if added_keys & keys_removed_skipping(k, own.get(k, frozenset()))
                         ),
                         None,
                     )

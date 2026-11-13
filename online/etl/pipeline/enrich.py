@@ -115,8 +115,19 @@ class AllTokensInvalidError(Exception):
 class IncompleteReadError(Exception):
     """Raised when a read that later analysis relies on as complete stopped partway.
 
-    The step is not recorded and the PR is not marked as error: the enrichment loop releases it,
-    so the next pass reads the step again."""
+    threads holds the review threads read before it stopped, when the read was the threads step's.
+    The threads step reads again up to ``THREADS_READ_ATTEMPTS`` times, then stores those threads
+    with the conversation comments and edits as not read (``NULL``), which the analysis reads as an
+    incomplete history: no fix is left out on the PR, as before this rule. Raised from another step,
+    it leaves the step undone and the enrichment loop releases the PR for the next pass."""
+
+    def __init__(self, message: str, threads: list[dict] | None = None) -> None:
+        super().__init__(message)
+        self.threads = threads
+
+
+# Reads of the threads step, comments and edits included, before it is stored with them not read.
+THREADS_READ_ATTEMPTS = 3
 
 
 class GitHubEnrichClient:
@@ -474,7 +485,8 @@ async def _fetch_review_threads(
             page = "the first page" if first else "a further page"
             raise IncompleteReadError(
                 f"{page} of {' and '.join(missing)} could not be read after "
-                f"{len(all_threads)} threads and {len(comment_nodes)} comments"
+                f"{len(all_threads)} threads and {len(comment_nodes)} comments",
+                threads=all_threads,
             )
         first = False
         if with_threads:
@@ -489,8 +501,32 @@ async def _fetch_review_threads(
             page_info = comments_data.get("pageInfo") or {}
             with_comments = bool(page_info.get("hasNextPage"))
             comment_cursor = page_info.get("endCursor")
-    await _fetch_long_edit_histories(gh, comment_nodes)
+    try:
+        await _fetch_long_edit_histories(gh, comment_nodes)
+    except IncompleteReadError as e:
+        raise IncompleteReadError(str(e), threads=all_threads) from e
     return all_threads, parse_issue_comments(comment_nodes), parse_comment_edits(comment_nodes)
+
+
+async def _read_review_threads(
+    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
+) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
+    """``_fetch_review_threads``, read again up to ``THREADS_READ_ATTEMPTS`` times when it stops
+    partway. After the last attempt, the threads read are returned with the comments and edits as
+    not read (None), so the PR is never held at this step: a read that keeps failing (a query too
+    heavy for a long bot history, say) would otherwise leave it out of the benchmark."""
+    for attempt in range(THREADS_READ_ATTEMPTS):
+        try:
+            return await _fetch_review_threads(gh, owner, repo, pr_number)
+        except IncompleteReadError as e:
+            if attempt + 1 < THREADS_READ_ATTEMPTS:
+                await asyncio.sleep(2 ** (attempt + 1))
+                continue
+            logger.warning(
+                f"{owner}/{repo}#{pr_number}: {e}; storing {len(e.threads or [])} threads with the comments not read"
+            )
+            return list(e.threads or []), None, None
+    raise AssertionError("unreachable")
 
 
 async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:
@@ -692,7 +728,7 @@ async def enrich_single_pr(
     # Step: threads (index 3)
     if step_idx < 3:
         # The same request returns the conversation comments and their edit history, stored with the threads.
-        threads, issue_comments, comment_edits = await _fetch_review_threads(gh, owner, repo, pr_number)
+        threads, issue_comments, comment_edits = await _read_review_threads(gh, owner, repo, pr_number)
         await repo_obj.update_threads(pr_id, threads, issue_comments, comment_edits)
         n_comments = "comments not read" if issue_comments is None else f"{len(issue_comments)} comments"
         logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)}, {n_comments})")

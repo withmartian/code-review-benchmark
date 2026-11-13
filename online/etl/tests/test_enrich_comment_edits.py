@@ -182,8 +182,8 @@ class FakeRepo:
     def __init__(self) -> None:
         self.writes: list[tuple] = []
 
-    async def update_threads(self, pr_id: int, *_args: object) -> None:
-        self.writes.append(("threads", pr_id))
+    async def update_threads(self, pr_id: int, *args: object) -> None:
+        self.writes.append(("threads", pr_id, *args))
 
     async def update_commit_details(self, pr_id: int, *_args: object) -> None:
         self.writes.append(("details", pr_id))
@@ -205,15 +205,22 @@ class FakeRepo:
 PR_ROW = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
 
 
-async def test_an_incomplete_history_is_never_stored_so_it_excludes_nothing() -> None:
-    # The threads step is not recorded: no partial history reaches the analysis, and the step stays
-    # undone for the next pass to read again.
+async def test_an_incomplete_history_is_never_stored_so_it_excludes_nothing(monkeypatch) -> None:
+    # No partial history reaches the analysis: after THREADS_READ_ATTEMPTS failed reads the step is
+    # stored with the comments and edits as not read, which excludes nothing.
+    async def no_sleep(_s: float) -> None:
+        return None
+
+    monkeypatch.setattr(enrich.asyncio, "sleep", no_sleep)
     repo = FakeRepo()
 
-    with pytest.raises(IncompleteReadError):
-        await enrich_single_pr(_failing_history_gh(), repo, dict(PR_ROW))
+    await enrich_single_pr(_failing_history_gh(), repo, dict(PR_ROW))
 
-    assert repo.writes == []
+    threads_writes = [w for w in repo.writes if w[0] == "threads"]
+    assert len(threads_writes) == 1
+    assert threads_writes[0][3] is None and threads_writes[0][4] is None
+    with pytest.raises(IncompleteReadError):
+        await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7)
 
 
 async def test_the_loop_releases_a_pr_with_an_incomplete_read_for_the_next_pass(monkeypatch) -> None:

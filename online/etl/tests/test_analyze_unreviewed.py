@@ -755,13 +755,22 @@ def _notice_only_row(bot: str = BOT) -> dict:
 async def test_a_pr_the_bot_never_reviewed_leaves_every_fix_out() -> None:
     repo = FakeRepo()
 
-    assert await analyze_single_pr(FakeLLM(), repo, _notice_only_row(), BOT, "model")
+    assert await analyze_single_pr(FakeLLM(matched_action="none"), repo, _notice_only_row(), BOT, "model")
 
-    # Matched or not, no fix counts: no code of the PR was reviewed, so the PR has no recall.
+    # No fix matched and no code of the PR was reviewed: no fix counts, so the PR has no recall.
     assert repo.stored["recall"] is None
     assert [a["excluded_from_recall"] for a in repo.stored["human_actions"]] == [
         "the bot completed no review on the PR; it posted limit notices"
     ] * 2
+
+    # A suggestion of the bot matched a fix (raised in a chat reply, say): a matched fix always
+    # counts, so the PR is not left out whole.
+    assert await analyze_single_pr(FakeLLM(), repo, _notice_only_row(), BOT, "model")
+    assert repo.stored["recall"] is not None
+    assert not any(
+        (a.get("excluded_from_recall") or "").startswith("the bot completed no review")
+        for a in repo.stored["human_actions"]
+    )
 
 
 async def test_a_pr_with_a_review_or_a_record_of_one_is_not_left_out_whole() -> None:
@@ -867,7 +876,7 @@ async def test_no_review_needs_the_whole_conversation_history() -> None:
         [{"id": 7, "author": qodo, "body": pause, "created_at": "2026-07-01T10:01:00Z", "updated_at": None}]
     )
     repo = FakeRepo()
-    assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
+    assert await analyze_single_pr(FakeLLM(matched_action="none"), repo, dict(row), qodo, "model")
     assert repo.stored["recall"] is None  # every revision read: no review, every fix left out
 
     edits = [{"id": 7, "author": qodo, "revisions": [], "unavailable_edits": ["2026-07-01T13:00:00Z"]}]
@@ -940,7 +949,9 @@ async def test_a_coderabbit_pr_whose_summary_is_only_a_placeholder_or_a_notice_w
     # every fix is left out and the PR has no recall.
     repo = FakeRepo()
 
-    assert await analyze_single_pr(FakeLLM(), repo, _coderabbit_only_comment_row(f"{SUMMARY}\n{notice}"), BOT, "model")
+    assert await analyze_single_pr(
+        FakeLLM(matched_action="none"), repo, _coderabbit_only_comment_row(f"{SUMMARY}\n{notice}"), BOT, "model"
+    )
 
     assert repo.stored["recall"] is None
     assert all(

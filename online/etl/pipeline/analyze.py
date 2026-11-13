@@ -480,11 +480,13 @@ def _exclude_unreviewed_actions(
     An unmatched action is left out too when its file is one the bot's reviews list as left out by
     the repository's path filters (``path_filtered``), and none lists as read.
 
-    Every action, matched or not, is left out when the bot completed no review on the PR
+    Every action is left out when the bot completed no review on the PR
     (``completed_no_review``: it posted only notices, which GH Archive discovery admits): no code
     of the PR was reviewed. With no action left the PR has no recall. This needs the whole
     conversation history (comments read, no edit missing), for any bot: a review in a comment or
-    revision that was not read would otherwise read as none.
+    revision that was not read would otherwise read as none. It does not apply when a suggestion of
+    the bot matched an action: the bot raised it somewhere (a chat reply, say), and a matched fix
+    always counts.
     """
     history_complete = comments_read and edits_complete
     if not history_complete and (
@@ -493,7 +495,9 @@ def _exclude_unreviewed_actions(
         return set()
     # A review may be in a comment or revision that was not read: no bot is found to have completed
     # no review without its whole conversation history.
-    if actions and history_complete and completed_no_review(events, commits, chatbot_username):
+    matched_ids = {m.get("human_action_id") for m in matches if m.get("matched")}
+    matched_any = any(a["action_id"] in matched_ids for a in actions)
+    if actions and history_complete and not matched_any and completed_no_review(events, commits, chatbot_username):
         notices = notice_reasons(events, chatbot_username)
         why = "the bot completed no review on the PR"
         if notices:

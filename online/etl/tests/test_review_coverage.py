@@ -1196,6 +1196,12 @@ def test_a_summary_without_a_record_is_a_review_whose_record_is_missing() -> Non
     recorded_a = review(A, body=f"Finding.\n{review_range('f' * 40, A)}")
     reply = issue_comment("You're right, thanks for the fix.", ts="2026-07-01T12:00:00Z")
     assert comment_record_missing([recorded_a, reply], COMMITS, CR)
+    # Nor does a reply to a review command the limit refused: a notice, but a comment of its own.
+    refused = issue_comment(
+        "<details>\n<summary>Action not completed</summary>\n\nReview rate limited.\n</details>",
+        ts="2026-07-01T12:00:00Z",
+    )
+    assert comment_record_missing([recorded_a, refused], COMMITS, CR)
 
 
 def test_an_inline_comment_on_the_file_shows_it_was_reviewed() -> None:

@@ -440,14 +440,16 @@ STATUS_COMMENT_MARKERS: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 def _status_comment(body: str, patterns: list[RecordPattern], chatbot_username: str) -> bool:
     """Whether a conversation comment of the bot is the one it keeps its record in: it carries the
-    bot's summary marker (``STATUS_COMMENT_MARKERS``), a record (naming any commit), a notice, or
+    bot's summary marker (``STATUS_COMMENT_MARKERS``), a record (naming any commit), an in-place notice, or
     review content (``COMMENT_REVIEW_CONTENT``)."""
     markers = STATUS_COMMENT_MARKERS + COMMENT_REVIEW_CONTENT
     if any(same_github_actor(bot, chatbot_username) and p.search(body) for bot, p in markers):
         return True
     if any(p.pattern.search(p.ignore.sub("", body) if p.ignore else body) for p in patterns):
         return True
-    return bool(_match_notices(body, chatbot_username))
+    # A notice the bot writes into that comment (in_place); a reply notice, such as a review command
+    # refused by the limit, is a comment of its own and does not show the summary is there.
+    return any(p.in_place for p, _ in _match_notices(body, chatbot_username))
 
 
 def comment_record_missing(events: list[dict], commits: list[dict], chatbot_username: str) -> bool:

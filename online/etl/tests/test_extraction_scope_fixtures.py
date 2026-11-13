@@ -35,7 +35,7 @@ FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob
 # and the live check does not assert it.
 _ANY_FINDING = "Your job is to identify every distinct substantive finding the bot flagged."
 RULE_FOR_KIND = {
-    "coverage_check": None,
+    "coverage_check": "An aggregate check result, such as a status, a metric against a threshold",
     "pr_description_check": _ANY_FINDING,
     "linked_issue_check": None,
     "change_overview": "pure summaries without a concrete finding",
@@ -119,7 +119,7 @@ def test_kinds_without_a_rule_are_non_finding_kinds_the_live_check_skips() -> No
     assert not finding_kinds & NO_RULE_KINDS
 
 
-def test_live_check_flags_a_run_status_item_and_a_missing_finding() -> None:
+def test_live_check_flags_status_and_coverage_items_and_a_missing_finding() -> None:
     from tests.test_extraction_scope_live import check_labels
 
     fx = _load(next(p for p in FIXTURES if "trezor" in p.stem))
@@ -129,8 +129,10 @@ def test_live_check_flags_a_run_status_item_and_a_missing_finding() -> None:
     assert check_labels(fx, kept) == []
 
     status = {"description": "Actionable comments posted: 3", "file_path": None}
-    problems = check_labels(fx, [*kept[1:], status])
+    coverage = {"description": "Docstring coverage is 25% vs the required 80%", "file_path": None}
+    problems = check_labels(fx, [*kept[1:], status, coverage])
     assert any(p.startswith("non-finding extracted (run_status)") for p in problems)
+    assert any(p.startswith("non-finding extracted (coverage_check)") for p in problems)
     assert any(p.startswith("finding not extracted (inline)") for p in problems)
 
 
@@ -141,11 +143,11 @@ def test_live_check_skips_non_finding_kinds_the_prompt_states_no_rule_for() -> N
     kept = [
         {"description": label["quote"], "file_path": label["path"]} for label in fx["findings"] if label.get("pattern")
     ]
-    coverage = {"description": "Docstring coverage is 25% vs the required 80%", "file_path": None}
+    rating = {"description": "Estimated review effort: 3 (moderate)", "file_path": None}
 
-    assert check_labels(fx, [*kept, coverage]) == []
-    problems = check_labels(fx, [*kept, coverage], include_unasserted=True)
-    assert any(p.startswith("non-finding extracted (coverage_check)") for p in problems)
+    assert check_labels(fx, [*kept, rating]) == []
+    problems = check_labels(fx, [*kept, rating], include_unasserted=True)
+    assert any(p.startswith("non-finding extracted (rating)") for p in problems)
 
 
 def test_live_check_reports_a_dropped_check_finding_when_only_inline_findings_are_extracted() -> None:

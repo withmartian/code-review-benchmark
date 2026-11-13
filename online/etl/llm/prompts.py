@@ -48,8 +48,11 @@ Tool output quoted as supporting context inside a comment, such as a linter or s
 next to the bot's own text, is not its own finding either: only problems the bot states in its own
 words are findings. A tool result the bot posts as its own comment at a location in the changed code
 is a finding, and so is a linter or static-analysis result the bot writes up as a problem in its own
-comment text. A concrete finding listed in a review-body section rather than as an inline comment,
-or inside a collapsed or nested section, is still a finding: extract it.
+comment text. An aggregate check result, such as a status, a metric against a threshold, or a request
+to add docstrings or tests to "the touched functions", is not a finding either; a request that names
+a function, or a file and line, in the changed code is. A concrete finding listed in a review-body
+section rather than as an inline comment, or inside a collapsed or nested section, is still a
+finding: extract it.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

@@ -90,6 +90,16 @@ def test_a_tool_result_the_bot_posts_at_a_location_or_writes_up_itself_is_a_find
     )
 
 
+def test_aggregate_check_results_are_not_findings_but_located_requests_are() -> None:
+    rules = _rules()
+
+    assert (
+        "An aggregate check result, such as a status, a metric against a threshold, or a request to add "
+        'docstrings or tests to "the touched functions", is not a finding either; a request that names a '
+        "function, or a file and line, in the changed code is." in rules
+    )
+
+
 def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findings() -> None:
     rules = _rules()
 
@@ -100,10 +110,11 @@ def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findin
 
 
 def test_the_draft_rules_for_other_kinds_are_not_in_this_prompt() -> None:
-    """The unreleased extract-v2 draft also excluded overviews, ratings, coverage gates, controls and
-    run metadata, named resolved findings and title remarks as findings, and listed the excluded
-    kinds. On the Search API input those kinds rarely reach step 1 or yield an extracted item, so
-    extract-v3 states no rule for them. Re-adding one is a deliberate change: update this test with it."""
+    """The unreleased extract-v2 draft also excluded overviews, ratings, controls and run metadata,
+    named resolved findings and title remarks as findings, and listed the excluded kinds. On the
+    Search API input those kinds rarely reach step 1 or yield an extracted item, so extract-v3 states
+    no rule for them (check results keep one sentence). Re-adding one is a deliberate change: update
+    this test with it."""
     rules = _rules()
 
     for dropped in (
@@ -183,7 +194,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v3": {
         "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "1394d0247b0e4673eb350dae76433388d55684186527e9e84574fd3ee1132c42",
+            "EXTRACT_BOT_SUGGESTIONS": "4e1edf3d9a30cd17b3b20d2cb56995ec83751369dbe44207fbbbb6b342ce0e87",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

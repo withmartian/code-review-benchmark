@@ -36,6 +36,12 @@ _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _SHA = r"([0-9a-f]{7,40})"
 
 
+def _reply_to(data: dict) -> object:
+    """The comment an inline comment replies to: ``in_reply_to_id`` (GH Archive, REST) or
+    ``thread_reply_to_id`` (the threads query, kept apart so step 1's reply filter is unchanged)."""
+    return data.get("in_reply_to_id") or data.get("thread_reply_to_id")
+
+
 # -- Notices that the bot did not review a push ----------------------------------
 
 
@@ -281,7 +287,7 @@ def _completed_reviews(events: list[dict], commits: list[dict], chatbot_username
             if not _is_completed_review(data, chatbot_username):
                 continue
             i = sha_index(commits, data.get("commit_id"))
-        elif etype == "review_comment" and not data.get("in_reply_to_id"):
+        elif etype == "review_comment" and not _reply_to(data):
             i = sha_index(commits, data.get("original_commit_id") or data.get("commit_id"))
         else:
             continue
@@ -604,7 +610,7 @@ def completed_no_review(events: list[dict], commits: list[dict], chatbot_usernam
         etype = e.get("event_type")
         if etype == "review" and _is_completed_review(data, chatbot_username):
             return False
-        if etype == "review_comment" and not data.get("in_reply_to_id"):
+        if etype == "review_comment" and not _reply_to(data):
             return False
     if _comment_review(events, chatbot_username):
         return False
@@ -667,7 +673,7 @@ def path_filtered(path: str, events: list[dict], chatbot_username: str) -> bool:
         if not same_github_actor(e.get("actor"), chatbot_username):
             continue
         data = e.get("data") or {}
-        if e.get("event_type") == "review_comment" and not data.get("in_reply_to_id"):
+        if e.get("event_type") == "review_comment" and not _reply_to(data):
             if _norm_path(data.get("path") or "") == target:
                 return False
             continue
@@ -715,7 +721,7 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
             # the review ran but cannot be placed. So is a GH Archive review event that no API review
             # filled in (the analysis copies the API's commit onto it by review id).
             named.append(data.get("commit_id") or NO_COMMIT)
-        elif etype == "review_comment" and not data.get("in_reply_to_id"):
+        elif etype == "review_comment" and not _reply_to(data):
             # An inline comment of a review whose commit the answer gave as null (gone after a
             # force-push) is a review that cannot be placed. So is one read without its commit (a
             # review thread stored before the threads query asked for it): its review ran at a
@@ -998,14 +1004,56 @@ def _runs(h: _Hunk, kind: str, skip: frozenset[int] = frozenset()) -> list[list[
 ALL_LINES: frozenset[int] = frozenset({-1})  # a ``skip`` that leaves out the whole of ``skip_path``
 
 
+def _loose(text: str) -> str:
+    """``_ws`` loosened to no whitespace and no comma at all: the loosened ``_ws`` key of some lines
+    is a substring of the loosened text of any run that holds those lines."""
+    return _WS_RE.sub("", text).replace(",", "")
+
+
+class _RemovedRuns:
+    """The removed runs of one file's patch. A run's ``_span_keys`` are built only when its loosened
+    text holds a looked-for key (a cheap test that every hit passes), so a large rewritten file (a
+    lockfile) costs one substring scan per look, not every window of every line."""
+
+    def __init__(self, runs: list[list[str]]) -> None:
+        self.runs = runs
+        self.loose = [_loose("".join(run)) for run in runs]
+        self.keys: dict[int, set[str]] = {}
+
+    def hits(self, keys: set[str], loose: list[str]) -> bool:
+        for i, text in enumerate(self.loose):
+            if not any(k in text for k in loose):
+                continue
+            if i not in self.keys:
+                self.keys[i] = _span_keys(self.runs[i])
+            if self.keys[i] & keys:
+                return True
+        return False
+
+
+class _RemovedCode:
+    """The removed runs of a commit, in every file (``_removed_keys``)."""
+
+    def __init__(self, files: list[_RemovedRuns]) -> None:
+        self.files = files
+
+    def hits(self, keys: set[str]) -> bool:
+        """Whether a run of removed lines carries one of ``keys`` (``_span_keys`` of added lines)."""
+        if not keys:
+            return False
+        loose = [_loose(k) for k in keys]
+        return any(f.hits(keys, loose) for f in self.files)
+
+
 def _removed_keys(
     detail: dict, skip_path: str | None = None, skip: frozenset[int] = frozenset()
-) -> tuple[set[str], bool]:
-    """``_span_keys`` of every run of removed lines a commit's patches hold, in any file, and whether
-    they are all of them: False when a file the commit removed lines from has no patch, or one whose
-    hunks do not add up (GitHub leaves out the patch of a large diff). In file ``skip_path``, the
-    removed lines numbered in ``skip`` (before the change) are left out."""
-    keys: set[str] = set()
+) -> tuple[_RemovedCode, bool]:
+    """Every run of removed lines a commit's patches hold, in any file, as a ``_RemovedCode`` that
+    tells whether one carries given ``_span_keys``, and whether they are all of them: False when a
+    file the commit removed lines from has no patch, or one whose hunks do not add up (GitHub leaves
+    out the patch of a large diff). In file ``skip_path``, the removed lines numbered in ``skip``
+    (before the change) are left out."""
+    files: list[_RemovedRuns] = []
     complete = True
     for f in detail.get("files") or []:
         hunks = _file_hunks(f)
@@ -1016,10 +1064,25 @@ def _removed_keys(
         lines = skip if f.get("filename") == skip_path else frozenset()
         if lines is ALL_LINES:
             continue
-        for h in hunks:
-            for run in _runs(h, "-", lines):
-                keys |= _span_keys(run)
-    return keys, complete
+        files.append(_removed_runs(f.get("patch") or "", hunks, lines))
+    return _RemovedCode(files), complete
+
+
+# The removed runs of one file's patch, shared by every action, file and traced line of the
+# analyses in a process. Bounded: cleared when it grows past _REMOVED_RUNS_CACHE_SIZE patches.
+_REMOVED_RUNS_CACHE: dict[tuple[str, frozenset[int]], _RemovedRuns] = {}
+_REMOVED_RUNS_CACHE_SIZE = 512
+
+
+def _removed_runs(patch: str, hunks: list[_Hunk], skip: frozenset[int]) -> _RemovedRuns:
+    key = (patch, skip)
+    cached = _REMOVED_RUNS_CACHE.get(key)
+    if cached is None:
+        if len(_REMOVED_RUNS_CACHE) >= _REMOVED_RUNS_CACHE_SIZE:
+            _REMOVED_RUNS_CACHE.clear()
+        cached = _RemovedRuns([run for h in hunks for run in _runs(h, "-", skip)])
+        _REMOVED_RUNS_CACHE[key] = cached
+    return cached
 
 
 def _added_keys(hunks: list[_Hunk], line: int) -> set[str]:
@@ -1105,6 +1168,36 @@ def fix_code_origin(
             return "unknown", f"the fixing commit also changes {other}, not wholly in unreviewed code: {why}", ()
         shas = tuple(sorted(set(shas) | set(more), key=lambda s: sha_index(commits, s) or 0))
     return origin, reason, shas
+
+
+def other_source_changes_reviewed_code(
+    action: dict,
+    commits: list[dict],
+    details_by_sha: dict[str, dict],
+    records: list[ReviewRecord],
+    first_reviewed: int,
+    events: list[dict],
+    chatbot_username: str,
+) -> str | None:
+    """The first other source file of the fix's commit that is not wholly in unreviewed code (judged
+    as ``fix_code_origin`` judges other files) and not left out by path filters itself, or None. A
+    fix in a path-filtered file whose commit also changes reviewed source code (a rebuilt `dist/`
+    beside its reviewed `src/`) may be the fix of that code, so it is kept."""
+    fix = sha_index(commits, (action.get("commit_sha") or "").strip())
+    if fix is None:
+        return None
+    for f in (details_by_sha.get(commits[fix].get("sha", "")) or {}).get("files") or []:
+        other = f.get("filename")
+        if other == action.get("file_path") or not _is_source(other):
+            continue
+        if path_filtered(other or "", events, chatbot_username):
+            continue
+        o, _, _ = _origin_in_file(
+            {**action, "file_path": other}, commits, details_by_sha, records, first_reviewed, True
+        )
+        if o != "unreviewed":
+            return other
+    return None
 
 
 def _branched_commit(commits: list[dict], first_reviewed: int, fix: int) -> str | None:
@@ -1252,17 +1345,17 @@ def _origin_in_file(
     # The commits that wrote each changed line (the commit that first wrote it, then each light edit
     # of it), or None when it was first written before the commits traced.
     writers: list[list[int] | None] = []
-    removed_keys: dict[int, tuple[set[str], bool]] = {}
+    removed_keys: dict[int, tuple[_RemovedCode, bool]] = {}
 
-    def keys_removed(k: int) -> tuple[set[str], bool]:
+    def keys_removed(k: int) -> tuple[_RemovedCode, bool]:
         if k not in removed_keys:
             removed_keys[k] = _removed_keys(details_by_sha[commits[k]["sha"]])
         return removed_keys[k]
 
     # The same commit is checked for copies once per traced line, mostly with the same skipped lines.
-    removed_keys_skipping: dict[tuple[int, frozenset[int]], set[str]] = {}
+    removed_keys_skipping: dict[tuple[int, frozenset[int]], _RemovedCode] = {}
 
-    def keys_removed_skipping(k: int, skip: frozenset[int]) -> set[str]:
+    def keys_removed_skipping(k: int, skip: frozenset[int]) -> _RemovedCode:
         if (k, skip) not in removed_keys_skipping:
             removed_keys_skipping[(k, skip)] = _removed_keys(details_by_sha[commits[k]["sha"]], path, skip)[0]
         return removed_keys_skipping[(k, skip)]
@@ -1304,7 +1397,7 @@ def _origin_in_file(
             moved = kind == "added" or (kind == "edited" and _ws(text) != _ws(added_text))
             # Computed once per traced line and commit, for the move, restore and copy checks.
             added_keys = _added_keys(hunks, at) if moved else set()
-            if moved and added_keys & keys_removed(i)[0]:
+            if moved and keys_removed(i)[0].hits(added_keys):
                 return (
                     "unknown",
                     f"commit {commits[i]['sha'][:12]} moved or re-wrapped a line the fix reads in {path} from "
@@ -1315,7 +1408,7 @@ def _origin_in_file(
                 # A line an earlier traced commit removed and this one put back (a revert, or a move whose
                 # removal and addition are in different commits) is restored code, not new code, also
                 # when it lands in place of a similar line.
-                restored = next((k for k in range(first_reviewed + 1, i) if added_keys & keys_removed(k)[0]), None)
+                restored = next((k for k in range(first_reviewed + 1, i) if keys_removed(k)[0].hits(added_keys)), None)
                 # A line this commit added as a copy of code a later commit, up to the fix, removed
                 # (a move done as copy, then delete) is moved code too. The line's own earlier texts,
                 # which those commits removed as they edited it, are not a copy.
@@ -1324,7 +1417,7 @@ def _origin_in_file(
                     (
                         k
                         for k in range(i + 1, fix + 1)
-                        if added_keys & keys_removed_skipping(k, own.get(k, frozenset()))
+                        if keys_removed_skipping(k, own.get(k, frozenset())).hits(added_keys)
                     ),
                     None,
                 )

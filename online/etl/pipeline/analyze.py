@@ -27,6 +27,7 @@ from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
 from pipeline.review_coverage import later_comment_review
 from pipeline.review_coverage import notice_reasons
+from pipeline.review_coverage import other_source_changes_reviewed_code
 from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviews_in_issue_comments
@@ -530,8 +531,13 @@ def _exclude_unreviewed_actions(
             # file renamed after the first review may have been read under its old name, which the
             # stored details do not keep, so a rename keeps the fix.
             fix = sha_index(commits, (a.get("commit_sha") or "").strip())
-            if path_filtered(a.get("file_path") or "", events, chatbot_username) and not _renamed_since(
-                a.get("file_path") or "", commits, details_by_sha, first, fix
+            if (
+                path_filtered(a.get("file_path") or "", events, chatbot_username)
+                and not _renamed_since(a.get("file_path") or "", commits, details_by_sha, first, fix)
+                and other_source_changes_reviewed_code(
+                    a, commits, details_by_sha, records, first - 1, events, chatbot_username
+                )
+                is None
             ):
                 excluded.add(a["action_id"])
                 a["excluded_from_recall"] = (

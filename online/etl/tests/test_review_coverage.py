@@ -12,6 +12,7 @@ from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
 from pipeline.review_coverage import later_comment_review
 from pipeline.review_coverage import notice_reasons
+from pipeline.review_coverage import other_source_changes_reviewed_code
 from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviewed_before
@@ -414,6 +415,25 @@ def test_a_branch_merged_inside_the_pull_request_makes_the_fix_unknown() -> None
         origin, reason, _ = fix_code_origin(action, commits, details, records, 0)
         assert origin == "unknown"
         assert "not one line of history" in reason
+
+
+def test_a_fixing_commit_that_also_changes_reviewed_source_is_found() -> None:
+    # D fixes dist/out.js (a path-filtered build output) and the reviewed parser it is built from;
+    # the parser change may be the fix, so the path filter alone does not leave the fix out. With
+    # D changing only unreviewed code beside it (the exporter C wrote), nothing is found.
+    reviewed = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(';')"
+    unreviewed = "@@ -1,3 +1,3 @@\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n     return write(target, rows)"
+    built = "@@ -1,1 +1,1 @@\n-var sep = ',';\n+var sep = ';';"
+    records = [ReviewRecord(-1, 1, "record")]
+    action = _action(D, "dist/out.js")
+    for change, expected in ((("parser.py", reviewed), "parser.py"), (("exporter.py", unreviewed), None)):
+        details = _details(
+            (A, "parser.py", "added", PARSER_A),
+            (C, "exporter.py", "added", EXPORTER_C),
+            (D, "dist/out.js", "modified", built),
+            (D, change[0], "modified", change[1]),
+        )
+        assert other_source_changes_reviewed_code(action, COMMITS, details, records, 0, [], CR) == expected
 
 
 def test_a_fix_of_reviewed_lines_is_reviewed() -> None:

@@ -239,7 +239,7 @@ async def test_a_fix_of_reviewed_code_in_an_unreviewed_commit_still_counts() -> 
 
 
 @pytest.mark.parametrize("skip", [INCREMENTAL_OFF, FEWER_STARS])
-async def test_pushes_skipped_by_configuration_or_policy_are_covered_without_a_notice(skip: str) -> None:
+async def test_pushes_skipped_by_configuration_or_policy_are_covered(skip: str) -> None:
     # Incremental reviews off, or the free plan's star rule: the bot reviewed a and b only.
     repo = FakeRepo()
 
@@ -249,7 +249,7 @@ async def test_pushes_skipped_by_configuration_or_policy_are_covered_without_a_n
     actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
     assert actions["A2"]["excluded_from_recall"] == (
         f"last review before the fix read {'b' * 12}; all 1 lines the fix changed in exporter.py were written in "
-        f"commits no review of the bot read before the fix ({'c' * 12})"
+        f"commits no review of the bot read before the fix ({'c' * 12}); the bot posted skip notices"
     )
 
 
@@ -887,6 +887,58 @@ async def test_a_review_shown_only_by_a_summary_without_a_record_keeps_every_fix
     repo = FakeRepo()
 
     assert await analyze_single_pr(FakeLLM(), repo, row, bot, "model")
+
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
+def _coderabbit_only_comment_row(body: str) -> dict:
+    # GH Archive admits a PR whose only CodeRabbit post is its summary comment: no review, no inline comment.
+    row = _pr_row()
+    assembled = json.loads(row["assembled"])
+    assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "review"]
+    row["assembled"] = json.dumps(assembled)
+    row["reviews"] = json.dumps([])
+    row["issue_comments"] = json.dumps(
+        [{"id": 1, "author": BOT, "body": body, "created_at": "2026-07-01T10:01:00Z", "updated_at": None}]
+    )
+    return row
+
+
+IN_PROGRESS = _notice(
+    "review in progress",
+    "> [!NOTE]\n> Currently processing new changes in this PR. This may take a few minutes, please wait...\n>\n"
+    f"> {_commits_read('f' * 40, 'a' * 40)}",
+)
+
+
+@pytest.mark.parametrize("notice", [IN_PROGRESS, RATE_LIMITED.replace("b" * 40, "f" * 40), FEWER_STARS])
+async def test_a_coderabbit_pr_whose_summary_is_only_a_placeholder_or_a_notice_was_never_reviewed(notice: str) -> None:
+    # The in-progress placeholder (with the range under way), a limit or a skip block is not a review:
+    # every fix is left out and the PR has no recall.
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, _coderabbit_only_comment_row(f"{SUMMARY}\n{notice}"), BOT, "model")
+
+    assert repo.stored["recall"] is None
+    assert all(
+        a["excluded_from_recall"].startswith("the bot completed no review") for a in repo.stored["human_actions"]
+    )
+
+
+async def test_a_coderabbit_summary_with_a_walkthrough_but_no_range_keeps_every_fix() -> None:
+    # The summary carries the review's walkthrough and changes table but no range: a review ran, its
+    # record is missing, so every fix is kept.
+    walkthrough = (
+        "<!-- walkthrough_start -->\n\n<details>\n<summary><strong>📝 Walkthrough</strong></summary>\n<dl>\n<dd>\n\n"
+        "Adds a parser and an exporter.\n\n**Changes: Parser**\n\n|Layer / File(s)|Summary|\n|:---|:---|\n"
+        "|**Parser** <br> `parser.py`|Splits on commas.|\n\n</dd>\n</dl>\n</details>\n\n<!-- walkthrough_end -->"
+    )
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(
+        FakeLLM(), repo, _coderabbit_only_comment_row(f"{SUMMARY}\n{walkthrough}"), BOT, "model"
+    )
 
     assert repo.stored["recall"] == 0.5
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])

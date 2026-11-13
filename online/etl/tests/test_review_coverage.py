@@ -10,6 +10,7 @@ from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
 from pipeline.review_coverage import later_comment_review
+from pipeline.review_coverage import notice_reasons
 from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviewed_before
@@ -78,16 +79,22 @@ def test_paused_and_failure_notices() -> None:
     assert [(n.reason, n.reviewed_sha, n.unreviewed_sha) for n in notices] == [("pause", B, D), ("failure", None, None)]
 
 
-def test_skips_by_design_or_configuration_are_not_notices() -> None:
+def test_skips_and_the_in_progress_placeholder_are_notices_that_name_no_commit() -> None:
     skips = [
         "> ## Review skipped\n>\n> Auto incremental reviews are disabled on this repository.",
         "> This repository does not receive automatic reviews because it has fewer than 10 stars.",
         "> ## Review skipped\n>\n> Review was skipped as selected files did not have any reviewable changes.",
+        "> ## Draft PR not reviewed\n>\n> Draft PRs are not automatically reviewed by default.",
     ]
     events = [issue_comment(summary(_block("skip review", s))) for s in skips]
-    events.append(issue_comment(summary(_block("review in progress", "> Currently processing new changes"))))
+    progress = f"> Currently processing new changes in this PR.\n>\n> {review_range(A, B)}"
+    events.append(issue_comment(summary(_block("review in progress", progress))))
 
-    assert find_notices(events, CR) == []
+    notices = find_notices(events, CR)
+    assert [n.reason for n in notices] == ["skip"] * 4 + ["in progress"]
+    assert all(n.reviewed_sha is None for n in notices)
+    # A review under way is not a push left unreviewed: it is never named in a label.
+    assert notice_reasons(events, CR) == ["skip"]
 
 
 def test_a_skip_that_reports_a_failed_incremental_review_is_a_failure() -> None:

@@ -94,14 +94,37 @@ NOTICE_PATTERNS: tuple[NoticePattern, ...] = (
     ),
     # "Review failed" (for example, the pull request was closed while the review ran).
     NoticePattern(bot=_CODERABBIT, reason="failure", pattern=_coderabbit_block("failure"), in_place=True),
-    # A skip block that reports a failed incremental review. Every other skip block is by design or
-    # configuration and is not listed.
+    # A skip block that reports a failed incremental review ("We couldn't safely recover the
+    # incremental review").
     NoticePattern(
         bot=_CODERABBIT,
         reason="failure",
         pattern=_coderabbit_block("skip review"),
         in_place=True,
         requires=re.compile(r"couldn.t safely recover the incremental review", re.IGNORECASE),
+    ),
+    # Every other skip block, by design or configuration, as the sample's summaries hold them:
+    # "## Draft PR not reviewed" ("Draft PRs are not automatically reviewed by default."), and
+    # "## Review skipped" with "Auto incremental reviews are disabled on this repository.", "Auto
+    # reviews are disabled on base/target branches other than the default branch.", "Auto reviews
+    # are disabled on this repository.", "Auto reviews are limited based on label configuration.",
+    # "Review was skipped as selected files did not have any reviewable changes.", and the free plan's
+    # "This repository does not receive automatic reviews because it has fewer than 10 stars."
+    NoticePattern(
+        bot=_CODERABBIT,
+        reason="skip",
+        pattern=_coderabbit_block("skip review"),
+        in_place=True,
+        requires=re.compile(r"^(?:(?!couldn.t safely recover the incremental review).)*$", re.IGNORECASE | re.DOTALL),
+    ),
+    # The placeholder while a review runs ("Currently processing new changes in this PR. This may
+    # take a few minutes, please wait...", or the review-in-progress animation). It names the range
+    # under way, which is not a record: the review has not finished.
+    NoticePattern(
+        bot=_CODERABBIT,
+        reason="in progress",
+        pattern=_coderabbit_block("review in progress"),
+        in_place=True,
     ),
     # The reply to a review command the limit refused ("Action not completed ... Review rate limited").
     NoticePattern(
@@ -199,6 +222,16 @@ def find_notices(events: list[dict], chatbot_username: str) -> list[Notice]:
                 )
             )
     return out
+
+
+# Notice reasons that describe a review under way, not a push left unreviewed: never named in an
+# exclusion's label.
+TRANSIENT_REASONS: tuple[str, ...] = ("in progress",)
+
+
+def notice_reasons(events: list[dict], chatbot_username: str) -> list[str]:
+    """The reasons of the bot's notices that say a push was not reviewed, for an exclusion's label."""
+    return sorted({n.reason for n in find_notices(events, chatbot_username)} - set(TRANSIENT_REASONS))
 
 
 def sha_index(commits: list[dict], sha: str | None) -> int | None:
@@ -462,17 +495,46 @@ def find_review_records(events: list[dict], commits: list[dict], chatbot_usernam
     return sorted(out, key=lambda r: (r.head, r.start, r.source))
 
 
+# What shows that a conversation comment of the bot is a review, for a bot whose comments are
+# mostly not reviews. CodeRabbit's summary comment is a placeholder or a notice until a review runs
+# (the in-progress placeholder, a limit or skip block), and it also posts chat replies and command
+# acknowledgements: its comment is a review only with a record (``RECORD_PATTERNS``) or the review
+# content its summary carries, the walkthrough ("<!-- walkthrough_start -->" then a
+# "Walkthrough" or "Summary" block, or a "## Walkthrough" heading), the changes table ("## Changes")
+# or the recent-review block. A bot not listed has its review only in such a comment (a Greptile
+# summary, a Codex status comment, a Claude or Qodo review): any comment with text that is not a
+# notice counts.
+COMMENT_REVIEW_CONTENT: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        _CODERABBIT,
+        re.compile(
+            r"<!-- walkthrough_start -->\s*<details>\s*<summary>(?:<strong>)?[^<\w]*(?:Walkthrough|Summary)\b"
+            r"|^## Walkthrough\b|^## Changes\b|<!-- recent_review_start -->",
+            re.MULTILINE,
+        ),
+    ),
+)
+
+
 def _comment_review(events: list[dict], chatbot_username: str) -> bool:
     """Whether a bot that reviews, or writes its record, in conversation comments (Claude, Qodo;
-    CodeRabbit, Greptile, Codex) posted such a comment, or a revision of one, with text that is not
-    a notice. Its review may be that comment alone, record or no record."""
+    CodeRabbit, Greptile, Codex) posted such a comment, or a revision of one, that is a review: for
+    a bot in ``COMMENT_REVIEW_CONTENT``, one with a record or review content; for the others, one
+    with text that is not a notice. Its review may be that comment alone, record or no record."""
     if not (reviews_in_issue_comments(chatbot_username) or record_in_issue_comments(chatbot_username)):
         return False
+    content = [p for bot, p in COMMENT_REVIEW_CONTENT if same_github_actor(bot, chatbot_username)]
+    records = [p for p in RECORD_PATTERNS if p.in_issue_comments and same_github_actor(p.bot, chatbot_username)]
     for e in events:
         if e.get("event_type") != "issue_comment" or not same_github_actor(e.get("actor"), chatbot_username):
             continue
         body = (e.get("data") or {}).get("body") or ""
-        if _clean(body) and not _match_notices(body, chatbot_username):
+        if content:
+            if any(p.search(body) for p in content) or any(
+                p.pattern.search(p.ignore.sub("", body) if p.ignore else body) for p in records
+            ):
+                return True
+        elif _clean(body) and not _match_notices(body, chatbot_username):
             return True
     return False
 

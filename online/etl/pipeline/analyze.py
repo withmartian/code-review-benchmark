@@ -22,10 +22,10 @@ from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
 from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import completed_no_review
-from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
 from pipeline.review_coverage import later_comment_review
+from pipeline.review_coverage import notice_reasons
 from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviews_in_issue_comments
@@ -483,7 +483,7 @@ def _exclude_unreviewed_actions(
     # A review may be in a comment or revision that was not read: no bot is found to have completed
     # no review without its whole conversation history.
     if actions and history_complete and completed_no_review(events, commits, chatbot_username):
-        notices = sorted({n.reason for n in find_notices(events, chatbot_username)})
+        notices = notice_reasons(events, chatbot_username)
         why = "the bot completed no review on the PR"
         if notices:
             why += f"; it posted {', '.join(notices)} notices"
@@ -505,7 +505,7 @@ def _exclude_unreviewed_actions(
     records = find_review_records(events, commits, chatbot_username)
     if comment_record_missing(events, commits, chatbot_username):
         return set()
-    notices = sorted({n.reason for n in find_notices(events, chatbot_username)})
+    notices = notice_reasons(events, chatbot_username)
     excluded = set()
     for a in unmatched:
         origin, reason, written_in = fix_code_origin(a, commits, details_by_sha, records, first - 1)

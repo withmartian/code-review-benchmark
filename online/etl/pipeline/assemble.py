@@ -365,6 +365,9 @@ def _enrich_timeline_with_threads(timeline: list[TimelineEvent], raw_threads: li
                 if api.get("body"):
                     event.data["body"] = api["body"]
                 event.data["reactions"] = api.get("reactions", {})
+                for key in ("original_commit_id", "in_reply_to_id"):
+                    if key in api and event.data.get(key) is None:
+                        event.data[key] = api[key]
 
     # Add thread comments missing from the timeline
     for t in raw_threads:
@@ -391,6 +394,8 @@ def _enrich_timeline_with_threads(timeline: list[TimelineEvent], raw_threads: li
                         "is_resolved": is_resolved,
                         "resolved_by": resolved_by,
                         "source": "api",
+                        # Threads read since the threads query asks for them; older rows have neither.
+                        **{k: c[k] for k in ("original_commit_id", "in_reply_to_id") if k in c},
                     },
                 )
             )

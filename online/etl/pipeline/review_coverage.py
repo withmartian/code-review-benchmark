@@ -465,8 +465,14 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
             # the review ran but cannot be placed. So is a GH Archive review event that no API review
             # filled in (the analysis copies the API's commit onto it by review id).
             named.append(data.get("commit_id") or NO_COMMIT)
-        elif etype == "review_comment" and not data.get("in_reply_to_id"):
-            # An inline comment of a review, with no commit at all, is a review that cannot be placed.
+        elif (
+            etype == "review_comment"
+            and not data.get("in_reply_to_id")
+            and ("original_commit_id" in data or "commit_id" in data)
+        ):
+            # An inline comment of a review whose commit the answer gave as null (gone after a
+            # force-push) is a review that cannot be placed. One read without asking for its commit
+            # (a review thread stored before the threads query asked) says nothing about it.
             named.append(data.get("original_commit_id") or data.get("commit_id") or NO_COMMIT)
         if etype in ("review", "issue_comment"):
             body = data.get("body") or ""

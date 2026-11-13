@@ -372,3 +372,21 @@ async def test_a_pull_request_that_is_not_there_stores_the_step_with_the_comment
 
     assert repo.writes[0] == ("threads", 5, [], None, None)
     assert [w[0] for w in repo.writes] == ["threads", "details", "done"]
+
+
+async def test_thread_comments_carry_their_commit_and_the_comment_they_reply_to() -> None:
+    # The Search API path reads inline comments only from these threads: without the commit a review
+    # cannot be placed against the commit list, and without the reply id a reply reads as a review.
+    assert "originalCommit { oid }" in REVIEW_THREADS_QUERY
+    assert "replyTo { databaseId }" in REVIEW_THREADS_QUERY
+    thread = _thread("T1")
+    first = thread["comments"]["nodes"][0]
+    reply = {**first, "databaseId": 101, "originalCommit": None, "replyTo": {"databaseId": 100}}
+    thread["comments"]["nodes"] = [{**first, "originalCommit": {"oid": "a" * 40}, "replyTo": None}, reply]
+    gh = FakeGraphQL({None: _page([thread])}, {None: _page([])})
+
+    threads, _, _ = await _fetch_review_threads(gh, "owner", "repo", 7)
+
+    got = [(c["id"], c["original_commit_id"], c["in_reply_to_id"]) for c in threads[0]["comments"]]
+    # A commit gone after a force-push comes back null and stays null.
+    assert got == [(100, "a" * 40, None), (101, None, 100)]

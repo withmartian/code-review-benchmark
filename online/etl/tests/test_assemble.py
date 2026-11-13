@@ -326,6 +326,31 @@ class TestEnrichTimeline:
         assert timeline[1].actor == "alice"
         assert timeline[1].data["source"] == "api"
 
+    def test_thread_comments_bring_their_commit_and_reply_id(self) -> None:
+        # Search API path: inline comments come only from the threads read, so the commit and the
+        # reply id come from there. A stored thread from before the query asked has neither key.
+        timeline = [TimelineEvent("2026-01-15T10:00:00Z", "review_comment", "bot", {"comment_id": 1})]
+        raw_threads = [{
+            "id": "t1",
+            "comments": [
+                {"id": 1, "body": "first", "original_commit_id": "a" * 40, "in_reply_to_id": None},
+                {"id": 2, "body": "reply", "original_commit_id": None, "in_reply_to_id": 1},
+                {"id": 3, "body": "stored before"},
+            ],
+        }]
+        _enrich_timeline_with_threads(timeline, raw_threads)
+        assert timeline[0].data["original_commit_id"] == "a" * 40
+        assert (timeline[1].data["original_commit_id"], timeline[1].data["in_reply_to_id"]) == (None, 1)
+        assert "original_commit_id" not in timeline[2].data
+        assert "in_reply_to_id" not in timeline[2].data
+
+    def test_a_commit_already_on_the_event_is_kept(self) -> None:
+        data = {"comment_id": 1, "original_commit_id": "b" * 40}
+        timeline = [TimelineEvent("2026-01-15T10:00:00Z", "review_comment", "bot", data)]
+        raw_threads = [{"id": "t1", "comments": [{"id": 1, "body": "x", "original_commit_id": None}]}]
+        _enrich_timeline_with_threads(timeline, raw_threads)
+        assert timeline[0].data["original_commit_id"] == "b" * 40
+
 
 # -- _compute_stats -----------------------------------------------------------
 

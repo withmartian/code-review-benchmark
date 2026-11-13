@@ -61,6 +61,8 @@ query(
               diffHunk
               author { login }
               createdAt
+              originalCommit { oid }
+              replyTo { databaseId }
               reactionGroups {
                 content
                 reactors { totalCount }
@@ -417,6 +419,10 @@ def _parse_review_thread(node: dict) -> dict:
                 "author": (comment.get("author") or {}).get("login"),
                 "created_at": comment.get("createdAt"),
                 "reactions": reactions,
+                # The commit the comment was made on (null once that commit is gone after a force-push)
+                # and the comment it replies to, as REST gives them.
+                "original_commit_id": (comment.get("originalCommit") or {}).get("oid"),
+                "in_reply_to_id": (comment.get("replyTo") or {}).get("databaseId"),
             }
         )
     return thread

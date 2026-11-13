@@ -672,3 +672,28 @@ async def test_a_review_recorded_only_in_the_edit_history_keeps_the_fix() -> Non
 
     assert repo.stored["recall"] == 0.5
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
+async def test_an_inline_comment_read_from_the_threads_is_placed_by_its_commit() -> None:
+    # The Search API path reads inline comments only from the GraphQL threads. Read with its commit,
+    # the comment places its review on a; read before the query asked for the commit, it says nothing
+    # either way. Only a commit the answer gave as null (gone after a force-push) keeps every fix.
+    def with_inline(extra: dict) -> dict:
+        row = _pr_row()
+        assembled = json.loads(row["assembled"])
+        inline = {"comment_id": 9, "body": "Null check missing.", "path": "parser.py", "source": "api", **extra}
+        assembled["events"].append(
+            {"actor": BOT, "event_type": "review_comment", "timestamp": "2026-07-01T11:00:00Z", "data": inline}
+        )
+        row["assembled"] = json.dumps(assembled)
+        return row
+
+    for extra, recall in (
+        ({"original_commit_id": "a" * 40, "in_reply_to_id": None}, 1.0),
+        ({}, 1.0),
+        ({"original_commit_id": None, "in_reply_to_id": 3}, 1.0),  # a reply is not a review
+        ({"original_commit_id": None, "in_reply_to_id": None}, 0.5),
+    ):
+        repo = FakeRepo()
+        assert await analyze_single_pr(FakeLLM(), repo, with_inline(extra), BOT, "model")
+        assert repo.stored["recall"] == recall, extra

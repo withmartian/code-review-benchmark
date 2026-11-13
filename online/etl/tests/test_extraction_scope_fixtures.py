@@ -13,8 +13,11 @@ finding label stays asserted whatever its pass rate in that check (failures are 
 hidden by un-asserting); only overview sentences, which no text pattern separates from findings on
 the same code, carry no pattern.
 
-These tests are deterministic: they check that both kinds of text reach the extraction prompt and
-that the prompt states a rule for every labelled kind.
+These tests are deterministic. They check that the labelled text reaches the extraction input, that
+every labelled kind is mapped to the prompt sentence that decides it (or explicitly to no rule) and
+that sentence is in the prompt, and that labels of a kind sit on the side (finding or non-finding)
+its sentence gives. They cannot show how the model applies the sentences: that is the opt-in live
+check's job.
 """
 
 from __future__ import annotations
@@ -34,16 +37,20 @@ FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob
 # None: the prompt states no rule for this non-finding kind (NO_RULE_KINDS), so nothing is checked here
 # and the live check does not assert it.
 _ANY_FINDING = "Your job is to identify every distinct substantive finding the bot flagged."
+_SPECIFIC_CHECK = (
+    "A check that states a specific problem with the pull request, such as with its title or description, "
+    "is not aggregate: it is a finding."
+)
 RULE_FOR_KIND = {
-    "coverage_check": "An aggregate check result, such as a status, a metric against a threshold",
-    "pr_description_check": _ANY_FINDING,
+    "coverage_check": "An aggregate check result is not a finding either: a check whose result is a count",
+    "pr_description_check": _SPECIFIC_CHECK,
     "linked_issue_check": None,
     "change_overview": "pure summaries without a concrete finding",
     "rating": None,
     "run_status": "status/progress messages",
     "control": None,
     "generation_offer": None,
-    "pr_remark": _ANY_FINDING,
+    "pr_remark": _SPECIFIC_CHECK,
     "resolved_finding": _ANY_FINDING,
     "dismissed_finding": _ANY_FINDING,
     "product_tip": None,
@@ -57,7 +64,7 @@ RULE_FOR_KIND = {
     "rating_explanation": _ANY_FINDING,
     "tool_finding": "a linter or static-analysis result the bot writes up as a problem in its own comment text",
     "praise": "Skip generic praise",
-    "check_finding": _ANY_FINDING,
+    "check_finding": _SPECIFIC_CHECK,
     "located_rule_violation": _ANY_FINDING,
 }
 
@@ -109,6 +116,21 @@ def test_prompt_states_a_rule_for_every_labelled_kind_before_the_inputs(path: Pa
         assert item["kind"] in RULE_FOR_KIND, item["kind"]
         if RULE_FOR_KIND[item["kind"]] is not None:
             assert RULE_FOR_KIND[item["kind"]] in rules, item["kind"]
+
+
+def test_check_labels_sit_on_the_side_the_check_sentences_give() -> None:
+    """A check stating a specific problem with the PR (title, description) is a finding; an aggregate
+    check result (coverage against a threshold) is not. Both rows can sit in one check table."""
+    specific = {kind for kind, rule in RULE_FOR_KIND.items() if rule == _SPECIFIC_CHECK}
+    both_in_one_fixture = False
+    for path in FIXTURES:
+        fx = _load(path)
+        finding_kinds = {label["kind"] for label in fx["findings"]}
+        non_finding_kinds = {label["kind"] for label in fx["non_findings"]}
+        assert not specific & non_finding_kinds, path.stem
+        assert "coverage_check" not in finding_kinds, path.stem
+        both_in_one_fixture |= "pr_description_check" in finding_kinds and "coverage_check" in non_finding_kinds
+    assert both_in_one_fixture  # the scylladb check table: a description check row next to a coverage row
 
 
 def test_kinds_without_a_rule_are_non_finding_kinds_the_live_check_skips() -> None:

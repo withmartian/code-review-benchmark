@@ -90,22 +90,35 @@ def test_a_tool_result_the_bot_posts_at_a_location_or_writes_up_itself_is_a_find
     )
 
 
-def test_aggregate_check_results_are_not_findings_but_located_requests_are() -> None:
+def test_aggregate_check_results_are_not_findings_and_aggregate_is_defined() -> None:
     rules = _rules()
 
     assert (
-        "An aggregate check result, such as a status, a metric against a threshold, or a request to add "
-        'docstrings or tests to "the touched functions", is not a finding either; a request that names a '
-        "function, or a file and line, in the changed code is." in rules
+        "An aggregate check result is not a finding either: a check whose result is a count, a percentage, "
+        "or a pass/fail measured over many functions or files (for example docstring or test coverage against "
+        'a threshold), including a request to add docstrings or tests to "the touched functions".' in rules
     )
+    # no undefined example that a PR-level check row (title, description) could fall under
+    assert "such as a status" not in rules
+
+
+def test_a_check_stating_a_specific_problem_with_the_pr_and_a_located_request_are_findings() -> None:
+    rules = _rules()
+
+    assert (
+        "A check that states a specific problem with the pull request, such as with its title or description, "
+        "is not aggregate: it is a finding." in rules
+    )
+    assert "So is a request that names a function, or a file and line, in the changed code." in rules
 
 
 def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findings() -> None:
     rules = _rules()
 
+    # only findings in the bot's own words, so the sentence cannot override the listed-inputs skip
     assert (
-        "A concrete finding listed in a review-body section rather than as an inline comment, or inside a "
-        "collapsed or nested section, is still a finding: extract it." in rules
+        "A concrete finding the bot states in its own words in a review-body section rather than as an inline "
+        "comment, or inside a collapsed or nested section, is still a finding: extract it." in rules
     )
 
 
@@ -194,7 +207,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v3": {
         "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "4e1edf3d9a30cd17b3b20d2cb56995ec83751369dbe44207fbbbb6b342ce0e87",
+            "EXTRACT_BOT_SUGGESTIONS": "38f180b0662580fe732e4351f3608d714b22319eae24ab542262ddd4539c0c5c",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

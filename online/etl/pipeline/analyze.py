@@ -28,6 +28,7 @@ from pipeline.review_coverage import fix_code_origin
 from pipeline.review_coverage import later_comment_review
 from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
+from pipeline.review_coverage import reviews_in_issue_comments
 from pipeline.review_coverage import rewritten_review_commits
 from pipeline.review_coverage import sha_index
 
@@ -433,7 +434,8 @@ def _exclude_unreviewed_actions(
     before they were, or one whose pull request was gone when they were read). For a bot that
     writes its record in those comments (``record_in_issue_comments``), its reviews cannot all be
     known then, and a review recorded only there would read as a push it never reviewed, so no
-    action is left out.
+    action is left out. The same holds for a bot that posts its reviews as conversation comments
+    (``reviews_in_issue_comments``), whose reviews are those comments.
 
     No action is left out either for a bot that posts its reviews as conversation comments (Claude,
     Qodo: ``later_comment_review``) when it has a conversation comment, or a revision of one, after
@@ -451,19 +453,26 @@ def _exclude_unreviewed_actions(
     edits_complete is False when an edit of one of the bot's comments has no text left on GitHub
     (``unavailable_edits``), or when the timeline holds a comment of the bot that the comments read
     no longer have (``_deleted_bot_comments``: its later edits were never read): a review recorded
-    only in a missing revision cannot be read, so for a bot that writes its record in comments no
-    action is left out.
+    only in a missing revision cannot be read, so for a bot that writes its record in comments, or
+    posts its reviews as comments, no action is left out.
 
     An unmatched action is left out too when its file is one the bot's reviews list as left out by
     the repository's path filters (``path_filtered``), and none lists as read.
 
     Every action, matched or not, is left out when the bot completed no review on the PR
     (``completed_no_review``: it posted only notices, which GH Archive discovery admits): no code
-    of the PR was reviewed. With no action left the PR has no recall.
+    of the PR was reviewed. With no action left the PR has no recall. This needs the whole
+    conversation history (comments read, no edit missing), for any bot: a review in a comment or
+    revision that was not read would otherwise read as none.
     """
-    if not (comments_read and edits_complete) and record_in_issue_comments(chatbot_username):
+    history_complete = comments_read and edits_complete
+    if not history_complete and (
+        record_in_issue_comments(chatbot_username) or reviews_in_issue_comments(chatbot_username)
+    ):
         return set()
-    if actions and completed_no_review(events, commits, chatbot_username):
+    # A review may be in a comment or revision that was not read: no bot is found to have completed
+    # no review without its whole conversation history.
+    if actions and history_complete and completed_no_review(events, commits, chatbot_username):
         notices = sorted({n.reason for n in find_notices(events, chatbot_username)})
         why = "the bot completed no review on the PR"
         if notices:

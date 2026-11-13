@@ -345,7 +345,13 @@ def reviews_in_issue_comments(chatbot_username: str) -> bool:
 
 def later_comment_review(events: list[dict], chatbot_username: str) -> bool:
     """Whether a bot that posts reviews as conversation comments has a conversation comment, or a
-    revision of one, after its first review: a review it cannot place, so the PR leaves no fix out."""
+    revision of one, after its first review: a review it cannot place, so the PR leaves no fix out.
+
+    A comment's current body was last written at its ``updated_at``, not its creation time: Qodo
+    re-reviews by editing its comment, and the revision matching the current body is not among the
+    revisions (``_with_comment_revisions`` leaves it out as the current body's duplicate), so the
+    edit shows only there. The earliest event still counts from its creation time.
+    """
     if not reviews_in_issue_comments(chatbot_username):
         return False
     mine = [e for e in events if same_github_actor(e.get("actor"), chatbot_username)]
@@ -355,7 +361,11 @@ def later_comment_review(events: list[dict], chatbot_username: str) -> bool:
     if not times:
         return False
     first = min(times)
-    return any(e.get("event_type") == "issue_comment" and (e.get("timestamp") or "") > first for e in mine)
+    return any(
+        e.get("event_type") == "issue_comment"
+        and max(e.get("timestamp") or "", (e.get("data") or {}).get("updated_at") or "") > first
+        for e in mine
+    )
 
 
 def record_in_issue_comments(chatbot_username: str) -> bool:

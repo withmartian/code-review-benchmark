@@ -797,3 +797,59 @@ async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out(
     row["assembled"] = json.dumps(assembled)
     assert await analyze_single_pr(llm, repo, row, BOT, "model")
     assert repo.stored["recall"] == 0.5
+
+
+async def test_a_qodo_re_review_shown_only_by_the_current_body_keeps_every_fix() -> None:
+    # Qodo re-reviewed after c by editing its persistent comment. The latest revision is exactly the
+    # fetched current body, so it is left out of the revisions as its duplicate; the edit shows only
+    # in the comment's updated_at, and the review after c cannot be placed: nothing is left out.
+    qodo = "qodo-code-review[bot]"
+    row = json.loads(json.dumps(_pr_row()).replace(BOT, qodo))
+    body = "Code Review by Qodo\n\nexporter.py: path."
+    comment = {"id": 7, "author": qodo, "body": body, "created_at": "2026-07-01T09:00:00Z"}
+    row["issue_comments"] = json.dumps([{**comment, "updated_at": "2026-07-01T09:00:00Z"}])
+    repo = FakeRepo()
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
+    assert repo.stored["recall"] == 1.0  # never edited: the exporter fix is left out
+
+    row["issue_comments"] = json.dumps([{**comment, "updated_at": "2026-07-01T14:30:00Z"}])
+    edits = [{"id": 7, "author": qodo, "revisions": [{"edited_at": "2026-07-01T14:30:00Z", "body": body}]}]
+    row["issue_comment_edits"] = json.dumps(edits)
+    assert await analyze_single_pr(FakeLLM(), repo, row, qodo, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
+async def test_no_review_needs_the_whole_conversation_history() -> None:
+    # Qodo's comment reads "reviews paused" now, but an earlier revision of it has no text left on
+    # GitHub and may hold a review: the PR is not taken as never reviewed, and no fix is left out.
+    qodo = "qodo-code-review[bot]"
+    row = _notice_only_row(qodo)
+    pause = "### Qodo reviews are paused for this user.\n\nTroubleshooting steps vary by plan."
+    row["issue_comments"] = json.dumps(
+        [{"id": 7, "author": qodo, "body": pause, "created_at": "2026-07-01T09:00:00Z", "updated_at": None}]
+    )
+    repo = FakeRepo()
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
+    assert repo.stored["recall"] is None  # every revision read: no review, every fix left out
+
+    edits = [{"id": 7, "author": qodo, "revisions": [], "unavailable_edits": ["2026-07-01T13:00:00Z"]}]
+    row["issue_comment_edits"] = json.dumps(edits)
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # The same with the comments never read. A bot without a record or comment reviews is then not
+    # taken as never reviewed either: its fixes are judged line by line as before.
+    row.pop("issue_comment_edits")
+    row["issue_comments"] = None
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
+    assert repo.stored["recall"] == 0.5
+    cubic = "cubic-dev-ai[bot]"
+    other = json.loads(json.dumps(row).replace(qodo, cubic))
+    assert await analyze_single_pr(FakeLLM(), repo, other, cubic, "model")
+    assert repo.stored["recall"] is not None
+    assert not any(
+        a.get("excluded_from_recall", "").startswith("the bot completed no review")
+        for a in repo.stored["human_actions"]
+    )

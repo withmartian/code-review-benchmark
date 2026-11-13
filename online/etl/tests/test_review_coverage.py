@@ -8,6 +8,7 @@ from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
+from pipeline.review_coverage import later_comment_review
 from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviewed_before
@@ -1086,3 +1087,15 @@ def test_the_codex_review_summary_records_a_completed_review() -> None:
     running = table('🔄 **Running** since <relative-time datetime="2026-10-07T21:45:00Z">x</relative-time>')
     assert find_review_records([issue_comment(running, actor=CODEX)], COMMITS, CODEX) == []
     assert completed_no_review([issue_comment(running, actor=CODEX)], COMMITS, CODEX)
+
+
+def test_a_comment_edited_after_the_first_review_is_a_later_comment_review() -> None:
+    qodo = "qodo-code-review[bot]"
+    comment = issue_comment("Code Review by Qodo", ts="2026-07-01T09:00:00Z", actor=qodo)
+    first = review(A, ts="2026-07-01T10:00:00Z", actor=qodo)
+    assert not later_comment_review([comment, first], qodo)
+    edited = issue_comment("Code Review by Qodo", ts="2026-07-01T09:00:00Z", actor=qodo, updated="2026-07-01T11:00:00Z")
+    assert later_comment_review([edited, first], qodo)
+    # The earliest event counts from its creation time: an edit of the only comment is after it.
+    assert later_comment_review([edited], qodo)
+    assert not later_comment_review([comment], qodo)

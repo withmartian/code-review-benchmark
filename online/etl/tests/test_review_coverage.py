@@ -784,6 +784,41 @@ def test_a_rename_onto_a_reused_path_is_not_traced_across() -> None:
     )
 
 
+def test_a_copy_whose_original_a_later_commit_removes_is_a_move() -> None:
+    # A reviewed a helper in a.py; B, unreviewed, copies it into b.py; C, or the fix D itself, then
+    # deletes the original. B's lines are the reviewed helper moved in two steps.
+    helper = '+def quote(s):\n+    s = s.replace("\'", "\'\'")\n+    return "\'" + s + "\'"'
+    remove = {"filename": "a.py", "status": "removed", "patch": "@@ -1,3 +0,0 @@\n" + helper.replace("+", "-")}
+    fix = '@@ -1,3 +1,3 @@\n def quote(s):\n-    s = s.replace("\'", "\'\'")\n+    s = s.replace("\'", "\'\\\\\'\'")\n     return "\'" + s + "\'"'
+    a_reviewed = [ReviewRecord(-1, 0, "record")]
+    for deleting in (C, D):
+        details = _details(
+            (A, "a.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+            (B, "b.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+            (D, "b.py", "modified", fix),
+        )
+        details[deleting]["files"].append(remove)
+
+        origin, reason, _ = fix_code_origin(_action(D, "b.py"), COMMITS, details, a_reviewed, 0)
+
+        assert origin == "unknown", deleting[:1]
+        assert reason.startswith(f"commit {'b' * 12} added in b.py a copy of code commit {deleting[:12]} then removed")
+
+    # Without the deletion B's lines are a copy, new code; the fix's own removal of the line it
+    # changes is not taken for a deletion of the original.
+    details = _details(
+        (A, "a.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+        (B, "b.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+        (D, "b.py", "modified", fix),
+    )
+    assert fix_code_origin(_action(D, "b.py"), COMMITS, details, a_reviewed, 0)[0] == "unreviewed"
+
+    # A later deletion whose patch cannot be read could be of the original: the fix is kept.
+    details[C]["files"].append({"filename": "a.py", "status": "removed", "patch": "", "deletions": 3})
+    origin, reason, _ = fix_code_origin(_action(D, "b.py"), COMMITS, details, a_reviewed, 0)
+    assert (origin, reason[:48]) == ("unknown", f"commit {'c' * 12} removed lines whose patch is")
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

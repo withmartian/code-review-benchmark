@@ -607,26 +607,38 @@ def _span_keys(run: list[str], at: int | None = None) -> set[str]:
     return keys
 
 
-def _runs(h: _Hunk, kind: str) -> list[list[str]]:
-    """The texts of each run of consecutive lines of one kind ("-" or "+") in a hunk."""
+def _runs(h: _Hunk, kind: str, skip: frozenset[int] = frozenset()) -> list[list[str]]:
+    """The texts of each run of consecutive lines of one kind ("-" or "+") in a hunk.
+
+    A removed line whose number before the change is in ``skip`` is left out and ends its run.
+    """
     out: list[list[str]] = []
     run: list[str] = []
+    old = h.old_start
     for k, text in h.lines:
-        if k == kind:
+        if k == kind and not (k == "-" and old in skip):
             run.append(text)
-            continue
-        if run:
-            out.append(run)
-        run = []
+        else:
+            if run:
+                out.append(run)
+            run = []
+        if k != "+":
+            old += 1
     if run:
         out.append(run)
     return out
 
 
-def _removed_keys(detail: dict) -> tuple[set[str], bool]:
+ALL_LINES: frozenset[int] = frozenset({-1})  # a ``skip`` that leaves out the whole of ``skip_path``
+
+
+def _removed_keys(
+    detail: dict, skip_path: str | None = None, skip: frozenset[int] = frozenset()
+) -> tuple[set[str], bool]:
     """``_span_keys`` of every run of removed lines a commit's patches hold, in any file, and whether
     they are all of them: False when a file the commit removed lines from has no patch, or one whose
-    hunks do not add up (GitHub leaves out the patch of a large diff)."""
+    hunks do not add up (GitHub leaves out the patch of a large diff). In file ``skip_path``, the
+    removed lines numbered in ``skip`` (before the change) are left out."""
     keys: set[str] = set()
     complete = True
     for f in detail.get("files") or []:
@@ -635,8 +647,11 @@ def _removed_keys(detail: dict) -> tuple[set[str], bool]:
             if f.get("deletions") or (f.get("patch") and f.get("deletions") is None):
                 complete = False
             continue
+        lines = skip if f.get("filename") == skip_path else frozenset()
+        if lines is ALL_LINES:
+            continue
         for h in hunks:
-            for run in _runs(h, "-"):
+            for run in _runs(h, "-", lines):
                 keys |= _span_keys(run)
     return keys, complete
 
@@ -788,9 +803,16 @@ def fix_code_origin(
 
     for line, text in [*changed, *beside]:
         wrote: list[int] | None = []
+        # Where this line stood, in the file, when each later commit removed it as it edited it:
+        # those removals are of the line itself, not of code it copies. In the fix commit every
+        # removal in the file is the fix's own change (a copy of a line the fix also rewrites is not a
+        # move), so only its other files count.
+        own: dict[int, frozenset[int]] = {fix: ALL_LINES}
         for i, hunks in reversed(history):
             at, added_text = line, text
             kind, line, text = _trace(hunks, line, text)
+            if kind == "edited":
+                own[i] = frozenset({line})
             if kind == "mismatch":
                 return "unknown", f"a changed line is not where commit {commits[i]['sha'][:12]} puts it", ()
             # Before a rename the file had another name, which the stored details do not keep; the
@@ -820,9 +842,33 @@ def fix_code_origin(
                 restored = next(
                     (k for k in range(first_reviewed + 1, i) if _added_keys(hunks, at) & keys_removed(k)[0]), None
                 )
+                # A line this commit added as a copy of code a later commit, up to the fix, removed
+                # (a move done as copy, then delete) is moved code too. The line's own earlier texts,
+                # which those commits removed as they edited it, are not a copy.
+                copied = None
+                if kind == "added":
+                    added_keys = _added_keys(hunks, at)
+                    copied = next(
+                        (
+                            k
+                            for k in range(i + 1, fix + 1)
+                            if added_keys
+                            & _removed_keys(details_by_sha[commits[k]["sha"]], path, own.get(k, frozenset()))[0]
+                        ),
+                        None,
+                    )
+                if copied is not None:
+                    return (
+                        "unknown",
+                        f"commit {commits[i]['sha'][:12]} added in {path} a copy of code commit "
+                        f"{commits[copied]['sha'][:12]} then removed, so where a line the fix reads was first written "
+                        "is not followed",
+                        (),
+                    )
                 # Where a commit's removed lines are not all readable, a move or a restoration cannot be
                 # ruled out.
-                partial = next((k for k in range(first_reviewed + 1, i + 1) if not keys_removed(k)[1]), None)
+                last = fix if kind == "added" else i
+                partial = next((k for k in range(first_reviewed + 1, last + 1) if not keys_removed(k)[1]), None)
                 if restored is None and partial is not None:
                     return unreadable(partial)
                 if restored is not None:

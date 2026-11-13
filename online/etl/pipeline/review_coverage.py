@@ -1300,7 +1300,9 @@ def _origin_in_file(
             # edit is followed to its similar predecessor; an edit whose predecessor is the same text
             # (whitespace aside) is that line, not a move.
             moved = kind == "added" or (kind == "edited" and _ws(text) != _ws(added_text))
-            if moved and _added_keys(hunks, at) & keys_removed(i)[0]:
+            # Computed once per traced line and commit, for the move, restore and copy checks.
+            added_keys = _added_keys(hunks, at) if moved else set()
+            if moved and added_keys & keys_removed(i)[0]:
                 return (
                     "unknown",
                     f"commit {commits[i]['sha'][:12]} moved or re-wrapped a line the fix reads in {path} from "
@@ -1311,15 +1313,12 @@ def _origin_in_file(
                 # A line an earlier traced commit removed and this one put back (a revert, or a move whose
                 # removal and addition are in different commits) is restored code, not new code, also
                 # when it lands in place of a similar line.
-                restored = next(
-                    (k for k in range(first_reviewed + 1, i) if _added_keys(hunks, at) & keys_removed(k)[0]), None
-                )
+                restored = next((k for k in range(first_reviewed + 1, i) if added_keys & keys_removed(k)[0]), None)
                 # A line this commit added as a copy of code a later commit, up to the fix, removed
                 # (a move done as copy, then delete) is moved code too. The line's own earlier texts,
                 # which those commits removed as they edited it, are not a copy.
                 copied = None
                 if kind == "added":
-                    added_keys = _added_keys(hunks, at)
                     copied = next(
                         (
                             k

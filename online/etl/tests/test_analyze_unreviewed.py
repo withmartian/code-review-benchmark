@@ -281,7 +281,7 @@ async def test_a_review_that_posted_nothing_counts_through_the_summary_record() 
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
 
-async def test_comments_never_read_keep_every_fix_only_for_a_bot_with_a_record_in_comments() -> None:
+async def test_comments_never_read_keep_every_fix() -> None:
     # The rate-limit case leaves the exporter fix out once the comments were read; with them never
     # read it is kept for CodeRabbit.
     row = _pr_row()
@@ -303,16 +303,22 @@ async def test_comments_never_read_keep_every_fix_only_for_a_bot_with_a_record_i
     assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
     assert repo.stored["recall"] == 0.5
 
-    # A bot without a record (its reviews are its posted reviews) is read the same either way. The
-    # fixture's conversation comments are CodeRabbit's, so they are dropped for this bot: a later
-    # conversation comment of a bot in no table would be an unplaceable review.
+    # A bot in none of the tables (cubic, Gemini) may post a later review as a conversation comment,
+    # which is unplaceable: with its comments read and none there, the exporter fix is left out; with
+    # them never read, it is kept. The fixture's conversation comments are CodeRabbit's, so they are
+    # dropped for this bot.
     cubic = "cubic-dev-ai[bot]"
     other = json.loads(json.dumps(row).replace(BOT, cubic))
     assembled = json.loads(other["assembled"])
     assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "issue_comment"]
     other["assembled"] = json.dumps(assembled)
-    assert await analyze_single_pr(FakeLLM(), repo, other, cubic, "model")
+    other["issue_comments"] = json.dumps([])
+    assert await analyze_single_pr(FakeLLM(), repo, dict(other), cubic, "model")
     assert repo.stored["recall"] == 1.0
+    other["issue_comments"] = None
+    assert await analyze_single_pr(FakeLLM(), repo, other, cubic, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
 
 SUMMARY = "<!-- This is an auto-generated comment: summarize by coderabbit.ai -->\nWalkthrough"

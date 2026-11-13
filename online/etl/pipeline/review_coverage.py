@@ -387,8 +387,10 @@ def _unlisted_comment_reviewer(chatbot_username: str) -> bool:
 
 
 def reviews_in_issue_comments(chatbot_username: str) -> bool:
-    """Whether the bot posts its reviews as PR conversation comments (``REVIEWS_IN_ISSUE_COMMENTS``)."""
-    return _listed_comment_reviewer(chatbot_username)
+    """Whether the bot may post its reviews as PR conversation comments: listed in
+    ``REVIEWS_IN_ISSUE_COMMENTS`` (Claude, Qodo), or in none of the tables (``_unlisted_comment_reviewer``:
+    cubic, Gemini, Copilot, ...)."""
+    return _listed_comment_reviewer(chatbot_username) or _unlisted_comment_reviewer(chatbot_username)
 
 
 def later_comment_review(events: list[dict], chatbot_username: str) -> bool:
@@ -402,9 +404,9 @@ def later_comment_review(events: list[dict], chatbot_username: str) -> bool:
     revisions (``_with_comment_revisions`` leaves it out as the current body's duplicate), so the
     edit shows only there. The earliest event still counts from its creation time.
     """
-    listed = _listed_comment_reviewer(chatbot_username)
-    if not listed and not _unlisted_comment_reviewer(chatbot_username):
+    if not reviews_in_issue_comments(chatbot_username):
         return False
+    listed = _listed_comment_reviewer(chatbot_username)
     mine = [e for e in events if same_github_actor(e.get("actor"), chatbot_username)]
     times = [
         e.get("timestamp") or "" for e in mine if e.get("event_type") in ("review", "review_comment", "issue_comment")

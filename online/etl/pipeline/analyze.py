@@ -454,8 +454,8 @@ def _exclude_unreviewed_actions(
     before they were, or one whose pull request was gone when they were read). For a bot that
     writes its record in those comments (``record_in_issue_comments``), its reviews cannot all be
     known then, and a review recorded only there would read as a push it never reviewed, so no
-    action is left out. The same holds for a bot that posts its reviews as conversation comments
-    (``reviews_in_issue_comments``), whose reviews are those comments.
+    action is left out. The same holds for a bot that posts, or may post, its reviews as conversation
+    comments (``reviews_in_issue_comments``: Claude, Qodo and every bot in none of the tables).
 
     No action is left out either for a bot that posts its reviews as conversation comments (Claude,
     Qodo, and any bot in none of the tables: ``later_comment_review``) when it has a conversation

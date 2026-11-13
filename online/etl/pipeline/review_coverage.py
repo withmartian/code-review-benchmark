@@ -377,6 +377,9 @@ def find_review_records(events: list[dict], commits: list[dict], chatbot_usernam
     return sorted(out, key=lambda r: (r.head, r.start, r.source))
 
 
+NO_COMMIT = "(no commit)"  # what rewritten_review_commits lists for a completed review with no commit
+
+
 def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_username: str) -> list[str]:
     """The commits the bot reviewed or named that are no longer in the PR's commit list.
 
@@ -385,7 +388,9 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
     code was. The commits checked are the commits of the completed reviews and inline comments
     (``_completed_reviews``), each record's head, and each notice's last reviewed commit when the
     notice names it as such ("Last reviewed commit"). The start X of a range "between X and Y" is
-    not checked: for a first review it is the PR's base, which is not one of its commits.
+    not checked: for a first review it is the PR's base, which is not one of its commits. A completed
+    review with no commit (GitHub nulls it once the reviewed commit is gone) is listed as
+    ``NO_COMMIT``.
     """
     named: list[str | None] = []
     patterns = [p for p in RECORD_PATTERNS if same_github_actor(p.bot, chatbot_username)]
@@ -395,7 +400,9 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
         data = e.get("data") or {}
         etype = e.get("event_type")
         if etype == "review" and _is_completed_review(data, chatbot_username):
-            named.append(data.get("commit_id"))
+            # GitHub nulls a review's commit once the reviewed commit object is gone (a force-push):
+            # the review ran but cannot be placed.
+            named.append(data.get("commit_id") or NO_COMMIT)
         elif etype == "review_comment" and not data.get("in_reply_to_id"):
             named.append(data.get("original_commit_id") or data.get("commit_id"))
         if etype in ("review", "issue_comment"):
@@ -405,7 +412,7 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
     for n in find_notices(events, chatbot_username):
         if n.reviewed_sha and not re.search(rf"between {n.reviewed_sha}\b", n.text):
             named.append(n.reviewed_sha)
-    return sorted({s for s in named if s and len(s) >= 7 and sha_index(commits, s) is None})
+    return sorted({s for s in named if s == NO_COMMIT or (s and len(s) >= 7 and sha_index(commits, s) is None)})
 
 
 def reviewed_before(commit: int, fix: int, records: list[ReviewRecord]) -> bool:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pipeline.review_coverage import NO_COMMIT
 from pipeline.review_coverage import ReviewRecord
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
@@ -254,6 +255,12 @@ def test_a_submitted_review_with_an_empty_body_is_a_completed_review() -> None:
     assert [r.source for r in find_review_records([cr_limit], COMMITS, CR)] == ["notice"]
     assert rewritten_review_commits([submitted("e" * 40, "APPROVED")], COMMITS, cubic) == ["e" * 40]
     assert rewritten_review_commits([submitted("e" * 40, "DISMISSED")], COMMITS, cubic) == []
+    # GitHub nulls the commit of a review once the reviewed commit is gone: the review cannot be placed.
+    for gone in (None, ""):
+        assert rewritten_review_commits([submitted(gone, "COMMENTED", "All issues addressed.")], COMMITS, cubic) == [
+            NO_COMMIT
+        ]
+    assert rewritten_review_commits([submitted(None, "COMMENTED")], COMMITS, cubic) == []  # a thread reply
     # An empty commented review is a reply posted in a review thread, not a review of its commit.
     assert _spans(find_review_records([submitted(C, "COMMENTED")], COMMITS, cubic)) == []
     assert _spans(find_review_records([submitted(C, "CHANGES_REQUESTED")], COMMITS, cubic)) == [(-1, 2, "review")]

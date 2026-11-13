@@ -1132,7 +1132,7 @@ def _removed_keys(
 # The removed runs of one file's patch, shared by every action, file and traced line of the
 # analyses in a process. Bounded: cleared when it grows past _REMOVED_RUNS_CACHE_SIZE patches.
 _REMOVED_RUNS_CACHE: dict[tuple[str, frozenset[int]], _RemovedRuns] = {}
-_REMOVED_RUNS_CACHE_SIZE = 512
+_REMOVED_RUNS_CACHE_SIZE = 64
 
 
 def _removed_runs(patch: str, hunks: list[_Hunk], skip: frozenset[int]) -> _RemovedRuns:

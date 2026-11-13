@@ -674,6 +674,34 @@ def test_an_unreadable_removal_in_another_file_keeps_the_fix() -> None:
     )
 
 
+def test_each_side_of_an_insertion_is_judged_on_its_own() -> None:
+    # A reviewed load(); C, unreviewed, appended save(). D inserts a guard right after load()'s three
+    # closing braces and edits save(). The side before the guard holds only braces, which close
+    # reviewed code, so the guard's place is not known to be unreviewed code: the fix is kept.
+    load_a = "@@ -0,0 +1,7 @@\n+function load() {\n+  if (x) {\n+    for (;;) {\n+      read();\n+    }\n+  }\n+}"
+    save_c = "@@ -7 +7,4 @@\n }\n+function save() {\n+  write();\n+}"
+    fix_d = (
+        "@@ -5,6 +5,7 @@\n     }\n   }\n }\n+if (!ready) throw new Error('not ready');\n function save() {\n"
+        "-  write();\n+  write(data);\n }"
+    )
+    details = _details((A, "s.js", "added", load_a), (C, "s.js", "modified", save_c), (D, "s.js", "modified", fix_d))
+
+    assert _origin(_action(D, "s.js"), details) == (
+        "unknown",
+        "the fix also changes lines in s.js with no code line around them",
+    )
+
+    # When the hunk reaches load()'s own code, that nearest code line stands in for the braces.
+    fix_d = (
+        "@@ -4,7 +4,8 @@\n       read();\n     }\n   }\n }\n+if (!ready) throw new Error('not ready');\n"
+        " function save() {\n-  write();\n+  write(data);\n }"
+    )
+    details = _details((A, "s.js", "added", load_a), (C, "s.js", "modified", save_c), (D, "s.js", "modified", fix_d))
+    origin, reason = _origin(_action(D, "s.js"), details)
+    assert origin == "unknown"
+    assert "adds lines among code a review read (1 of the 2 lines" in reason
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

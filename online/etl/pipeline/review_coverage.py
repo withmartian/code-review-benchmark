@@ -473,15 +473,21 @@ def _removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
     return [(n, t) for h in hunks for n, t in _removed_all(h) if _CODE_RE.search(t)]
 
 
+_DIFF_CONTEXT = 3  # the unchanged lines GitHub's patches carry around each change
+
+
 def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
     """Each change block of a hunk (a run of removed and added lines between unchanged ones).
 
     For each block: whether it is judged by the code where it is, and that code, as (line number
     before the change, text). A block that changes no existing code line (it adds lines, removes
-    only punctuation, or both) is, by the unchanged lines that carry code in the runs of unchanged
-    lines just before and just after it, or, when those runs carry none, the nearest unchanged code
-    line on each side within the hunk: a punctuation line it removes (a stray `;`) belongs to that
-    code. A block that removes code is judged by the code lines it removes alone, whatever it adds.
+    only punctuation, or both) is, on each side on its own, by the unchanged lines that carry code
+    in the run of unchanged lines next to it, or, when that run carries none (only closing braces),
+    the nearest unchanged code line on that side within the hunk: a punctuation line it removes (a
+    stray `;`) belongs to that code. When one side has no code line in the hunk, the code is empty
+    and the fix's origin is unknown, unless the file itself has nothing on that side (the hunk
+    starts at its first line, or ends with fewer unchanged lines than a diff's context, so at its
+    last). A block that removes code is judged by the code lines it removes alone, whatever it adds.
     """
     rows: list[tuple[str, int, str]] = []
     old = h.old_start
@@ -510,8 +516,16 @@ def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
         if any(k == "-" and _CODE_RE.search(t) for k, _, t in rows[i:j]):
             out.append((False, []))
         else:
-            around = code(rows[a:i]) + code(rows[j:b]) or code(rows[:i])[-1:] + code(rows[j:])[:1]
-            out.append((True, around))
+            # Each side on its own: its unchanged run, extended to the nearest code line in the hunk
+            # when the run holds only punctuation (closing braces). A side with no code line in the
+            # hunk leaves the block's place unknown, unless the file has nothing on that side: the
+            # hunk starts at the first line, or ends with fewer unchanged lines than a diff's context.
+            before = code(rows[a:i]) or code(rows[:i])[-1:]
+            after = code(rows[j:b]) or code(rows[j:])[:1]
+            file_start = not before and h.old_start <= 1 and i - a == i
+            file_end = not after and b == len(rows) and b - j < _DIFF_CONTEXT
+            known = (before or file_start) and (after or file_end) and (before or after)
+            out.append((True, before + after if known else []))
         i = j
     return out
 

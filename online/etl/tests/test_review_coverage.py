@@ -300,12 +300,12 @@ def test_every_kind_of_named_commit_is_checked_against_the_commit_list() -> None
 
     assert rewritten_review_commits([inline, reply], COMMITS, CR) == [gone]
     # An inline comment whose commit the answer gave as null cannot be placed; a thread reply with
-    # none is not a review. A comment read without asking for its commit (a review thread stored
-    # before the threads query asked for it) says nothing either way.
+    # none is not a review. Nor can one read without its commit (a review thread stored before the
+    # threads query asked for it): its review ran at a commit that cannot be told.
     null_commit = {**inline, "data": {"body": "Finding.", "original_commit_id": None}}
     assert rewritten_review_commits([null_commit], COMMITS, CR) == [NO_COMMIT]
     unasked = {**inline, "data": {"body": "Finding.", "source": "api"}}
-    assert rewritten_review_commits([unasked], COMMITS, CR) == []
+    assert rewritten_review_commits([unasked], COMMITS, CR) == [NO_COMMIT]
     assert rewritten_review_commits([{**reply, "data": {"in_reply_to_id": 1}}], COMMITS, CR) == []
     assert rewritten_review_commits([issue_comment(summary(paused(gone, D)))], COMMITS, CR) == [gone]
     # The start of a range is the PR's base on a first review, never one of its commits: not checked.
@@ -1007,25 +1007,35 @@ def review_info(ignored: list[str] = (), selected: list[str] = ()) -> str:
 
 
 def test_a_file_every_review_left_out_by_path_filters() -> None:
-    # COMMITS is A, B, C, D; the fix is in D (index 3).
-    ignored_a = review(A, body=f"Finding.\n{review_info(ignored=['Cargo.lock'], selected=['src/main.rs'])}")
-    assert path_filtered("Cargo.lock", 3, [ignored_a], COMMITS, CR)
-    assert path_filtered("./Cargo.lock", 3, [ignored_a], COMMITS, CR)
-    assert not path_filtered("src/main.rs", 3, [ignored_a], COMMITS, CR)
-    # A review that does not list the file says nothing; one that read it once means it was read.
+    ignored_d = review(D, body=f"Finding.\n{review_info(ignored=['Cargo.lock'], selected=['src/main.rs'])}")
+    assert path_filtered("Cargo.lock", [ignored_d], CR)
+    assert path_filtered("./Cargo.lock", [ignored_d], CR)
+    assert not path_filtered("src/main.rs", [ignored_d], CR)
+    # A review that does not list the file says nothing; one that read it, at any time, means it was
+    # read or the configuration changed.
     other_b = review(B, body=review_info(selected=["src/lib.rs"]))
-    assert path_filtered("Cargo.lock", 3, [ignored_a, other_b], COMMITS, CR)
+    assert path_filtered("Cargo.lock", [other_b, ignored_d], CR)
     read_b = review(B, body=review_info(selected=["Cargo.lock"]))
-    assert not path_filtered("Cargo.lock", 3, [ignored_a, read_b], COMMITS, CR)
-    # Only reviews of commits before the fix count.
-    assert not path_filtered("Cargo.lock", 0, [ignored_a], COMMITS, CR)
-    assert path_filtered(
-        "Cargo.lock", 3, [ignored_a, review(D, body=review_info(selected=["Cargo.lock"]))], COMMITS, CR
-    )
+    assert not path_filtered("Cargo.lock", [read_b, ignored_d], CR)
+    assert not path_filtered("Cargo.lock", [ignored_d, review(D, body=review_info(selected=["Cargo.lock"]))], CR)
     # The list as the first nested block of "Review info", with no other list: not swallowed.
     only = review(A, body=f"<details>\n<summary>Review info</summary>\n\n{review_info(ignored=['go.sum'])}")
-    assert path_filtered("go.sum", 3, [only], COMMITS, CR)
+    assert path_filtered("go.sum", [only], CR)
     # Another bot's review in CodeRabbit's format is not read: no other bot writes such a list.
-    assert not path_filtered(
-        "Cargo.lock", 3, [{**ignored_a, "actor": "greptile-apps[bot]"}], COMMITS, "greptile-apps[bot]"
-    )
+    assert not path_filtered("Cargo.lock", [{**ignored_d, "actor": "greptile-apps[bot]"}], "greptile-apps[bot]")
+
+
+def test_the_codex_review_summary_records_a_completed_review() -> None:
+    def table(status: str) -> str:
+        return (
+            "<!-- codex-pull-request-review-summary -->\n\n## Codex Review Summary\n\n"
+            "| Review | Status | Commit | Review trigger |\n| --- | --- | --- | --- |\n"
+            f"| 📝 **Code Review** | {status} | `{B[:7]}` | New commits |\n"
+        )
+
+    done = table('✅ **Completed** <relative-time datetime="2026-10-07T22:21:06Z">2026-10-07</relative-time>')
+    assert _spans(find_review_records([issue_comment(done, actor=CODEX)], COMMITS, CODEX)) == [(-1, 1, "record")]
+    assert not completed_no_review([issue_comment(done, actor=CODEX)], COMMITS, CODEX)
+    running = table('🔄 **Running** since <relative-time datetime="2026-10-07T21:45:00Z">x</relative-time>')
+    assert find_review_records([issue_comment(running, actor=CODEX)], COMMITS, CODEX) == []
+    assert completed_no_review([issue_comment(running, actor=CODEX)], COMMITS, CODEX)

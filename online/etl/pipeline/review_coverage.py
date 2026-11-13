@@ -322,6 +322,14 @@ RECORD_PATTERNS: tuple[RecordPattern, ...] = (
         bot="chatgpt-codex-connector[bot]",
         pattern=re.compile(r"\*\*Reviewed commit:\*\* `(?P<head>[0-9a-f]{7,40})`"),
     ),
+    # The "Codex Review Summary" status comment, rewritten on each review: a completed review's row,
+    # "| 📝 **Code Review** | ✅ **Completed** <time> | `21c5be8` | New commits |". A review that
+    # found nothing posts no review, and the row is its only record. A running row is not one.
+    RecordPattern(
+        bot="chatgpt-codex-connector[bot]",
+        pattern=re.compile(r"\| 📝 \*\*Code Review\*\* \| ✅ \*\*Completed\*\*[^|\n]*\| `(?P<head>[0-9a-f]{7,40})`"),
+        in_issue_comments=True,
+    ),
 )
 
 
@@ -498,13 +506,16 @@ def _norm_path(path: str) -> str:
     return path.strip().removeprefix("./").lstrip("/")
 
 
-def path_filtered(path: str, fix: int, events: list[dict], commits: list[dict], chatbot_username: str) -> bool:
-    """Whether every review of the bot on a commit before the fix that lists the file lists it as
-    left out by the repository's path filters (``FILE_SCOPE_PATTERNS``), and at least one does.
+def path_filtered(path: str, events: list[dict], chatbot_username: str) -> bool:
+    """Whether every review of the bot that lists the file lists it as left out by the repository's
+    path filters (``FILE_SCOPE_PATTERNS``), and at least one does.
 
-    A path filter is the repository's configuration, so the bot never read the file. A review that
-    lists the file among those it read, before the fix, means it was read once: the fix counts. A
-    review that does not list the file (an incremental review of other files) says nothing.
+    A path filter is the repository's configuration, so the bot never read the file. A review lists
+    only the files that changed in the range it read, so the review that shows the filter is often
+    the review of the fix itself: the filter applied before it too. A review that lists the file
+    among those it read, at any time, means the file was read, or the configuration changed: the
+    fix counts. A review that does not list the file (an incremental review of other files) says
+    nothing.
     """
     patterns = [p for p in FILE_SCOPE_PATTERNS if same_github_actor(p.bot, chatbot_username)]
     target = _norm_path(path)
@@ -514,11 +525,7 @@ def path_filtered(path: str, fix: int, events: list[dict], commits: list[dict], 
     for e in events:
         if e.get("event_type") != "review" or not same_github_actor(e.get("actor"), chatbot_username):
             continue
-        data = e.get("data") or {}
-        i = sha_index(commits, data.get("commit_id"))
-        if i is None or i >= fix:
-            continue
-        for m in _DETAILS_RE.finditer(data.get("body") or ""):
+        for m in _DETAILS_RE.finditer((e.get("data") or {}).get("body") or ""):
             listed = {_norm_path(f) for f in _FILE_ITEM_RE.findall(m.group("body"))}
             if target not in listed:
                 continue
@@ -557,14 +564,12 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
             # the review ran but cannot be placed. So is a GH Archive review event that no API review
             # filled in (the analysis copies the API's commit onto it by review id).
             named.append(data.get("commit_id") or NO_COMMIT)
-        elif (
-            etype == "review_comment"
-            and not data.get("in_reply_to_id")
-            and ("original_commit_id" in data or "commit_id" in data)
-        ):
+        elif etype == "review_comment" and not data.get("in_reply_to_id"):
             # An inline comment of a review whose commit the answer gave as null (gone after a
-            # force-push) is a review that cannot be placed. One read without asking for its commit
-            # (a review thread stored before the threads query asked) says nothing about it.
+            # force-push) is a review that cannot be placed. So is one read without its commit (a
+            # review thread stored before the threads query asked for it): its review ran at a
+            # commit that cannot be told, and dropping it would drop the review (a Greptile review
+            # has an empty body and is placed by its inline comments alone).
             named.append(data.get("original_commit_id") or data.get("commit_id") or NO_COMMIT)
         if etype in ("review", "issue_comment"):
             body = data.get("body") or ""

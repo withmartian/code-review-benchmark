@@ -676,8 +676,9 @@ async def test_a_review_recorded_only_in_the_edit_history_keeps_the_fix() -> Non
 
 async def test_an_inline_comment_read_from_the_threads_is_placed_by_its_commit() -> None:
     # The Search API path reads inline comments only from the GraphQL threads. Read with its commit,
-    # the comment places its review on a; read before the query asked for the commit, it says nothing
-    # either way. Only a commit the answer gave as null (gone after a force-push) keeps every fix.
+    # the comment places its review on a and the exporter fix is left out. A commit the answer gave
+    # as null (gone after a force-push), or a thread stored before the query asked for the commit,
+    # leaves a review that cannot be placed, so every fix is kept. A reply is not a review.
     def with_inline(extra: dict) -> dict:
         row = _pr_row()
         assembled = json.loads(row["assembled"])
@@ -690,8 +691,8 @@ async def test_an_inline_comment_read_from_the_threads_is_placed_by_its_commit()
 
     for extra, recall in (
         ({"original_commit_id": "a" * 40, "in_reply_to_id": None}, 1.0),
-        ({}, 1.0),
-        ({"original_commit_id": None, "in_reply_to_id": 3}, 1.0),  # a reply is not a review
+        ({}, 0.5),
+        ({"original_commit_id": None, "in_reply_to_id": 3}, 1.0),
         ({"original_commit_id": None, "in_reply_to_id": None}, 0.5),
     ):
         repo = FakeRepo()
@@ -759,7 +760,8 @@ async def test_a_pr_with_a_review_or_a_record_of_one_is_not_left_out_whole() -> 
 
 
 async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out() -> None:
-    # d fixes the parser, which the review of b lists as ignored due to path filters: the bot never read it.
+    # d fixes the parser, which the review of d (the fix's own range) lists as ignored due to path
+    # filters, and no review lists as read: the filter applied before the fix too.
     patches = {
         **PATCHES,
         "d": (
@@ -776,7 +778,7 @@ async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out(
         "* `parser.py` is excluded by `!**/parser.py`\n\n</details>"
     )
     assembled = json.loads(row["assembled"])
-    assembled["events"][2]["data"]["body"] += f"\n{filters}"
+    assembled["events"].append(_review("d" * 40, "2026-07-01T15:30:00Z", f"No findings.\n{filters}"))
     row["assembled"] = json.dumps(assembled)
     repo = FakeRepo()
 
@@ -785,6 +787,13 @@ async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out(
     actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
     assert "excluded_from_recall" not in actions["A1"]  # matched
     assert actions["A2"]["excluded_from_recall"] == (
-        "every review of the bot before the fix that lists parser.py lists it as ignored due to path filters"
+        "every review of the bot that lists parser.py lists it as ignored due to path filters"
     )
     assert repo.stored["recall"] == 1.0
+
+    # A review that lists the file as read means it was read: the fix counts.
+    read = "<details>\n<summary>📒 Files selected for processing (1)</summary>\n\n* `parser.py`\n\n</details>"
+    assembled["events"][2]["data"]["body"] += f"\n{read}"
+    row["assembled"] = json.dumps(assembled)
+    assert await analyze_single_pr(llm, repo, row, BOT, "model")
+    assert repo.stored["recall"] == 0.5

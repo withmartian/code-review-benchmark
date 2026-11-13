@@ -20,7 +20,6 @@ from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
-from pipeline.review_coverage import _norm_path
 from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_review_records
@@ -30,6 +29,7 @@ from pipeline.review_coverage import notice_reasons
 from pipeline.review_coverage import other_source_changes_reviewed_code
 from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
+from pipeline.review_coverage import renamed_since
 from pipeline.review_coverage import reviews_in_issue_comments
 from pipeline.review_coverage import rewritten_review_commits
 from pipeline.review_coverage import sha_index
@@ -535,7 +535,7 @@ def _exclude_unreviewed_actions(
             if (
                 fix is not None
                 and path_filtered(a.get("file_path") or "", events, chatbot_username)
-                and not _renamed_since(a.get("file_path") or "", commits, details_by_sha, first, fix)
+                and not renamed_since(a.get("file_path") or "", commits, details_by_sha, first, fix)
                 and other_source_changes_reviewed_code(
                     a, commits, details_by_sha, records, first - 1, events, chatbot_username
                 )
@@ -557,23 +557,6 @@ def _exclude_unreviewed_actions(
         a["unreviewed_commits"] = list(written_in)
     return excluded
 
-
-def _renamed_since(
-    path: str, commits: list[dict], details_by_sha: dict[str, dict], first: int, fix: int | None
-) -> bool:
-    """Whether a commit from ``first`` up to the fix (every later commit when the fix is not in the
-    list) renamed a file to ``path``, or has no details to tell."""
-    end = len(commits) - 1 if fix is None else fix
-    for c in commits[max(first, 0) : end + 1]:
-        detail = details_by_sha.get(c.get("sha", ""))
-        if detail is None:
-            return True
-        if any(
-            _norm_path(f.get("filename") or "") == _norm_path(path) and f.get("status") == "renamed"
-            for f in detail.get("files") or []
-        ):
-            return True
-    return False
 
 
 async def analyze_single_pr(

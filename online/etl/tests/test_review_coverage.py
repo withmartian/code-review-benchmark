@@ -435,6 +435,18 @@ def test_a_fixing_commit_that_also_changes_reviewed_source_is_found() -> None:
         )
         assert other_source_changes_reviewed_code(action, COMMITS, details, records, 0, [], CR) == expected
 
+    # The reviewed parser renamed by D into a path-filtered folder: its filter does not skip it, since
+    # it was read under its old name.
+    renamed = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(';')"
+    details = _details(
+        (A, "parser.py", "added", PARSER_A),
+        (D, "dist/out.js", "modified", built),
+        (D, "hidden/parser.py", "renamed", renamed),
+    )
+    filtered = [review(D, body=review_info(ignored=["dist/out.js", "hidden/parser.py"]))]
+    assert path_filtered("hidden/parser.py", filtered, CR)
+    assert other_source_changes_reviewed_code(action, COMMITS, details, records, 0, filtered, CR) == "hidden/parser.py"
+
 
 def test_a_fix_of_reviewed_lines_is_reviewed() -> None:
     fix = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(';')"

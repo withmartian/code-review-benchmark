@@ -1171,6 +1171,23 @@ def fix_code_origin(
     return origin, reason, shas
 
 
+def renamed_since(path: str, commits: list[dict], details_by_sha: dict[str, dict], first: int, fix: int | None) -> bool:
+    """Whether a commit from ``first`` up to the fix (every later commit when the fix is not in the
+    list) renamed a file to ``path``, or has no details to tell: the file may have been read under
+    its old name, which the stored details do not keep."""
+    end = len(commits) - 1 if fix is None else fix
+    for c in commits[max(first, 0) : end + 1]:
+        detail = details_by_sha.get(c.get("sha", ""))
+        if detail is None:
+            return True
+        if any(
+            _norm_path(f.get("filename") or "") == _norm_path(path) and f.get("status") == "renamed"
+            for f in detail.get("files") or []
+        ):
+            return True
+    return False
+
+
 def other_source_changes_reviewed_code(
     action: dict,
     commits: list[dict],
@@ -1191,7 +1208,11 @@ def other_source_changes_reviewed_code(
         other = f.get("filename")
         if other == action.get("file_path") or not _is_source(other):
             continue
-        if path_filtered(other or "", events, chatbot_username):
+        # A path-filtered file the bot never read is skipped, unless it was renamed since the first
+        # review (read under its old name, perhaps).
+        if path_filtered(other or "", events, chatbot_username) and not renamed_since(
+            other or "", commits, details_by_sha, first_reviewed + 1, fix
+        ):
             continue
         o, _, _ = _origin_in_file(
             {**action, "file_path": other}, commits, details_by_sha, records, first_reviewed, True

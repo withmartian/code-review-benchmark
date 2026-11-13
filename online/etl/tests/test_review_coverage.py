@@ -534,6 +534,43 @@ def test_a_statement_re_wrapped_over_more_than_ten_lines_is_still_a_re_wrap() ->
     assert origin == "unknown", reason
     assert "re-wrapped" in reason
 
+    # The same with another statement added right after the wrapped call, in the same added run.
+    beside = re_wrap + "\n+    log_done()"
+    beside = beside.replace("@@ -1,2 +1,15 @@", "@@ -1,2 +1,16 @@")
+    details[B]["files"] = [{"filename": "calc.py", "status": "modified", "patch": beside}]
+    origin, reason, _ = fix_code_origin(_action(C, "calc.py"), commits, details, [ReviewRecord(-1, 0, "record")], 0)
+    assert origin == "unknown", reason
+
+
+def test_a_light_edit_close_to_two_removed_lines_is_unknown() -> None:
+    # A (reviewed) wrote `result = ...`; B (unreviewed) added a similar `cached = ...` beside it. C
+    # replaces the pair in one block, and the new result line is a light edit of both removed lines:
+    # which one it continues is not known, so the fix in D is kept.
+    result_a = "    result = parse(text, strict=False, mode='fast')"
+    cached_b = "    cached = parse(text, strict=True, mode='slow')"
+    result_c = "    result = parse(text, strict=True, mode='slow', x=1)"
+    details = _details(
+        (A, "p.py", "added", f"@@ -0,0 +1,2 @@\n+def f(text):\n+{result_a}"),
+        (B, "p.py", "modified", f"@@ -1,2 +1,3 @@\n def f(text):\n+{cached_b}\n {result_a}"),
+        (
+            C,
+            "p.py",
+            "modified",
+            f"@@ -1,3 +1,3 @@\n def f(text):\n-{cached_b}\n-{result_a}\n+    cached = None\n+{result_c}",
+        ),
+        (
+            D,
+            "p.py",
+            "modified",
+            f"@@ -1,3 +1,3 @@\n def f(text):\n     cached = None\n-{result_c}\n+    result = parse(text or '', strict=True, mode='slow', x=1)",
+        ),
+    )
+
+    origin, reason, _ = fix_code_origin(_action(D, "p.py"), COMMITS, details, [ReviewRecord(-1, 0, "record")], 0)
+
+    assert origin == "unknown", reason
+    assert "more than one line" in reason
+
 
 def test_a_light_edit_is_matched_within_its_own_change_block() -> None:
     # A (reviewed) wrote f's return; B (unreviewed) added g with a similar return. C edits f's

@@ -934,7 +934,8 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
 
     Returns ("added", 0, "") when the commit wrote it, ("kept", n, text) when it is line n before
     the commit, unchanged, ("edited", n, removed text) when it is a light edit of the removed line n
-    of its change block (``_EDIT_RATIO``), and ("mismatch", 0, "") when the line at that position is not the
+    of its change block (``_EDIT_RATIO``), ("ambiguous", 0, "") when more than one removed line of that
+    block is close enough, and ("mismatch", 0, "") when the line at that position is not the
     line traced.
     """
     offset = 0
@@ -963,10 +964,14 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
                         # Which brace a diff pairs with an older one is arbitrary: an added punctuation
                         # line is the commit's own, never a light edit.
                         return "added", 0, ""
-                    removed = removed_by_block[block]
-                    best = max(removed, key=lambda r: SequenceMatcher(None, r[1], t).ratio(), default=None)
-                    if best is not None and SequenceMatcher(None, best[1], t).ratio() >= _EDIT_RATIO:
-                        return "edited", best[0], best[1]
+                    close = [
+                        r for r in removed_by_block[block] if SequenceMatcher(None, r[1], t).ratio() >= _EDIT_RATIO
+                    ]
+                    if len(close) > 1:
+                        # Two removed lines could each be its predecessor: which one is not known.
+                        return "ambiguous", 0, ""
+                    if close:
+                        return "edited", close[0][0], close[0][1]
                     return "added", 0, ""
                 new += 1
                 if kind == " ":
@@ -976,6 +981,9 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
 
 
 _MOVE_SPAN = 10  # the most consecutive lines a moved or re-wrapped line is compared as one
+_LONG_SPAN = (
+    60  # the most added lines a long re-wrapped statement is matched over (removed side: the window or the run)
+)
 _WS_RE = re.compile(r"\s+")
 _TRAILING_COMMA_RE = re.compile(r",(?=[)\]}]|$)")
 
@@ -1132,7 +1140,17 @@ def _added_keys(hunks: list[_Hunk], line: int) -> set[str]:
                 run = []
             if kind != "-":
                 new += 1
-        return _span_keys(run, at) if at is not None else set()
+        if at is None:
+            return set()
+        keys = _span_keys(run, at)
+        # A statement re-wrapped over more lines than the window, beside other added lines: the spans
+        # longer than the window that hold the line, up to _LONG_SPAN lines, are matched too.
+        for a in range(max(0, at - _LONG_SPAN + 1), at + 1):
+            for b in range(max(at + 1, a + _MOVE_SPAN + 1), min(len(run), a + _LONG_SPAN) + 1):
+                key = _ws("".join(run[a:b]))
+                if _CODE_RE.search(key):
+                    keys.add(key)
+        return keys
     return set()
 
 
@@ -1430,6 +1448,13 @@ def _origin_in_file(
                 own[i] = frozenset({line})
             if kind == "mismatch":
                 return "unknown", f"a changed line is not where commit {commits[i]['sha'][:12]} puts it", ()
+            if kind == "ambiguous":
+                return (
+                    "unknown",
+                    f"a line the fix reads is a light edit of more than one line commit {commits[i]['sha'][:12]} "
+                    f"removed in {path}, so which one it continues is not known",
+                    (),
+                )
             # Before a rename the file had another name, which the stored details do not keep; the
             # path it was renamed to may have held another file earlier.
             if i in renamed and kind != "added":

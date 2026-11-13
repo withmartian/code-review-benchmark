@@ -146,6 +146,17 @@ async def test_a_failed_long_history_read_raises_instead_of_keeping_the_first_pa
         await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7)
 
 
+async def test_a_later_page_of_edits_with_null_nodes_raises() -> None:
+    # The second page answers with its connection but no nodes (a partial answer): read as empty, the
+    # history would end at the first page.
+    bot = _comment("n1", 1, "coderabbitai", "Bot", _edits(("2026-07-01T12:00:00Z", "newest"), next_cursor="e1"))
+    page = {"nodes": [bot], "pageInfo": {"hasNextPage": False, "endCursor": None}}
+    gh = FakeGraphQL([page], {("n1", "e1"): {"nodes": None, "pageInfo": {"hasNextPage": False, "endCursor": None}}})
+
+    with pytest.raises(IncompleteReadError, match="comment 1 stopped after 1 edits"):
+        await _fetch_review_threads(gh, "owner", "repo", 7)
+
+
 @pytest.mark.parametrize("missing", ["null", "absent", "no nodes"])
 async def test_a_bot_comment_whose_first_page_of_edits_is_missing_raises(missing: str) -> None:
     # A partial answer (errors beside data) can leave a comment's userContentEdits null or out. Read as

@@ -380,7 +380,7 @@ async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict]) 
                 COMMENT_EDITS_PAGE_QUERY, {"id": node["id"], "cursor": edits["pageInfo"]["endCursor"]}
             )
             more = ((data or {}).get("node") or {}).get("userContentEdits")
-            if more is None:
+            if not isinstance(more, dict) or more.get("nodes") is None:
                 raise IncompleteReadError(
                     f"edit history of comment {node.get('databaseId')} stopped after "
                     f"{len(edits.get('nodes') or [])} edits"
@@ -451,7 +451,12 @@ async def _fetch_review_threads(
             logger.warning(f"{owner}/{repo}#{pr_number}: the pull request is not there, no threads or comments read")
             return [], None, None
         wanted = [name for name, on in (("reviewThreads", with_threads), ("comments", with_comments)) if on]
-        missing = [name for name in wanted if (pr_data or {}).get(name) is None]
+        # A connection that is null, or whose nodes are null (a partial answer), was not read.
+        missing = [
+            name
+            for name in wanted
+            if not isinstance((pr_data or {}).get(name), dict) or pr_data[name].get("nodes") is None
+        ]
         if missing:
             page = "the first page" if first else "a further page"
             raise IncompleteReadError(

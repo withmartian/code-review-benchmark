@@ -263,6 +263,34 @@ async def test_a_failed_later_page_of_threads_raises_instead_of_keeping_the_firs
         await _fetch_review_threads(gh, "owner", "repo", 7)
 
 
+@pytest.mark.parametrize("connection", ["reviewThreads", "comments"])
+@pytest.mark.parametrize("on_page", [1, 2])
+async def test_a_page_whose_nodes_are_null_raises(connection: str, on_page: int) -> None:
+    # A partial answer can keep a connection's pageInfo but null its nodes; read as an empty page, the
+    # threads or comments on it, and any record they hold, would be missing.
+    threads = {None: _page([_thread("T1")], "t1"), "t1": _page([_thread("T2")])}
+    comments = {
+        None: _page([_comment(1, "coderabbitai", "Bot", "a")], "c1"),
+        "c1": _page([_comment(2, "x", "User", "b")]),
+    }
+    gh = FakeGraphQL(threads, comments)
+    read = gh.graphql
+
+    async def null_nodes(query: str, variables: dict) -> dict | None:
+        data = await read(query, variables)
+        if len(gh.calls) == on_page:
+            data["repository"]["pullRequest"][connection] = {
+                **data["repository"]["pullRequest"][connection],
+                "nodes": None,
+            }
+        return data
+
+    gh.graphql = null_nodes  # type: ignore[method-assign]
+
+    with pytest.raises(IncompleteReadError, match=f"of {connection} could not be read"):
+        await _fetch_review_threads(gh, "owner", "repo", 7)
+
+
 async def test_a_failed_later_page_of_comments_raises_instead_of_keeping_the_first_page() -> None:
     # The second page answers with errors and no comments connection: the comments it held, and any
     # review recorded in them, would be missing.

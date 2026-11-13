@@ -1317,16 +1317,15 @@ def _origin_in_file(
                 # A line this commit added as a copy of code a later commit, up to the fix, removed
                 # (a move done as copy, then delete) is moved code too. The line's own earlier texts,
                 # which those commits removed as they edited it, are not a copy.
-                copied = None
-                if kind == "added":
-                    copied = next(
-                        (
-                            k
-                            for k in range(i + 1, fix + 1)
-                            if added_keys & keys_removed_skipping(k, own.get(k, frozenset()))
-                        ),
-                        None,
-                    )
+                # A light edit is checked too: the copy can land in place of a similar line.
+                copied = next(
+                    (
+                        k
+                        for k in range(i + 1, fix + 1)
+                        if added_keys & keys_removed_skipping(k, own.get(k, frozenset()))
+                    ),
+                    None,
+                )
                 if copied is not None:
                     return (
                         "unknown",
@@ -1337,8 +1336,7 @@ def _origin_in_file(
                     )
                 # Where a commit's removed lines are not all readable, a move or a restoration cannot be
                 # ruled out.
-                last = fix if kind == "added" else i
-                partial = next((k for k in range(first_reviewed + 1, last + 1) if not keys_removed(k)[1]), None)
+                partial = next((k for k in range(first_reviewed + 1, fix + 1) if not keys_removed(k)[1]), None)
                 if restored is None and partial is not None:
                     return unreadable(partial)
                 if restored is not None:

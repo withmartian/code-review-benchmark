@@ -433,6 +433,38 @@ def test_a_fix_over_both_reviewed_and_new_lines_is_mixed() -> None:
     assert _origin(_action(D, "parser.py"), details)[0] == "mixed"
 
 
+def test_a_reviewed_line_copied_over_a_similar_line_then_deleted_is_a_move() -> None:
+    # A wrote old.py (reviewed); B added new.py; C copied A's line over B's similar one, and D
+    # deleted old.py: a move over two commits, landing as a light edit. The fix in E changes the
+    # moved reviewed line, so where it was first written is not followed and the fix is kept.
+    e = "e" * 40
+    commits = [{"sha": s} for s in (A, B, C, D, e)]
+    details = {s: {"sha": s, "files": []} for s in (A, B, C, D, e)}
+    for sha, path, status, patch in (
+        (A, "old.py", "added", "@@ -0,0 +1,2 @@\n+def f():\n+    run(path, mode='full', retries=3, strict=False)"),
+        (B, "new.py", "added", "@@ -0,0 +1,2 @@\n+def g():\n+    run(path, mode='full', retries=3, strict=True)"),
+        (
+            C,
+            "new.py",
+            "modified",
+            "@@ -1,2 +1,2 @@\n def g():\n-    run(path, mode='full', retries=3, strict=True)\n+    run(path, mode='full', retries=3, strict=False)",
+        ),
+        (D, "old.py", "removed", "@@ -1,2 +0,0 @@\n-def f():\n-    run(path, mode='full', retries=3, strict=False)"),
+        (
+            e,
+            "new.py",
+            "modified",
+            "@@ -1,2 +1,2 @@\n def g():\n-    run(path, mode='full', retries=3, strict=False)\n+    run(path, mode='full', retries=3, strict=check)",
+        ),
+    ):
+        details[sha]["files"].append({"filename": path, "status": status, "patch": patch})
+
+    origin, reason, _ = fix_code_origin(_action(e, "new.py"), commits, details, [ReviewRecord(-1, 0, "record")], 0)
+
+    assert origin == "unknown", reason
+    assert "copy" in reason
+
+
 def test_a_line_lightly_edited_after_the_last_review_keeps_its_reviewed_origin() -> None:
     # C appends to a reviewed line; the defect in the reviewed part was there before the last review.
     edit = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(',')[:100]"

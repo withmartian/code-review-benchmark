@@ -19,11 +19,34 @@ logger = logging.getLogger(__name__)
 GRAPHQL_URL = "https://api.github.com/graphql"
 REST_BASE = "https://api.github.com"
 
+# The PR's review threads and its conversation (issue) comments, in one request. Each connection
+# pages on its own cursor; a request after the first asks only for the connections with pages left.
+# A comment's userContentEdits is its edit history: each edit's `diff` holds the full text of the
+# comment after that edit, newest first; the oldest is the comment as first posted.
 REVIEW_THREADS_QUERY = """
-query($owner: String!, $repo: String!, $prNumber: Int!, $threadCursor: String) {
+query(
+  $owner: String!, $repo: String!, $prNumber: Int!,
+  $threadCursor: String, $commentCursor: String,
+  $withThreads: Boolean!, $withComments: Boolean!
+) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $prNumber) {
-      reviewThreads(first: 100, after: $threadCursor) {
+      comments(first: 100, after: $commentCursor) @include(if: $withComments) {
+        nodes {
+          id
+          databaseId
+          author { __typename login }
+          body
+          createdAt
+          updatedAt
+          userContentEdits(first: 100) {
+            nodes { editedAt diff }
+            pageInfo { hasNextPage endCursor }
+          }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+      reviewThreads(first: 100, after: $threadCursor) @include(if: $withThreads) {
         nodes {
           id
           isResolved
@@ -38,6 +61,8 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $threadCursor: String) {
               diffHunk
               author { login }
               createdAt
+              originalCommit { oid }
+              replyTo { databaseId }
               reactionGroups {
                 content
                 reactors { totalCount }
@@ -45,6 +70,20 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $threadCursor: String) {
             }
           }
         }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+}
+"""
+
+# The rest of one comment's edit history, for a comment with more than 100 edits.
+COMMENT_EDITS_PAGE_QUERY = """
+query($id: ID!, $cursor: String) {
+  node(id: $id) {
+    ... on IssueComment {
+      userContentEdits(first: 100, after: $cursor) {
+        nodes { editedAt diff }
         pageInfo { hasNextPage endCursor }
       }
     }
@@ -71,6 +110,20 @@ class TokenInvalidError(Exception):
 class AllTokensInvalidError(Exception):
     """Raised when every token in the pool has been permanently rejected.
     Never causes a PR to be marked as error — the enrichment loop aborts instead."""
+
+
+class IncompleteReadError(Exception):
+    """Raised when a read that later analysis relies on as complete stopped partway.
+
+    The threads step reads again up to ``THREADS_READ_ATTEMPTS`` times, then reads the threads
+    alone and stores them with the conversation comments and edits as not read (``NULL``), which the
+    analysis reads as an incomplete history: no fix is left out on the PR, as before this rule (the
+    last threads-only read keeps the threads it got, as the step did before). Raised from another
+    step, the step is not recorded and the enrichment loop releases the PR for the next pass."""
+
+
+# Reads of the threads step (with comments and edits, then threads alone) before giving up a pass.
+THREADS_READ_ATTEMPTS = 3
 
 
 class GitHubEnrichClient:
@@ -184,6 +237,19 @@ class GitHubEnrichClient:
         return results
 
     async def graphql(self, query: str, variables: dict) -> dict | None:
+        """The ``data`` of a GraphQL answer, or None when no answer came.
+
+        None means the request failed (a server error or a network failure after the retries, or an
+        answer with an error other than NOT_FOUND or FORBIDDEN, with or without data: a server error
+        or timeout inside a non-null connection nulls the objects above it, so such data can look
+        like a missing pull request): a caller that needs the read may retry it later. An answer that
+        the object is not there or not visible to the token is an answer: GitHub's data with the
+        missing object as null and only NOT_FOUND or FORBIDDEN errors, or ``{}`` for a 403 that is
+        not a rate limit, primary or secondary (``_is_rate_limited``: no remaining requests, a
+        Retry-After header, or a rate-limit message, which raise ``RateLimitExhaustedError``), or
+        for errors that are all NOT_FOUND or FORBIDDEN with no data, as the REST reads treat a 403 or
+        404.
+        """
         async with self.semaphore:
             client = await self._get_client()
             for attempt in range(4):
@@ -199,7 +265,7 @@ class GitHubEnrichClient:
                             reset_time = resp.headers.get("X-RateLimit-Reset")
                             raise RateLimitExhaustedError(int(reset_time or time.time() + 60))
                         logger.warning("403 Forbidden on GraphQL query — skipping")
-                        return None
+                        return {}
                     await self._check_rate_limit(resp)
                     if resp.status_code >= 500:
                         await asyncio.sleep(2**attempt)
@@ -207,9 +273,9 @@ class GitHubEnrichClient:
                     data = resp.json()
                     if "errors" in data:
                         logger.warning(f"GraphQL errors: {data['errors']}")
-                        if data.get("data") is not None:
-                            return data["data"]
-                        return None
+                        if not all((e or {}).get("type") in ("NOT_FOUND", "FORBIDDEN") for e in data["errors"] or [None]):
+                            return None
+                        return data["data"] if data.get("data") is not None else {}
                     return data.get("data")
                 except (RateLimitExhaustedError, TokenInvalidError):
                     raise
@@ -235,6 +301,7 @@ async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_numbe
             "message": c.get("commit", {}).get("message", ""),
             "date": c.get("commit", {}).get("author", {}).get("date", ""),
             "author": (c.get("author") or {}).get("login"),
+            "parents": [p.get("sha") for p in c.get("parents") or []],
         }
         for c in raw
     ]
@@ -258,49 +325,221 @@ async def _fetch_reviews(gh: GitHubEnrichClient, owner: str, repo: str, pr_numbe
     ]
 
 
-async def _fetch_review_threads(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> list[dict]:
-    all_threads: list[dict] = []
-    cursor = None
-    while True:
-        variables = {"owner": owner, "repo": repo, "prNumber": pr_number, "threadCursor": cursor}
-        data = await gh.graphql(REVIEW_THREADS_QUERY, variables)
-        if data is None:
-            break
-        pr_data = (data.get("repository") or {}).get("pullRequest")
-        if pr_data is None:
-            break
-        threads_data = pr_data.get("reviewThreads", {})
-        for node in threads_data.get("nodes", []):
-            thread = {
-                "id": node["id"],
-                "is_resolved": node["isResolved"],
-                "resolved_by": (node.get("resolvedBy") or {}).get("login"),
-                "comments": [],
+def parse_issue_comments(nodes: list[dict]) -> list[dict]:
+    """PR conversation comments with their current bodies (bots often edit a status comment in place).
+
+    From IssueComment nodes, in the shape the REST issue-comments API gave: a bot's login carries the
+    ``[bot]`` suffix that GraphQL leaves off.
+    """
+    out = []
+    for node in nodes:
+        author = node.get("author") or {}
+        login = author.get("login")
+        if login and author.get("__typename") == "Bot" and not login.endswith("[bot]"):
+            login = f"{login}[bot]"
+        out.append(
+            {
+                "id": node.get("databaseId"),
+                "author": login,
+                "body": node.get("body", ""),
+                "created_at": node.get("createdAt"),
+                "updated_at": node.get("updatedAt"),
             }
-            for comment in (node.get("comments") or {}).get("nodes", []):
-                reactions = {}
-                for rg in comment.get("reactionGroups") or []:
-                    reactions[rg["content"]] = rg["reactors"]["totalCount"]
-                thread["comments"].append(
-                    {
-                        "id": comment["databaseId"],
-                        "body": comment["body"],
-                        "path": comment.get("path"),
-                        "line": comment.get("line"),
-                        "original_line": comment.get("originalLine"),
-                        "diff_hunk": comment.get("diffHunk"),
-                        "author": (comment.get("author") or {}).get("login"),
-                        "created_at": comment.get("createdAt"),
-                        "reactions": reactions,
-                    }
+        )
+    return out
+
+
+def parse_comment_edits(nodes: list[dict]) -> list[dict]:
+    """The revisions of each edited comment by a bot, oldest first, from IssueComment nodes.
+
+    Only bot comments are kept (bots rewrite status comments in place; people's edits are not
+    read), and only comments that were edited. Bot logins get the ``[bot]`` suffix of the REST API.
+    An edit whose text GitHub no longer has (``diff`` null, a deleted revision) is not a revision;
+    its time is kept in ``unavailable_edits``, since a review recorded only in it cannot be read.
+    """
+    out = []
+    for node in nodes:
+        author = node.get("author") or {}
+        edits = (node.get("userContentEdits") or {}).get("nodes") or []
+        if author.get("__typename") != "Bot" or not edits:
+            continue
+        revisions = [
+            {"edited_at": e.get("editedAt"), "body": e.get("diff")} for e in edits if e.get("diff") is not None
+        ]
+        revisions.sort(key=lambda r: r["edited_at"] or "")
+        unavailable = sorted(e.get("editedAt") or "" for e in edits if e.get("diff") is None)
+        if revisions or unavailable:
+            comment = {"id": node.get("databaseId"), "author": f"{author.get('login')}[bot]", "revisions": revisions}
+            if unavailable:
+                comment["unavailable_edits"] = unavailable
+            out.append(comment)
+    return out
+
+
+async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict]) -> None:
+    """Complete in place the edit history of each bot comment with more than one page of edits.
+
+    A page that cannot be read raises ``IncompleteReadError`` rather than keeping the pages read so
+    far: the analysis reads the history as every review the bot recorded, so a review recorded
+    only in a missing revision would read as a push the bot never reviewed. That includes the first
+    page: a bot comment whose ``userContentEdits`` is missing or null (a partial answer with errors)
+    would otherwise be stored as a complete history with no edits.
+    """
+    for node in nodes:
+        if (node.get("author") or {}).get("__typename") != "Bot":
+            continue
+        edits = node.get("userContentEdits")
+        if not isinstance(edits, dict) or edits.get("nodes") is None:
+            raise IncompleteReadError(f"edit history of comment {node.get('databaseId')} could not be read")
+        while (edits.get("pageInfo") or {}).get("hasNextPage"):
+            data = await gh.graphql(
+                COMMENT_EDITS_PAGE_QUERY, {"id": node["id"], "cursor": edits["pageInfo"]["endCursor"]}
+            )
+            more = ((data or {}).get("node") or {}).get("userContentEdits")
+            if not isinstance(more, dict) or more.get("nodes") is None:
+                raise IncompleteReadError(
+                    f"edit history of comment {node.get('databaseId')} stopped after "
+                    f"{len(edits.get('nodes') or [])} edits"
                 )
-            all_threads.append(thread)
-        page_info = threads_data.get("pageInfo", {})
-        if page_info.get("hasNextPage"):
-            cursor = page_info["endCursor"]
-        else:
+            edits["nodes"] = [*(edits.get("nodes") or []), *(more.get("nodes") or [])]
+            edits["pageInfo"] = more.get("pageInfo") or {}
+
+
+def _parse_review_thread(node: dict) -> dict:
+    thread = {
+        "id": node["id"],
+        "is_resolved": node["isResolved"],
+        "resolved_by": (node.get("resolvedBy") or {}).get("login"),
+        "comments": [],
+    }
+    for comment in (node.get("comments") or {}).get("nodes", []):
+        reactions = {}
+        for rg in comment.get("reactionGroups") or []:
+            reactions[rg["content"]] = rg["reactors"]["totalCount"]
+        thread["comments"].append(
+            {
+                "id": comment["databaseId"],
+                "body": comment["body"],
+                "path": comment.get("path"),
+                "line": comment.get("line"),
+                "original_line": comment.get("originalLine"),
+                "diff_hunk": comment.get("diffHunk"),
+                "author": (comment.get("author") or {}).get("login"),
+                "created_at": comment.get("createdAt"),
+                "reactions": reactions,
+                # The commit the comment was made on (null once that commit is gone after a force-push)
+                # and the comment it replies to, as REST gives them.
+                "original_commit_id": (comment.get("originalCommit") or {}).get("oid"),
+                "in_reply_to_id": (comment.get("replyTo") or {}).get("databaseId"),
+            }
+        )
+    return thread
+
+
+async def _fetch_review_threads(
+    gh: GitHubEnrichClient,
+    owner: str,
+    repo: str,
+    pr_number: int,
+    *,
+    comments: bool = True,
+    partial: bool = False,
+) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
+    """The PR's review threads, conversation comments and bot comment edit histories, from one paginated read.
+
+    The first request returns the first page of each. Later requests are made only while a
+    connection has more pages, and ask only for those connections; a bot comment with more than
+    100 edits gets one more request per further 100. A request that fails, the first one included,
+    or an answer without a connection it asked for, raises ``IncompleteReadError`` instead of
+    returning what was read: a missing comment or revision can hold the only record of a review,
+    so the step must not be stored as read. A first answer that the repository or the pull request
+    is not there (deleted, or not visible to the token) is final, as a REST 404 is: it returns no
+    threads and None for the comments and edits, which were not read.
+
+    With ``comments`` False only the threads are read, as before the comments were, and the
+    comments and edits are returned as not read (None). With ``partial`` too, a page that cannot be
+    read ends the read with the threads read so far, as this step did before the comments were read.
+    """
+    all_threads: list[dict] = []
+    comment_nodes: list[dict] = []
+    thread_cursor = comment_cursor = None
+    with_threads, with_comments = True, comments
+    first = True
+    while with_threads or with_comments:
+        variables = {
+            "owner": owner,
+            "repo": repo,
+            "prNumber": pr_number,
+            "threadCursor": thread_cursor,
+            "commentCursor": comment_cursor,
+            "withThreads": with_threads,
+            "withComments": with_comments,
+        }
+        data = await gh.graphql(REVIEW_THREADS_QUERY, variables)
+        pr_data = ((data or {}).get("repository") or {}).get("pullRequest")
+        if first and data is not None and pr_data is None:
+            logger.warning(f"{owner}/{repo}#{pr_number}: the pull request is not there, no threads or comments read")
+            return [], None, None
+        wanted = [name for name, on in (("reviewThreads", with_threads), ("comments", with_comments)) if on]
+        # A connection that is null, or whose nodes are null (a partial answer), was not read.
+        missing = [
+            name
+            for name in wanted
+            if not isinstance((pr_data or {}).get(name), dict) or pr_data[name].get("nodes") is None
+        ]
+        if missing and partial and not comments:
+            logger.warning(f"{owner}/{repo}#{pr_number}: threads read stopped after {len(all_threads)} threads")
             break
-    return all_threads
+        if missing:
+            page = "the first page" if first else "a further page"
+            raise IncompleteReadError(
+                f"{page} of {' and '.join(missing)} could not be read after "
+                f"{len(all_threads)} threads and {len(comment_nodes)} comments"
+            )
+        first = False
+        if with_threads:
+            threads_data = pr_data.get("reviewThreads") or {}
+            all_threads.extend(_parse_review_thread(node) for node in threads_data.get("nodes") or [])
+            page_info = threads_data.get("pageInfo") or {}
+            with_threads = bool(page_info.get("hasNextPage"))
+            thread_cursor = page_info.get("endCursor")
+        if with_comments:
+            comments_data = pr_data.get("comments") or {}
+            comment_nodes.extend(comments_data.get("nodes") or [])
+            page_info = comments_data.get("pageInfo") or {}
+            with_comments = bool(page_info.get("hasNextPage"))
+            comment_cursor = page_info.get("endCursor")
+    if not comments:
+        return all_threads, None, None
+    await _fetch_long_edit_histories(gh, comment_nodes)
+    return all_threads, parse_issue_comments(comment_nodes), parse_comment_edits(comment_nodes)
+
+
+async def _read_review_threads(
+    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
+) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
+    """``_fetch_review_threads``, read again up to ``THREADS_READ_ATTEMPTS`` times when it stops
+    partway. When the read with comments and edits keeps failing (a query too heavy for a long bot
+    history, say), the threads are read alone, completely, and stored with the comments and edits as
+    not read (None): the PR is not held at this step, its inline comments still reach the analysis,
+    and its history reads as incomplete, so no fix is left out. When the threads alone cannot be
+    read completely either, the last read keeps the threads it got, as this step did before the
+    comments were read, so the PR is never held at this step."""
+    errors: list[IncompleteReadError] = []
+    for comments in (True, False):
+        for attempt in range(THREADS_READ_ATTEMPTS):
+            last = not comments and attempt + 1 == THREADS_READ_ATTEMPTS
+            try:
+                read = await _fetch_review_threads(gh, owner, repo, pr_number, comments=comments, partial=last)
+            except IncompleteReadError as e:
+                errors.append(e)
+                if attempt + 1 < THREADS_READ_ATTEMPTS:
+                    await asyncio.sleep(2 ** (attempt + 1))
+                continue
+            if not comments:
+                logger.warning(f"{owner}/{repo}#{pr_number}: comments not read ({errors[-1]}); threads stored alone")
+            return read
+    raise errors[-1]  # not reached: the last read keeps what it got
 
 
 async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:
@@ -501,9 +740,11 @@ async def enrich_single_pr(
 
     # Step: threads (index 3)
     if step_idx < 3:
-        threads = await _fetch_review_threads(gh, owner, repo, pr_number)
-        await repo_obj.update_threads(pr_id, threads)
-        logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)})")
+        # The same request returns the conversation comments and their edit history, stored with the threads.
+        threads, issue_comments, comment_edits = await _read_review_threads(gh, owner, repo, pr_number)
+        await repo_obj.update_threads(pr_id, threads, issue_comments, comment_edits)
+        n_comments = "comments not read" if issue_comments is None else f"{len(issue_comments)} comments"
+        logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)}, {n_comments})")
 
     # Step: commit details (index 4)
     if step_idx < 4:
@@ -556,6 +797,7 @@ async def enrich_loop(
 
     enriched_count = 0
     error_count = 0
+    deferred_count = 0  # PRs released for a retry after an incomplete read
     limit = max_prs or 10000
     assemble_interval = 100  # assemble every N enriched PRs
     last_assembled_at = 0
@@ -564,7 +806,7 @@ async def enrich_loop(
     stop_event = asyncio.Event()
 
     async def _worker(worker_id: int) -> None:
-        nonlocal enriched_count, error_count
+        nonlocal enriched_count, error_count, deferred_count
         while True:
             # Stop early if the pool is dead or another worker requested shutdown —
             # avoids locking more PRs we can't actually process.
@@ -618,6 +860,12 @@ async def enrich_loop(
                 finally:
                     if gh is not None:
                         pool.release(gh)
+            except IncompleteReadError as e:
+                # Leave the step undone and release the PR, so the next pass reads it again.
+                logger.warning(f"Worker {worker_id}: incomplete read for {pr_label}, retrying next pass: {e}")
+                with contextlib.suppress(Exception):
+                    await repo_obj.unlock_pr(pr_id)
+                deferred_count += 1
             except AllTokensInvalidError:
                 # Don't mark the PR as error — release the lock so it's picked up
                 # immediately on the next run with valid tokens (instead of waiting
@@ -670,6 +918,7 @@ async def enrich_loop(
                 continue
 
             logger.info(f"Queuing {len(prs)} PRs for enrichment")
+            enriched_before, deferred_before = enriched_count, deferred_count
 
             # Fill queue
             for pr_row in prs:
@@ -695,7 +944,8 @@ async def enrich_loop(
                     await task
 
             logger.info(
-                f"Pass complete: {enriched_count} enriched, {error_count} errors | Tokens: {pool.status_summary()}"
+                f"Pass complete: {enriched_count} enriched, {error_count} errors, "
+                f"{deferred_count} released for a retry | Tokens: {pool.status_summary()}"
             )
 
             # Assemble enriched PRs
@@ -711,6 +961,11 @@ async def enrich_loop(
 
             if one_shot:
                 break
+
+            # Only released PRs are left: wait before reading them again instead of looping on them.
+            if enriched_count == enriched_before and deferred_count > deferred_before:
+                logger.info("Pass enriched nothing and released PRs for a retry, sleeping 5 minutes...")
+                await asyncio.sleep(300)
 
     finally:
         await pool.close()

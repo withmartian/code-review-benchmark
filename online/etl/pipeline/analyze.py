@@ -20,6 +20,20 @@ from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
+from pipeline.review_coverage import comment_record_missing
+from pipeline.review_coverage import completed_no_review
+from pipeline.review_coverage import find_review_records
+from pipeline.review_coverage import fix_code_origin
+from pipeline.review_coverage import later_comment_review
+from pipeline.review_coverage import notice_reasons
+from pipeline.review_coverage import other_source_changes_reviewed_code
+from pipeline.review_coverage import path_filtered
+from pipeline.review_coverage import record_in_issue_comments
+from pipeline.review_coverage import renamed_since
+from pipeline.review_coverage import reviews_in_issue_comments
+from pipeline.review_coverage import rewritten_review_commits
+from pipeline.review_coverage import scope_config_changed
+from pipeline.review_coverage import sha_index
 
 logger = logging.getLogger(__name__)
 
@@ -289,6 +303,266 @@ def _format_actions(actions: list[dict]) -> str:
     return "\n".join(lines) if lines else "(no actions)"
 
 
+def _with_review_commits(events: list[dict], reviews: list[dict]) -> list[dict]:
+    """Timeline events with each review's commit taken from the API reviews, where the event lacks it.
+
+    A review event from GH Archive (PullRequestReviewEvent) carries the review's id and state but
+    not its commit, and assembly keeps it in place of the API review with the same id. Without the
+    commit a review cannot be placed: the bot's completed reviews would read as no review at all.
+    The API's commit, null included (GitHub nulls it once the reviewed commit is gone), is copied
+    onto the event by review id.
+    """
+    by_id = {r.get("id"): r.get("commit_id") for r in reviews if r.get("id") is not None}
+    out = []
+    for e in events:
+        data = e.get("data") or {}
+        if e.get("event_type") == "review" and "commit_id" not in data and data.get("review_id") in by_id:
+            e = {**e, "data": {**data, "commit_id": by_id[data["review_id"]]}}
+        out.append(e)
+    return out
+
+
+def _deleted_bot_comments(events: list[dict], comments_read: bool, issue_comments: list[dict], chatbot_username: str) -> bool:
+    """Whether the timeline holds a conversation comment of the bot that the comments read no longer
+    have (deleted since). It is kept as evidence of the reviews it records, but its later edits were
+    never read, so its history is incomplete."""
+    if not comments_read:
+        return False
+    return any(
+        e.get("event_type") == "issue_comment"
+        and same_github_actor(e.get("actor"), chatbot_username)
+        and not _read_holds(e, issue_comments)
+        for e in events
+    )
+
+
+def _read_holds(event: dict, issue_comments: list[dict]) -> bool:
+    """Whether the comments read still hold a timeline comment: by its id, or, for one without an
+    id, when they hold a comment of its author with the same body or created at the same time (an
+    edit keeps the creation time). Another comment of the same author (a re-posted summary, a chat
+    reply) does not stand in for it: the comment is gone, and its later edits were never read."""
+    data = event.get("data") or {}
+    comment_id = data.get("comment_id")
+    if comment_id is not None:
+        return comment_id in {c.get("id") for c in issue_comments}
+    return any(
+        same_github_actor(c.get("author"), event.get("actor"))
+        and (
+            (c.get("body") or "") == (data.get("body") or "")
+            or (bool(c.get("created_at")) and c.get("created_at") == event.get("timestamp"))
+        )
+        for c in issue_comments
+    )
+
+
+def _with_current_issue_comments(events: list[dict], issue_comments: list[dict] | None) -> list[dict]:
+    """Timeline events with issue comments taken from the API, when they were fetched.
+
+    The timeline holds issue comments only as GH Archive recorded them when first posted, or none
+    for PRs found through the Search API. A bot that edits one status comment in place (to say a
+    later push was not reviewed) says so only in the current body.
+
+    A timeline comment the API list does not hold (``_read_holds``: deleted since, by the bot when
+    it re-posted its summary or by a person hiding it) is kept: its record of a review is still
+    evidence. It is kept as an earlier state of the comment (``revision_of``), since its body is the
+    one first posted, not necessarily the last. Timeline comments the API list holds are replaced by
+    the API's current bodies. issue_comments is None when the comments were never read; an empty
+    list is a read that returned none, and every timeline comment is then one the API no longer
+    holds.
+    """
+    if issue_comments is None:
+        return events
+    out = []
+    for e in events:
+        if e.get("event_type") != "issue_comment":
+            out.append(e)
+            continue
+        if not _read_holds(e, issue_comments):
+            # An earlier state of a comment that is gone; one without an id is marked by an empty id.
+            comment_id = (e.get("data") or {}).get("comment_id")
+            revision_of = comment_id if comment_id is not None else ""
+            out.append({**e, "data": {**(e.get("data") or {}), "revision_of": revision_of}})
+    for c in issue_comments:
+        out.append(
+            {
+                "timestamp": c.get("created_at") or "",
+                "event_type": "issue_comment",
+                "actor": c.get("author") or "unknown",
+                "data": {"comment_id": c.get("id"), "body": c.get("body"), "updated_at": c.get("updated_at")},
+            }
+        )
+    out.sort(key=lambda e: e.get("timestamp") or "")
+    return out
+
+
+def _with_comment_revisions(events: list[dict], comment_edits: list[dict], issue_comments: list[dict]) -> list[dict]:
+    """Timeline events plus the earlier revisions of edited comments, each at its edit time.
+
+    A bot that rewrites its status comment on each push keeps only the latest state in the current
+    body, so an earlier review's record, or a limit notice it later replaced, is visible only in the
+    comment's edit history. Each revision becomes an issue comment posted at its edit time and marked
+    revision_of. The current body, which ``issue_comments`` already holds, is normally also the
+    newest revision; the one newest revision whose text is that current body is left out, and every
+    other revision is kept. The match is by text, not by position: two edits with the same time can
+    sort either way, and an edit whose text GitHub no longer keeps is not in the list, so the last
+    revision is not always the current body.
+    """
+    if not comment_edits:
+        return events
+    current = {c.get("id"): c.get("body") for c in issue_comments}
+    out = list(events)
+    for c in comment_edits:
+        revisions = sorted(c.get("revisions") or [], key=lambda r: r.get("edited_at") or "")
+        if c.get("id") in current:
+            body = current[c.get("id")]
+            same = [i for i, r in enumerate(revisions) if r.get("body") == body]
+            if same:
+                revisions = revisions[: same[-1]] + revisions[same[-1] + 1 :]
+        for r in revisions:
+            out.append(
+                {
+                    "timestamp": r.get("edited_at") or "",
+                    "event_type": "issue_comment",
+                    "actor": c.get("author") or "unknown",
+                    "data": {"comment_id": c.get("id"), "body": r.get("body"), "revision_of": c.get("id")},
+                }
+            )
+    out.sort(key=lambda e: e.get("timestamp") or "")
+    return out
+
+
+def _exclude_unreviewed_actions(
+    actions: list[dict],
+    matches: list[dict],
+    events: list[dict],
+    commits: list[dict],
+    post_commits: list[dict],
+    details_by_sha: dict[str, dict],
+    chatbot_username: str,
+    comments_read: bool = True,
+    edits_complete: bool = True,
+) -> set[str]:
+    """IDs of the actions left out of recall because no review of the bot read their code.
+
+    An unmatched action is left out when every line its fix changed was written, and edited after,
+    only in commits that no review of the bot covered before the fix, whatever the reason the bot
+    did not review them.
+    The reviews come from the bot's own record of each review's range, else from its completed
+    reviews and the last reviewed commit its notices name (``find_review_records``). A matched
+    action always counts: a match shows the bot saw the issue. Excluded actions are marked in place
+    with excluded_from_recall (the reason) and unreviewed_commits (the commits that wrote or
+    edited the lines).
+
+    comments_read is False when the PR's conversation comments were never read (a PR enriched
+    before they were, or one whose pull request was gone when they were read). For a bot that
+    writes its record in those comments (``record_in_issue_comments``), its reviews cannot all be
+    known then, and a review recorded only there would read as a push it never reviewed, so no
+    action is left out. The same holds for a bot that posts, or may post, its reviews as conversation
+    comments (``reviews_in_issue_comments``: Claude, Qodo and every bot in none of the tables).
+
+    No action is left out either for a bot that posts its reviews as conversation comments (Claude,
+    Qodo, and any bot in none of the tables: ``later_comment_review``) when it has a conversation
+    comment, or a revision of one, after its first review: that review names no commit and cannot be
+    placed.
+
+    No action is left out either when the bot reviewed or named a commit that is no longer in the
+    PR's commit list (``rewritten_review_commits``): after a force-push (an amend or a rebase) the
+    rewritten commits cannot be matched to the reviews of the commits they replace, and would read
+    as never reviewed.
+
+    Nor when the bot writes its record in conversation comments, completed reviews on the PR, and no
+    record of it is found: the comment that holds the record is gone (deleted, or never in the
+    comments read), so a review that posted nothing cannot be seen, as with comments never read.
+
+    edits_complete is False when an edit of one of the bot's comments has no text left on GitHub
+    (``unavailable_edits``), or when the timeline holds a comment of the bot that the comments read
+    no longer have (``_deleted_bot_comments``: its later edits were never read): a review recorded
+    only in a missing revision cannot be read, so for a bot that writes its record in comments, or
+    posts its reviews as comments, no action is left out.
+
+    An unmatched action is left out too when its file is one the bot's reviews list as left out by
+    the repository's path filters (``path_filtered``), and none lists as read.
+
+    Every action is left out when the bot completed no review on the PR
+    (``completed_no_review``: it posted only notices, which GH Archive discovery admits): no code
+    of the PR was reviewed. With no action left the PR has no recall. This needs the whole
+    conversation history (comments read, no edit missing), for any bot: a review in a comment or
+    revision that was not read would otherwise read as none. It does not apply when a suggestion of
+    the bot matched an action: the bot raised it somewhere (a chat reply, say), and a matched fix
+    always counts.
+    """
+    history_complete = comments_read and edits_complete
+    if not history_complete and (
+        record_in_issue_comments(chatbot_username) or reviews_in_issue_comments(chatbot_username)
+    ):
+        return set()
+    # A review may be in a comment or revision that was not read: no bot is found to have completed
+    # no review without its whole conversation history.
+    matched_ids = {m.get("human_action_id") for m in matches if m.get("matched")}
+    matched_any = any(a["action_id"] in matched_ids for a in actions)
+    if actions and history_complete and not matched_any and completed_no_review(events, commits, chatbot_username):
+        notices = notice_reasons(events, chatbot_username)
+        why = "the bot completed no review on the PR"
+        if notices:
+            why += f"; it posted {', '.join(notices)} notices"
+        for a in actions:
+            a["excluded_from_recall"] = why
+            a["unreviewed_commits"] = []
+        return {a["action_id"] for a in actions}
+    if rewritten_review_commits(events, commits, chatbot_username):
+        return set()
+    if later_comment_review(events, chatbot_username):
+        return set()
+    matched = {m.get("human_action_id") for m in matches if m.get("matched")}
+    unmatched = [a for a in actions if a["action_id"] not in matched]
+    if not post_commits or not unmatched:
+        return set()
+    first = sha_index(commits, post_commits[0].get("sha"))
+    if first is None:
+        return set()
+    records = find_review_records(events, commits, chatbot_username)
+    if comment_record_missing(events, commits, chatbot_username):
+        return set()
+    notices = notice_reasons(events, chatbot_username)
+    excluded = set()
+    for a in unmatched:
+        origin, reason, written_in = fix_code_origin(a, commits, details_by_sha, records, first - 1)
+        if origin != "unreviewed":
+            # A file the repository's path filters keep out of the bot's reviews was never read. A
+            # file renamed after the first review may have been read under its old name, which the
+            # stored details do not keep, so a rename keeps the fix.
+            fix = sha_index(commits, (a.get("commit_sha") or "").strip())
+            # A fix whose commit cannot be placed cannot be shown to change no reviewed source.
+            if (
+                fix is not None
+                and path_filtered(a.get("file_path") or "", events, chatbot_username)
+                and not renamed_since(a.get("file_path") or "", commits, details_by_sha, first, fix)
+                # A filter the PR itself set, before or after the fix, may not have applied when the
+                # code was reviewed: a later review's ignored list can show a filter added later.
+                and not scope_config_changed(commits, details_by_sha, first, len(commits) - 1, chatbot_username)
+                and other_source_changes_reviewed_code(
+                    a, commits, details_by_sha, records, first - 1, events, chatbot_username
+                )
+                is None
+            ):
+                excluded.add(a["action_id"])
+                a["excluded_from_recall"] = (
+                    f"every review of the bot that lists {a.get('file_path')} lists it as ignored due to path filters"
+                )
+                a["unreviewed_commits"] = []
+            continue
+        excluded.add(a["action_id"])
+        fix = sha_index(commits, (a.get("commit_sha") or "").strip()) or 0
+        last = max((r.head for r in records if r.head < fix), default=first - 1)
+        why = f"last review before the fix read {commits[max(last, first - 1)]['sha'][:12]}; {reason}"
+        if notices:
+            why += f"; the bot posted {', '.join(notices)} notices"
+        a["excluded_from_recall"] = why
+        a["unreviewed_commits"] = list(written_in)
+    return excluded
+
+
+
 async def analyze_single_pr(
     llm: LLMClient,
     repo: PRRepository,
@@ -381,15 +655,43 @@ async def analyze_single_pr(
     matching_resp = await llm.structured_completion(prompt3, MatchingResponse)
     matches = [m.model_dump() for m in matching_resp.matches]
 
+    # Fixes of code no review of the bot read are left out of recall. Deterministic: the bot's own
+    # record of its reviews, its reviews and notices (current bodies and earlier revisions) and the
+    # stored commit patches, no LLM call.
+    issue_comments = _parse_json_col("issue_comments")
+    comment_edits = _parse_json_col("issue_comment_edits")
+    excluded_action_ids = _exclude_unreviewed_actions(
+        actions,
+        matches,
+        _with_comment_revisions(
+            _with_current_issue_comments(
+                _with_review_commits(events, reviews),
+                issue_comments if pr_row.get("issue_comments") is not None else None,
+            ),
+            comment_edits,
+            issue_comments,
+        ),
+        commits,
+        post_commits,
+        details_by_sha,
+        chatbot_username,
+        comments_read=pr_row.get("issue_comments") is not None,
+        edits_complete=not any(
+            c.get("unavailable_edits") and same_github_actor(c.get("author"), chatbot_username) for c in comment_edits
+        )
+        and not _deleted_bot_comments(events, pr_row.get("issue_comments") is not None, issue_comments, chatbot_username),
+    )
+
     # Compute metrics — only count IDs that actually exist in the extracted lists
+    # Recall leaves out the actions excluded above; precision counts every match as before.
     suggestion_id_set = {s["issue_id"] for s in suggestions}
-    action_id_set = {a["action_id"] for a in actions}
+    action_id_set = {a["action_id"] for a in actions} - excluded_action_ids
     total_suggestions = len(suggestions)
     matched_suggestion_ids = {
         m["bot_issue_id"] for m in matches if m["matched"] and m.get("bot_issue_id") in suggestion_id_set
     }
     matched_suggestions = len(matched_suggestion_ids)
-    total_actions = len(actions)
+    total_actions = sum(1 for a in actions if a["action_id"] not in excluded_action_ids)
     matched_action_ids = {
         m["human_action_id"] for m in matches if m["matched"] and m.get("human_action_id") in action_id_set
     }
@@ -449,8 +751,12 @@ async def analyze_prs(
     """
     repo = PRRepository(db)
     prs = await repo.get_assembled_not_analyzed(
-        chatbot_id=chatbot_id, limit=limit, since=since, until=until,
-        sort_by=sort_by, max_per_day=max_per_day,
+        chatbot_id=chatbot_id,
+        limit=limit,
+        since=since,
+        until=until,
+        sort_by=sort_by,
+        max_per_day=max_per_day,
     )
 
     if not prs:

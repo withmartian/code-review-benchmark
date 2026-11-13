@@ -302,6 +302,62 @@ class TestSqliteIntegration:
         assert row["status"] == "assembled"
 
     @pytest.mark.asyncio
+    async def test_update_threads_stores_issue_comments(self, repo: PRRepository) -> None:
+        cid = await repo.upsert_chatbot("testbot[bot]")
+        await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=75, pr_url="https://x", bq_events=[
+            {"event_id": "1", "type": "PullRequestEvent", "actor": "a", "created_at": "2026-01-15T10:00:00Z",
+             "payload": {"action": "opened", "pull_request": {"title": "t", "user": {"login": "a"}}}}
+        ])
+        pr = await repo.get_pr(cid, "org/repo", 75)
+        threads = [{"id": "T1", "is_resolved": False, "resolved_by": None, "comments": []}]
+        comments = [{"id": 9, "author": "testbot[bot]", "body": "Review limit reached",
+                     "created_at": "2026-01-15T10:01:00Z", "updated_at": "2026-01-15T12:00:00Z"}]
+
+        await repo.update_threads(pr["id"], threads, comments)
+
+        row = await repo.get_pr_by_id(pr["id"])
+        assert json.loads(row["review_threads"]) == threads
+        assert json.loads(row["issue_comments"]) == comments
+        assert row["enrichment_step"] == "threads"
+
+    @pytest.mark.asyncio
+    async def test_update_threads_without_issue_comments_leaves_them_null(self, repo: PRRepository) -> None:
+        cid = await repo.upsert_chatbot("testbot[bot]")
+        await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=77, pr_url="https://x", bq_events=[
+            {"event_id": "1", "type": "PullRequestEvent", "actor": "a", "created_at": "2026-01-15T10:00:00Z",
+             "payload": {"action": "opened", "pull_request": {"title": "t", "user": {"login": "a"}}}}
+        ])
+        pr = await repo.get_pr(cid, "org/repo", 77)
+
+        await repo.update_threads(pr["id"], [])
+
+        row = await repo.get_pr_by_id(pr["id"])
+        assert row["issue_comments"] is None
+        assert row["enrichment_step"] == "threads"
+
+    @pytest.mark.asyncio
+    async def test_update_threads_stores_issue_comment_edits(self, repo: PRRepository) -> None:
+        cid = await repo.upsert_chatbot("testbot[bot]")
+        await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=76, pr_url="https://x", bq_events=[
+            {"event_id": "1", "type": "PullRequestEvent", "actor": "a", "created_at": "2026-01-15T10:00:00Z",
+             "payload": {"action": "opened", "pull_request": {"title": "t", "user": {"login": "a"}}}}
+        ])
+        pr = await repo.get_pr(cid, "org/repo", 76)
+        comments = [{"id": 9, "author": "testbot[bot]", "body": "Review limit reached",
+                     "created_at": "2026-01-15T10:01:00Z", "updated_at": "2026-01-15T11:00:00Z"}]
+        edits = [{"id": 9, "author": "testbot[bot]", "revisions": [
+            {"edited_at": "2026-01-15T10:01:00Z", "body": "Summary"},
+            {"edited_at": "2026-01-15T11:00:00Z", "body": "Review limit reached"},
+        ]}]  # fmt: skip
+
+        await repo.update_threads(pr["id"], [], comments, edits)
+
+        row = await repo.get_pr_by_id(pr["id"])
+        assert json.loads(row["issue_comments"]) == comments
+        assert json.loads(row["issue_comment_edits"]) == edits
+        assert row["enrichment_step"] == "threads"
+
+    @pytest.mark.asyncio
     async def test_mark_error(self, repo: PRRepository) -> None:
         cid = await repo.upsert_chatbot("testbot[bot]")
         await repo.insert_pr(chatbot_id=cid, repo_name="org/repo", pr_number=80, pr_url="https://x", bq_events=[

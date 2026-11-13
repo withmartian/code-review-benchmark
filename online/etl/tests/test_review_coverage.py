@@ -1166,6 +1166,8 @@ def test_which_files_of_a_fixing_commit_are_source() -> None:
         "doc/api.rst",
         "notes.txt",
         "manual/index.adoc",
+        "docs/screenshots/dashboard.png",
+        "docs/evidence/run.log",
         "tests/test_parser.py",
         "src/__tests__/app.ts",
         "pkg/parser_test.go",

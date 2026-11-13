@@ -1008,6 +1008,7 @@ _NOT_SOURCE_RE = re.compile(
     r"(^|/)(tests?|__tests__)/"  # test folders
     r"|(_test\.|\.test\.|\.spec\.|_spec\.|(^|/)test_[^/]*$)"  # test files
     r"|\.(md|mdx|rst|txt|adoc)$"  # docs
+    r"|\.(png|jpe?g|gif|webp|ico|svg|pdf|log)$"  # images, documents and logs
     r"|(^|/)\.github/"  # CI
     r"|\.(ya?ml|jsonc?|json5|toml|lock)$"  # config and lock files
     r"|(^|/)(go\.sum|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|Gemfile\.lock)$"

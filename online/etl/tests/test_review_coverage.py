@@ -556,6 +556,26 @@ def test_an_exact_move_is_found_before_a_light_edit_is_followed() -> None:
     assert fix_code_origin(_action(D, "new.py"), COMMITS, details, a_reviewed, 0)[0] == "unreviewed"
 
 
+def test_a_reviewed_line_removed_then_restored_keeps_its_fix() -> None:
+    # A wrote the reviewed split; B removed it and C reverted B, both without a review; D fixes the line.
+    # C's line is the reviewed code put back, not code C wrote.
+    remove_b = "@@ -1,2 +1 @@\n def parse(text):\n-    return text.split(',')"
+    revert_c = "@@ -1 +1,2 @@\n def parse(text):\n+    return text.split(',')"
+    fix_d = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(';')"
+    details = _details(
+        (A, "parser.py", "added", PARSER_A),
+        (B, "parser.py", "modified", remove_b),
+        (C, "parser.py", "modified", revert_c),
+        (D, "parser.py", "modified", fix_d),
+    )
+
+    # The analysis split at A, and only A was reviewed.
+    origin, reason, _ = fix_code_origin(_action(D, "parser.py"), COMMITS, details, [ReviewRecord(-1, 0, "record")], 0)
+
+    assert origin == "unknown"
+    assert reason.startswith(f"commit {'c' * 12} put back in parser.py a line the fix reads that commit {'b' * 12}")
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

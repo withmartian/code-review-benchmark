@@ -692,6 +692,12 @@ def fix_code_origin(
     # of it), or None when it was first written before the commits traced.
     writers: list[list[int] | None] = []
     removed_keys: dict[int, set[str]] = {}
+
+    def keys_removed(k: int) -> set[str]:
+        if k not in removed_keys:
+            removed_keys[k] = _removed_keys(details_by_sha[commits[k]["sha"]])
+        return removed_keys[k]
+
     for line, text in [*changed, *beside]:
         wrote: list[int] | None = []
         for i, hunks in reversed(history):
@@ -702,14 +708,25 @@ def fix_code_origin(
             # An exact move or re-wrap of code the commit removed elsewhere is checked before a light
             # edit is followed to its similar predecessor; an edit whose predecessor is the same text
             # (whitespace aside) is that line, not a move.
-            if kind == "added" or (kind == "edited" and _ws(text) != _ws(added_text)):
-                if i not in removed_keys:
-                    removed_keys[i] = _removed_keys(details_by_sha[commits[i]["sha"]])
-                if _added_keys(hunks, at) & removed_keys[i]:
+            moved = kind == "added" or (kind == "edited" and _ws(text) != _ws(added_text))
+            if moved and _added_keys(hunks, at) & keys_removed(i):
+                return (
+                    "unknown",
+                    f"commit {commits[i]['sha'][:12]} moved or re-wrapped a line the fix reads in {path} from "
+                    "code it removed, so where that line was first written is not followed",
+                    (),
+                )
+            if kind == "added":
+                # A line an earlier traced commit removed and this one put back (a revert, or a move whose
+                # removal and addition are in different commits) is restored code, not new code.
+                restored = next(
+                    (k for k in range(first_reviewed + 1, i) if _added_keys(hunks, at) & keys_removed(k)), None
+                )
+                if restored is not None:
                     return (
                         "unknown",
-                        f"commit {commits[i]['sha'][:12]} moved or re-wrapped a line the fix reads in {path} from "
-                        "code it removed, so where that line was first written is not followed",
+                        f"commit {commits[i]['sha'][:12]} put back in {path} a line the fix reads that commit "
+                        f"{commits[restored]['sha'][:12]} removed, so where that line was first written is not followed",
                         (),
                     )
             if kind in ("edited", "added"):

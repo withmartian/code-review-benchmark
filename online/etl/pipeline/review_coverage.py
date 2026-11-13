@@ -517,12 +517,11 @@ COMMENT_REVIEW_CONTENT: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 
 def _comment_review(events: list[dict], chatbot_username: str) -> bool:
-    """Whether a bot that reviews, or writes its record, in conversation comments (Claude, Qodo;
-    CodeRabbit, Greptile, Codex) posted such a comment, or a revision of one, that is a review: for
-    a bot in ``COMMENT_REVIEW_CONTENT``, one with a record or review content; for the others, one
-    with text that is not a notice. Its review may be that comment alone, record or no record."""
-    if not (reviews_in_issue_comments(chatbot_username) or record_in_issue_comments(chatbot_username)):
-        return False
+    """Whether the bot posted a conversation comment, or a revision of one, that is a review: for a
+    bot in ``COMMENT_REVIEW_CONTENT`` (CodeRabbit), one with a record or review content; for every
+    other bot, listed in the tables or not (Greptile, Codex, Claude, Qodo, cubic, Gemini, ...), one
+    with text that is not a notice. Its review may be that comment alone, record or no record: a
+    bot the tables do not know is never taken to have posted only notices."""
     content = [p for bot, p in COMMENT_REVIEW_CONTENT if same_github_actor(bot, chatbot_username)]
     records = [p for p in RECORD_PATTERNS if p.in_issue_comments and same_github_actor(p.bot, chatbot_username)]
     for e in events:

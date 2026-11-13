@@ -966,3 +966,27 @@ async def test_a_deleted_summary_is_not_stood_in_for_by_another_comment_of_the_b
     row["issue_comments"] = json.dumps([edited, reply])
     assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
     assert repo.stored["recall"] == 1.0
+
+
+@pytest.mark.parametrize("bot", ["cubic-dev-ai[bot]", "gemini-code-assist[bot]"])
+async def test_a_bot_outside_the_tables_that_reviews_in_a_conversation_comment_keeps_its_fixes(bot: str) -> None:
+    # A bot no table describes posted its review as a conversation comment and nothing else: that is
+    # a review, not a PR it never reviewed, so its fixes are not all left out.
+    row = json.loads(json.dumps(_pr_row()).replace(BOT, bot))
+    assembled = json.loads(row["assembled"])
+    assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "review"]
+    row["assembled"] = json.dumps(assembled)
+    row["reviews"] = json.dumps([])
+    body = "## Review\n\nI reviewed the PR. `parser.py`: the delimiter is wrong on line 2."
+    row["issue_comments"] = json.dumps(
+        [{"id": 1, "author": bot, "body": body, "created_at": "2026-07-01T10:01:00Z", "updated_at": None}]
+    )
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, row, bot, "model")
+
+    assert repo.stored["recall"] is not None
+    assert not any(
+        a.get("excluded_from_recall", "").startswith("the bot completed no review")
+        for a in repo.stored["human_actions"]
+    )

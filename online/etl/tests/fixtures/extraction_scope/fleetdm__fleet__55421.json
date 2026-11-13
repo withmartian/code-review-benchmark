@@ -53,6 +53,12 @@
    "kind": "product_tip",
    "quote": "💡 Configure MCP servers for context-aware, tailored reviews.",
    "pattern": "(?i)\\bMCP\\b"
+  },
+  {
+   "kind": "pr_remark",
+   "path": null,
+   "quote": "The PR description is freeform and omits the required template sections",
+   "pattern": "(?i)PR description|template section|AI section"
   }
  ],
  "findings": [
@@ -61,12 +67,6 @@
    "path": "website/views/emails/newsletter/email-newsletter-2026-10.ejs",
    "quote": "The introduction is already stale: Fleet 4.93.0 shipped on October 8",
    "pattern": "(?i)4\\.93|stale|already (shipped|released)"
-  },
-  {
-   "kind": "pr_remark",
-   "path": null,
-   "quote": "The PR description is freeform and omits the required template sections",
-   "pattern": "(?i)PR description|template section|AI section"
   }
  ]
 }

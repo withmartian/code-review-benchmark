@@ -61,6 +61,12 @@
    "kind": "control",
    "quote": "Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts",
    "pattern": "(?i)autofix|keep fixing"
+  },
+  {
+   "kind": "pr_description_check",
+   "path": null,
+   "quote": "Description is only 'Backport of `#3793`.'",
+   "pattern": "(?i)(PR|pull request) description|description is only|template section"
   }
  ],
  "findings": [
@@ -75,12 +81,6 @@
    "path": "test/e2e/utils/scylladb_versions_test.go",
    "quote": "Add a success-path test for `ListImageRepositoryTags`.",
    "pattern": "(?i)success|valid repositor"
-  },
-  {
-   "kind": "pr_description_check",
-   "path": null,
-   "quote": "Description is only 'Backport of `#3793`.'",
-   "pattern": "(?i)(PR|pull request) description|description is only|template section"
   }
  ]
 }

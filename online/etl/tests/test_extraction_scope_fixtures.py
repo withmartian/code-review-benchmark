@@ -38,19 +38,19 @@ FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob
 # and the live check does not assert it.
 _ANY_FINDING = "Your job is to identify every distinct substantive finding the bot flagged."
 _SPECIFIC_CHECK = (
-    "A check that states a specific problem with the pull request, such as with its title or description, "
-    "is not aggregate: it is a finding."
+    "Any other check that states a specific problem with the pull request is not aggregate: it is a finding."
 )
+_TITLE_OR_DESCRIPTION_CHECK = "A check of the pull request's title or description is not a finding either"
 RULE_FOR_KIND = {
     "coverage_check": "An aggregate check result is not a finding either: a check whose result is a count",
-    "pr_description_check": _SPECIFIC_CHECK,
+    "pr_description_check": _TITLE_OR_DESCRIPTION_CHECK,
     "linked_issue_check": None,
     "change_overview": "pure summaries without a concrete finding",
     "rating": None,
     "run_status": "status/progress messages",
     "control": None,
     "generation_offer": None,
-    "pr_remark": _SPECIFIC_CHECK,
+    "pr_remark": _TITLE_OR_DESCRIPTION_CHECK,
     "resolved_finding": _ANY_FINDING,
     "dismissed_finding": _ANY_FINDING,
     "product_tip": None,
@@ -119,18 +119,22 @@ def test_prompt_states_a_rule_for_every_labelled_kind_before_the_inputs(path: Pa
 
 
 def test_check_labels_sit_on_the_side_the_check_sentences_give() -> None:
-    """A check stating a specific problem with the PR (title, description) is a finding; an aggregate
-    check result (coverage against a threshold) is not. Both rows can sit in one check table."""
+    """A check stating a specific problem with the changes is a finding; a check of the PR's title or
+    description, which no later commit can address, and an aggregate check result (coverage against a
+    threshold) are not. A code check and a description check can come from one bot on one PR."""
     specific = {kind for kind, rule in RULE_FOR_KIND.items() if rule == _SPECIFIC_CHECK}
-    both_in_one_fixture = False
+    title_or_description = {kind for kind, rule in RULE_FOR_KIND.items() if rule == _TITLE_OR_DESCRIPTION_CHECK}
+    description_next_to_coverage = False
     for path in FIXTURES:
         fx = _load(path)
         finding_kinds = {label["kind"] for label in fx["findings"]}
         non_finding_kinds = {label["kind"] for label in fx["non_findings"]}
         assert not specific & non_finding_kinds, path.stem
+        assert not title_or_description & finding_kinds, path.stem
         assert "coverage_check" not in finding_kinds, path.stem
-        both_in_one_fixture |= "pr_description_check" in finding_kinds and "coverage_check" in non_finding_kinds
-    assert both_in_one_fixture  # the scylladb check table: a description check row next to a coverage row
+        description_next_to_coverage |= {"pr_description_check", "coverage_check"} <= non_finding_kinds
+    assert specific and title_or_description
+    assert description_next_to_coverage  # the scylladb check table: a description row next to a coverage row
 
 
 def test_kinds_without_a_rule_are_non_finding_kinds_the_live_check_skips() -> None:

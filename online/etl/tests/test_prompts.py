@@ -102,12 +102,21 @@ def test_aggregate_check_results_are_not_findings_and_aggregate_is_defined() -> 
     assert "such as a status" not in rules
 
 
+def test_a_title_or_description_check_is_not_a_finding_because_no_commit_can_address_it() -> None:
+    rules = _rules()
+
+    assert (
+        "A check of the pull request's title or description is not a finding either: it is resolved outside "
+        "the code, so no later commit can address it." in rules
+    )
+
+
 def test_a_check_stating_a_specific_problem_with_the_pr_and_a_located_request_are_findings() -> None:
     rules = _rules()
 
     assert (
-        "A check that states a specific problem with the pull request, such as with its title or description, "
-        "is not aggregate: it is a finding." in rules
+        "Any other check that states a specific problem with the pull request is not aggregate: it is a finding."
+        in rules
     )
     assert "So is a request that names a function, or a file and line, in the changed code." in rules
 
@@ -207,7 +216,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v3": {
         "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "38f180b0662580fe732e4351f3608d714b22319eae24ab542262ddd4539c0c5c",
+            "EXTRACT_BOT_SUGGESTIONS": "62810841a65e38b3918941820b7be4dc5a92028d1952a4799afa7154ffcbdae5",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

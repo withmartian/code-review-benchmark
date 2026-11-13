@@ -598,6 +598,36 @@ async def test_a_deleted_record_comment_the_timeline_still_holds_keeps_every_fix
     assert repo.stored["recall"] == 1.0
 
 
+@pytest.mark.parametrize("bot", ["claude[bot]", "qodo-code-review[bot]"])
+async def test_a_review_posted_as_a_conversation_comment_keeps_every_fix(bot: str) -> None:
+    # Claude posts a re-review as a new conversation comment, Qodo by editing its persistent one; such
+    # a review names no commit. After c, the bot reviewed again that way: the exporter fix of c may be
+    # of code it read, so nothing is left out.
+    row = json.loads(json.dumps(_pr_row()).replace(BOT, bot))
+    row["issue_comments"] = json.dumps([])
+    repo = FakeRepo()
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), bot, "model")
+    assert repo.stored["recall"] == 1.0  # only the review events: the fix is left out
+
+    review = {"id": 7, "author": bot, "body": "## Review\nI read exporter.py.", "created_at": "2026-07-01T14:30:00Z"}
+    if bot.startswith("qodo"):  # an edit of its persistent comment, posted before the first review
+        row["issue_comments"] = json.dumps([{**review, "created_at": "2026-07-01T09:00:00Z"}])
+        row["issue_comment_edits"] = json.dumps(
+            [
+                {
+                    "id": 7,
+                    "author": bot,
+                    "revisions": [{"edited_at": "2026-07-01T14:30:00Z", "body": "Code Review by Qodo"}],
+                }
+            ]
+        )
+    else:
+        row["issue_comments"] = json.dumps([review])
+    assert await analyze_single_pr(FakeLLM(), repo, row, bot, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
 async def test_a_reviewed_commit_amended_by_a_force_push_keeps_every_fix() -> None:
     # The bot reviewed b, which adds a guard to the parser; the author then amended b into b2 and
     # force-pushed, so b is no longer in the commit list and its review cannot be placed. d fixes the

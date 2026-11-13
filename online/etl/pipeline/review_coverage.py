@@ -325,6 +325,31 @@ RECORD_PATTERNS: tuple[RecordPattern, ...] = (
 )
 
 
+# Bots that post a review, or re-review, as a PR conversation comment (Claude posts each as a new
+# comment, Qodo edits a persistent one), which names no commit the analysis can place.
+REVIEWS_IN_ISSUE_COMMENTS: tuple[str, ...] = ("claude[bot]", "qodo-code-review[bot]")
+
+
+def reviews_in_issue_comments(chatbot_username: str) -> bool:
+    """Whether the bot posts its reviews as PR conversation comments (``REVIEWS_IN_ISSUE_COMMENTS``)."""
+    return any(same_github_actor(b, chatbot_username) for b in REVIEWS_IN_ISSUE_COMMENTS)
+
+
+def later_comment_review(events: list[dict], chatbot_username: str) -> bool:
+    """Whether a bot that posts reviews as conversation comments has a conversation comment, or a
+    revision of one, after its first review: a review it cannot place, so the PR leaves no fix out."""
+    if not reviews_in_issue_comments(chatbot_username):
+        return False
+    mine = [e for e in events if same_github_actor(e.get("actor"), chatbot_username)]
+    times = [
+        e.get("timestamp") or "" for e in mine if e.get("event_type") in ("review", "review_comment", "issue_comment")
+    ]
+    if not times:
+        return False
+    first = min(times)
+    return any(e.get("event_type") == "issue_comment" and (e.get("timestamp") or "") > first for e in mine)
+
+
 def record_in_issue_comments(chatbot_username: str) -> bool:
     """Whether the bot writes any of its record in PR conversation comments (``RECORD_PATTERNS``)."""
     return any(p.in_issue_comments and same_github_actor(p.bot, chatbot_username) for p in RECORD_PATTERNS)

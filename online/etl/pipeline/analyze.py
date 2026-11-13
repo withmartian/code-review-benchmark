@@ -24,6 +24,7 @@ from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
+from pipeline.review_coverage import later_comment_review
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import rewritten_review_commits
 from pipeline.review_coverage import sha_index
@@ -432,6 +433,10 @@ def _exclude_unreviewed_actions(
     known then, and a review recorded only there would read as a push it never reviewed, so no
     action is left out.
 
+    No action is left out either for a bot that posts its reviews as conversation comments (Claude,
+    Qodo: ``later_comment_review``) when it has a conversation comment, or a revision of one, after
+    its first review: that review names no commit and cannot be placed.
+
     No action is left out either when the bot reviewed or named a commit that is no longer in the
     PR's commit list (``rewritten_review_commits``): after a force-push (an amend or a rebase) the
     rewritten commits cannot be matched to the reviews of the commits they replace, and would read
@@ -450,6 +455,8 @@ def _exclude_unreviewed_actions(
     if not (comments_read and edits_complete) and record_in_issue_comments(chatbot_username):
         return set()
     if rewritten_review_commits(events, commits, chatbot_username):
+        return set()
+    if later_comment_review(events, chatbot_username):
         return set()
     matched = {m.get("human_action_id") for m in matches if m.get("matched")}
     unmatched = [a for a in actions if a["action_id"] not in matched]

@@ -415,6 +415,38 @@ async def test_a_fix_reviewed_only_in_its_fixed_state_is_left_out_with_or_withou
     assert actions["A2"]["unreviewed_commits"] == ["c" * 40]
 
 
+async def test_a_reviewed_commit_amended_by_a_force_push_keeps_every_fix() -> None:
+    # The bot reviewed b, which adds a guard to the parser; the author then amended b into b2 and
+    # force-pushed, so b is no longer in the commit list and its review cannot be placed. d fixes the
+    # guard's log line, which the bot read in b: without the guard b2 reads as never reviewed and the
+    # fix would be left out.
+    guard = "+    if text is None:\n+        log('empty input')\n+        return []\n"
+    patches = {
+        **PATCHES,
+        "b": ("parser.py", "modified", "@@ -1,2 +1,5 @@\n def parse(text):\n" + guard + "     return text.split(',')"),
+        "d": (
+            "parser.py",
+            "modified",
+            "@@ -2,3 +2,3 @@\n     if text is None:\n-        log('empty input')\n+        log.warning('empty input')\n"
+            "         return []",
+        ),
+    }
+    row = _pr_row(patches=patches)
+    llm = FakeLLM(actions=[ACTIONS[0], {**ACTIONS[1], "file_path": "parser.py"}])
+
+    repo = FakeRepo()
+    assert await analyze_single_pr(llm, repo, dict(row), BOT, "model")
+    assert repo.stored["recall"] == 0.5  # b in place: its review read the line, so the fix counts
+
+    amended = "9" * 40
+    row["commits"] = row["commits"].replace("b" * 40, amended)
+    row["commit_details"] = row["commit_details"].replace("b" * 40, amended)
+    assert await analyze_single_pr(llm, repo, row, BOT, "model")
+
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
 async def test_a_review_recorded_only_in_the_edit_history_keeps_the_fix() -> None:
     # The summary comment once recorded a review of c that posted nothing; the current body no longer does.
     edits = [{"id": 1, "author": BOT, "revisions": [

@@ -8,6 +8,7 @@ from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviewed_before
+from pipeline.review_coverage import rewritten_review_commits
 
 CR = "coderabbitai[bot]"
 CODEX = "chatgpt-codex-connector[bot]"
@@ -233,6 +234,28 @@ def test_a_record_naming_a_rebased_commit_is_dropped() -> None:
     events = [review(A, body=review_range(BASE, A)), review(gone, body=review_range(A, gone))]
 
     assert _spans(find_review_records(events, COMMITS, CR)) == [(-1, 0, "record")]
+    # The dropped review would make the rewritten commit read as never reviewed: the PR is marked as
+    # naming a replaced commit, and the analysis then leaves no fix out (test_analyze_unreviewed).
+    assert rewritten_review_commits(events, COMMITS, CR) == [gone]
+    assert rewritten_review_commits(events[:1], COMMITS, CR) == []
+
+
+def test_every_kind_of_named_commit_is_checked_against_the_commit_list() -> None:
+    gone = "e" * 40
+    inline = {"actor": CR, "event_type": "review_comment", "timestamp": "", "data": {"original_commit_id": gone}}
+    reply = {**inline, "data": {"original_commit_id": "9" * 40, "in_reply_to_id": 1}}
+    greptile = "greptile-apps[bot]"
+    last_reviewed = issue_comment(f"Last reviewed commit: [x](https://github.com/o/r/commit/{gone})", actor=greptile)
+
+    assert rewritten_review_commits([inline, reply], COMMITS, CR) == [gone]
+    assert rewritten_review_commits([issue_comment(summary(paused(gone, D)))], COMMITS, CR) == [gone]
+    # The start of a range is the PR's base on a first review, never one of its commits: not checked.
+    assert rewritten_review_commits([issue_comment(summary(rate_limited(gone, D)))], COMMITS, CR) == []
+    assert rewritten_review_commits([review(A, body=review_range(gone, A))], COMMITS, CR) == []
+    # A review whose body is a notice, posted on a commit since replaced, did not review it.
+    assert rewritten_review_commits([review(gone, body=paused())], COMMITS, CR) == []
+    assert rewritten_review_commits([last_reviewed], COMMITS, greptile) == [gone]
+    assert rewritten_review_commits([last_reviewed], COMMITS, CR) == []
 
 
 def test_other_bots_records() -> None:

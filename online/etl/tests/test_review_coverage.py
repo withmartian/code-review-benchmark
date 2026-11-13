@@ -826,6 +826,46 @@ def test_a_copy_whose_original_a_later_commit_removes_is_a_move() -> None:
     assert (origin, reason[:48]) == ("unknown", f"commit {'c' * 12} removed lines whose patch is")
 
 
+def test_a_patch_cut_short_between_hunks_is_not_read_as_whole() -> None:
+    # GitHub truncates a large patch between whole hunks: the hunks parse, but they hold fewer lines
+    # than the entry's additions and deletions say.
+    fix = "@@ -1,3 +1,3 @@\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n     return write(target, rows)"
+    details = _details((C, "exporter.py", "added", EXPORTER_C), (D, "exporter.py", "modified", fix))
+    assert _origin(_action(D, "exporter.py"), details)[0] == "unreviewed"
+
+    details[D]["files"][0].update(additions=5, deletions=4)
+    assert _origin(_action(D, "exporter.py"), details) == (
+        "unknown",
+        "the fixing commit has no readable patch for the file (missing, malformed or cut short)",
+    )
+
+    details = _details((C, "exporter.py", "added", EXPORTER_C), (D, "exporter.py", "modified", fix))
+    details[C]["files"][0].update(additions=40, deletions=0)
+    assert _origin(_action(D, "exporter.py"), details)[1] == (
+        f"the patch of commit {'c' * 12} for the file does not add up or is cut short"
+    )
+
+    # A removal patch cut short in another file leaves the commit's removed lines incomplete.
+    helper = "+def helper(x):\n+    y = x * 2\n+    return y"
+    details = _details(
+        (A, "app.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+        (C, "helpers.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+        (
+            D,
+            "helpers.py",
+            "modified",
+            "@@ -1,3 +1,3 @@\n def helper(x):\n-    y = x * 2\n+    y = x * 3\n     return y",
+        ),
+    )
+    other = "@@ -9,2 +9 @@\n def other():\n-    pass"
+    details[C]["files"].append(
+        {"filename": "app.py", "status": "modified", "patch": other, "additions": 0, "deletions": 4}
+    )
+    origin, reason = _origin(_action(D, "helpers.py"), details)
+    assert origin == "unknown"
+    assert reason.startswith(f"commit {'c' * 12} removed lines whose patch is not readable")
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

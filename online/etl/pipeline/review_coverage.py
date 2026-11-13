@@ -470,6 +470,20 @@ def _hunks(patch: str) -> list[_Hunk] | None:
     return out if close() else None
 
 
+def _file_hunks(f: dict) -> list[_Hunk] | None:
+    """The hunks of a commit file entry's patch, or None when the patch is missing, does not add up,
+    or is cut short: GitHub truncates a large patch between whole hunks, which then parse, so the
+    lines they add and remove are checked against the entry's own additions and deletions."""
+    hunks = _hunks(f.get("patch") or "") if f.get("patch") else None
+    if hunks is None:
+        return None
+    for key, kind in (("additions", "+"), ("deletions", "-")):
+        total = f.get(key)
+        if isinstance(total, int) and total != sum(1 for h in hunks for k, _ in h.lines if k == kind):
+            return None
+    return hunks
+
+
 def _removed_all(h: _Hunk) -> list[tuple[int, str]]:
     """(line number before the change, text) of each line a hunk removed."""
     out = []
@@ -649,7 +663,7 @@ def _removed_keys(
     keys: set[str] = set()
     complete = True
     for f in detail.get("files") or []:
-        hunks = _hunks(f.get("patch") or "") if f.get("patch") else None
+        hunks = _file_hunks(f)
         if hunks is None:
             if f.get("deletions") or (f.get("patch") and f.get("deletions") is None):
                 complete = False
@@ -753,9 +767,9 @@ def fix_code_origin(
         return "unknown", "the fix adds a new file", ()
     if entry.get("status") == "renamed":
         return "unknown", "the fixing commit renames the file, and the history is read by file name", ()
-    fix_hunks = _hunks(entry.get("patch") or "") if entry.get("patch") else None
+    fix_hunks = _file_hunks(entry)
     if fix_hunks is None:
-        return "unknown", "the fixing commit has no readable patch for the file", ()
+        return "unknown", "the fixing commit has no readable patch for the file (missing, malformed or cut short)", ()
     changed = _removed(fix_hunks)
     if not changed:
         return (
@@ -783,9 +797,13 @@ def fix_code_origin(
             if f.get("additions") or f.get("deletions") or f.get("status") in ("added", "renamed"):
                 return "unknown", f"commit {c.get('sha', '')[:12]} has no patch for the file", ()
             continue
-        hunks = _hunks(f["patch"])
+        hunks = _file_hunks(f)
         if hunks is None:
-            return "unknown", f"the patch of commit {c.get('sha', '')[:12]} for the file does not add up", ()
+            return (
+                "unknown",
+                f"the patch of commit {c.get('sha', '')[:12]} for the file does not add up or is cut short",
+                (),
+            )
         if f.get("status") == "renamed":
             renamed.add(i)
         history.append((i, hunks))

@@ -819,6 +819,21 @@ def _removed_all(h: _Hunk) -> list[tuple[int, str]]:
     return out
 
 
+def _removed_by_block(h: _Hunk) -> list[list[tuple[int, str]]]:
+    """The ``_removed_all`` lines of a hunk by change block (the runs of removed and added lines
+    between unchanged ones), indexed by block number: an unchanged line starts a new block."""
+    out: list[list[tuple[int, str]]] = [[]]
+    old = h.old_start
+    for kind, text in h.lines:
+        if kind == " ":
+            out.append([])
+        elif kind == "-":
+            out[-1].append((old, text))
+        if kind != "+":
+            old += 1
+    return out
+
+
 # A letter or digit in any script: a line of identifiers such as `总数 += 值` carries code.
 _CODE_RE = re.compile(r"[^\W_]")
 
@@ -919,7 +934,7 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
 
     Returns ("added", 0, "") when the commit wrote it, ("kept", n, text) when it is line n before
     the commit, unchanged, ("edited", n, removed text) when it is a light edit of the removed line n
-    of its hunk (``_EDIT_RATIO``), and ("mismatch", 0, "") when the line at that position is not the
+    of its change block (``_EDIT_RATIO``), and ("mismatch", 0, "") when the line at that position is not the
     line traced.
     """
     offset = 0
@@ -928,9 +943,14 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
         if before:
             return "kept", line - offset, text
         if line < h.new_start + h.new_len:
-            removed = _removed_all(h)
+            # A light edit is matched only within its own change block: a more similar line removed
+            # elsewhere in the hunk, in another function say, is not its predecessor.
+            removed_by_block = _removed_by_block(h)
+            block = 0
             old, new = h.old_start, h.new_start
             for kind, t in h.lines:
+                if kind == " ":
+                    block += 1
                 if kind == "-":
                     old += 1
                     continue
@@ -943,6 +963,7 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
                         # Which brace a diff pairs with an older one is arbitrary: an added punctuation
                         # line is the commit's own, never a light edit.
                         return "added", 0, ""
+                    removed = removed_by_block[block]
                     best = max(removed, key=lambda r: SequenceMatcher(None, r[1], t).ratio(), default=None)
                     if best is not None and SequenceMatcher(None, best[1], t).ratio() >= _EDIT_RATIO:
                         return "edited", best[0], best[1]

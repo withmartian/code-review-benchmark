@@ -513,6 +513,41 @@ def test_a_reviewed_line_copied_over_a_similar_line_then_deleted_is_a_move() -> 
     assert "copy" in reason
 
 
+def test_a_light_edit_is_matched_within_its_own_change_block() -> None:
+    # A (reviewed) wrote f's return; B (unreviewed) added g with a similar return. C edits f's
+    # return and replaces g's with `pass`, in two blocks of one hunk: g's removed line is more
+    # similar to f's new return than f's own old one, but it is in another block. The fix in D of
+    # f's return keeps its reviewed origin.
+    f_return = "    return parse(text, strict=False)"
+    details = _details(
+        (A, "parser.py", "added", f"@@ -0,0 +1,2 @@\n+def f(text):\n+{f_return}"),
+        (
+            B,
+            "parser.py",
+            "modified",
+            f"@@ -1,2 +1,5 @@\n def f(text):\n {f_return}\n+\n+def g(text):\n+    return parse(text, strict=True)",
+        ),
+        (
+            C,
+            "parser.py",
+            "modified",
+            f"@@ -1,5 +1,5 @@\n def f(text):\n-{f_return}\n+    return parse(text, strict=True, x=1)\n \n"
+            " def g(text):\n-    return parse(text, strict=True)\n+    pass",
+        ),
+        (
+            D,
+            "parser.py",
+            "modified",
+            "@@ -1,2 +1,2 @@\n def f(text):\n-    return parse(text, strict=True, x=1)\n"
+            "+    return parse(text or '', strict=True, x=1)",
+        ),
+    )
+
+    origin, reason, _ = fix_code_origin(_action(D, "parser.py"), COMMITS, details, [ReviewRecord(-1, 0, "record")], 0)
+
+    assert origin == "reviewed", reason
+
+
 def test_a_line_lightly_edited_after_the_last_review_keeps_its_reviewed_origin() -> None:
     # C appends to a reviewed line; the defect in the reviewed part was there before the last review.
     edit = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(',')[:100]"

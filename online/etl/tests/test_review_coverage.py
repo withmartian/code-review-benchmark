@@ -297,6 +297,10 @@ def test_every_kind_of_named_commit_is_checked_against_the_commit_list() -> None
     last_reviewed = issue_comment(f"Last reviewed commit: [x](https://github.com/o/r/commit/{gone})", actor=greptile)
 
     assert rewritten_review_commits([inline, reply], COMMITS, CR) == [gone]
+    # An inline comment with no commit at all cannot be placed; a thread reply with none is not a review.
+    no_commit = {**inline, "data": {"body": "Finding."}}
+    assert rewritten_review_commits([no_commit], COMMITS, CR) == [NO_COMMIT]
+    assert rewritten_review_commits([{**reply, "data": {"in_reply_to_id": 1}}], COMMITS, CR) == []
     assert rewritten_review_commits([issue_comment(summary(paused(gone, D)))], COMMITS, CR) == [gone]
     # The start of a range is the PR's base on a first review, never one of its commits: not checked.
     assert rewritten_review_commits([issue_comment(summary(rate_limited(gone, D)))], COMMITS, CR) == []

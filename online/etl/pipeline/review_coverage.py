@@ -441,7 +441,8 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
             # filled in (the analysis copies the API's commit onto it by review id).
             named.append(data.get("commit_id") or NO_COMMIT)
         elif etype == "review_comment" and not data.get("in_reply_to_id"):
-            named.append(data.get("original_commit_id") or data.get("commit_id"))
+            # An inline comment of a review, with no commit at all, is a review that cannot be placed.
+            named.append(data.get("original_commit_id") or data.get("commit_id") or NO_COMMIT)
         if etype in ("review", "issue_comment"):
             body = data.get("body") or ""
             for p in patterns:

@@ -471,6 +471,54 @@ async def test_a_record_bot_with_an_unavailable_revision_keeps_every_fix() -> No
     assert repo.stored["recall"] == 1.0
 
 
+async def test_a_gh_archive_review_event_takes_its_commit_from_the_api_review() -> None:
+    # cubic keeps no record: its reviews are placed by their commits. Its review events came from GH
+    # Archive, which carries no commit; the API reviews with the same ids hold them. cubic reviewed b,
+    # which wrote the guard d fixes, so the fix counts.
+    guard = "+    if text is None:\n+        log('empty input')\n+        return []\n"
+    patches = {
+        **PATCHES,
+        "b": ("parser.py", "modified", "@@ -1,2 +1,5 @@\n def parse(text):\n" + guard + "     return text.split(',')"),
+        "d": (
+            "parser.py",
+            "modified",
+            "@@ -2,3 +2,3 @@\n     if text is None:\n-        log('empty input')\n+        log.warning('empty input')\n"
+            "         return []",
+        ),
+    }
+    cubic = "cubic-dev-ai[bot]"
+    row = json.loads(json.dumps(_pr_row(patches=patches)).replace(BOT, cubic))
+    assembled = json.loads(row["assembled"])
+    for n, e in enumerate(e for e in assembled["events"] if e["event_type"] == "review"):
+        e["data"]["review_id"] = n + 1
+        del e["data"]["commit_id"]
+    row["assembled"] = json.dumps(assembled)
+    row["reviews"] = json.dumps(
+        [{"id": 1, "author": cubic, "commit_id": "a" * 40}, {"id": 2, "author": cubic, "commit_id": "b" * 40}]
+    )
+    llm = FakeLLM(actions=[ACTIONS[0], {**ACTIONS[1], "file_path": "parser.py"}])
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(llm, repo, dict(row), cubic, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # Placed, the reviews of a and b leave the exporter c wrote unreviewed, so its fix is left out.
+    # Read without their commits they would all count as unplaceable, and nothing would be.
+    plain = json.loads(json.dumps(_pr_row()).replace(BOT, cubic))
+    plain["assembled"] = row["assembled"]
+    plain["reviews"] = row["reviews"]
+    assert await analyze_single_pr(FakeLLM(), repo, plain, cubic, "model")
+    assert repo.stored["recall"] == 1.0
+
+    # A GH Archive review with no API review to fill it in cannot be placed: like a review whose
+    # commit GitHub nulled, it leaves nothing out on the PR.
+    row["reviews"] = json.dumps([{"id": 1, "author": cubic, "commit_id": "a" * 40}])
+    assert await analyze_single_pr(llm, repo, row, cubic, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
 async def test_a_reviewed_commit_amended_by_a_force_push_keeps_every_fix() -> None:
     # The bot reviewed b, which adds a guard to the parser; the author then amended b into b2 and
     # force-pushed, so b is no longer in the commit list and its review cannot be placed. d fixes the

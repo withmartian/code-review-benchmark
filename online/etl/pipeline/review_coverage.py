@@ -401,7 +401,8 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
         etype = e.get("event_type")
         if etype == "review" and _is_completed_review(data, chatbot_username):
             # GitHub nulls a review's commit once the reviewed commit object is gone (a force-push):
-            # the review ran but cannot be placed.
+            # the review ran but cannot be placed. So is a GH Archive review event that no API review
+            # filled in (the analysis copies the API's commit onto it by review id).
             named.append(data.get("commit_id") or NO_COMMIT)
         elif etype == "review_comment" and not data.get("in_reply_to_id"):
             named.append(data.get("original_commit_id") or data.get("commit_id"))

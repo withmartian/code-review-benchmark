@@ -295,6 +295,25 @@ def _format_actions(actions: list[dict]) -> str:
     return "\n".join(lines) if lines else "(no actions)"
 
 
+def _with_review_commits(events: list[dict], reviews: list[dict]) -> list[dict]:
+    """Timeline events with each review's commit taken from the API reviews, where the event lacks it.
+
+    A review event from GH Archive (PullRequestReviewEvent) carries the review's id and state but
+    not its commit, and assembly keeps it in place of the API review with the same id. Without the
+    commit a review cannot be placed: the bot's completed reviews would read as no review at all.
+    The API's commit, null included (GitHub nulls it once the reviewed commit is gone), is copied
+    onto the event by review id.
+    """
+    by_id = {r.get("id"): r.get("commit_id") for r in reviews if r.get("id") is not None}
+    out = []
+    for e in events:
+        data = e.get("data") or {}
+        if e.get("event_type") == "review" and "commit_id" not in data and data.get("review_id") in by_id:
+            e = {**e, "data": {**data, "commit_id": by_id[data["review_id"]]}}
+        out.append(e)
+    return out
+
+
 def _with_current_issue_comments(events: list[dict], issue_comments: list[dict]) -> list[dict]:
     """Timeline events with issue comments taken from the API, when they were fetched.
 
@@ -541,7 +560,11 @@ async def analyze_single_pr(
     excluded_action_ids = _exclude_unreviewed_actions(
         actions,
         matches,
-        _with_comment_revisions(_with_current_issue_comments(events, issue_comments), comment_edits, issue_comments),
+        _with_comment_revisions(
+            _with_current_issue_comments(_with_review_commits(events, reviews), issue_comments),
+            comment_edits,
+            issue_comments,
+        ),
         commits,
         post_commits,
         details_by_sha,

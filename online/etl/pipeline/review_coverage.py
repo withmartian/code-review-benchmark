@@ -605,8 +605,9 @@ def path_filtered(path: str, events: list[dict], chatbot_username: str) -> bool:
     only the files that changed in the range it read, so the review that shows the filter is often
     the review of the fix itself: the filter applied before it too. A review that lists the file
     among those it read, at any time, means the file was read, or the configuration changed: the
-    fix counts. A review that does not list the file (an incremental review of other files) says
-    nothing.
+    fix counts. So does an inline comment of the bot on the file that does not reply to a thread:
+    the bot reviewed it. A review that does not list the file (an incremental review of other
+    files) says nothing.
     """
     patterns = [p for p in FILE_SCOPE_PATTERNS if same_github_actor(p.bot, chatbot_username)]
     target = _norm_path(path)
@@ -614,7 +615,14 @@ def path_filtered(path: str, events: list[dict], chatbot_username: str) -> bool:
         return False
     ignored = False
     for e in events:
-        if e.get("event_type") != "review" or not same_github_actor(e.get("actor"), chatbot_username):
+        if not same_github_actor(e.get("actor"), chatbot_username):
+            continue
+        data = e.get("data") or {}
+        if e.get("event_type") == "review_comment" and not data.get("in_reply_to_id"):
+            if _norm_path(data.get("path") or "") == target:
+                return False
+            continue
+        if e.get("event_type") != "review":
             continue
         for m in _DETAILS_RE.finditer((e.get("data") or {}).get("body") or ""):
             listed = {_norm_path(f) for f in _FILE_ITEM_RE.findall(m.group("body"))}

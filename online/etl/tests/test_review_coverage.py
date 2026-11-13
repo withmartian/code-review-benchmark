@@ -1122,3 +1122,27 @@ def test_a_summary_without_a_record_is_a_review_whose_record_is_missing() -> Non
     limit = issue_comment(summary(rate_limited("f" * 40, D)))
     assert completed_no_review([limit], COMMITS, CR)
     assert not comment_record_missing([limit], COMMITS, CR)
+
+
+def test_an_inline_comment_on_the_file_shows_it_was_reviewed() -> None:
+    # A review at A with its record, an inline comment on parser.py at A, and the review of the fix
+    # D listing parser.py as ignored due to path filters, with no earlier list of files read: the
+    # inline comment shows the bot reviewed the file, so it is not path-filtered.
+    reviewed_a = review(A, body=f"Finding.\n{review_range('f' * 40, A)}")
+    inline = {
+        "actor": CR,
+        "event_type": "review_comment",
+        "timestamp": "2026-07-01T10:00:00Z",
+        "data": {"body": "Null check missing.", "path": "parser.py", "original_commit_id": A},
+    }
+    filtered_d = review(D, body=review_info(ignored=["parser.py"]))
+    assert path_filtered("parser.py", [reviewed_a, filtered_d], CR)
+    assert not path_filtered("parser.py", [reviewed_a, inline, filtered_d], CR)
+    assert not path_filtered(
+        "./parser.py", [reviewed_a, {**inline, "data": {**inline["data"], "path": "./parser.py"}}, filtered_d], CR
+    )
+    # A reply in a thread on the file, or an inline comment on another file, says nothing.
+    reply = {**inline, "data": {**inline["data"], "in_reply_to_id": 3}}
+    assert path_filtered("parser.py", [reviewed_a, reply, filtered_d], CR)
+    other = {**inline, "data": {**inline["data"], "path": "exporter.py"}}
+    assert path_filtered("parser.py", [reviewed_a, other, filtered_d], CR)

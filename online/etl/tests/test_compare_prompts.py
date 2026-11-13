@@ -286,13 +286,13 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
         set(h) == {"table", "arm", "prompt_sha256"} and re.fullmatch(r"[0-9a-f]{64}", h["prompt_sha256"])
         for h in header
     )
-    # the head arm was measured on extract-v2 (the longer rules); this package holds no arm for the
-    # cut-down extract-v3 prompt this branch ships, which was measured outside it
+    # the newest arm was measured on extract-v2, an earlier revision with longer rules; the package
+    # holds no arm for the extract-v3 prompt this branch ships, which was measured outside it
     from pipeline.prompt_pins import pinned_inputs
     from tests.test_prompts import PINNED_INPUTS_BY_VERSION
 
-    head_sha = next(h["prompt_sha256"] for h in header if h["arm"] == "this PR at head, one draw")
-    assert head_sha == PINNED_INPUTS_BY_VERSION["extract-v2"]["inputs"]["EXTRACT_BOT_SUGGESTIONS"]
+    v2_sha = next(h["prompt_sha256"] for h in header if h["arm"] == "extract-v2 af4797d5, one draw")
+    assert v2_sha == PINNED_INPUTS_BY_VERSION["extract-v2"]["inputs"]["EXTRACT_BOT_SUGGESTIONS"]
     assert pinned_inputs()["EXTRACT_BOT_SUGGESTIONS"] not in {h["prompt_sha256"] for h in header}
     pr_url = re.compile(r"^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/pull/[1-9]\d*$")
     metrics = {"total_suggestions", "matched_suggestions", "total_actions", "matched_actions", "precision", "recall"}
@@ -304,7 +304,7 @@ def test_packaged_results_cover_exactly_the_packaged_pr_list_and_hold_only_metri
         "previous revision cee5e6cc, one draw",
         "previous revision 093c763a, one draw",
         "previous revision a2fcbe51, one draw",
-        "this PR at head, one draw",
+        "extract-v2 af4797d5, one draw",
     }
 
     assert all(pr_url.match(r["pr_url"]) for r in rows)

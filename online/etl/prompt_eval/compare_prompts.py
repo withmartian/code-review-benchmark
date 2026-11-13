@@ -16,9 +16,11 @@ column selects (bot, pr_url) pairs; one with only pr_url selects every bot's ana
 Only merged PRs are compared, as the API serves only those. Without --pr-list the script compares
 every analyzed merged PR in the DB, so it asks for --all-analyzed (--limit-per-bot keeps the newest
 analyses of each bot).
-extraction_scope_prs.csv lists the public PRs of the measurement made when the non-finding rules
-were added, and extraction_scope_results.jsonl holds that measurement's per-PR metrics (bot, arm,
-suggestion and action counts, precision, recall; no review text). That measurement came from a
+extraction_scope_prs.csv lists the public PRs of an earlier measurement, and
+extraction_scope_results.jsonl holds its per-PR metrics (bot, arm, suggestion and action counts,
+precision, recall; no review text). Its arms are the prompt before EXTRACTION_PROMPT_VERSION
+existed ("current") and unreleased drafts, the newest being extract-v2 (prompt af4797d5, longer rules
+than the released extract-v3); each arm's header row gives its prompt sha256. It has no extract-v3 arm. That measurement came from a
 separate harness on public PRs; this script is an independent check that covers only the listed PRs
 already analyzed in your DB, and it prints how many listed entries it found and which are missing.
 With --pr-list the analyses are filtered by PR URL in SQL.

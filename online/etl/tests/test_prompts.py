@@ -99,12 +99,11 @@ def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findin
     )
 
 
-def test_the_longer_revisions_kind_rules_are_not_in_this_prompt() -> None:
-    """extract-v2 also excluded overviews, ratings, coverage gates, controls and run metadata, named
-    resolved findings and title remarks as findings, and listed the excluded kinds. On the default
-    Search API input the current upstream prompt extracts nothing from those kinds (the coverage gate
-    aside, a retired check), so extract-v3 states no rule for them. Re-adding one is a deliberate
-    change: update this test with it."""
+def test_the_draft_rules_for_other_kinds_are_not_in_this_prompt() -> None:
+    """The unreleased extract-v2 draft also excluded overviews, ratings, coverage gates, controls and
+    run metadata, named resolved findings and title remarks as findings, and listed the excluded
+    kinds. On the Search API input those kinds rarely reach step 1 or yield an extracted item, so
+    extract-v3 states no rule for them. Re-adding one is a deliberate change: update this test with it."""
     rules = _rules()
 
     for dropped in (
@@ -149,11 +148,13 @@ def _ledger_problems(ledger: dict[str, dict]) -> list[str]:
     return problems
 
 
-# What each EXTRACTION_PROMPT_VERSION was released with, oldest first. Do not edit a past entry:
+# What each EXTRACTION_PROMPT_VERSION stands for, oldest first. Do not edit a past entry:
 # when any pinned input changes, bump EXTRACTION_PROMPT_VERSION in llm/prompts.py and add a new entry
 # whose "previous" is _entry_digest() of the entry before it, so stored analyses made with the two
 # can be told apart. An edit to a past entry is visible in the diff (it breaks or rewrites the links).
 PINNED_INPUTS_BY_VERSION = {
+    # an unreleased draft with longer scope rules, measured in prompt_eval/; kept so an analysis
+    # stamped with it can still be told apart
     "extract-v2": {
         "previous": None,
         "inputs": {
@@ -178,6 +179,7 @@ PINNED_INPUTS_BY_VERSION = {
             "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
         },
     },
+    # the first released version
     "extract-v3": {
         "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
         "inputs": {

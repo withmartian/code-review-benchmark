@@ -453,7 +453,8 @@ async def test_a_record_bot_whose_record_is_missing_keeps_every_fix() -> None:
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
     summary = f"Last reviewed commit: [Parser](https://github.com/owner/repo/commit/{'b' * 40})"
-    comments = [{"id": 6, "author": greptile, "body": summary, "created_at": "2026-07-01T12:31:00Z"}]
+    # The summary the timeline holds as first posted (created 10:01), edited since.
+    comments = [{"id": 6, "author": greptile, "body": summary, "created_at": "2026-07-01T10:01:00Z"}]
     row["issue_comments"] = json.dumps(comments)
     assert await analyze_single_pr(FakeLLM(), repo, row, greptile, "model")
     assert repo.stored["recall"] == 1.0
@@ -582,6 +583,8 @@ async def test_a_deleted_record_comment_the_timeline_still_holds_keeps_every_fix
     greptile = "greptile-apps[bot]"
     row = json.loads(json.dumps(_pr_row()).replace(BOT, greptile))
     assembled = json.loads(row["assembled"])
+    # The summary is comment 9 here; the fixture's id-less copy of it is dropped.
+    assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "issue_comment"]
     first = f"Last reviewed commit: [Parser](https://github.com/owner/repo/commit/{'a' * 40})"
     assembled["events"].append(
         {
@@ -821,8 +824,8 @@ async def test_a_qodo_re_review_shown_only_by_the_current_body_keeps_every_fix()
     qodo = "qodo-code-review[bot]"
     row = json.loads(json.dumps(_pr_row()).replace(BOT, qodo))
     body = "Code Review by Qodo\n\nexporter.py: path."
-    comment = {"id": 7, "author": qodo, "body": body, "created_at": "2026-07-01T09:00:00Z"}
-    row["issue_comments"] = json.dumps([{**comment, "updated_at": "2026-07-01T09:00:00Z"}])
+    comment = {"id": 7, "author": qodo, "body": body, "created_at": "2026-07-01T10:01:00Z"}
+    row["issue_comments"] = json.dumps([{**comment, "updated_at": "2026-07-01T10:01:00Z"}])
     repo = FakeRepo()
     assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
     assert repo.stored["recall"] == 1.0  # never edited: the exporter fix is left out
@@ -842,7 +845,7 @@ async def test_no_review_needs_the_whole_conversation_history() -> None:
     row = _notice_only_row(qodo)
     pause = "### Qodo reviews are paused for this user.\n\nTroubleshooting steps vary by plan."
     row["issue_comments"] = json.dumps(
-        [{"id": 7, "author": qodo, "body": pause, "created_at": "2026-07-01T09:00:00Z", "updated_at": None}]
+        [{"id": 7, "author": qodo, "body": pause, "created_at": "2026-07-01T10:01:00Z", "updated_at": None}]
     )
     repo = FakeRepo()
     assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
@@ -942,3 +945,24 @@ async def test_a_coderabbit_summary_with_a_walkthrough_but_no_range_keeps_every_
 
     assert repo.stored["recall"] == 0.5
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+
+async def test_a_deleted_summary_is_not_stood_in_for_by_another_comment_of_the_bot() -> None:
+    # The summary as first posted (the timeline's copy, no id) is gone from the comments read, which
+    # hold only a chat reply of the bot: the summary's later edits were never read, so every fix is
+    # kept, as when the read holds only a person's comment.
+    row = _pr_row()
+    reply = {"id": 2, "author": BOT, "body": "You're right, thanks.", "created_at": "2026-07-01T16:00:00Z"}
+    row["issue_comments"] = json.dumps([reply])
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # The same comment read back, edited since (same creation time), still holds it.
+    edited = {"id": 1, "author": BOT, "body": f"{SUMMARY}\n{RATE_LIMITED}", "created_at": "2026-07-01T10:01:00Z"}
+    row["issue_comments"] = json.dumps([edited, reply])
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert repo.stored["recall"] == 1.0

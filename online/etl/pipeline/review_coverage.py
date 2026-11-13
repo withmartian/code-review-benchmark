@@ -1001,13 +1001,17 @@ def _file_entry(detail: dict | None, path: str) -> dict | None:
     return None
 
 
+# Docs are told by extension, tests by test-file naming and test folders, generated files by
+# specific markers. A folder named doc/, docs/, spec/ or specs/ does not make code in it a doc or a
+# test (Go's go/doc package, a spec/ validator), nor does "generated" in a file's name.
 _NOT_SOURCE_RE = re.compile(
-    r"(^|/)(tests?|specs?|__tests__|docs?)/"  # test and doc folders
+    r"(^|/)(tests?|__tests__)/"  # test folders
+    r"|(_test\.|\.test\.|\.spec\.|_spec\.|(^|/)test_[^/]*$)"  # test files
+    r"|\.(md|mdx|rst|txt|adoc)$"  # docs
     r"|(^|/)\.github/"  # CI
-    r"|(_test\.|\.test\.|\.spec\.|(^|/)test_[^/]*$)"  # test files
-    r"|\.(md|rst|txt|ya?ml|jsonc?|json5|toml|lock)$"  # docs, config and lock files
+    r"|\.(ya?ml|jsonc?|json5|toml|lock)$"  # config and lock files
     r"|(^|/)(go\.sum|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|Gemfile\.lock)$"
-    r"|(\.|_|-|/)generated(\.|_|-|/)",  # generated files
+    r"|\.generated\.|_generated\.go$|\.pb\.go$|(^|/)generated/",  # generated files
     re.IGNORECASE,
 )
 

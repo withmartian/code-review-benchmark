@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pipeline.review_coverage import NO_COMMIT
 from pipeline.review_coverage import ReviewRecord
+from pipeline.review_coverage import _is_source
 from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_notices
@@ -1146,3 +1147,36 @@ def test_an_inline_comment_on_the_file_shows_it_was_reviewed() -> None:
     assert path_filtered("parser.py", [reviewed_a, reply, filtered_d], CR)
     other = {**inline, "data": {**inline["data"], "path": "exporter.py"}}
     assert path_filtered("parser.py", [reviewed_a, other, filtered_d], CR)
+
+
+def test_which_files_of_a_fixing_commit_are_source() -> None:
+    # Code under a doc/ or spec/ folder, or with "generated" in its name, is source.
+    for path in (
+        "src/go/doc/reader.go",
+        "internal/spec/validate.go",
+        "lib/docs/render.py",
+        "src/generated_names.py",
+        "app/is-generated-file.ts",
+        "src/main.go",
+    ):
+        assert _is_source(path), path
+    # Docs by extension, tests by name or test folder, generated files by their markers, CI and config.
+    for path in (
+        "docs/guide.md",
+        "doc/api.rst",
+        "notes.txt",
+        "manual/index.adoc",
+        "tests/test_parser.py",
+        "src/__tests__/app.ts",
+        "pkg/parser_test.go",
+        "web/app.spec.ts",
+        "spec/models/user_spec.rb",
+        "constants.guides.generated.ts",
+        "api/types_generated.go",
+        "api/service.pb.go",
+        "src/generated/client.ts",
+        ".github/workflows/ci.yml",
+        "config/app.toml",
+        "go.sum",
+    ):
+        assert not _is_source(path), path

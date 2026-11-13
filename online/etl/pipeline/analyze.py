@@ -335,11 +335,21 @@ def _deleted_bot_comments(events: list[dict], comments_read: bool, issue_comment
 
 def _read_holds(event: dict, issue_comments: list[dict]) -> bool:
     """Whether the comments read still hold a timeline comment: by its id, or, for one without an
-    id, when they hold any comment of its author (they are then read as its current bodies)."""
-    comment_id = (event.get("data") or {}).get("comment_id")
+    id, when they hold a comment of its author with the same body or created at the same time (an
+    edit keeps the creation time). Another comment of the same author (a re-posted summary, a chat
+    reply) does not stand in for it: the comment is gone, and its later edits were never read."""
+    data = event.get("data") or {}
+    comment_id = data.get("comment_id")
     if comment_id is not None:
         return comment_id in {c.get("id") for c in issue_comments}
-    return any(same_github_actor(c.get("author"), event.get("actor")) for c in issue_comments)
+    return any(
+        same_github_actor(c.get("author"), event.get("actor"))
+        and (
+            (c.get("body") or "") == (data.get("body") or "")
+            or (bool(c.get("created_at")) and c.get("created_at") == event.get("timestamp"))
+        )
+        for c in issue_comments
+    )
 
 
 def _with_current_issue_comments(events: list[dict], issue_comments: list[dict] | None) -> list[dict]:

@@ -20,6 +20,7 @@ from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
+from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
@@ -440,8 +441,7 @@ def _exclude_unreviewed_actions(
     if first is None:
         return set()
     records = find_review_records(events, commits, chatbot_username)
-    sources = {r.source for r in records}
-    if record_in_issue_comments(chatbot_username) and "review" in sources and "record" not in sources:
+    if comment_record_missing(events, commits, chatbot_username):
         return set()
     notices = sorted({n.reason for n in find_notices(events, chatbot_username)})
     excluded = set()

@@ -276,13 +276,17 @@ class RecordPattern:
     set, matches the parts of a body where the same text describes a review that did not run or has
     not finished; records inside them do not count. in_issue_comments means the bot writes this
     record in a PR conversation comment (often a status comment it rewrites on each review), so the
-    record cannot be read for a PR whose conversation comments were not read.
+    record cannot be read for a PR whose conversation comments were not read. always_in_comment
+    means that comment carries the record whenever it exists (Greptile's summary names its last
+    reviewed commit), so a comment without it is a missing record; CodeRabbit's summary carries a
+    range only for some reviews (one that posted nothing), so for it only a missing comment is.
     """
 
     bot: str
     pattern: re.Pattern[str]
     ignore: re.Pattern[str] | None = None
     in_issue_comments: bool = False
+    always_in_comment: bool = False
 
 
 RECORD_PATTERNS: tuple[RecordPattern, ...] = (
@@ -305,6 +309,7 @@ RECORD_PATTERNS: tuple[RecordPattern, ...] = (
             r"Last reviewed commit: \[[^\n]*?\]\(https://github\.com/[^/\s]+/[^/\s]+/commit/(?P<head>[0-9a-f]{7,40})\)"
         ),
         in_issue_comments=True,
+        always_in_comment=True,
     ),
     # The review summary's state marker, and the "Reviewed commit" line of a review.
     RecordPattern(
@@ -322,6 +327,36 @@ RECORD_PATTERNS: tuple[RecordPattern, ...] = (
 def record_in_issue_comments(chatbot_username: str) -> bool:
     """Whether the bot writes any of its record in PR conversation comments (``RECORD_PATTERNS``)."""
     return any(p.in_issue_comments and same_github_actor(p.bot, chatbot_username) for p in RECORD_PATTERNS)
+
+
+def comment_record_missing(events: list[dict], commits: list[dict], chatbot_username: str) -> bool:
+    """Whether a bot that writes its record in conversation comments completed a review on the PR
+    but the comment record of it is missing.
+
+    A record in a review body (CodeRabbit and Codex write one there too) covers that review alone,
+    while a review that posted nothing is recorded only in the comment, so only the comment record
+    counts. It is missing when no comment names a commit of the PR in an ``in_issue_comments`` row
+    and either the bot has no conversation comment on the PR at all (current body or earlier
+    revision: the comment was deleted, or never among those read), or its comment always carries
+    the record (``always_in_comment``), or no record of the bot is found anywhere on the PR (its
+    reviews then cannot be told apart from silent ones).
+    """
+    patterns = [p for p in RECORD_PATTERNS if p.in_issue_comments and same_github_actor(p.bot, chatbot_username)]
+    if not patterns or not _completed_reviews(events, commits, chatbot_username):
+        return False
+    bodies = [
+        (e.get("data") or {}).get("body") or ""
+        for e in events
+        if e.get("event_type") == "issue_comment" and same_github_actor(e.get("actor"), chatbot_username)
+    ]
+    for body in bodies:
+        for p in patterns:
+            for m in p.pattern.finditer(p.ignore.sub("", body) if p.ignore else body):
+                if sha_index(commits, m.group("head")) is not None:
+                    return False
+    if not bodies or any(p.always_in_comment for p in patterns):
+        return True
+    return not any(r.source == "record" for r in find_review_records(events, commits, chatbot_username))
 
 
 @dataclass(frozen=True)

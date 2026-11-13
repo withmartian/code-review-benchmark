@@ -279,7 +279,8 @@ async def test_a_review_that_posted_nothing_counts_through_the_summary_record() 
 
 async def test_comments_never_read_keep_every_fix_only_for_a_bot_with_a_record_in_comments() -> None:
     # The rate-limit case leaves the exporter fix out once the comments were read, even when none is
-    # the bot's; with them never read it is kept for CodeRabbit.
+    # the bot's (the timeline still holds its summary as first posted); with them never read it is
+    # kept for CodeRabbit.
     row = _pr_row()
     row["issue_comments"] = json.dumps([])
     repo = FakeRepo()
@@ -443,6 +444,49 @@ async def test_a_record_bot_whose_record_is_missing_keeps_every_fix() -> None:
     comments = [{"id": 6, "author": greptile, "body": summary, "created_at": "2026-07-01T12:31:00Z"}]
     row["issue_comments"] = json.dumps(comments)
     assert await analyze_single_pr(FakeLLM(), repo, row, greptile, "model")
+    assert repo.stored["recall"] == 1.0
+
+
+async def test_a_record_in_review_bodies_does_not_stand_in_for_the_summary_record() -> None:
+    # CodeRabbit's review bodies record its reviews of a and b, but a review that posted nothing (of c,
+    # say) is recorded only in the summary comment, which is gone: the comments read hold only a
+    # person's. The body records do not show that no such review ran, so no fix is left out.
+    row = _pr_row()
+    row["issue_comments"] = json.dumps(
+        [{"id": 5, "author": "dev", "body": "thanks", "created_at": "2026-07-01T16:00:00Z"}]
+    )
+    repo = FakeRepo()
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), BOT, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # A summary that carries no range is CodeRabbit's normal state after a review that posted: with
+    # the review bodies' records, the exporter fix of c is left out.
+    row["issue_comments"] = json.dumps(
+        [{"id": 1, "author": BOT, "body": SUMMARY, "created_at": "2026-07-01T10:01:00Z"}]
+    )
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), BOT, "model")
+    assert repo.stored["recall"] == 1.0
+
+    # With no record anywhere, neither in the summary nor in a review body, its reviews cannot be told
+    # apart from silent ones, so nothing is left out.
+    bare = dict(row)
+    assembled = json.loads(row["assembled"])
+    for e in assembled["events"]:
+        if e["event_type"] == "review":
+            e["data"]["body"] = e["data"]["body"].split("\n")[0]
+    bare["assembled"] = json.dumps(assembled)
+    assert await analyze_single_pr(FakeLLM(), repo, bare, BOT, "model")
+    assert repo.stored["recall"] == 0.5
+
+    # With the summary read, recording the review of b as the last, the exporter fix of c is left out.
+    summary = (
+        f"<!-- This is an auto-generated comment: summarize by coderabbit.ai -->\n{_recent_review('a' * 40, 'b' * 40)}"
+    )
+    row["issue_comments"] = json.dumps(
+        [{"id": 1, "author": BOT, "body": summary, "created_at": "2026-07-01T10:01:00Z"}]
+    )
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
     assert repo.stored["recall"] == 1.0
 
 

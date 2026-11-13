@@ -453,6 +453,22 @@ def test_a_fix_over_both_reviewed_and_new_lines_is_mixed() -> None:
     assert _origin(_action(D, "parser.py"), details)[0] == "mixed"
 
 
+def test_a_line_of_non_ascii_identifiers_is_code() -> None:
+    # The reviewed line `总数 += 值` carries code in another script: the fix that removes it, and
+    # changes a log line C added, changed a reviewed line and a new one (mixed). Read as punctuation,
+    # its removal would be judged by the unreviewed log lines around it instead.
+    reviewed = "@@ -0,0 +1,3 @@\n+def add(值):\n+    总数 += 值\n+    return 总数"
+    later = (
+        "@@ -1,3 +1,6 @@\n def add(值):\n+    log('a')\n     总数 += 值\n+    log('b')\n     return 总数\n+    log('c')"
+    )
+    fix = "@@ -1,6 +1,5 @@\n def add(值):\n     log('a')\n-    总数 += 值\n     log('b')\n     return 总数\n-    log('c')\n+    log('C')"
+    details = _details(
+        (A, "parser.py", "added", reviewed), (C, "parser.py", "modified", later), (D, "parser.py", "modified", fix)
+    )
+
+    assert _origin(_action(D, "parser.py"), details)[0] == "mixed"
+
+
 def test_a_reviewed_line_copied_over_a_similar_line_then_deleted_is_a_move() -> None:
     # A wrote old.py (reviewed); B added new.py; C copied A's line over B's similar one, and D
     # deleted old.py: a move over two commits, landing as a light edit. The fix in E changes the

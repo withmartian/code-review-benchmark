@@ -853,6 +853,16 @@ async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out(
     assert await analyze_single_pr(llm, repo, renamed, BOT, "model")
     assert repo.stored["recall"] == 0.5
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+    # A fix whose commit is not in the PR's list cannot be shown to change no reviewed source: kept.
+    unplaced = FakeLLM(actions=[ACTIONS[0], {**ACTIONS[1], "file_path": "parser.py", "commit_sha": "9" * 12}])
+    filtered = _pr_row(patches=patches)
+    filtered_events = json.loads(filtered["assembled"])
+    filtered_events["events"].append(_review("d" * 40, "2026-07-01T15:30:00Z", f"No findings.\n{filters}"))
+    filtered["assembled"] = json.dumps(filtered_events)
+    assert await analyze_single_pr(llm, repo, dict(filtered), BOT, "model")
+    assert repo.stored["recall"] == 1.0  # placed: left out by the filter
+    assert await analyze_single_pr(unplaced, repo, filtered, BOT, "model")
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
     # The same with the action naming the file as ./parser.py: paths compare normalized.
     dotted = FakeLLM(actions=[ACTIONS[0], {**ACTIONS[1], "file_path": "./parser.py"}])
     assert await analyze_single_pr(dotted, repo, renamed, BOT, "model")

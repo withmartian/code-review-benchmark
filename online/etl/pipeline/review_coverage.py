@@ -819,7 +819,8 @@ def _removed_all(h: _Hunk) -> list[tuple[int, str]]:
     return out
 
 
-_CODE_RE = re.compile(r"[A-Za-z0-9]")
+# A letter or digit in any script: a line of identifiers such as `总数 += 值` carries code.
+_CODE_RE = re.compile(r"[^\W_]")
 
 
 def _removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:

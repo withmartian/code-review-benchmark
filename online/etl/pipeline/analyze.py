@@ -531,8 +531,10 @@ def _exclude_unreviewed_actions(
             # file renamed after the first review may have been read under its old name, which the
             # stored details do not keep, so a rename keeps the fix.
             fix = sha_index(commits, (a.get("commit_sha") or "").strip())
+            # A fix whose commit cannot be placed cannot be shown to change no reviewed source.
             if (
-                path_filtered(a.get("file_path") or "", events, chatbot_username)
+                fix is not None
+                and path_filtered(a.get("file_path") or "", events, chatbot_username)
                 and not _renamed_since(a.get("file_path") or "", commits, details_by_sha, first, fix)
                 and other_source_changes_reviewed_code(
                     a, commits, details_by_sha, records, first - 1, events, chatbot_username

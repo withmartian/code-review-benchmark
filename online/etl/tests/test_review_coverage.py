@@ -220,6 +220,45 @@ def test_a_completed_review_without_a_record_reads_the_whole_pull_request() -> N
     assert _spans(find_review_records(events, COMMITS, CR)) == [(-1, 0, "review"), (-1, 2, "review")]
 
 
+def test_a_submitted_review_with_an_empty_body_is_a_completed_review() -> None:
+    # cubic reviewed A, B added code, cubic approved C with no body and no inline comment, D fixes B's
+    # line: the approval read B, so the fix is of reviewed code.
+    cubic = "cubic-dev-ai[bot]"
+
+    def submitted(sha: str, state: str, body: str = "", actor: str = cubic) -> dict:
+        return {
+            "actor": actor,
+            "event_type": "review",
+            "timestamp": "",
+            "data": {"state": state, "body": body, "commit_id": sha},
+        }
+
+    events = [submitted(A, "COMMENTED", "Found 1 issue."), submitted(C, "APPROVED")]
+    records = find_review_records(events, COMMITS, cubic)
+    assert _spans(records) == [(-1, 0, "review"), (-1, 2, "review")]
+
+    exporter_b = "@@ -0,0 +1,2 @@\n+def export(rows):\n+    return write('/tmp/out.csv', rows)"
+    fix_d = "@@ -1,2 +1,2 @@\n def export(rows):\n-    return write('/tmp/out.csv', rows)\n+    return write(OUT, rows)"
+    details = _details(
+        (A, "a.py", "added", "@@ -0,0 +1 @@\n+x = 1"), (B, "e.py", "added", exporter_b), (D, "e.py", "modified", fix_d)
+    )
+    assert fix_code_origin(_action(D, "e.py"), COMMITS, details, records, 0)[0] == "reviewed"
+    # Without the approval the fix is of code no review read.
+    assert fix_code_origin(_action(D, "e.py"), COMMITS, details, records[:1], 0)[0] == "unreviewed"
+
+    # A notice posted as a review is still not one, whatever its state; a replaced commit an empty
+    # approval names is still a rewritten review.
+    limit = "You have reached your Codex usage limits for code reviews."
+    assert _spans(find_review_records([submitted(B, "COMMENTED", limit, CODEX)], COMMITS, CODEX)) == []
+    cr_limit = submitted(B, "COMMENTED", summary(rate_limited(A, B)), CR)
+    assert [r.source for r in find_review_records([cr_limit], COMMITS, CR)] == ["notice"]
+    assert rewritten_review_commits([submitted("e" * 40, "APPROVED")], COMMITS, cubic) == ["e" * 40]
+    assert rewritten_review_commits([submitted("e" * 40, "DISMISSED")], COMMITS, cubic) == []
+    # An empty commented review is a reply posted in a review thread, not a review of its commit.
+    assert _spans(find_review_records([submitted(C, "COMMENTED")], COMMITS, cubic)) == []
+    assert _spans(find_review_records([submitted(C, "CHANGES_REQUESTED")], COMMITS, cubic)) == [(-1, 2, "review")]
+
+
 def test_a_notice_s_last_reviewed_commit_counts_only_where_no_record_shows_one() -> None:
     no_record = [review(A), issue_comment(summary(rate_limited(B, D)))]
     with_record = [review(A, body=review_range(BASE, A)), review(B, body=review_range(A, B)),

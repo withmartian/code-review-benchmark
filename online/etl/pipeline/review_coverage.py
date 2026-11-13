@@ -212,12 +212,30 @@ def sha_index(commits: list[dict], sha: str | None) -> int | None:
     return None
 
 
+_VERDICT_STATES = ("approved", "changes_requested")
+
+
+def _is_completed_review(data: dict, chatbot_username: str) -> bool:
+    """Whether a review event of the bot is a review it completed, not a notice it posted as one.
+
+    A review whose body is a notice (a rate limit, a pause, a skip) is not. Otherwise a review
+    submitted as approved or changes requested is, whatever its body: an approval with an empty
+    body and no inline comment still read the commit. Any other review (commented, or with no
+    recorded state) counts when its body has text: an empty commented review is how a reply in a
+    review thread is posted, and its commit does not show that a review ran; the inline comments
+    of a review that has them count on their own.
+    """
+    body = data.get("body") or ""
+    if _match_notices(body, chatbot_username):
+        return False
+    return str(data.get("state") or "").lower() in _VERDICT_STATES or bool(_clean(body))
+
+
 def _completed_reviews(events: list[dict], commits: list[dict], chatbot_username: str) -> list[tuple[int, str]]:
     """(commit index, time) of each review the bot completed.
 
-    A review with a body that is not a notice, or an inline comment that does not reply to a
-    thread. A review with an empty body only carries inline comments (counted on their own) or
-    thread replies, so its commit does not show that a review ran.
+    A review the bot submitted that is not a notice (``_is_completed_review``), or an inline
+    comment that does not reply to a thread.
     """
     out = []
     for e in events:
@@ -226,8 +244,7 @@ def _completed_reviews(events: list[dict], commits: list[dict], chatbot_username
         data = e.get("data") or {}
         etype = e.get("event_type")
         if etype == "review":
-            body = data.get("body") or ""
-            if not _clean(body) or _match_notices(body, chatbot_username):
+            if not _is_completed_review(data, chatbot_username):
                 continue
             i = sha_index(commits, data.get("commit_id"))
         elif etype == "review_comment" and not data.get("in_reply_to_id"):
@@ -377,10 +394,8 @@ def rewritten_review_commits(events: list[dict], commits: list[dict], chatbot_us
             continue
         data = e.get("data") or {}
         etype = e.get("event_type")
-        if etype == "review":
-            body = data.get("body") or ""
-            if _clean(body) and not _match_notices(body, chatbot_username):
-                named.append(data.get("commit_id"))
+        if etype == "review" and _is_completed_review(data, chatbot_username):
+            named.append(data.get("commit_id"))
         elif etype == "review_comment" and not data.get("in_reply_to_id"):
             named.append(data.get("original_commit_id") or data.get("commit_id"))
         if etype in ("review", "issue_comment"):

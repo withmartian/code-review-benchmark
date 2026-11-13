@@ -254,7 +254,10 @@ def test_a_submitted_review_with_an_empty_body_is_a_completed_review() -> None:
     cr_limit = submitted(B, "COMMENTED", summary(rate_limited(A, B)), CR)
     assert [r.source for r in find_review_records([cr_limit], COMMITS, CR)] == ["notice"]
     assert rewritten_review_commits([submitted("e" * 40, "APPROVED")], COMMITS, cubic) == ["e" * 40]
-    assert rewritten_review_commits([submitted("e" * 40, "DISMISSED")], COMMITS, cubic) == []
+    # A dismissed review was an approval or a change request: it read its commit too.
+    assert rewritten_review_commits([submitted("e" * 40, "DISMISSED")], COMMITS, cubic) == ["e" * 40]
+    dismissed = find_review_records([events[0], submitted(C, "DISMISSED")], COMMITS, cubic)
+    assert fix_code_origin(_action(D, "e.py"), COMMITS, details, dismissed, 0)[0] == "reviewed"
     # GitHub nulls the commit of a review once the reviewed commit is gone: the review cannot be placed.
     for gone in (None, ""):
         assert rewritten_review_commits([submitted(gone, "COMMENTED", "All issues addressed.")], COMMITS, cubic) == [

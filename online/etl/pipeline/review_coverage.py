@@ -212,7 +212,7 @@ def sha_index(commits: list[dict], sha: str | None) -> int | None:
     return None
 
 
-_VERDICT_STATES = ("approved", "changes_requested")
+_VERDICT_STATES = ("approved", "changes_requested", "dismissed")
 
 
 def _is_completed_review(data: dict, chatbot_username: str) -> bool:
@@ -220,7 +220,8 @@ def _is_completed_review(data: dict, chatbot_username: str) -> bool:
 
     A review whose body is a notice (a rate limit, a pause, a skip) is not. Otherwise a review
     submitted as approved or changes requested is, whatever its body: an approval with an empty
-    body and no inline comment still read the commit. Any other review (commented, or with no
+    body and no inline comment still read the commit. So is a dismissed one: only an approval or a
+    change request can be dismissed, and dismissing it does not undo the reading. Any other review (commented, or with no
     recorded state) counts when its body has text: an empty commented review is how a reply in a
     review thread is posted, and its commit does not show that a review ran; the inline comments
     of a review that has them count on their own.

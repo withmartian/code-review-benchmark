@@ -377,6 +377,7 @@ def _exclude_unreviewed_actions(
     details_by_sha: dict[str, dict],
     chatbot_username: str,
     comments_read: bool = True,
+    edits_complete: bool = True,
 ) -> set[str]:
     """IDs of the actions left out of recall because no review of the bot read their code.
 
@@ -403,8 +404,12 @@ def _exclude_unreviewed_actions(
     Nor when the bot writes its record in conversation comments, completed reviews on the PR, and no
     record of it is found: the comment that holds the record is gone (deleted, or never in the
     comments read), so a review that posted nothing cannot be seen, as with comments never read.
+
+    edits_complete is False when an edit of one of the bot's comments has no text left on GitHub
+    (``unavailable_edits``): a review recorded only in that revision cannot be read, so for a bot
+    that writes its record in comments no action is left out.
     """
-    if not comments_read and record_in_issue_comments(chatbot_username):
+    if not (comments_read and edits_complete) and record_in_issue_comments(chatbot_username):
         return set()
     if rewritten_review_commits(events, commits, chatbot_username):
         return set()
@@ -532,19 +537,19 @@ async def analyze_single_pr(
     # record of its reviews, its reviews and notices (current bodies and earlier revisions) and the
     # stored commit patches, no LLM call.
     issue_comments = _parse_json_col("issue_comments")
+    comment_edits = _parse_json_col("issue_comment_edits")
     excluded_action_ids = _exclude_unreviewed_actions(
         actions,
         matches,
-        _with_comment_revisions(
-            _with_current_issue_comments(events, issue_comments),
-            _parse_json_col("issue_comment_edits"),
-            issue_comments,
-        ),
+        _with_comment_revisions(_with_current_issue_comments(events, issue_comments), comment_edits, issue_comments),
         commits,
         post_commits,
         details_by_sha,
         chatbot_username,
         comments_read=pr_row.get("issue_comments") is not None,
+        edits_complete=not any(
+            c.get("unavailable_edits") and same_github_actor(c.get("author"), chatbot_username) for c in comment_edits
+        ),
     )
 
     # Compute metrics — only count IDs that actually exist in the extracted lists

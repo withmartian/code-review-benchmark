@@ -344,6 +344,8 @@ def parse_comment_edits(nodes: list[dict]) -> list[dict]:
 
     Only bot comments are kept (bots rewrite status comments in place; people's edits are not
     read), and only comments that were edited. Bot logins get the ``[bot]`` suffix of the REST API.
+    An edit whose text GitHub no longer has (``diff`` null, a deleted revision) is not a revision;
+    its time is kept in ``unavailable_edits``, since a review recorded only in it cannot be read.
     """
     out = []
     for node in nodes:
@@ -355,8 +357,12 @@ def parse_comment_edits(nodes: list[dict]) -> list[dict]:
             {"edited_at": e.get("editedAt"), "body": e.get("diff")} for e in edits if e.get("diff") is not None
         ]
         revisions.sort(key=lambda r: r["edited_at"] or "")
-        if revisions:
-            out.append({"id": node.get("databaseId"), "author": f"{author.get('login')}[bot]", "revisions": revisions})
+        unavailable = sorted(e.get("editedAt") or "" for e in edits if e.get("diff") is None)
+        if revisions or unavailable:
+            comment = {"id": node.get("databaseId"), "author": f"{author.get('login')}[bot]", "revisions": revisions}
+            if unavailable:
+                comment["unavailable_edits"] = unavailable
+            out.append(comment)
     return out
 
 

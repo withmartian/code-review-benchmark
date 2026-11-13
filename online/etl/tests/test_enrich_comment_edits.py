@@ -86,6 +86,9 @@ def test_parse_keeps_edited_bot_comments_with_revisions_oldest_first() -> None:
                 {"edited_at": "2026-07-01T12:00:00Z", "body": "v2"},
             ],
         },
+        # An edit GitHub keeps no text for is not a revision, but it is recorded as missing: a review
+        # recorded only in it cannot be read.
+        {"id": 4, "author": "codecov[bot]", "revisions": [], "unavailable_edits": ["2026-07-01T11:00:00Z"]},
     ]
 
 

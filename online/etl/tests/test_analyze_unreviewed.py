@@ -446,6 +446,31 @@ async def test_a_record_bot_whose_record_is_missing_keeps_every_fix() -> None:
     assert repo.stored["recall"] == 1.0
 
 
+async def test_a_record_bot_with_an_unavailable_revision_keeps_every_fix() -> None:
+    # Greptile's summary records its reviews of a and d, but one revision of it has no text left on
+    # GitHub: a review of b recorded only there cannot be read, so no fix is left out.
+    greptile = "greptile-apps[bot]"
+    row = json.loads(json.dumps(_pr_row()).replace(BOT, greptile))
+    summary = f"Last reviewed commit: [Parser](https://github.com/owner/repo/commit/{'b' * 40})"
+    row["issue_comments"] = json.dumps(
+        [{"id": 6, "author": greptile, "body": summary, "created_at": "2026-07-01T10:01:00Z"}]
+    )
+    repo = FakeRepo()
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), greptile, "model")
+    assert repo.stored["recall"] == 1.0  # the exporter fix of c is left out
+
+    edits = [{"id": 6, "author": greptile, "revisions": [], "unavailable_edits": ["2026-07-01T13:00:00Z"]}]
+    row["issue_comment_edits"] = json.dumps(edits)
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), greptile, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # Another account's unavailable edit says nothing about the bot's record.
+    row["issue_comment_edits"] = json.dumps([{**edits[0], "author": "other-bot[bot]"}])
+    assert await analyze_single_pr(FakeLLM(), repo, row, greptile, "model")
+    assert repo.stored["recall"] == 1.0
+
+
 async def test_a_reviewed_commit_amended_by_a_force_push_keeps_every_fix() -> None:
     # The bot reviewed b, which adds a guard to the parser; the author then amended b into b2 and
     # force-pushed, so b is no longer in the commit list and its review cannot be placed. d fixes the

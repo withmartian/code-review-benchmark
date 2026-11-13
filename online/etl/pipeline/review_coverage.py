@@ -854,41 +854,13 @@ def _punctuation_removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
     return out
 
 
-def _paired_edit(h: _Hunk, index: int) -> tuple[int, str] | None:
-    """The removed code line an added code line replaces, by position, when its change block (the
-    run of removed and added lines around ``h.lines[index]``) removes as many code lines as it adds:
-    the k-th added code line is then an edit of the k-th removed one, however much it changed
-    (``return process(data)`` -> ``return process(data, timeout=5)``). None when the counts differ."""
-    start = index
-    while start > 0 and h.lines[start - 1][0] != " ":
-        start -= 1
-    end = index
-    while end + 1 < len(h.lines) and h.lines[end + 1][0] != " ":
-        end += 1
-    old = h.old_start + sum(1 for kind, _ in h.lines[:start] if kind != "+")
-    removed, added = [], []
-    for i in range(start, end + 1):
-        kind, t = h.lines[i]
-        if kind == "-":
-            if _CODE_RE.search(t):
-                removed.append((old, t))
-            old += 1
-        elif _CODE_RE.search(t):
-            added.append(i)
-    if not removed or len(removed) != len(added) or index not in added:
-        return None
-    return removed[added.index(index)]
-
-
 def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
     """Where line ``line`` (of text ``text``) after a commit came from in that commit.
 
     Returns ("added", 0, "") when the commit wrote it, ("kept", n, text) when it is line n before
-    the commit, unchanged, ("edited", n, removed text) when it is an edit of the removed line n of
-    its hunk, and ("mismatch", 0, "") when the line at that position is not the line traced. An
-    added code line is an edit of the removed code line at its position when its change block
-    removes as many code lines as it adds (``_paired_edit``), whatever the similarity; otherwise of
-    the most similar removed line of the hunk when that is a light edit (``_EDIT_RATIO``).
+    the commit, unchanged, ("edited", n, removed text) when it is a light edit of the removed line n
+    of its hunk (``_EDIT_RATIO``), and ("mismatch", 0, "") when the line at that position is not the
+    line traced.
     """
     offset = 0
     for h in hunks:
@@ -898,7 +870,7 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
         if line < h.new_start + h.new_len:
             removed = _removed_all(h)
             old, new = h.old_start, h.new_start
-            for index, (kind, t) in enumerate(h.lines):
+            for kind, t in h.lines:
                 if kind == "-":
                     old += 1
                     continue
@@ -911,9 +883,6 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
                         # Which brace a diff pairs with an older one is arbitrary: an added punctuation
                         # line is the commit's own, never a light edit.
                         return "added", 0, ""
-                    paired = _paired_edit(h, index)
-                    if paired is not None:
-                        return "edited", paired[0], paired[1]
                     best = max(removed, key=lambda r: SequenceMatcher(None, r[1], t).ratio(), default=None)
                     if best is not None and SequenceMatcher(None, best[1], t).ratio() >= _EDIT_RATIO:
                         return "edited", best[0], best[1]

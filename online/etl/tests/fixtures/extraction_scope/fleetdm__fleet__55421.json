@@ -1,0 +1,72 @@
+{
+ "source": "https://github.com/fleetdm/fleet/pull/55421",
+ "bot_username": "copilot-pull-request-reviewer[bot]",
+ "events": [
+  {
+   "actor": "copilot-pull-request-reviewer[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-12T22:37:09Z",
+   "data": {
+    "path": "website/views/emails/newsletter/email-newsletter-2026-10.ejs",
+    "line": 5,
+    "body": "The introduction is already stale: Fleet 4.93.0 shipped on October 8 (`CHANGELOG.md:1`), so there are no longer “two more releases” merely planned for October. Update the newsletter source to reflect that 4.93.0 is available, then regenerate this template so recipients do not receive an inaccurate release status.\n\nThis issue also appears on line 28 of the same file.\n"
+   }
+  },
+  {
+   "actor": "copilot-pull-request-reviewer[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-12T22:37:09Z",
+   "data": {
+    "path": "website/views/emails/newsletter/email-newsletter-2026-10.ejs",
+    "line": 1,
+    "body": "The PR description is freeform and omits the required template sections, including the `## AI` section with the tool and model ID. Replace it with the repository PR template and fill in the applicable fields before merge.\n"
+   }
+  },
+  {
+   "actor": "copilot-pull-request-reviewer[bot]",
+   "event_type": "review",
+   "timestamp": "2026-10-12T22:37:10Z",
+   "data": {
+    "state": "commented",
+    "body": "### 🟡 Changes recommended\n\nThe email lists the already-released Fleet 4.93.0 as planned, and the PR description omits required sections.\n\n<details open>\n<summary><strong>2 open findings</strong></summary>\n\n-  [Update newsletter to reflect Fleet 4.93.0 availability](https://github.com/fleetdm/fleet/pull/55421#discussion_r4252942183) · New\n-  [Use PR template and include required AI section](https://github.com/fleetdm/fleet/pull/55421#discussion_r4252942217) · New\n</details>\n\n<details>\n<summary><strong>What changed in this PR</strong></summary>\n\nAdds the generated HTML email template for Fleet’s October 2026 newsletter.\n\n**Changes:**\n- Covers releases, workshops, articles, guides, and community news.\n- Adds email-compatible inline styling and links.\n\n| File | Description |\r\n| ---- | ----------- |\r\n| `website/​views/​emails/​newsletter/​email-newsletter-2026-10.ejs` | Adds the October newsletter email template. |\n</details>\n\n🧠 **Review effort:** Balanced\n\n---\n\n💡 Configure MCP servers for context-aware, tailored reviews. Learn more in the docs.\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "run_status",
+   "quote": "### 🟡 Changes recommended",
+   "pattern": "(?i)changes recommended"
+  },
+  {
+   "kind": "change_overview",
+   "quote": "Adds the generated HTML email template for Fleet’s October 2026 newsletter.",
+   "pattern": null,
+   "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
+  },
+  {
+   "kind": "control",
+   "quote": "🧠 **Review effort:** Balanced",
+   "pattern": "(?i)review effort"
+  },
+  {
+   "kind": "product_tip",
+   "quote": "💡 Configure MCP servers for context-aware, tailored reviews.",
+   "pattern": "(?i)\\bMCP\\b"
+  },
+  {
+   "kind": "pr_remark",
+   "path": null,
+   "quote": "The PR description is freeform and omits the required template sections",
+   "pattern": "(?i)PR description|template section|AI section"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "inline",
+   "path": "website/views/emails/newsletter/email-newsletter-2026-10.ejs",
+   "quote": "The introduction is already stale: Fleet 4.93.0 shipped on October 8",
+   "pattern": "(?i)4\\.93|stale|already (shipped|released)"
+  }
+ ]
+}

@@ -129,6 +129,24 @@ uv run python main.py analyze --all --since 2026-08-01 --until 2026-08-15
 
 `--sort sweep` ignores `--since`/`--until` — it orders by `assembled_at DESC` to pick up PRs that were discovered long ago but only recently assembled (e.g., merged weeks after the bot reviewed them).
 
+Each analysis stores `model_name` as `"<model>+<EXTRACTION_PROMPT_VERSION>"` (`llm/prompts.py`), so
+analyses scored with different extraction prompts can be told apart; analyses made before the
+version was stamped carry no `+<version>` suffix (an analysis run without a model name stores no
+stamp either, as before). `analyze` selects only PRs that have no analysis
+yet, and the API service reads every analysis whatever its `model_name`, so after a prompt change the
+leaderboard and its time series mix analyses made with both prompts until the older ones are
+re-scored or the API filters on the version. A change to any input `pipeline/prompt_pins.py` lists
+needs a new version: a step prompt, the code that splits the commits and renders step input, the
+actor matching, `analyze_single_pr`'s metric arithmetic, a response schema or the LLM call.
+`tests/test_prompts.py` pins their sha256 per version and fails when a digest changes without a
+matching entry. Editing the newest
+entry in place silences that test, so CI also compares the table with the one at the merge-base
+(`PROMPT_PINS_BASE_REF`) and fails when an entry that exists there changed. Run locally without
+that variable, the comparison is skipped, so a reviewer should check that a digest change comes
+with a new version. On a push it is also skipped when there is no earlier commit to compare with:
+the push created the branch (an all-zero sha), or it followed a force-push and the commit it
+replaced is no longer in the clone.
+
 ### Label PRs
 
 ```bash

@@ -15,6 +15,7 @@ from db.repository import PRRepository
 from llm.client import LLMClient
 from llm.prompts import EXTRACT_BOT_SUGGESTIONS
 from llm.prompts import EXTRACT_HUMAN_ACTIONS
+from llm.prompts import EXTRACTION_PROMPT_VERSION
 from llm.prompts import JUDGE_MATCHING
 from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
@@ -289,6 +290,13 @@ def _format_actions(actions: list[dict]) -> str:
     return "\n".join(lines) if lines else "(no actions)"
 
 
+def stamped_model_name(model_name: str | None) -> str | None:
+    """The model_name stored with an analysis: the model plus the extraction prompt version.
+
+    Without a model name there is nothing to stamp, so it stays None, as before the stamp."""
+    return f"{model_name}+{EXTRACTION_PROMPT_VERSION}" if model_name else None
+
+
 async def analyze_single_pr(
     llm: LLMClient,
     repo: PRRepository,
@@ -414,7 +422,7 @@ async def analyze_single_pr(
         precision=precision,
         recall=recall,
         f_beta=f_beta,
-        model_name=model_name,
+        model_name=stamped_model_name(model_name),
     )
 
     logger.info(

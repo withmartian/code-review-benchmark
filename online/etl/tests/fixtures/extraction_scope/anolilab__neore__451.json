@@ -1,0 +1,60 @@
+{
+ "source": "https://github.com/anolilab/neore/pull/451",
+ "bot_username": "qodo-code-review[bot]",
+ "events": [
+  {
+   "actor": "qodo-code-review[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-11-01T00:07:03Z",
+   "data": {
+    "body": "<h3>PR Summary by Qodo</h3>\n\nSpeed up CI with shared caches and parallel checks\n\n<code>⚙️ Configuration changes</code> <code>✨ Enhancement</code> <code>🐞 Bug fix</code> <code>🕐 20-40 Minutes</code>\n\n\n<details>\n<summary>AI Description</summary>\n\n<dl>\n<dd>\n<br/>\n\n><pre>\n>• Share Rust and Playwright caches, and retry apt operations to reduce setup time and mirror\n>  failures.\n>• Run ESLint and Rust Worker tests in parallel while retaining both required-check gates.\n>• Skip PR-only Rust CodeQL analysis and extend Windows ARM dictation shortcut polling.\n></pre>\n\n</dd>\n</dl>\n\n</details>\n\n\n<details>\n<summary>High-Level Assessment</summary>\n\n<dl>\n<dd>\n\n<br/>\n\n>The following are alternative approaches to this PR:\n\n<details>\n<summary><b>1. Pass build artifacts from Types to ESLint</b></summary>\n\n<dl>\n<dd>\n\n- ➕ Avoids rebuilding packages in the ESLint job.\n- ➖ Makes ESLint wait for Types, reducing the intended wall-time improvement.\n- ➖ Adds artifact packaging and transfer to CI.\n\n</dd>\n</dl>\n\n</details>\n\n>**Recommendation:** Keep the independent Types and ESLint jobs: parallel execution is the primary speed gain, and each job can prepare the declarations it needs. Artifact handoff is worth revisiting only if duplicate builds become more costly than the lost parallelism.\n\n</dd>\n</dl>\n\n</details>\n"
+   }
+  },
+  {
+   "actor": "qodo-code-review[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-11-01T00:09:01Z",
+   "data": {
+    "body": "<h3>Code Review by Qodo</h3>\n\n\n<details><summary><strong>Resolved findings</strong></summary>\n\n<br/>\n\n<details>\n<summary>  1.  <s>Rust changes can escape scanning</s> <code>✗ Dismissed</code></summary>\n\n<br/>\n\n> <details>\n><summary>Description</summary>\n><br/>\n>\n><pre>\n>The <b><i>Look for Rust changes</i></b> condition treats any nonzero status from `git diff --name-only ... |\n>grep -qE ...<b><i> as no Rust match and writes </i></b>changed=false<b><i>. With </i></b>pipefail`, an early Rust match\n>followed by enough filenames can cause <b><i>git diff</i></b> to fail with SIGPIPE, while an actual diff error\n>takes the same branch; either failure can make the downstream CodeQL job omit Rust.\n></pre>\n></details>\n\n> <details>\n><summary>Code</summary>\n><br/>\n>\n><code>[.github/workflows/codeql.yml[R43-46]](https://github.com/anolilab/neore/pull/451/files#diff-12783128521e452af0cfac94b99b8d250413c516ec71fe6d97dbea666ff7ba27R43-R46)</code>\n>\n>```diff\n>+                  elif git diff --name-only \"${BASE_SHA}...HEAD\" | grep -qE '(\\.rs$|(^|/)Cargo\\.(toml|lock)$)'; then\n>+                      echo \"changed=true\" >> \"${GITHUB_OUTPUT}\"\n>+                  else\n>+                      echo \"changed=false\" >> \"${GITHUB_OUTPUT}\"\n>```\n></details>\n\n\n<hr/>\n</details>\n\n\n<details>\n<summary>  2.  <s>Chromium cache failures go unreported</s> <code>✓ Resolved</code></summary>\n\n<br/>\n\n> <details>\n><summary>Description</summary>\n><br/>\n>\n><pre>\n><b><i>warm-playwright</i></b> runs independently, but <b><i>notify</i></b> depends only on <b><i>full-test</i></b> and checks only that\n>job&#x27;s result. If setup or the Chromium download fails while the full test passes, the existing\n>failure issue is not opened or updated, and subsequent E2E runs can continue downloading Chromium.\n></pre>\n></details>\n\n> <details>\n><summary>Code</summary>\n><br/>\n>\n><code>[.github/workflows/full-test.yml[R91-94]](https://github.com/anolilab/neore/pull/451/files#diff-71128acfac8df087437a82f4b7b433e1d31d2fc63456b9ca0916c593e75663aaR91-R94)</code>\n>\n>```diff\n>+    warm-playwright:\n>+        name: \"Warm the Playwright cache\"\n>+        if: \"github.event_name == 'push'\"\n>+        runs-on: \"ubuntu-24.04\"\n>```\n></details>\n\n\n<hr/>\n</details>\n\n\n<details>\n<summary>  3.  <s>A failed retry setup goes unnoticed</s> <code>✓ Resolved</code></summary>\n\n<br/>\n\n> <details>\n><summary>Description</summary>\n><br/>\n>\n><pre>\n><b><i>apt-retry.sh</i></b> omits <b><i>errexit</i></b> and does not check whether the command writing <b><i>Acquire::Retries</i></b>\n>succeeds. If that write fails but subsequent apt commands succeed, the script exits successfully\n>without enabling the intended retries for apt calls made by other tools.\n></pre>\n></details>\n\n> <details>\n><summary>Code</summary>\n><br/>\n>\n><code>[.github/scripts/apt-retry.sh[14]](https://github.com/anolilab/neore/pull/451/files#diff-795c5c4a1a43a33b5dcc3aee59bfce21cc29f274c194f9839adf482503086506R14-R14)</code>\n>\n>```diff\n>+echo 'Acquire::Retries \"3\";' | sudo tee /etc/apt/apt.conf.d/80-retries >/dev/null\n>```\n></details>\n\n\n<hr/>\n</details>\n\n\n</details>\n\n\n<details>\n<summary><strong>Tip of the day</strong></summary>\n\n<br/>\n\n<pre>💡 Did you know, you can show, collapse, or hide each part of a finding: code, evidence, and all</pre>\n\nMore tips ↗ | Customize Qodo ↗ | Qodo docs ↗\n\n</details>\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "change_overview",
+   "quote": "Speed up CI with shared caches and parallel checks",
+   "pattern": null,
+   "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
+  },
+  {
+   "kind": "rating",
+   "quote": "<code>🕐 20-40 Minutes</code>",
+   "pattern": "(?i)20-40 minutes|review effort"
+  },
+  {
+   "kind": "product_tip",
+   "quote": "Did you know, you can show, collapse, or hide each part of a finding",
+   "pattern": "(?i)did you know|tip of the day"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "dismissed_finding",
+   "path": null,
+   "quote": "Rust changes can escape scanning",
+   "pattern": "(?i)SIGPIPE|changed=false|Rust[- ]change|CodeQL"
+  },
+  {
+   "kind": "resolved_finding",
+   "path": null,
+   "quote": "Chromium cache failures go unreported",
+   "pattern": "(?i)warm-playwright|Playwright|notif|Chromium|cache[- ]warm"
+  },
+  {
+   "kind": "resolved_finding",
+   "path": null,
+   "quote": "A failed retry setup goes unnoticed",
+   "pattern": "(?i)apt-retry|Acquire::Retries|errexit|retry setup|retry config"
+  }
+ ]
+}

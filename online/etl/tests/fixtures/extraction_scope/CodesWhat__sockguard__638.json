@@ -1,0 +1,55 @@
+{
+ "source": "https://github.com/CodesWhat/sockguard/pull/638",
+ "bot_username": "greptile-apps[bot]",
+ "events": [
+  {
+   "actor": "greptile-apps[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-10-26T21:11:51Z",
+   "data": {
+    "body": "<h2>Confidence Score: 4/5</h2>\n\n**[Medium impact]** The PR reaches Sockguard’s create filters\\, repository CI and release workflows\\, and published release materials\\.\n\nThe PR appears safe to merge, with a non-blocking fix recommended for the release polling deadline.\n\n<h2>Findings</h2>\n\n1. &nbsp;**Polling can exceed its deadline** <a href=\"https://github.com/CodesWhat/sockguard/pull/638#discussion_r4382536278\">▶</a>\n\n\n<details><summary><h3>Summary</h3></summary>\n\nForward-ports the released 2.3.1 changes into the v2.4 candidate line.\n- Podman create requests cannot choose host log or hosts-file paths by default.\n- CI and security jobs record egress while release jobs keep blocking it.\n- The lockfile check waits out newly published npm versions before flagging duplicates.\n- The published v2.3.1 line now anchors the v2.4 candidate and its release materials.\n\n</details>\n\n\n<sub>Reviews (1) · Last reviewed commit: [\"chore(release): forward-port 2.3.1 into ...\"](https://github.com/codeswhat/sockguard/commit/01cdb684922385760a7582b7a19d7f50dd77c63d) · Reviewed by Greptile</sub>\n"
+   }
+  },
+  {
+   "actor": "greptile-apps[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-26T21:11:54Z",
+   "data": {
+    "path": ".github/actions/verify-ci-success/action.yml",
+    "line": 82,
+    "body": "<a href=\"#\"></a> **Polling can exceed its deadline**\n\n`max-wait-seconds` does not bound a poll already in progress. A poll started just before the deadline can spend about 205 seconds on six 30-second requests and five retry delays, then sleep another 15 seconds. The release job can hit its own timeout instead of reporting the action's timeout. Limit each request, its retries, and the sleep to the remaining budget.\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "rating",
+   "quote": "<h2>Confidence Score: 4/5</h2>",
+   "pattern": "(?i)confidence score|\\b4/5\\b"
+  },
+  {
+   "kind": "rating",
+   "quote": "**[Medium impact]**",
+   "pattern": "(?i)medium impact"
+  },
+  {
+   "kind": "change_overview",
+   "quote": "Forward-ports the released 2.3.1 changes into the v2.4 candidate line.",
+   "pattern": null,
+   "not_asserted": "overview or check-table row: no text pattern separates it from findings about the same code"
+  },
+  {
+   "kind": "run_status",
+   "quote": "Reviews (1) · Last reviewed commit",
+   "pattern": "(?i)last reviewed commit"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "inline",
+   "path": ".github/actions/verify-ci-success/action.yml",
+   "quote": "**Polling can exceed its deadline**",
+   "pattern": "(?i)poll|deadline|max-wait"
+  }
+ ]
+}

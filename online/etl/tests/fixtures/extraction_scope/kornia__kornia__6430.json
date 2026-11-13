@@ -1,0 +1,96 @@
+{
+ "source": "https://github.com/kornia/kornia/pull/6430",
+ "bot_username": "coderabbitai[bot]",
+ "events": [
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-10-29T14:52:16Z",
+   "data": {
+    "body": "> [!WARNING]\n> ## Review limit reached\n> \n> You've used all free OSS reviews for now. Wait for the free limit to reset to keep reviewing this public repository.\n> \n> **Next included review available in 38 minutes.**\n> \n> .\n> \n> <details>\n> <summary><strong>View limit details</strong></summary>\n> <dl>\n> <dd>\n> \n> **Limit details:** You’ve used all 10 included reviews currently available.\n> \n> Learn how review limits work.\n> \n> **Review configuration:**\n> \n> <details>\n> <summary><strong> Run configuration</strong></summary>\n> <dl>\n> <dd>\n> \n> - **Source mode**: Auto\n> - **Repository**: Unavailable\n> - **Branch**: Unavailable\n> - **File**: No configuration file from this repository applied\n> - **Commit**: Unavailable\n> - **Layers**: Organization UI\n> - **Review profile**: ASSERTIVE\n> - **Plan**: Advanced\n> \n> </dd>\n> </dl>\n> </details>\n> \n> <details>\n> <summary><strong> Commits</strong></summary>\n> <dl>\n> <dd>\n> \n> Reviewing files that changed from the base of the PR and between 7bed664534b4eed506369ed90b4716b9749707df and cc8c23ebc05570d98fce4fb5a6e30822866f8e77.\n> \n> </dd>\n> </dl>\n> </details>\n> \n> <details>\n> <summary><strong> Files selected for processing: 1</strong></summary>\n> <dl>\n> <dd>\n> \n> * `changelog.d/6430.added.md`\n> \n> </dd>\n> </dl>\n> </details>\n> \n> </dd>\n> </dl>\n> </details>\n\n\n<details>\n<summary><strong>Walkthrough</strong></summary>\n<dl>\n<dd>\n\nDeDoDe attention uses scaled dot-product attention except during training with nonzero attention dropout. Detector logits and scoremap softmax use at least float32 precision, while float64 logits retain float64 precision. Tests and changelog entries cover these changes.\n\n**Changes: Attention computation**\n\n|Layer / File(s)|Summary|\n|:---|:---|\n|**Attention computation and validation** <br> `kornia/feature/dedode/transformer/layers/attention.py`, `tests/feature/test_dedode.py`, `changelog.d/6430.added.md`|Attention uses scaled dot-product attention unless training with nonzero attention dropout, when it explicitly computes and drops attention weights. Tests compare attention outputs and check dropout behavior. The changelog reports performance, memory, and output-comparison figures.|\n\n**Detector precision**\n\n|Layer / File(s)|Summary|\n|:---|:---|\n|**Detector logits and keypoint precision** <br> `kornia/feature/dedode/detector.py`, `kornia/feature/dedode/dedode.py`, `tests/feature/test_dedode.py`, `changelog.d/6430.fixed.md`|Detector logits are promoted to at least float32 and retain float64 when applicable. Detection promotes logits before scoremap softmax. Documentation and tests describe and check dtype behavior and top-k results.|\n\n\n<strong>Priority:  Normal</strong>\n\n\n**Estimated code review effort:** 3 (Moderate) | ~20 minutes\n\n\n**Change:** Bug fix\n\n\n</dd>\n</dl>\n</details>\n\n\n<details>\n<summary><strong>Merge Risk:</strong> <strong> Moderate</strong> · previous review <code>7bed6</code></summary>\n<dl>\n<dd>\n\n\nMPS test runs can fail in the new float64 cases; add explicit skips before merging.\n\n\n</dd>\n</dl>\n</details>\n\n\n<details>\n<summary><strong>Pre-merge checks: <sup></sup> 4 · <sup></sup> 1</strong></summary>\n<dl>\n<dd>\n\n<strong><sup></sup> Failed checks: 1 warning</strong>\n\n|     Check name     |                                              Status                                              | Explanation                                                                                                                                                                                               | Resolution                                                                         |\n| :---------------- | :----------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |\n| Docstring Coverage | Warning | Docstring coverage is 75.00% which is insufficient. The required threshold is 80.00%. Docstring coverage is scoped to functions touched by this diff with cyclomatic complexity of at least 2. Documenta… | Write docstrings for the functions missing them to satisfy the coverage threshold. |\n\n<details>\n<summary><strong><sup></sup> Passed checks: 4 passed</strong></summary>\n<dl>\n<dd>\n\n|         Check name         |                                             Status                                             | Explanation                                                                                                                                                                                               |\n| :------------------------ | :--------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |\n|         Title check        | Passed | The title clearly identifies the two main changes: SDPA-based DeDoDe-G attention and the half-precision scoremap fix.                                                                                     |\n|     Linked Issues check    | Passed | Check skipped because no linked issues were found for this pull request.                                                                                                                                  |\n\n\n</dd>\n</dl>\n</details>\n\n\n</dd>\n</dl>\n</details>\n\n\n<details>\n<summary><strong>Finishing Touches</strong></summary>\n<dl>\n<dd>\n\n<details open>\n<summary><strong>🧪 Generate unit tests (beta)</strong></summary>\n<dl>\n<dd>\n\n- [ ]  Commit to this branch\n- [ ]  Create a new PR\n\n</dd>\n</dl>\n</details>\n\n</dd>\n</dl>\n</details>\n\n\n- [ ]  <strong title=\"Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts\">Autofix</strong> · Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts\n\n\nThanks for using CodeRabbit! It's free for OSS, and your support helps us grow. If you like it, consider giving us a shout-out.\n\n\n<sub>Comment `@coderabbitai help` to get the list of available commands.</sub>\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review",
+   "timestamp": "2026-10-29T15:02:06Z",
+   "data": {
+    "state": "dismissed",
+    "body": "**Actionable comments posted: 2**\n\n<details>\n<summary>🔇 Additional comments: 1</summary><blockquote>\n<dl>\n<dd>\n\n<details>\n<summary>changelog.d/6430.fixed.md-1-1: 1</summary><blockquote>\n<dl>\n<dd>\n\n`1-1`: ** Minor** · **Data Integrity & Integration** · **Quick win**\n\n⚠️ **Unverified finding**\nVerification ran but could not confirm this finding. It is shown for review, not as a verified issue.\n\n**Report the output dtype change as breaking.**\n\nA caller that passes detector logits to a half-precision convolution previously received half-precision input. It now receives float32 input, which can cause a dtype mismatch. Add a `breaking` fragment describing the old and new output dtypes.\n\nAs per coding guidelines: “Incompatible changes; describe both old and new behavior.”\n\n_Source: Coding guidelines_\n\n</dd>\n</dl>\n</blockquote></details>\n\n</dd>\n</dl>\n</blockquote></details>\n\n---\n\n\n- [ ]  🪄 Fix comments: Fix CodeRabbit comments on this PR\n\n\n---\n\n<details>\n<summary> Review info</summary>\n<dl>\n<dd>\n\n<details>\n<summary> Run configuration</summary>\n<dl>\n<dd>\n\n- **Source mode**: Auto\n- **Repository**: Unavailable\n- **Branch**: Unavailable\n- **File**: No configuration file from this repository applied\n- **Commit**: Unavailable\n- **Layers**: Organization UI\n- **Review profile**: ASSERTIVE\n- **Plan**: Advanced\n\n</dd>\n</dl>\n</details>\n\n<details>\n<summary> Commits</summary>\n<dl>\n<dd>\n\nReviewing files that changed from the base of the PR and between 7f95a55a66b101f8ffd20967a4431b6be26ee181 and 42bc48f10bc63bd941985d79e2f80b65027d6102.\n\n</dd>\n</dl>\n</details>\n\n\n**Included review availability:** This review used your included allowance. Your plan provides up to 10 included reviews per hour; 2 remain after this review.\n\n</dd>\n</dl>\n</details>\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-29T15:02:06Z",
+   "data": {
+    "path": "changelog.d/6430.fixed.md",
+    "line": 1,
+    "body": "** Minor** · **Functional Correctness** · **Quick win**\n\n**Qualify the float32 model claim.**\n\nOn CUDA, the default detector uses half-precision autocast even with float32 weights. The first logit interpolation now runs in float32 instead of half precision, so its outputs can change. Qualify “Float32 models are unchanged” to exclude this path.\n\n<details>\n<summary> Tools</summary>\n<dl>\n<dd>\n\n<details>\n<summary>markdownlint-cli2 (0.23.3)</summary>\n<dl>\n<dd>\n\n[warning] 1-1: First line in a file should be a top-level heading\n\n(MD041, first-line-heading, first-line-h1)\n\n</dd>\n</dl>\n</details>\n\n</dd>\n</dl>\n</details>\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-29T15:02:06Z",
+   "data": {
+    "path": "tests/feature/test_dedode.py",
+    "line": 65,
+    "body": "** Major** · **Stability & Availability** · **Quick win**\n\n**Skip the unsupported MPS/float64 test cases.**\n\nWhen the fixtures select MPS and float64, `.to(device, dtype)` fails before this attention test reaches its assertion. The new dropout test and `test_detector_returns_at_least_float32_logits` have the same failure. Add an explicit skip to each test that allocates float64 tensors on MPS. The fixtures include this combination, and PyTorch does not support it.\n\nAs per coding guidelines, “Never create `float64` tensors on the device in non-gradcheck tests”; skip explicitly when double precision is unsupported.\n\n\n_Source: Coding guidelines_\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "run_status",
+   "quote": "You've used all free OSS reviews for now.",
+   "pattern": "(?i)review limit|free (OSS )?reviews"
+  },
+  {
+   "kind": "change_overview",
+   "quote": "DeDoDe attention uses scaled dot-product attention except during training",
+   "pattern": null,
+   "not_asserted": "overview sentence: no text pattern separates it from findings about the same code"
+  },
+  {
+   "kind": "rating",
+   "quote": "**Estimated code review effort:** 3 (Moderate) | ~20 minutes",
+   "pattern": "(?i)review effort|effort estimate"
+  },
+  {
+   "kind": "coverage_check",
+   "quote": "Docstring coverage is 75.00% which is insufficient",
+   "pattern": "(?i)docstring"
+  },
+  {
+   "kind": "run_status",
+   "quote": "**Actionable comments posted: 2**",
+   "pattern": "(?i)actionable comments"
+  },
+  {
+   "kind": "nested_tool_output",
+   "quote": "[warning] 1-1: First line in a file should be a top-level heading",
+   "pattern": "(?i)top-level heading|MD041"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "located_rule_violation",
+   "path": "tests/feature/test_dedode.py",
+   "quote": "Skip the unsupported MPS/float64 test cases.",
+   "pattern": "(?i)\\bMPS\\b|float64|double precision"
+  },
+  {
+   "kind": "located_rule_violation",
+   "path": "changelog.d/6430.fixed.md",
+   "quote": "Report the output dtype change as breaking.",
+   "pattern": "(?i)breaking"
+  },
+  {
+   "kind": "inline",
+   "path": "changelog.d/6430.fixed.md",
+   "quote": "Qualify the float32 model claim.",
+   "pattern": "(?i)qualif|autocast|unchanged"
+  }
+ ]
+}

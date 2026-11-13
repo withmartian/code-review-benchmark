@@ -1,0 +1,96 @@
+{
+ "source": "https://github.com/trezor/definitions/pull/152",
+ "bot_username": "coderabbitai[bot]",
+ "events": [
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-11-03T13:33:49Z",
+   "data": {
+    "body": "### Walkthrough\n\nToken-amount fields without a token reference are now emitted with an unknown-token adjustment instead of being rejected. Empty `tokenPath` and `token` values remain errors. A zero-address token that is not declared as a native currency is emitted with a `null-token-not-native` adjustment. Thresholds and messages are retained when no token reference is present.\n\n\n**Estimated code review effort:** 3 (Moderate) | ~20 minutes\n\n\nChange: Bug fix\n\n\n<details>\n<summary><strong>Merge Risk:</strong> <strong> Moderate</strong> · up to <code>baaa5</code></summary>\n<dl>\n<dd>\n<br>\n\n\nMissing-token fields do not deliver the intended clear display, and malformed thresholds can produce inconsistent definitions. Resolve these issues before merging and add explicit null-reference tests.\n\n\n</dd>\n</dl>\n</details>\n\n\n<details>\n<summary><strong>Pre-merge checks: <sup></sup> 4 · <sup></sup> 1</strong></summary>\n<dl>\n<dd>\n<br>\n\n<strong><sup></sup> Failed checks: 1 warning</strong>\n\n|     Check name     |                                              Status                                              | Explanation                                                                                                                                                                                               | Resolution                                                                         |\n| :---------------- | :----------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |\n| Docstring Coverage | Warning | Docstring coverage is 25.00% which is insufficient. The required threshold is 80.00%. Docstring coverage is scoped to functions touched by this diff with cyclomatic complexity of at least 2. Documenta… | Write docstrings for the functions missing them to satisfy the coverage threshold. |\n\n<details>\n<summary><strong><sup></sup> Passed checks: 4 passed</strong></summary>\n<dl>\n<dd>\n<br>\n\n|         Check name         |                                             Status                                             | Explanation                                                                                                                                   |\n| :------------------------ | :--------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------- |\n|         Title check        | Passed | The title describes the main change: accepting empty or missing token paths and token references. It is concise and related to the changeset. |\n|      Description check     | Passed | The description accurately describes the new handling of null tokens and native currency addresses.                                           |\n\n</dd>\n</dl>\n</details>\n\n\n</dd>\n</dl>\n</details>\n\n\n<details>\n<summary><strong>Finishing Touches</strong></summary>\n<dl>\n<dd>\n<br>\n\n<details open>\n<summary><strong>Generate docstrings</strong></summary>\n<dl>\n<dd>\n<br>\n\n- [ ]  Commit to this branch\n- [ ]  Create a new PR\n\n</dd>\n</dl>\n</details>\n<details open>\n<summary><strong>Generate unit tests (beta)</strong></summary>\n<dl>\n<dd>\n<br>\n\n- [ ]  Commit to this branch\n- [ ]  Create a new PR\n\n</dd>\n</dl>\n</details>\n\n</dd>\n</dl>\n</details>\n\n\n- [ ]  <strong title=\"Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts\">Autofix</strong> · Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts\n\n\n> [!TIP]\n> <details>\n> <summary><strong>🎯 Customize your risk assessments</strong></summary>\n> <dl>\n> <dd>\n> <br>\n> \n> Guide how CodeRabbit assesses merge risk and security architecture risk. Highlight sensitive changes and explain your security boundaries using **Merge Risk Instructions** and **Security Risk Instructions** in your review settings. Security architecture risk assessments require the **Advanced plan or above**.\n> \n> </dd>\n> </dl>\n> </details>\n> \n> <details>\n> <summary><strong>✅ Automatic approvals, with your rules</strong></summary>\n> <dl>\n> <dd>\n> <br>\n> \n> Let CodeRabbit approve pull requests once required threads are resolved, pre-merge checks pass, and your risk limits are met. Enable **Automatic approvals** in review settings, with overrides for teams or file paths.\n> \n> </dd>\n> </dl>\n> </details>\n\n\nThanks for using CodeRabbit! It's free for OSS, and your support helps us grow. If you like it, consider giving us a shout-out.\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review",
+   "timestamp": "2026-11-05T10:01:45Z",
+   "data": {
+    "state": "commented",
+    "body": "**Actionable comments posted: 2**\n\n<details>\n<summary> Nitpick comments: 1</summary><blockquote>\n<dl>\n<dd>\n<br>\n\n<details>\n<summary>definitions/ethereum/erc7730/test_erc7730.py: 1</summary><blockquote>\n<dl>\n<dd>\n<br>\n\n`555-561`: ** Trivial** · **Maintainability & Code Quality** · **Quick win**\n\n**Add test cases for explicit `None` in `token` and `tokenPath`.**\n\nThe new tests cover omitted `token` and `tokenPath` keys, but no test sets either key to `None`. The code treats an explicit `None` as absent (`definitions/ethereum/erc7730/params.py:130` and `:167`). The PR states that a null token is shown as an unknown token. No test asserts that behavior. A change from `is not None` checks to key-presence checks would pass the current suite.\n\n\n</dd>\n</dl>\n</blockquote></details>\n\n</dd>\n</dl>\n</blockquote></details>\n\n---\n\n\n- [ ]  Fix comments: Fix CodeRabbit comments on this PR\n\n\n<h6>\n<details>\n<summary> Review info</summary>\n<dl>\n<dd>\n<br>\n\n<details>\n<summary> Run configuration</summary>\n<dl>\n<dd>\n<br>\n\n- **Source mode**: Auto\n- **Repository**: Unavailable\n- **Branch**: Unavailable\n- **File**: No configuration file from this repository applied\n- **Commit**: Unavailable\n- **Layers**: Organization UI\n- **Review profile**: CHILL\n- **Plan**: Advanced\n\n</dd>\n</dl>\n</details>\n\n<details>\n<summary> Commits</summary>\n<dl>\n<dd>\n<br>\n\nReviewing files that changed from the base of the PR and between bdc0887f63c0f40a130758f2407b8d7a3c7f7e07 and baaa5695cc80ddee997c63ae8395cbb2f3de04ff.\n\n</dd>\n</dl>\n</details>\n\n\n**Included review availability:** This review used your included allowance. Your plan provides up to 1 included review per hour; 0 remain after this review.\n\n</dd>\n</dl>\n</details>\n</h6>\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-11-05T10:01:45Z",
+   "data": {
+    "path": "definitions/ethereum/erc7730/params.py",
+    "line": 185,
+    "body": "** Major** · **Functional Correctness** · **Heavy lift**\n\n\n**Emitted no-token `tokenAmount` fields fail on firmware and fall back to blind signing.**\n\nWith neither `token_path` nor `const_token_address`, firmware `TokenAmountFormatter.format` raises `InvalidFormatDefinition`. `sign_tx` catches `ClearSigningFailed` and blind-signs the transaction, so the intended unknown-token display does not render. Keep this case dropped, or add firmware support for an absent token reference before emitting it.\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-11-05T10:01:45Z",
+   "data": {
+    "path": "definitions/ethereum/erc7730/params.py",
+    "line": 190,
+    "body": "** Minor** · **Functional Correctness** · **Quick win**\n\n\n**Reject non-string, non-integer `threshold` values in `_apply_threshold`.**\n\nA `threshold` that is neither a string nor an integer, such as `[]`, is ignored. `message` still sets `threshold_message`. The test `test_tokenamount_message_without_threshold_is_dropped` expects that message to be dropped when no threshold is set. This PR also runs `_apply_threshold()` for no-token fields, so this gap is now reachable there. Reject other types with `invalid-threshold`.\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "coverage_check",
+   "quote": "Docstring coverage is 25.00% which is insufficient",
+   "pattern": "(?i)docstring"
+  },
+  {
+   "kind": "change_overview",
+   "quote": "Token-amount fields without a token reference are now emitted with an unknown-token adjustment",
+   "pattern": null,
+   "not_asserted": "overview sentence: no text pattern separates it from findings about the same code"
+  },
+  {
+   "kind": "rating",
+   "quote": "**Estimated code review effort:** 3 (Moderate) | ~20 minutes",
+   "pattern": "(?i)review effort|effort estimate"
+  },
+  {
+   "kind": "generation_offer",
+   "quote": "<summary><strong>Generate unit tests (beta)</strong></summary>",
+   "pattern": "(?i)generate (unit )?tests"
+  },
+  {
+   "kind": "product_tip",
+   "quote": "Customize your risk assessments",
+   "pattern": "(?i)risk assessment"
+  },
+  {
+   "kind": "run_status",
+   "quote": "**Actionable comments posted: 2**",
+   "pattern": "(?i)actionable comments"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "inline",
+   "path": "definitions/ethereum/erc7730/params.py",
+   "quote": "Emitted no-token `tokenAmount` fields fail on firmware and fall back to blind signing.",
+   "pattern": "(?i)firmware|blind[- ]sign|token_path|const_token"
+  },
+  {
+   "kind": "inline",
+   "path": "definitions/ethereum/erc7730/params.py",
+   "quote": "Reject non-string, non-integer `threshold` values in `_apply_threshold`.",
+   "pattern": "(?i)threshold"
+  },
+  {
+   "kind": "collapsed_nitpick",
+   "path": "definitions/ethereum/erc7730/test_erc7730.py",
+   "quote": "Add test cases for explicit `None` in `token` and `tokenPath`.",
+   "pattern": "(?i)\\bNone\\b|null"
+  }
+ ]
+}

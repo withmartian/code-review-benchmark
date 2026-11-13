@@ -1,0 +1,69 @@
+{
+ "source": "https://github.com/hyperpolymath/universal-chat-extractor/pull/186",
+ "bot_username": "coderabbitai[bot]",
+ "events": [
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-11-06T20:06:25Z",
+   "data": {
+    "body": "> [!WARNING]\n> ## Review limit reached\n> \n> You've used all free OSS reviews for now. Wait for the free limit to reset to keep reviewing this public repository.\n> \n> **Next included review available in 51 minutes.**\n> \n> .\n> \n> <details>\n> <summary><strong>View limit details</strong></summary>\n> <dl>\n> <dd>\n> <br>\n> \n> **Limit details:** You’ve used the included review currently available.\n> \n> Learn how review limits work.\n> \n> **Review configuration:**\n> \n> <details>\n> <summary><strong> Run configuration</strong></summary>\n> <dl>\n> <dd>\n> <br>\n> \n> - **Source mode**: Auto\n> - **Repository**: Unavailable\n> - **Branch**: Unavailable\n> - **File**: No configuration file from this repository applied\n> - **Commit**: Unavailable\n> - **Layers**: Organization UI\n> - **Review profile**: ASSERTIVE\n> - **Plan**: Advanced\n> \n> </dd>\n> </dl>\n> </details>\n> \n> <details>\n> <summary><strong> Commits</strong></summary>\n> <dl>\n> <dd>\n> <br>\n> \n> Reviewing files that changed from the base of the PR and between b8d4e8c4189313708893f2d28396da059264706c and 04b09ceebdfc22d70054c5176ec4d0e451ee3db4.\n> \n> </dd>\n> </dl>\n> </details>\n> \n> <details>\n> <summary><strong> Files selected for processing: 1</strong></summary>\n> <dl>\n> <dd>\n> <br>\n> \n> * `.github/workflows/casket-pages.yml`\n> \n> </dd>\n> </dl>\n> </details>\n> \n> </dd>\n> </dl>\n> </details>\n\n\n<details>\n<summary><strong>Summary</strong></summary>\n<dl>\n<dd>\n<br>\n\n\n## Summary by CodeRabbit\n\n* **Chores**\n  * Updated the site publishing workflow with a longer build time limit and more consistent handling of build artifacts and cached dependencies.\n\n\nThe Pages workflow increases the build timeout, updates checkout and Cabal cache settings, and assigns a run-specific name to the uploaded artifact and its deployment.\n\n**Changes: Pages workflow**\n\n|Layer / File(s)|Summary|\n|:---|:---|\n|**Build setup** <br> `.github/workflows/casket-pages.yml`|The build timeout increases from 15 to 60 minutes. Both checkout steps disable credential persistence, and the `casket-ssg` checkout is pinned to a commit. The Cabal cache key adds runner OS and architecture, GHC and Cabal versions, and hashes of the Cabal and project files.|\n|**Artifact upload and deployment** <br> `.github/workflows/casket-pages.yml`|The upload step names the Pages artifact using the workflow run ID and attempt. The deployment step specifies the same artifact name.|\n\n\n**Estimated code review effort:** 2 (Simple) | ~10 minutes\n\n\n**Change:** Bug fix\n\n\n</dd>\n</dl>\n</details>\n\n\n<details>\n<summary><strong>Merge Risk:</strong> <strong> Low</strong> · previous review <code>b8d4e</code></summary>\n<dl>\n<dd>\n<br>\n\n\nDeployment-only retries will fail to find the successful build’s artifact. Rerunning the full workflow is a workaround; passing the build’s artifact name to deployment fixes the bounded retry failure.\n\n\n</dd>\n</dl>\n</details>\n\n\n<details>\n<summary><strong>Pre-merge checks: <sup></sup> 5</strong></summary>\n<dl>\n<dd>\n<br>\n\n|         Check name         |                                             Status                                             | Explanation                                                                                                                                                                                               |\n| :------------------------ | :--------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |\n|         Title check        | Passed | The title identifies the main changes to cold Pages builds and retry artifact selection.                                                                                                                  |\n|      Description check     | Passed | The description covers the workflow changes and states the remaining deployment validation.                                                                                                               |\n\n\n</dd>\n</dl>\n</details>\n\n\n- [ ]  <strong title=\"Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts\">Autofix</strong> · Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts\n\n\nThanks for using CodeRabbit! It's free for OSS, and your support helps us grow. If you like it, consider giving us a shout-out.\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review",
+   "timestamp": "2026-11-06T20:11:25Z",
+   "data": {
+    "state": "changes_requested",
+    "body": "**Actionable comments posted: 1**\n\n---\n\n\n- [ ]  Fix comments: Fix CodeRabbit comments on this PR\n\n\n<h6>\n<details>\n<summary> Review info</summary>\n<dl>\n<dd>\n<br>\n\n<details>\n<summary> Run configuration</summary>\n<dl>\n<dd>\n<br>\n\n- **Source mode**: Auto\n- **Repository**: Unavailable\n- **Branch**: Unavailable\n- **File**: No configuration file from this repository applied\n- **Commit**: Unavailable\n- **Layers**: Organization UI\n- **Review profile**: ASSERTIVE\n- **Plan**: Advanced\n\n</dd>\n</dl>\n</details>\n\n<details>\n<summary> Commits</summary>\n<dl>\n<dd>\n<br>\n\nReviewing files that changed from the base of the PR and between d812fc628577476f7be74a7d0499bf6e076fd398 and b8d4e8c4189313708893f2d28396da059264706c.\n\n</dd>\n</dl>\n</details>\n\n\n**Included review availability:** This review used your included allowance. Your plan provides up to 1 included review per hour; 0 remain after this review.\n\n</dd>\n</dl>\n</details>\n\n<details>\n<summary> Review details</summary>\n<dl>\n<dd>\n<br>\n\n<details>\n<summary> Context from checks skipped due to timeout: 2</summary>\n<dl>\n<dd>\n<br>\n\n* GitHub Check: CodeRabbit\n* GitHub Check: semgrep-cloud-platform/scan\n\n</dd>\n</dl>\n</details>\n\n<details>\n<summary> Additional context used</summary>\n<dl>\n<dd>\n<br>\n\n<details>\n<summary> zizmor (1.31.1)</summary>\n<dl>\n<dd>\n<br>\n\n<details>\n<summary>.github/workflows/casket-pages.yml</summary>\n<dl>\n<dd>\n<br>\n\n[error] 24-24: unpinned action reference (unpinned-uses): action is not pinned to a hash (required by blanket policy)\n\n(unpinned-uses)\n\n---\n\n[error] 28-28: unpinned action reference (unpinned-uses): action is not pinned to a hash (required by blanket policy)\n\n(unpinned-uses)\n\n</dd>\n</dl>\n</details>\n\n</dd>\n</dl>\n</details>\n\n</dd>\n</dl>\n</details>\n\n</dd>\n</dl>\n</details>\n</h6>\n"
+   }
+  },
+  {
+   "actor": "coderabbitai[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-11-06T20:11:25Z",
+   "data": {
+    "path": ".github/workflows/casket-pages.yml",
+    "line": 116,
+    "body": "** Minor** · **Stability & Availability** · **Quick win**\n\n\n**Use the build’s artifact name for deployment retries.**\n\nIf only the failed deployment job is rerun, `github.run_attempt` increases but the successful build does not rerun. Deployment then looks for a different artifact and fails. Expose the uploaded name as a build job output and use that output here.\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "tool_context",
+   "quote": "[error] 24-24: unpinned action reference (unpinned-uses)",
+   "pattern": "(?i)unpinned|pin(ned|ning)?\\b.{0,40}(SHA|hash|commit)"
+  },
+  {
+   "kind": "tool_context",
+   "quote": "[error] 28-28: unpinned action reference (unpinned-uses)",
+   "pattern": "(?i)unpinned|pin(ned|ning)?\\b.{0,40}(SHA|hash|commit)"
+  },
+  {
+   "kind": "run_status",
+   "quote": "You've used all free OSS reviews for now.",
+   "pattern": "(?i)review limit|free (OSS )?reviews"
+  },
+  {
+   "kind": "change_overview",
+   "quote": "The Pages workflow increases the build timeout, updates checkout and Cabal cache settings",
+   "pattern": null,
+   "not_asserted": "overview sentence: no text pattern separates it from findings about the same code"
+  },
+  {
+   "kind": "rating",
+   "quote": "**Estimated code review effort:** 2 (Simple) | ~10 minutes",
+   "pattern": "(?i)review effort|effort estimate"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "inline",
+   "path": ".github/workflows/casket-pages.yml",
+   "quote": "Use the build’s artifact name for deployment retries.",
+   "pattern": "(?i)artifact"
+  }
+ ]
+}

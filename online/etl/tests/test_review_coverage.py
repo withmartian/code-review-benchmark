@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pipeline.review_coverage import NO_COMMIT
 from pipeline.review_coverage import ReviewRecord
+from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
@@ -1086,7 +1087,11 @@ def test_the_codex_review_summary_records_a_completed_review() -> None:
     assert not completed_no_review([issue_comment(done, actor=CODEX)], COMMITS, CODEX)
     running = table('🔄 **Running** since <relative-time datetime="2026-10-07T21:45:00Z">x</relative-time>')
     assert find_review_records([issue_comment(running, actor=CODEX)], COMMITS, CODEX) == []
-    assert completed_no_review([issue_comment(running, actor=CODEX)], COMMITS, CODEX)
+    # A running row is no record, but a status comment that is not a notice may be the only trace of
+    # a review: the PR is not taken as never reviewed.
+    assert not completed_no_review([issue_comment(running, actor=CODEX)], COMMITS, CODEX)
+    limit = "You have reached your Codex usage limits for code reviews."
+    assert completed_no_review([issue_comment(limit, actor=CODEX)], COMMITS, CODEX)
 
 
 def test_a_comment_edited_after_the_first_review_is_a_later_comment_review() -> None:
@@ -1099,3 +1104,14 @@ def test_a_comment_edited_after_the_first_review_is_a_later_comment_review() -> 
     # The earliest event counts from its creation time: an edit of the only comment is after it.
     assert later_comment_review([edited], qodo)
     assert not later_comment_review([comment], qodo)
+
+
+def test_a_summary_without_a_record_is_a_review_whose_record_is_missing() -> None:
+    greptile = "greptile-apps[bot]"
+    only = issue_comment("<h3>Greptile Summary</h3>\n\nAdds a parser.\n\nConfidence Score: 5/5", actor=greptile)
+    assert not completed_no_review([only], COMMITS, greptile)
+    assert comment_record_missing([only], COMMITS, greptile)
+    # A comment that is only a notice is no review.
+    limit = issue_comment(summary(rate_limited("f" * 40, D)))
+    assert completed_no_review([limit], COMMITS, CR)
+    assert not comment_record_missing([limit], COMMITS, CR)

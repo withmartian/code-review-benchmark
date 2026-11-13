@@ -377,6 +377,10 @@ def comment_record_missing(events: list[dict], commits: list[dict], chatbot_user
     """Whether a bot that writes its record in conversation comments completed a review on the PR
     but the comment record of it is missing.
 
+    A review here is a completed review (``_completed_reviews``) or a conversation comment of the
+    bot that is not a notice (``_comment_review``): a Greptile review that found nothing is only its
+    summary comment.
+
     A record in a review body (CodeRabbit and Codex write one there too) covers that review alone,
     while a review that posted nothing is recorded only in the comment, so only the comment record
     counts. It is missing when no comment names a commit of the PR in an ``in_issue_comments`` row
@@ -386,7 +390,9 @@ def comment_record_missing(events: list[dict], commits: list[dict], chatbot_user
     reviews then cannot be told apart from silent ones).
     """
     patterns = [p for p in RECORD_PATTERNS if p.in_issue_comments and same_github_actor(p.bot, chatbot_username)]
-    if not patterns or not _completed_reviews(events, commits, chatbot_username):
+    if not patterns:
+        return False
+    if not (_completed_reviews(events, commits, chatbot_username) or _comment_review(events, chatbot_username)):
         return False
     bodies = [
         (e.get("data") or {}).get("body") or ""
@@ -456,13 +462,28 @@ def find_review_records(events: list[dict], commits: list[dict], chatbot_usernam
     return sorted(out, key=lambda r: (r.head, r.start, r.source))
 
 
+def _comment_review(events: list[dict], chatbot_username: str) -> bool:
+    """Whether a bot that reviews, or writes its record, in conversation comments (Claude, Qodo;
+    CodeRabbit, Greptile, Codex) posted such a comment, or a revision of one, with text that is not
+    a notice. Its review may be that comment alone, record or no record."""
+    if not (reviews_in_issue_comments(chatbot_username) or record_in_issue_comments(chatbot_username)):
+        return False
+    for e in events:
+        if e.get("event_type") != "issue_comment" or not same_github_actor(e.get("actor"), chatbot_username):
+            continue
+        body = (e.get("data") or {}).get("body") or ""
+        if _clean(body) and not _match_notices(body, chatbot_username):
+            return True
+    return False
+
+
 def completed_no_review(events: list[dict], commits: list[dict], chatbot_username: str) -> bool:
     """Whether the bot completed no review on the PR: it posted only notices (a rate limit, a skip).
 
     A review counts when the bot submitted one that is not a notice (``_is_completed_review``), left
-    an inline comment that does not reply to a thread, or, for a bot that posts its reviews as
-    conversation comments (``REVIEWS_IN_ISSUE_COMMENTS``), posted such a comment with text that is
-    not a notice. A record or notice that shows a review (``find_review_records``), or names a
+    an inline comment that does not reply to a thread, or, for a bot that posts its reviews or its
+    record as conversation comments, posted such a comment with text that is not a notice
+    (``_comment_review``). A record or notice that shows a review (``find_review_records``), or names a
     commit since replaced (``rewritten_review_commits``), counts too. Wherever the review's commit
     is, placed or not.
     """
@@ -475,10 +496,8 @@ def completed_no_review(events: list[dict], commits: list[dict], chatbot_usernam
             return False
         if etype == "review_comment" and not data.get("in_reply_to_id"):
             return False
-        if etype == "issue_comment" and reviews_in_issue_comments(chatbot_username):
-            body = data.get("body") or ""
-            if _clean(body) and not _match_notices(body, chatbot_username):
-                return False
+    if _comment_review(events, chatbot_username):
+        return False
     return not (
         find_review_records(events, commits, chatbot_username)
         or rewritten_review_commits(events, commits, chatbot_username)

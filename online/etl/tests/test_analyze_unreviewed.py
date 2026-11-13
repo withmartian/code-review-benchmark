@@ -115,7 +115,11 @@ def test_current_issue_comments_replace_timeline_bodies() -> None:
     assert [e["event_type"] for e in merged] == ["issue_comment", "review"]
     assert merged[0]["data"]["body"] == "Review limit reached"
     assert merged[0]["data"]["updated_at"] == "2026-07-01T14:01:00Z"
-    assert _with_current_issue_comments(events, []) is events
+    assert _with_current_issue_comments(events, None) is events  # never read
+    # An empty read holds none of them: the summary first posted is kept as an earlier state.
+    gone = _with_current_issue_comments(events, [])
+    assert gone[0]["data"]["body"] == "Reviewing"
+    assert gone[0]["data"]["revision_of"] == ""
 
 
 class FakeLLM:
@@ -278,14 +282,22 @@ async def test_a_review_that_posted_nothing_counts_through_the_summary_record() 
 
 
 async def test_comments_never_read_keep_every_fix_only_for_a_bot_with_a_record_in_comments() -> None:
-    # The rate-limit case leaves the exporter fix out once the comments were read, even when none is
-    # the bot's (the timeline still holds its summary as first posted); with them never read it is
-    # kept for CodeRabbit.
+    # The rate-limit case leaves the exporter fix out once the comments were read; with them never
+    # read it is kept for CodeRabbit.
     row = _pr_row()
-    row["issue_comments"] = json.dumps([])
     repo = FakeRepo()
-    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), BOT, "model")
     assert repo.stored["recall"] == 1.0
+
+    # A read that returned none of the bot's comments, empty or with a person's comment only: the
+    # summary the timeline holds as first posted is gone, its later edits were never read, so the
+    # fix is kept, as with the comments never read.
+    person = {"id": 5, "author": "dev", "body": "thanks", "created_at": "2026-07-01T16:00:00Z"}
+    for read in ([], [person]):
+        row["issue_comments"] = json.dumps(read)
+        assert await analyze_single_pr(FakeLLM(), repo, dict(row), BOT, "model")
+        assert repo.stored["recall"] == 0.5, read
+        assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
     row["issue_comments"] = None
     assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
@@ -604,6 +616,9 @@ async def test_a_review_posted_as_a_conversation_comment_keeps_every_fix(bot: st
     # a review names no commit. After c, the bot reviewed again that way: the exporter fix of c may be
     # of code it read, so nothing is left out.
     row = json.loads(json.dumps(_pr_row()).replace(BOT, bot))
+    assembled = json.loads(row["assembled"])
+    assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "issue_comment"]
+    row["assembled"] = json.dumps(assembled)
     row["issue_comments"] = json.dumps([])
     repo = FakeRepo()
     assert await analyze_single_pr(FakeLLM(), repo, dict(row), bot, "model")
@@ -853,3 +868,25 @@ async def test_no_review_needs_the_whole_conversation_history() -> None:
         a.get("excluded_from_recall", "").startswith("the bot completed no review")
         for a in repo.stored["human_actions"]
     )
+
+
+@pytest.mark.parametrize("bot", ["greptile-apps[bot]", "chatgpt-codex-connector[bot]"])
+async def test_a_review_shown_only_by_a_summary_without_a_record_keeps_every_fix(bot: str) -> None:
+    # Greptile (or Codex) reviewed and found nothing: its summary comment is all it posted, and that
+    # summary carries no record of the commit it read. It is a review, not no review, and its record
+    # is missing, so every fix is kept, the matched one included.
+    row = json.loads(json.dumps(_pr_row()).replace(BOT, bot))
+    assembled = json.loads(row["assembled"])
+    assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "review"]
+    row["assembled"] = json.dumps(assembled)
+    row["reviews"] = json.dumps([])
+    summary = "<h3>Greptile Summary</h3>\n\nThis PR adds a parser and an exporter.\n\nConfidence Score: 5/5"
+    row["issue_comments"] = json.dumps(
+        [{"id": 6, "author": bot, "body": summary, "created_at": "2026-07-01T10:01:00Z", "updated_at": None}]
+    )
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, row, bot, "model")
+
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])

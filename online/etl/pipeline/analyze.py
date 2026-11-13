@@ -325,40 +325,50 @@ def _deleted_bot_comments(events: list[dict], comments_read: bool, issue_comment
     never read, so its history is incomplete."""
     if not comments_read:
         return False
-    fetched = {c.get("id") for c in issue_comments}
     return any(
         e.get("event_type") == "issue_comment"
         and same_github_actor(e.get("actor"), chatbot_username)
-        and (e.get("data") or {}).get("comment_id") is not None
-        and e["data"]["comment_id"] not in fetched
+        and not _read_holds(e, issue_comments)
         for e in events
     )
 
 
-def _with_current_issue_comments(events: list[dict], issue_comments: list[dict]) -> list[dict]:
+def _read_holds(event: dict, issue_comments: list[dict]) -> bool:
+    """Whether the comments read still hold a timeline comment: by its id, or, for one without an
+    id, when they hold any comment of its author (they are then read as its current bodies)."""
+    comment_id = (event.get("data") or {}).get("comment_id")
+    if comment_id is not None:
+        return comment_id in {c.get("id") for c in issue_comments}
+    return any(same_github_actor(c.get("author"), event.get("actor")) for c in issue_comments)
+
+
+def _with_current_issue_comments(events: list[dict], issue_comments: list[dict] | None) -> list[dict]:
     """Timeline events with issue comments taken from the API, when they were fetched.
 
     The timeline holds issue comments only as GH Archive recorded them when first posted, or none
     for PRs found through the Search API. A bot that edits one status comment in place (to say a
     later push was not reviewed) says so only in the current body.
 
-    A timeline comment whose id the API list does not hold (deleted since, by the bot when it
-    re-posted its summary or by a person hiding it) is kept: its record of a review is still
+    A timeline comment the API list does not hold (``_read_holds``: deleted since, by the bot when
+    it re-posted its summary or by a person hiding it) is kept: its record of a review is still
     evidence. It is kept as an earlier state of the comment (``revision_of``), since its body is the
-    one first posted, not necessarily the last. Timeline comments the API list holds, or without an
-    id, are replaced by the API's current bodies.
+    one first posted, not necessarily the last. Timeline comments the API list holds are replaced by
+    the API's current bodies. issue_comments is None when the comments were never read; an empty
+    list is a read that returned none, and every timeline comment is then one the API no longer
+    holds.
     """
-    if not issue_comments:
+    if issue_comments is None:
         return events
-    fetched = {c.get("id") for c in issue_comments}
     out = []
     for e in events:
         if e.get("event_type") != "issue_comment":
             out.append(e)
             continue
-        comment_id = (e.get("data") or {}).get("comment_id")
-        if comment_id is not None and comment_id not in fetched:
-            out.append({**e, "data": {**(e.get("data") or {}), "revision_of": comment_id}})
+        if not _read_holds(e, issue_comments):
+            # An earlier state of a comment that is gone; one without an id is marked by an empty id.
+            comment_id = (e.get("data") or {}).get("comment_id")
+            revision_of = comment_id if comment_id is not None else ""
+            out.append({**e, "data": {**(e.get("data") or {}), "revision_of": revision_of}})
     for c in issue_comments:
         out.append(
             {
@@ -620,7 +630,10 @@ async def analyze_single_pr(
         actions,
         matches,
         _with_comment_revisions(
-            _with_current_issue_comments(_with_review_commits(events, reviews), issue_comments),
+            _with_current_issue_comments(
+                _with_review_commits(events, reviews),
+                issue_comments if pr_row.get("issue_comments") is not None else None,
+            ),
             comment_edits,
             issue_comments,
         ),

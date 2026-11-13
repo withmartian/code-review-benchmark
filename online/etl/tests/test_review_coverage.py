@@ -702,6 +702,23 @@ def test_each_side_of_an_insertion_is_judged_on_its_own() -> None:
     assert "adds lines among code a review read (1 of the 2 lines" in reason
 
 
+def test_a_re_wrap_that_adds_a_trailing_comma_is_a_re_wrap() -> None:
+    # A reviewed one call; C, a formatter (Black, Prettier), wraps it with one argument per line and a
+    # trailing comma; D changes an argument. The line is the reviewed call re-wrapped.
+    call_a = "@@ -0,0 +1,2 @@\n+def run():\n+    result = compute(alpha, beta)"
+    wrap_c = (
+        "@@ -1,2 +1,5 @@\n def run():\n-    result = compute(alpha, beta)\n"
+        "+    result = compute(\n+        alpha,\n+        beta,\n+    )"
+    )
+    fix_d = "@@ -3,3 +3,3 @@\n         alpha,\n-        beta,\n+        gamma,\n     )"
+    details = _details((A, "w.py", "added", call_a), (C, "w.py", "modified", wrap_c), (D, "w.py", "modified", fix_d))
+
+    origin, reason = _origin(_action(D, "w.py"), details)
+
+    assert origin == "unknown"
+    assert reason.startswith(f"commit {'c' * 12} moved or re-wrapped a line")
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

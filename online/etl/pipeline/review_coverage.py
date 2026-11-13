@@ -568,11 +568,14 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
 
 _MOVE_SPAN = 10  # the most consecutive lines a moved or re-wrapped line is compared as one
 _WS_RE = re.compile(r"\s+")
+_TRAILING_COMMA_RE = re.compile(r",(?=[)\]}]|$)")
 
 
 def _ws(text: str) -> str:
-    """The text with all whitespace removed, as moved or re-wrapped code is compared."""
-    return _WS_RE.sub("", text)
+    """The text as moved or re-wrapped code is compared: all whitespace removed, and the trailing
+    commas a formatter adds when it wraps a call or a literal (before a closing bracket, or at the
+    end) dropped."""
+    return _TRAILING_COMMA_RE.sub("", _WS_RE.sub("", text))
 
 
 def _span_keys(run: list[str], at: int | None = None) -> set[str]:

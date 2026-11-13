@@ -294,6 +294,7 @@ async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_numbe
             "message": c.get("commit", {}).get("message", ""),
             "date": c.get("commit", {}).get("author", {}).get("date", ""),
             "author": (c.get("author") or {}).get("login"),
+            "parents": [p.get("sha") for p in c.get("parents") or []],
         }
         for c in raw
     ]

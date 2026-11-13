@@ -1077,6 +1077,24 @@ def fix_code_origin(
     return origin, reason, shas
 
 
+def _branched_commit(commits: list[dict], first_reviewed: int, fix: int) -> str | None:
+    """The first commit after ``first_reviewed``, up to the fix, that breaks the single line of
+    history the trace reads the patches along: its first parent is not the commit listed before it,
+    or it merges another commit of the pull request. Patches of sibling commits are taken against
+    different trees, so read one after the other they can place a reviewed line in an unreviewed
+    commit. A merge of the base branch (its other parent is not in the pull request) keeps the line.
+    Commits stored without their parents (enriched before parents were read) are read as one line.
+    """
+    shas = {c.get("sha") for c in commits}
+    for i in range(first_reviewed + 1, fix + 1):
+        parents = commits[i].get("parents")
+        if parents is None:
+            continue
+        if not parents or parents[0] != commits[i - 1].get("sha") or any(p in shas for p in parents[1:]):
+            return commits[i].get("sha") or ""
+    return None
+
+
 def _origin_in_file(
     action: dict,
     commits: list[dict],
@@ -1136,6 +1154,14 @@ def _origin_in_file(
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
     if fix is None or fix <= first_reviewed:
         return "unknown", "the fixing commit is not after the first reviewed commit", ()
+    branch = _branched_commit(commits, first_reviewed, fix)
+    if branch is not None:
+        return (
+            "unknown",
+            f"commit {branch[:12]} does not follow the one listed before it (a branch merged inside the "
+            "pull request), so the patches are not one line of history",
+            (),
+        )
     path = action.get("file_path")
     if not path:
         return "unknown", "the fix names no file", ()

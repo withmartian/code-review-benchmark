@@ -386,6 +386,36 @@ def test_a_fix_of_lines_written_after_the_last_review_is_unreviewed() -> None:
     assert "all 1 lines" in reason
 
 
+def _commits_with_parents(*parents: list[str]) -> list[dict]:
+    return [{"sha": s, "parents": p} for s, p in zip((A, B, C, D), parents, strict=True)]
+
+
+def test_a_branch_merged_inside_the_pull_request_makes_the_fix_unknown() -> None:
+    # The same unreviewed exporter fix as above. With the commits one line of history (each one's
+    # parent the commit before, a base-branch merge allowed), it is unreviewed; with C a sibling of
+    # B (both on A), or D merging B back in, the patches are not one history and the fix is kept.
+    fix = "@@ -1,3 +1,3 @@\n def export(rows):\n-    target = '/tmp/out.csv'\n+    target = OUT_PATH\n     return write(target, rows)"
+    details = _details(
+        (A, "parser.py", "added", PARSER_A),
+        (C, "exporter.py", "added", EXPORTER_C),
+        (D, "exporter.py", "modified", fix),
+    )
+    base = "e" * 40
+    records = [ReviewRecord(-1, 1, "record")]
+    action = _action(D, "exporter.py")
+
+    linear = _commits_with_parents(["0" * 40], [A], [B], [C, base])
+    assert fix_code_origin(action, linear, details, records, 0)[0] == "unreviewed"
+
+    for commits in (
+        _commits_with_parents(["0" * 40], [A], [A], [C]),
+        _commits_with_parents(["0" * 40], [A], [B], [C, B]),
+    ):
+        origin, reason, _ = fix_code_origin(action, commits, details, records, 0)
+        assert origin == "unknown"
+        assert "not one line of history" in reason
+
+
 def test_a_fix_of_reviewed_lines_is_reviewed() -> None:
     fix = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(';')"
     details = _details((A, "parser.py", "added", PARSER_A), (D, "parser.py", "modified", fix))

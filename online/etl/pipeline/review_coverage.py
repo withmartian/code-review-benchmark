@@ -552,15 +552,17 @@ _DIFF_CONTEXT = 3  # the unchanged lines GitHub's patches carry around each chan
 def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
     """Each change block of a hunk (a run of removed and added lines between unchanged ones).
 
-    For each block: whether it is judged by the code where it is, and that code, as (line number
-    before the change, text). A block that changes no existing code line (it adds lines, removes
+    For each block: whether it must be placed by the code where it is (an empty list of that code
+    then makes the fix's origin unknown), and that code, as (line number before the change, text).
+    A block that changes no existing code line (it adds lines, removes
     only punctuation, or both) is, on each side on its own, by the unchanged lines that carry code
     in the run of unchanged lines next to it, or, when that run carries none (only closing braces),
     the nearest unchanged code line on that side within the hunk: a punctuation line it removes (a
     stray `;`) belongs to that code. When one side has no code line in the hunk, the code is empty
     and the fix's origin is unknown, unless the file itself has nothing on that side (the hunk
     starts at its first line, or ends with fewer unchanged lines than a diff's context, so at its
-    last). A block that removes code is judged by the code lines it removes alone, whatever it adds.
+    last). A block that removes code is judged by the lines it removes, whatever it adds: its code
+    lines, and the punctuation lines among them (``_punctuation_removed``), traced themselves.
     """
     rows: list[tuple[str, int, str]] = []
     old = h.old_start
@@ -587,6 +589,8 @@ def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
         while b < len(rows) and rows[b][0] == " ":
             b += 1
         if any(k == "-" and _CODE_RE.search(t) for k, _, t in rows[i:j]):
+            # Its code lines, and any punctuation line it also removes (``_punctuation_removed``),
+            # are traced themselves.
             out.append((False, []))
         else:
             # Each side on its own: its unchanged run, extended to the nearest code line in the hunk
@@ -600,6 +604,26 @@ def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
             known = (before or file_start) and (after or file_end) and (before or after)
             out.append((True, before + after if known else []))
         i = j
+    return out
+
+
+def _punctuation_removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
+    """(line number before the change, text) of each punctuation-only line removed in a change block
+    that also removes code: it is part of what the block changes, a stray `;` as much as a line of
+    code, so it is traced like one."""
+    out = []
+    for h in hunks:
+        old = h.old_start
+        block: list[tuple[str, int, str]] = []
+        for kind, text in [*h.lines, (" ", "")]:
+            if kind != " ":
+                block.append((kind, old, text))
+            else:
+                if any(k == "-" and _CODE_RE.search(t) for k, _, t in block):
+                    out += [(n, t) for k, n, t in block if k == "-" and not _CODE_RE.search(t)]
+                block = []
+            if kind != "+":
+                old += 1
     return out
 
 
@@ -628,6 +652,10 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
                         return "mismatch", 0, ""
                     if kind == " ":
                         return "kept", old, text
+                    if not _CODE_RE.search(t):
+                        # Which brace a diff pairs with an older one is arbitrary: an added punctuation
+                        # line is the commit's own, never a light edit.
+                        return "added", 0, ""
                     best = max(removed, key=lambda r: SequenceMatcher(None, r[1], t).ratio(), default=None)
                     if best is not None and SequenceMatcher(None, best[1], t).ratio() >= _EDIT_RATIO:
                         return "edited", best[0], best[1]
@@ -815,10 +843,12 @@ def fix_code_origin(
             (),
         )
     # The code lines around each change block that changes no code line, in any hunk.
-    beside_by_block = [around for h in fix_hunks for by_place, around in _blocks(h) if by_place]
-    if any(not b for b in beside_by_block):
+    # A punctuation line removed beside code is a line the fix changed too.
+    changed += _punctuation_removed(fix_hunks)
+    blocks = [b for h in fix_hunks for b in _blocks(h)]
+    if any(by_place and not around for by_place, around in blocks):
         return "unknown", f"the fix also changes lines in {path} with no code line around them", ()
-    beside = list(dict.fromkeys(b for bs in beside_by_block for b in bs))
+    beside = list(dict.fromkeys(b for _, around in blocks for b in around))
 
     history: list[tuple[int, list[_Hunk]]] = []
     renamed: set[int] = set()

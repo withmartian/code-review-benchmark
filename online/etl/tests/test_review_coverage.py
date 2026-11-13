@@ -869,6 +869,25 @@ def test_a_patch_cut_short_between_hunks_is_not_read_as_whole() -> None:
     assert reason.startswith(f"commit {'c' * 12} removed lines whose patch is not readable")
 
 
+def test_a_punctuation_line_removed_with_code_is_judged_by_where_it_is() -> None:
+    # A reviewed the loop and its stray `;`; C, unreviewed, inserted a log call after it. D deletes both
+    # in one block: the log is C's, but the `;` sits in the reviewed loop, so the fix is kept.
+    loop_a = "@@ -0,0 +1,3 @@\n+while (next())\n+  ;\n+process();"
+    log_c = "@@ -2,2 +2,3 @@\n   ;\n+log('done');\n process();"
+    fix_d = "@@ -1,4 +1,2 @@\n while (next())\n-  ;\n-log('done');\n process();"
+    details = _details((A, "w.js", "added", loop_a), (C, "w.js", "modified", log_c), (D, "w.js", "modified", fix_d))
+
+    origin, reason = _origin(_action(D, "w.js"), details)
+
+    assert origin == "mixed"
+    assert reason.startswith("1 of the 2 lines the fix changed in w.js were in code no review read")
+
+    # Deleting only C's log is a fix of unreviewed code.
+    only_log = "@@ -2,3 +2,2 @@\n   ;\n-log('done');\n process();"
+    details = _details((A, "w.js", "added", loop_a), (C, "w.js", "modified", log_c), (D, "w.js", "modified", only_log))
+    assert _origin(_action(D, "w.js"), details)[0] == "unreviewed"
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"
@@ -926,11 +945,18 @@ def test_a_line_not_where_the_history_puts_it_is_unknown() -> None:
         assert _origin(_action(D, "p.py"), details)[0] == "unknown"
 
 
-def test_punctuation_lines_do_not_decide_where_code_was_written() -> None:
-    # C rewrote the body; the diff paired its closing brace with the reviewed one. D removes both.
+def test_a_removed_punctuation_line_is_traced_by_position_but_never_paired() -> None:
+    # C rewrote the body and kept the reviewed closing brace (unchanged in its diff). D removes C's line
+    # and that brace: the brace is a line a review read, so the fix is not wholly of unreviewed code.
     body_a = "@@ -0,0 +1,3 @@\n+def check(v) {\n+  return v > 0\n+}"
     body_c = "@@ -1,3 +1,3 @@\n def check(v) {\n-  return v > 0\n+  return v >= 0 && v < limit\n }"
     fix = "@@ -1,3 +1,2 @@\n def check(v) {\n-  return v >= 0 && v < limit\n-}\n+  return v >= 0 && v <= limit }"
     details = _details((A, "c.js", "added", body_a), (C, "c.js", "modified", body_c), (D, "c.js", "modified", fix))
 
+    assert _origin(_action(D, "c.js"), details)[0] == "mixed"
+
+    # When C's diff removed the reviewed brace and added one of its own, the added brace is C's: which
+    # brace a diff pairs with which is arbitrary, so a punctuation line is never a light edit.
+    body_c = "@@ -1,3 +1,3 @@\n def check(v) {\n-  return v > 0\n-}\n+  return v >= 0 && v < limit\n+}"
+    details = _details((A, "c.js", "added", body_a), (C, "c.js", "modified", body_c), (D, "c.js", "modified", fix))
     assert _origin(_action(D, "c.js"), details)[0] == "unreviewed"

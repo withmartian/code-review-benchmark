@@ -32,6 +32,7 @@ from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import renamed_since
 from pipeline.review_coverage import reviews_in_issue_comments
 from pipeline.review_coverage import rewritten_review_commits
+from pipeline.review_coverage import scope_config_changed
 from pipeline.review_coverage import sha_index
 
 logger = logging.getLogger(__name__)
@@ -536,6 +537,8 @@ def _exclude_unreviewed_actions(
                 fix is not None
                 and path_filtered(a.get("file_path") or "", events, chatbot_username)
                 and not renamed_since(a.get("file_path") or "", commits, details_by_sha, first, fix)
+                # A filter the PR itself set may not have applied to the earlier reviews.
+                and not scope_config_changed(commits, details_by_sha, first, fix, chatbot_username)
                 and other_source_changes_reviewed_code(
                     a, commits, details_by_sha, records, first - 1, events, chatbot_username
                 )

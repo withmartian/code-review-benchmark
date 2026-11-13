@@ -631,15 +631,37 @@ class FileScopePattern:
     bot: str
     ignored: str
     selected: str
+    # The repository files that set the path filters.
+    config_files: tuple[str, ...] = ()
 
 
 FILE_SCOPE_PATTERNS: tuple[FileScopePattern, ...] = (
     # CodeRabbit's "Review details": "⛔ Files ignored due to path filters (N)", each item
     # "`path` is excluded by `!**/*.lock`", and "📒 Files selected for processing (N)".
     FileScopePattern(
-        bot=_CODERABBIT, ignored="Files ignored due to path filters", selected="Files selected for processing"
+        bot=_CODERABBIT,
+        ignored="Files ignored due to path filters",
+        selected="Files selected for processing",
+        config_files=(".coderabbit.yaml", ".coderabbit.yml"),
     ),
 )
+
+
+def scope_config_changed(
+    commits: list[dict], details_by_sha: dict[str, dict], first: int, fix: int, chatbot_username: str
+) -> bool:
+    """Whether a commit from ``first`` up to the fix changed a file that sets the bot's path filters
+    (``FileScopePattern.config_files``), or has no details to tell: a filter a later review shows may
+    then not have applied to the earlier reviews."""
+    names = {n for p in FILE_SCOPE_PATTERNS if same_github_actor(p.bot, chatbot_username) for n in p.config_files}
+    for c in commits[max(first, 0) : fix + 1]:
+        detail = details_by_sha.get(c.get("sha", ""))
+        if detail is None:
+            return True
+        if any((f.get("filename") or "").rsplit("/", 1)[-1] in names for f in detail.get("files") or []):
+            return True
+    return False
+
 
 # A block's items run to its </details> or the next nested <summary>: the file lists sit inside an
 # outer "Review details" block, which must not swallow the first of them.

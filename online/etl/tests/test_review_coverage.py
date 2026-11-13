@@ -527,6 +527,35 @@ def test_reviewed_code_an_unreviewed_commit_moved_or_re_wrapped_keeps_its_fix() 
     assert _origin(_action(D, "m.py"), details)[0] == "unreviewed"
 
 
+def test_an_exact_move_is_found_before_a_light_edit_is_followed() -> None:
+    # A reviewed old.py's call; B, unreviewed, wrote new.py with strict=True; C deletes old.py and puts
+    # the reviewed line, verbatim, in place of B's. The line is a light edit of B's line, but it is the
+    # reviewed code moved, so the fix of it is kept.
+    reviewed = "    result = process(payload, strict=False)"
+    details = _details(
+        (A, "old.py", "added", f"@@ -0,0 +1,2 @@\n+def run(payload):\n+{reviewed}"),
+        (B, "new.py", "added", "@@ -0,0 +1,2 @@\n+def run(payload):\n+    result = process(payload, strict=True)"),
+        (C, "old.py", "removed", f"@@ -1,2 +0,0 @@\n-def run(payload):\n-{reviewed}"),
+        (
+            C,
+            "new.py",
+            "modified",
+            f"@@ -1,2 +1,2 @@\n def run(payload):\n-    result = process(payload, strict=True)\n+{reviewed}",
+        ),
+        (D, "new.py", "modified", f"@@ -1,2 +1,2 @@\n def run(payload):\n-{reviewed}\n+{reviewed[:-1]}, retries=3)"),
+    )
+    a_reviewed = [ReviewRecord(-1, 0, "record")]
+
+    origin, reason, _ = fix_code_origin(_action(D, "new.py"), COMMITS, details, a_reviewed, 0)
+
+    assert origin == "unknown"
+    assert reason.startswith(f"commit {'c' * 12} moved or re-wrapped a line")
+
+    # Without old.py's removal, C's line is a light edit of B's: both unreviewed, the fix is left out.
+    del details[C]["files"][0]
+    assert fix_code_origin(_action(D, "new.py"), COMMITS, details, a_reviewed, 0)[0] == "unreviewed"
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

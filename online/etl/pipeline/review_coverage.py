@@ -695,11 +695,14 @@ def fix_code_origin(
     for line, text in [*changed, *beside]:
         wrote: list[int] | None = []
         for i, hunks in reversed(history):
-            at = line
+            at, added_text = line, text
             kind, line, text = _trace(hunks, line, text)
             if kind == "mismatch":
                 return "unknown", f"a changed line is not where commit {commits[i]['sha'][:12]} puts it", ()
-            if kind == "added":
+            # An exact move or re-wrap of code the commit removed elsewhere is checked before a light
+            # edit is followed to its similar predecessor; an edit whose predecessor is the same text
+            # (whitespace aside) is that line, not a move.
+            if kind == "added" or (kind == "edited" and _ws(text) != _ws(added_text)):
                 if i not in removed_keys:
                     removed_keys[i] = _removed_keys(details_by_sha[commits[i]["sha"]])
                 if _added_keys(hunks, at) & removed_keys[i]:

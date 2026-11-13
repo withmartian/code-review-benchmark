@@ -438,6 +438,35 @@ def find_review_records(events: list[dict], commits: list[dict], chatbot_usernam
     return sorted(out, key=lambda r: (r.head, r.start, r.source))
 
 
+def completed_no_review(events: list[dict], commits: list[dict], chatbot_username: str) -> bool:
+    """Whether the bot completed no review on the PR: it posted only notices (a rate limit, a skip).
+
+    A review counts when the bot submitted one that is not a notice (``_is_completed_review``), left
+    an inline comment that does not reply to a thread, or, for a bot that posts its reviews as
+    conversation comments (``REVIEWS_IN_ISSUE_COMMENTS``), posted such a comment with text that is
+    not a notice. A record or notice that shows a review (``find_review_records``), or names a
+    commit since replaced (``rewritten_review_commits``), counts too. Wherever the review's commit
+    is, placed or not.
+    """
+    for e in events:
+        if not same_github_actor(e.get("actor"), chatbot_username):
+            continue
+        data = e.get("data") or {}
+        etype = e.get("event_type")
+        if etype == "review" and _is_completed_review(data, chatbot_username):
+            return False
+        if etype == "review_comment" and not data.get("in_reply_to_id"):
+            return False
+        if etype == "issue_comment" and reviews_in_issue_comments(chatbot_username):
+            body = data.get("body") or ""
+            if _clean(body) and not _match_notices(body, chatbot_username):
+                return False
+    return not (
+        find_review_records(events, commits, chatbot_username)
+        or rewritten_review_commits(events, commits, chatbot_username)
+    )
+
+
 NO_COMMIT = "(no commit)"  # what rewritten_review_commits lists for a completed review with no commit
 
 

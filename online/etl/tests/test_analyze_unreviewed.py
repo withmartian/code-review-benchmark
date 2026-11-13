@@ -697,3 +697,62 @@ async def test_an_inline_comment_read_from_the_threads_is_placed_by_its_commit()
         repo = FakeRepo()
         assert await analyze_single_pr(FakeLLM(), repo, with_inline(extra), BOT, "model")
         assert repo.stored["recall"] == recall, extra
+
+
+def _notice_only_row(bot: str = BOT) -> dict:
+    # GH Archive admits a PR where the bot posted only a notice: rate limited from the first push
+    # (the range starts at the PR's base), then a reply in a human's thread, posted as an empty review.
+    row = _pr_row(notice=RATE_LIMITED.replace("b" * 40, "f" * 40))
+    assembled = json.loads(row["assembled"])
+    reply = {"state": "commented", "body": "", "commit_id": "b" * 40}
+    assembled["events"] = [
+        assembled["events"][0],
+        {"actor": BOT, "event_type": "review", "timestamp": "2026-07-01T13:00:00Z", "data": reply},
+    ]
+    row["assembled"] = json.dumps(assembled)
+    row["reviews"] = json.dumps([])
+    return json.loads(json.dumps(row).replace(BOT, bot))
+
+
+async def test_a_pr_the_bot_never_reviewed_leaves_every_fix_out() -> None:
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, _notice_only_row(), BOT, "model")
+
+    # Matched or not, no fix counts: no code of the PR was reviewed, so the PR has no recall.
+    assert repo.stored["recall"] is None
+    assert [a["excluded_from_recall"] for a in repo.stored["human_actions"]] == [
+        "the bot completed no review on the PR; it posted limit notices"
+    ] * 2
+
+
+async def test_a_pr_with_a_review_or_a_record_of_one_is_not_left_out_whole() -> None:
+    # The same PR with one completed review of a. Its summary holds no record of it, so the comment
+    # record guard keeps every fix; the PR is not left out whole.
+    row = _notice_only_row()
+    assembled = json.loads(row["assembled"])
+    assembled["events"].append(_review("a" * 40, "2026-07-01T11:00:00Z", "Null check missing."))
+    row["assembled"] = json.dumps(assembled)
+    repo = FakeRepo()
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # A record of a review of a that posted nothing is a review too: only the exporter fix, of code
+    # written after it, is left out.
+    row = _notice_only_row()
+    row["issue_comments"] = json.dumps(
+        [{**json.loads(row["issue_comments"])[0], "body": f"{SUMMARY}\n{_recent_review('f' * 40, 'a' * 40)}"}]
+    )
+    assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
+    assert repo.stored["recall"] == 1.0
+    assert [a.get("excluded_from_recall", "")[:4] for a in repo.stored["human_actions"]] == ["", "last"]
+
+    # Claude posts its review as a conversation comment: that is a completed review.
+    claude = "claude[bot]"
+    row = _notice_only_row(claude)
+    row["issue_comments"] = json.dumps(
+        [{"id": 5, "author": claude, "body": "## Review\nparser.py: null check.", "created_at": "2026-07-01T10:30:00Z"}]
+    )
+    assert await analyze_single_pr(FakeLLM(), repo, row, claude, "model")
+    assert repo.stored["recall"] is not None

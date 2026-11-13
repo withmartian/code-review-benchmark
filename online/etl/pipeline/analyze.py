@@ -21,6 +21,7 @@ from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
 from pipeline.review_coverage import comment_record_missing
+from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
@@ -451,9 +452,22 @@ def _exclude_unreviewed_actions(
     no longer have (``_deleted_bot_comments``: its later edits were never read): a review recorded
     only in a missing revision cannot be read, so for a bot that writes its record in comments no
     action is left out.
+
+    Every action, matched or not, is left out when the bot completed no review on the PR
+    (``completed_no_review``: it posted only notices, which GH Archive discovery admits): no code
+    of the PR was reviewed. With no action left the PR has no recall.
     """
     if not (comments_read and edits_complete) and record_in_issue_comments(chatbot_username):
         return set()
+    if actions and completed_no_review(events, commits, chatbot_username):
+        notices = sorted({n.reason for n in find_notices(events, chatbot_username)})
+        why = "the bot completed no review on the PR"
+        if notices:
+            why += f"; it posted {', '.join(notices)} notices"
+        for a in actions:
+            a["excluded_from_recall"] = why
+            a["unreviewed_commits"] = []
+        return {a["action_id"] for a in actions}
     if rewritten_review_commits(events, commits, chatbot_username):
         return set()
     if later_comment_review(events, chatbot_username):

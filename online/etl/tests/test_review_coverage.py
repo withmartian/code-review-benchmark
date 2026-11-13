@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pipeline.review_coverage import NO_COMMIT
 from pipeline.review_coverage import ReviewRecord
+from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
@@ -968,3 +969,21 @@ def test_a_removed_punctuation_line_is_traced_by_position_but_never_paired() -> 
     body_c = "@@ -1,3 +1,3 @@\n def check(v) {\n-  return v > 0\n-}\n+  return v >= 0 && v < limit\n+}"
     details = _details((A, "c.js", "added", body_a), (C, "c.js", "modified", body_c), (D, "c.js", "modified", fix))
     assert _origin(_action(D, "c.js"), details)[0] == "unreviewed"
+
+
+def test_a_bot_that_posted_only_notices_completed_no_review() -> None:
+    limit = issue_comment(summary(rate_limited("f" * 40, D)))
+    assert completed_no_review([limit], COMMITS, CR)
+    # An empty commented review is a reply in a thread, a notice posted as a review is a notice.
+    assert completed_no_review([limit, review(A, body="")], COMMITS, CR)
+    assert completed_no_review([review(A, body=paused())], COMMITS, CR)
+    assert not completed_no_review([limit, review(A, body="Finding.")], COMMITS, CR)
+    approval = review(A, body="")
+    approval["data"]["state"] = "APPROVED"
+    assert not completed_no_review([approval], COMMITS, CR)
+    inline = {"actor": CR, "event_type": "review_comment", "timestamp": "", "data": {"body": "Finding."}}
+    assert not completed_no_review([limit, inline], COMMITS, CR)
+    assert completed_no_review([limit, {**inline, "data": {"body": "Reply.", "in_reply_to_id": 1}}], COMMITS, CR)
+    # A review of a commit since replaced, or one named only by its notice, is still a review.
+    assert not completed_no_review([review("e" * 40, body="Finding.")], COMMITS, CR)
+    assert not completed_no_review([issue_comment(summary(paused(B, D)))], COMMITS, CR)

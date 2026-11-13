@@ -467,6 +467,69 @@ def completed_no_review(events: list[dict], commits: list[dict], chatbot_usernam
     )
 
 
+# -- Files a review left out by configuration -------------------------------------
+
+
+@dataclass(frozen=True)
+class FileScopePattern:
+    """The headings under which a bot's review body lists the files it left out by the repository's
+    path filters and the files it read. Each list is a ``<details>`` block of `` * `path` `` items."""
+
+    bot: str
+    ignored: str
+    selected: str
+
+
+FILE_SCOPE_PATTERNS: tuple[FileScopePattern, ...] = (
+    # CodeRabbit's "Review details": "⛔ Files ignored due to path filters (N)", each item
+    # "`path` is excluded by `!**/*.lock`", and "📒 Files selected for processing (N)".
+    FileScopePattern(
+        bot=_CODERABBIT, ignored="Files ignored due to path filters", selected="Files selected for processing"
+    ),
+)
+
+# A block's items run to its </details> or the next nested <summary>: the file lists sit inside an
+# outer "Review details" block, which must not swallow the first of them.
+_DETAILS_RE = re.compile(r"<summary>(?P<heading>[^<]*)</summary>(?P<body>(?:(?!<summary>|</details>).)*)", re.DOTALL)
+_FILE_ITEM_RE = re.compile(r"^\s*[*-]\s*`([^`]+)`", re.MULTILINE)
+
+
+def _norm_path(path: str) -> str:
+    return path.strip().removeprefix("./").lstrip("/")
+
+
+def path_filtered(path: str, fix: int, events: list[dict], commits: list[dict], chatbot_username: str) -> bool:
+    """Whether every review of the bot on a commit before the fix that lists the file lists it as
+    left out by the repository's path filters (``FILE_SCOPE_PATTERNS``), and at least one does.
+
+    A path filter is the repository's configuration, so the bot never read the file. A review that
+    lists the file among those it read, before the fix, means it was read once: the fix counts. A
+    review that does not list the file (an incremental review of other files) says nothing.
+    """
+    patterns = [p for p in FILE_SCOPE_PATTERNS if same_github_actor(p.bot, chatbot_username)]
+    target = _norm_path(path)
+    if not patterns or not target:
+        return False
+    ignored = False
+    for e in events:
+        if e.get("event_type") != "review" or not same_github_actor(e.get("actor"), chatbot_username):
+            continue
+        data = e.get("data") or {}
+        i = sha_index(commits, data.get("commit_id"))
+        if i is None or i >= fix:
+            continue
+        for m in _DETAILS_RE.finditer(data.get("body") or ""):
+            listed = {_norm_path(f) for f in _FILE_ITEM_RE.findall(m.group("body"))}
+            if target not in listed:
+                continue
+            for p in patterns:
+                if p.selected in m.group("heading"):
+                    return False
+                if p.ignored in m.group("heading"):
+                    ignored = True
+    return ignored
+
+
 NO_COMMIT = "(no commit)"  # what rewritten_review_commits lists for a completed review with no commit
 
 

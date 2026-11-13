@@ -26,6 +26,7 @@ from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
 from pipeline.review_coverage import later_comment_review
+from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import rewritten_review_commits
 from pipeline.review_coverage import sha_index
@@ -453,6 +454,9 @@ def _exclude_unreviewed_actions(
     only in a missing revision cannot be read, so for a bot that writes its record in comments no
     action is left out.
 
+    An unmatched action is left out too when its file is one the bot's reviews before the fix list
+    as left out by the repository's path filters (``path_filtered``), and none lists as read.
+
     Every action, matched or not, is left out when the bot completed no review on the PR
     (``completed_no_review``: it posted only notices, which GH Archive discovery admits): no code
     of the PR was reviewed. With no action left the PR has no recall.
@@ -486,10 +490,19 @@ def _exclude_unreviewed_actions(
     excluded = set()
     for a in unmatched:
         origin, reason, written_in = fix_code_origin(a, commits, details_by_sha, records, first - 1)
+        fix = sha_index(commits, (a.get("commit_sha") or "").strip())
         if origin != "unreviewed":
+            # A file the repository's path filters keep out of the bot's reviews was never read.
+            if fix is not None and path_filtered(a.get("file_path") or "", fix, events, commits, chatbot_username):
+                excluded.add(a["action_id"])
+                a["excluded_from_recall"] = (
+                    f"every review of the bot before the fix that lists {a.get('file_path')} lists it as "
+                    "ignored due to path filters"
+                )
+                a["unreviewed_commits"] = []
             continue
         excluded.add(a["action_id"])
-        fix = sha_index(commits, (a.get("commit_sha") or "").strip()) or 0
+        fix = fix or 0
         last = max((r.head for r in records if r.head < fix), default=first - 1)
         why = f"last review before the fix read {commits[max(last, first - 1)]['sha'][:12]}; {reason}"
         if notices:

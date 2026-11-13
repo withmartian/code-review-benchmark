@@ -8,6 +8,7 @@ from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_notices
 from pipeline.review_coverage import find_review_records
 from pipeline.review_coverage import fix_code_origin
+from pipeline.review_coverage import path_filtered
 from pipeline.review_coverage import record_in_issue_comments
 from pipeline.review_coverage import reviewed_before
 from pipeline.review_coverage import rewritten_review_commits
@@ -987,3 +988,44 @@ def test_a_bot_that_posted_only_notices_completed_no_review() -> None:
     # A review of a commit since replaced, or one named only by its notice, is still a review.
     assert not completed_no_review([review("e" * 40, body="Finding.")], COMMITS, CR)
     assert not completed_no_review([issue_comment(summary(paused(B, D)))], COMMITS, CR)
+
+
+def review_info(ignored: list[str] = (), selected: list[str] = ()) -> str:
+    """CodeRabbit's "Review info" block, with its nested file lists."""
+    parts = ["<details>\n<summary>Review info</summary>\n", review_range("f" * 40, A)]
+    if ignored:
+        items = "\n".join(f"* `{f}` is excluded by `!**/*.lock`" for f in ignored)
+        parts.append(
+            f"<details>\n<summary>⛔ Files ignored due to path filters ({len(ignored)})</summary>\n\n{items}\n\n</details>"
+        )
+    if selected:
+        items = "\n".join(f"* `{f}`" for f in selected)
+        parts.append(
+            f"<details>\n<summary>📒 Files selected for processing ({len(selected)})</summary>\n\n{items}\n\n</details>"
+        )
+    return "\n\n".join(parts) + "\n\n</details>"
+
+
+def test_a_file_every_review_left_out_by_path_filters() -> None:
+    # COMMITS is A, B, C, D; the fix is in D (index 3).
+    ignored_a = review(A, body=f"Finding.\n{review_info(ignored=['Cargo.lock'], selected=['src/main.rs'])}")
+    assert path_filtered("Cargo.lock", 3, [ignored_a], COMMITS, CR)
+    assert path_filtered("./Cargo.lock", 3, [ignored_a], COMMITS, CR)
+    assert not path_filtered("src/main.rs", 3, [ignored_a], COMMITS, CR)
+    # A review that does not list the file says nothing; one that read it once means it was read.
+    other_b = review(B, body=review_info(selected=["src/lib.rs"]))
+    assert path_filtered("Cargo.lock", 3, [ignored_a, other_b], COMMITS, CR)
+    read_b = review(B, body=review_info(selected=["Cargo.lock"]))
+    assert not path_filtered("Cargo.lock", 3, [ignored_a, read_b], COMMITS, CR)
+    # Only reviews of commits before the fix count.
+    assert not path_filtered("Cargo.lock", 0, [ignored_a], COMMITS, CR)
+    assert path_filtered(
+        "Cargo.lock", 3, [ignored_a, review(D, body=review_info(selected=["Cargo.lock"]))], COMMITS, CR
+    )
+    # The list as the first nested block of "Review info", with no other list: not swallowed.
+    only = review(A, body=f"<details>\n<summary>Review info</summary>\n\n{review_info(ignored=['go.sum'])}")
+    assert path_filtered("go.sum", 3, [only], COMMITS, CR)
+    # Another bot's review in CodeRabbit's format is not read: no other bot writes such a list.
+    assert not path_filtered(
+        "Cargo.lock", 3, [{**ignored_a, "actor": "greptile-apps[bot]"}], COMMITS, "greptile-apps[bot]"
+    )

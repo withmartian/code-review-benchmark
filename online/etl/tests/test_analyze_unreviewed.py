@@ -756,3 +756,35 @@ async def test_a_pr_with_a_review_or_a_record_of_one_is_not_left_out_whole() -> 
     )
     assert await analyze_single_pr(FakeLLM(), repo, row, claude, "model")
     assert repo.stored["recall"] is not None
+
+
+async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out() -> None:
+    # d fixes the parser, which the review of b lists as ignored due to path filters: the bot never read it.
+    patches = {
+        **PATCHES,
+        "d": (
+            "parser.py",
+            "modified",
+            "@@ -1,4 +1,4 @@\n def parse(text):\n     if text is None:\n         return []\n"
+            "-    return text.split(',')\n+    return text.split(';')",
+        ),
+    }
+    llm = FakeLLM(actions=[ACTIONS[0], {**ACTIONS[1], "file_path": "parser.py"}])
+    row = _pr_row(patches=patches)
+    filters = (
+        "<details>\n<summary>⛔ Files ignored due to path filters (1)</summary>\n\n"
+        "* `parser.py` is excluded by `!**/parser.py`\n\n</details>"
+    )
+    assembled = json.loads(row["assembled"])
+    assembled["events"][2]["data"]["body"] += f"\n{filters}"
+    row["assembled"] = json.dumps(assembled)
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(llm, repo, row, BOT, "model")
+
+    actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
+    assert "excluded_from_recall" not in actions["A1"]  # matched
+    assert actions["A2"]["excluded_from_recall"] == (
+        "every review of the bot before the fix that lists parser.py lists it as ignored due to path filters"
+    )
+    assert repo.stored["recall"] == 1.0

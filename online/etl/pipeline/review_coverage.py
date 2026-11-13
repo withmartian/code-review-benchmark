@@ -429,6 +429,25 @@ def record_in_issue_comments(chatbot_username: str) -> bool:
     return any(p.in_issue_comments and same_github_actor(p.bot, chatbot_username) for p in RECORD_PATTERNS)
 
 
+# The marker of the comment a bot keeps its record in, whatever state it is in. CodeRabbit's chat
+# replies carry another marker ("auto-generated reply by CodeRabbit").
+STATUS_COMMENT_MARKERS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (_CODERABBIT, re.compile(r"<!-- This is an auto-generated comment: summarize by coderabbit\.ai -->")),
+)
+
+
+def _status_comment(body: str, patterns: list[RecordPattern], chatbot_username: str) -> bool:
+    """Whether a conversation comment of the bot is the one it keeps its record in: it carries the
+    bot's summary marker (``STATUS_COMMENT_MARKERS``), a record (naming any commit), a notice, or
+    review content (``COMMENT_REVIEW_CONTENT``)."""
+    markers = STATUS_COMMENT_MARKERS + COMMENT_REVIEW_CONTENT
+    if any(same_github_actor(bot, chatbot_username) and p.search(body) for bot, p in markers):
+        return True
+    if any(p.pattern.search(p.ignore.sub("", body) if p.ignore else body) for p in patterns):
+        return True
+    return bool(_match_notices(body, chatbot_username))
+
+
 def comment_record_missing(events: list[dict], commits: list[dict], chatbot_username: str) -> bool:
     """Whether a bot that writes its record in conversation comments completed a review on the PR
     but the comment record of it is missing.
@@ -460,7 +479,10 @@ def comment_record_missing(events: list[dict], commits: list[dict], chatbot_user
             for m in p.pattern.finditer(p.ignore.sub("", body) if p.ignore else body):
                 if sha_index(commits, m.group("head")) is not None:
                     return False
-    if not bodies or any(p.always_in_comment for p in patterns):
+    # Only the comment that holds the record shows it is still there: a chat reply or a command
+    # acknowledgement of the bot does not stand in for a deleted summary.
+    status = [b for b in bodies if _status_comment(b, patterns, chatbot_username)]
+    if not status or any(p.always_in_comment for p in patterns):
         return True
     return not any(r.source == "record" for r in find_review_records(events, commits, chatbot_username))
 
@@ -628,8 +650,9 @@ def path_filtered(path: str, events: list[dict], chatbot_username: str) -> bool:
     the review of the fix itself: the filter applied before it too. A review that lists the file
     among those it read, at any time, means the file was read, or the configuration changed: the
     fix counts. So does an inline comment of the bot on the file that does not reply to a thread:
-    the bot reviewed it. A review that does not list the file (an incremental review of other
-    files) says nothing.
+    the bot reviewed it. So does the file listed as selected in a conversation comment of the bot or
+    a revision of one: a review that posted nothing records its files only in the summary. A review
+    that does not list the file (an incremental review of other files) says nothing.
     """
     patterns = [p for p in FILE_SCOPE_PATTERNS if same_github_actor(p.bot, chatbot_username)]
     target = _norm_path(path)
@@ -644,8 +667,9 @@ def path_filtered(path: str, events: list[dict], chatbot_username: str) -> bool:
             if _norm_path(data.get("path") or "") == target:
                 return False
             continue
-        if e.get("event_type") != "review":
+        if e.get("event_type") not in ("review", "issue_comment"):
             continue
+        comment = e.get("event_type") == "issue_comment"
         for m in _DETAILS_RE.finditer((e.get("data") or {}).get("body") or ""):
             listed = {_norm_path(f) for f in _FILE_ITEM_RE.findall(m.group("body"))}
             if target not in listed:
@@ -653,7 +677,9 @@ def path_filtered(path: str, events: list[dict], chatbot_username: str) -> bool:
             for p in patterns:
                 if p.selected in m.group("heading"):
                     return False
-                if p.ignored in m.group("heading"):
+                # A conversation comment or a revision of one (the summary) can show the file was
+                # read by a review that posted nothing; it is not taken as showing a filter.
+                if p.ignored in m.group("heading") and not comment:
                     ignored = True
     return ignored
 

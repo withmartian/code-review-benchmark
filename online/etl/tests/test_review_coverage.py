@@ -1110,6 +1110,12 @@ def test_a_file_every_review_left_out_by_path_filters() -> None:
     assert path_filtered("go.sum", [only], CR)
     # Another bot's review in CodeRabbit's format is not read: no other bot writes such a list.
     assert not path_filtered("Cargo.lock", [{**ignored_d, "actor": "greptile-apps[bot]"}], "greptile-apps[bot]")
+    # A review that posted nothing lists its files only in the summary comment (or a revision): the
+    # file it selected there was read, though a later review lists it as ignored. A list of ignored
+    # files in a comment alone does not show a filter.
+    summary_c = issue_comment(review_info(selected=["Cargo.lock"]))
+    assert not path_filtered("Cargo.lock", [summary_c, ignored_d], CR)
+    assert not path_filtered("Cargo.lock", [issue_comment(review_info(ignored=["Cargo.lock"]))], CR)
 
 
 def test_the_codex_review_summary_records_a_completed_review() -> None:
@@ -1153,6 +1159,11 @@ def test_a_summary_without_a_record_is_a_review_whose_record_is_missing() -> Non
     limit = issue_comment(summary(rate_limited("f" * 40, D)))
     assert completed_no_review([limit], COMMITS, CR)
     assert not comment_record_missing([limit], COMMITS, CR)
+    # The summary is gone and only a chat reply of the bot is left: the reply does not stand in for
+    # it, even with a record in an earlier review body, so the comment record is missing.
+    recorded_a = review(A, body=f"Finding.\n{review_range('f' * 40, A)}")
+    reply = issue_comment("You're right, thanks for the fix.", ts="2026-07-01T12:00:00Z")
+    assert comment_record_missing([recorded_a, reply], COMMITS, CR)
 
 
 def test_an_inline_comment_on_the_file_shows_it_was_reviewed() -> None:

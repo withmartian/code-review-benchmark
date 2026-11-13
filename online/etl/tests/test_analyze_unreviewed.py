@@ -234,9 +234,8 @@ async def test_pushes_skipped_by_configuration_or_policy_are_covered_without_a_n
     assert repo.stored["recall"] == 1.0
     actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
     assert actions["A2"]["excluded_from_recall"] == (
-        f"last review before the fix read {'b' * 12}; all 1 lines the fix changed in exporter.py and the 1 "
-        f"unchanged code lines next to its additions were written in commits no review of the bot read before "
-        f"the fix ({'c' * 12})"
+        f"last review before the fix read {'b' * 12}; all 1 lines the fix changed in exporter.py were written in "
+        f"commits no review of the bot read before the fix ({'c' * 12})"
     )
 
 

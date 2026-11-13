@@ -346,14 +346,14 @@ def test_a_line_lightly_edited_after_the_last_review_keeps_its_reviewed_origin()
 
 
 def test_a_line_written_unreviewed_then_edited_in_a_reviewed_commit_is_reviewed() -> None:
-    # A was reviewed; B wrote the parser without a review; C lightly edited its line and a review read
-    # B..C, so that review's diff showed the faulty delimiter; D fixes it.
-    parser_b = "@@ -0,0 +1,2 @@\n+def parse(text):\n+    return text.split(',')"
+    # A was reviewed; B wrote the line without a review; C lightly edited it and a review read B..C,
+    # so that review's diff showed the faulty delimiter; D fixes it.
+    parser_b = "@@ -1 +1,2 @@\n def parse(text):\n+    return text.split(',')"
     edit_c = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')\n+    return text.split(',')[:100]"
     fix_d = "@@ -1,2 +1,2 @@\n def parse(text):\n-    return text.split(',')[:100]\n+    return text.split(';')[:100]"
     details = _details(
-        (A, "util.py", "added", "@@ -0,0 +1 @@\n+def util(): ..."),
-        (B, "parser.py", "added", parser_b),
+        (A, "parser.py", "added", "@@ -0,0 +1 @@\n+def parse(text):"),
+        (B, "parser.py", "modified", parser_b),
         (C, "parser.py", "modified", edit_c),
         (D, "parser.py", "modified", fix_d),
     )
@@ -422,7 +422,7 @@ def test_a_fix_that_also_adds_lines_to_reviewed_code_in_the_same_commit_is_kept(
     origin, reason = _origin(_action(D, "app.py"), details)
 
     assert origin == "unknown"
-    assert "adds lines among code a review read (2 of the 4 lines" in reason
+    assert "adds lines among code a review read (2 of the 2 lines" in reason
 
 
 def test_an_addition_in_the_same_hunk_as_an_unreviewed_change_is_judged_on_its_own() -> None:
@@ -439,7 +439,7 @@ def test_an_addition_in_the_same_hunk_as_an_unreviewed_change_is_judged_on_its_o
     origin, reason = _origin(_action(D, "app.py"), details)
 
     assert origin == "unknown"
-    assert "adds lines among code a review read (2 of the 4 lines" in reason
+    assert "adds lines among code a review read (2 of the 3 lines" in reason
 
     # A block of the same hunk that adds a line after the unreviewed exporter is in unreviewed code.
     fix_d = (
@@ -453,10 +453,10 @@ def test_an_addition_in_the_same_hunk_as_an_unreviewed_change_is_judged_on_its_o
     assert _origin(_action(D, "app.py"), details)[0] == "unreviewed"
 
 
-def test_a_guard_that_replaces_an_unreviewed_line_beside_reviewed_code_is_kept() -> None:
+def test_a_guard_that_replaces_an_unreviewed_line_is_left_out_by_design() -> None:
     # A reviewed the split; C inserted a debug print before it without a review; D replaces the print
-    # with a null guard, which is the fix of the reviewed split. The replacement block removes only an
-    # unreviewed line, but the code around it was reviewed, so the fix is kept.
+    # with a null guard. The guard also protects the reviewed split below it, but the line the fix
+    # changed, the print, was never reviewed: the fix is of unreviewed code and is left out.
     print_c = "@@ -1,2 +1,3 @@\n def parse(text):\n+    print(text)\n     return text.split(',')"
     fix_d = (
         "@@ -1,3 +1,4 @@\n def parse(text):\n-    print(text)\n+    if text is None:\n+        return []\n"
@@ -468,15 +468,20 @@ def test_a_guard_that_replaces_an_unreviewed_line_beside_reviewed_code_is_kept()
 
     origin, reason = _origin(_action(D, "parser.py"), details)
 
-    assert origin == "unknown"
-    assert "adds lines among code a review read (2 of the 2 lines" in reason
+    assert origin == "unreviewed"
+    assert reason.startswith("all 1 lines the fix changed in parser.py were written in commits no review")
 
-    # A block that only removes the print is judged by that line alone.
-    drop_d = "@@ -1,3 +1,2 @@\n def parse(text):\n-    print(text)\n     return text.split(',')"
-    details = _details(
-        (A, "parser.py", "added", PARSER_A), (C, "parser.py", "modified", print_c), (D, "parser.py", "modified", drop_d)
+    # The same guard inserted without replacing the print changes no line, so that fix is kept.
+    insert_d = (
+        "@@ -1,3 +1,5 @@\n def parse(text):\n     print(text)\n+    if text is None:\n+        return []\n"
+        "     return text.split(',')"
     )
-    assert _origin(_action(D, "parser.py"), details)[0] == "unreviewed"
+    details = _details(
+        (A, "parser.py", "added", PARSER_A),
+        (C, "parser.py", "modified", print_c),
+        (D, "parser.py", "modified", insert_d),
+    )
+    assert _origin(_action(D, "parser.py"), details)[0] == "unknown"
 
 
 def test_a_fix_that_also_adds_lines_to_the_unreviewed_code_is_unreviewed() -> None:
@@ -492,7 +497,7 @@ def test_a_fix_that_also_adds_lines_to_the_unreviewed_code_is_unreviewed() -> No
     origin, reason = _origin(_action(D, "app.py"), details)
 
     assert origin == "unreviewed"
-    assert "and the 2 unchanged code lines next to its additions" in reason
+    assert "and the 1 lines around its other additions" in reason
 
 
 def test_a_hunk_that_adds_lines_with_no_code_around_them_is_unknown() -> None:
@@ -503,7 +508,7 @@ def test_a_hunk_that_adds_lines_with_no_code_around_them_is_unknown() -> None:
 
     assert _origin(_action(D, "app.py"), details) == (
         "unknown",
-        "the fix adds lines in app.py with no code line around them",
+        "the fix also adds lines in app.py with no code line around them",
     )
 
 
@@ -624,7 +629,7 @@ G_C = "@@ -1,2 +1,4 @@\n def f(a):\n     return a + 1\n+def g(a):\n+    return a
 def test_a_copy_of_a_reviewed_line_added_later_is_not_the_reviewed_line() -> None:
     # C copies a reviewed line into a new function; D fixes the reviewed occurrence, then the copy.
     fix_f = "@@ -1,3 +1,3 @@\n def f(a):\n-    return a + 1\n+    return a - 1\n def g(a):"
-    fix_g = "@@ -3,2 +3,2 @@\n def g(a):\n-    return a + 1\n+    return a - 1"
+    fix_g = "@@ -2,3 +2,3 @@\n     return a + 1\n def g(a):\n-    return a + 1\n+    return a - 1"
 
     for fix, origin in ((fix_f, "reviewed"), (fix_g, "unreviewed")):
         details = _details((A, "p.py", "added", F_A), (C, "p.py", "modified", G_C), (D, "p.py", "modified", fix))
@@ -657,14 +662,10 @@ def test_a_line_not_where_the_history_puts_it_is_unknown() -> None:
 
 
 def test_punctuation_lines_do_not_decide_where_code_was_written() -> None:
-    # C rewrote the function; the diff paired its closing brace with the reviewed one. D removes both.
+    # C rewrote the body; the diff paired its closing brace with the reviewed one. D removes both.
     body_a = "@@ -0,0 +1,3 @@\n+def check(v) {\n+  return v > 0\n+}"
-    body_c = (
-        "@@ -1,3 +1,3 @@\n-def check(v) {\n-  return v > 0\n+def bounded(v, limit) {\n+  return v >= 0 && v < limit\n }"
-    )
-    fix = (
-        "@@ -1,3 +1,2 @@\n def bounded(v, limit) {\n-  return v >= 0 && v < limit\n-}\n+  return v >= 0 && v <= limit }"
-    )
+    body_c = "@@ -1,3 +1,3 @@\n def check(v) {\n-  return v > 0\n+  return v >= 0 && v < limit\n }"
+    fix = "@@ -1,3 +1,2 @@\n def check(v) {\n-  return v >= 0 && v < limit\n-}\n+  return v >= 0 && v <= limit }"
     details = _details((A, "c.js", "added", body_a), (C, "c.js", "modified", body_c), (D, "c.js", "modified", fix))
 
     assert _origin(_action(D, "c.js"), details)[0] == "unreviewed"

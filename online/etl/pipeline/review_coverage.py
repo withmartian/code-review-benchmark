@@ -476,12 +476,12 @@ def _removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
 def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
     """Each change block of a hunk (a run of removed and added lines between unchanged ones).
 
-    For each block: whether it adds a line, and the code lines around it, as (line number before
-    the change, text). For a block that only adds lines (or removes only punctuation): the
-    unchanged lines that carry code in the runs of unchanged lines just before and just after it,
-    or, when those runs carry none, the nearest unchanged code line on each side within the hunk.
-    For a block that also removes code, whose removed lines are traced too: the nearest unchanged
-    code line on each side within the hunk.
+    For each block: whether it is judged by the code it was inserted into, and that code, as (line
+    number before the change, text). A block that changes no existing code line (it adds lines, or
+    removes only punctuation) is: by the unchanged lines that carry code in the runs of unchanged
+    lines just before and just after it, or, when those runs carry none, the nearest unchanged code
+    line on each side within the hunk. A block that removes code is judged by the code lines it
+    removes alone, whatever it adds.
     """
     rows: list[tuple[str, int, str]] = []
     old = h.old_start
@@ -507,12 +507,11 @@ def _blocks(h: _Hunk) -> list[tuple[bool, list[tuple[int, str]]]]:
             a -= 1
         while b < len(rows) and rows[b][0] == " ":
             b += 1
-        nearest = code(rows[:i])[-1:] + code(rows[j:])[:1]
-        removes_code = any(k == "-" and _CODE_RE.search(t) for k, _, t in rows[i:j])
-        around = [] if removes_code else code(rows[a:i]) + code(rows[j:b])
-        if not around:
-            around = nearest
-        out.append((any(k == "+" for k, _, _ in rows[i:j]), around))
+        if any(k == "-" and _CODE_RE.search(t) for k, _, t in rows[i:j]):
+            out.append((False, []))
+        else:
+            around = code(rows[a:i]) + code(rows[j:b]) or code(rows[:i])[-1:] + code(rows[j:])[:1]
+            out.append((any(k == "+" for k, _, _ in rows[i:j]), around))
         i = j
     return out
 
@@ -660,24 +659,23 @@ def fix_code_origin(
 
     The fix's commit can change several places in the file, and every action in that file and
     commit gets the same answer, so the answer must hold for each place. Each change block (a run
-    of removed and added lines between unchanged ones, ``_blocks``) that adds lines is judged by
-    the unchanged code lines around it as well as by the code lines it removes, all traced the same
-    way: for a block that only adds lines, the code lines in the unchanged runs just before and
-    after it; for one that also removes code, the nearest unchanged code line on each side. What a
-    block adds is new code put where
-    those lines are: a guard that replaces an unreviewed line can be the fix of the reviewed line
-    after it. A block that only removes lines is judged by those lines. The fix is "unreviewed"
-    only when every block passes: its removed code lines and, when it adds lines, the code lines
-    around it were all written in commits no review read. A block that adds lines among code a
-    review read, or with no code line around it, may be the fix of reviewed code (a null guard added
-    to a reviewed parser in the same commit that rewrites an unreviewed exporter), so the fix is
-    then "unknown" and kept.
+    of removed and added lines between unchanged ones, ``_blocks``) that removes code is judged by
+    the code lines it removes, whatever it adds: those are the lines the fix changed. A block that
+    changes no existing code line (it adds lines, or removes only punctuation) is judged by the code
+    it was inserted into: the code lines in the unchanged runs just before and after it, traced the
+    same way. The fix is "unreviewed" only when every block passes: the code lines each block
+    removes, or, for an insertion, the code around it, were all written in commits no review read.
+    An insertion among code a review read, or with no code line around it, may be the fix of
+    reviewed code (a null guard added to a reviewed parser in the same commit that rewrites an
+    unreviewed exporter), so the fix is then "unknown" and kept. A block that replaces an unreviewed
+    line is left out even when what it puts there also protects reviewed code beside it: the line
+    it changed was never reviewed.
 
     Returns (origin, reason, commits): "unreviewed" when no line was reviewed, with the commits that
     wrote or edited the lines; "reviewed" when every line was; "mixed" when some were; and "unknown"
     when the history cannot tell (no file, no patch, a commit without details, a new file, a fix
-    that only adds lines, a change block that adds lines among reviewed code or with no code around
-    it, a line a commit moved or re-wrapped, a patch whose hunks do not add up, or a line whose
+    that only adds lines, an insertion among reviewed code or with no code around it, a line a
+    commit moved, re-wrapped or put back, a patch whose hunks do not add up, or a line whose
     position does not hold the traced text).
     """
     fix = sha_index(commits, (action.get("commit_sha") or "").strip())
@@ -700,7 +698,7 @@ def fix_code_origin(
     # The code lines around each change block that adds lines, in any hunk.
     beside_by_block = [around for h in fix_hunks for adds, around in _blocks(h) if adds]
     if any(not b for b in beside_by_block):
-        return "unknown", f"the fix adds lines in {path} with no code line around them", ()
+        return "unknown", f"the fix also adds lines in {path} with no code line around them", ()
     beside = list(dict.fromkeys(b for bs in beside_by_block for b in bs))
 
     history: list[tuple[int, list[_Hunk]]] = []
@@ -778,7 +776,7 @@ def fix_code_origin(
     beside_read = sum(1 for w in writers[n:] if read(w))
     if len(unread) == n and not beside_read:
         shas = tuple(commits[i]["sha"] for i in sorted({i for w in writers if w is not None for i in w}))
-        added = f" and the {len(beside)} unchanged code lines next to its additions" if beside else ""
+        added = f" and the {len(beside)} lines around its other additions" if beside else ""
         return (
             "unreviewed",
             f"all {n} lines the fix changed in {path}{added} were written in commits no review of the bot "

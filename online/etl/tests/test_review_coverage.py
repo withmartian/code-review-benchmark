@@ -623,6 +623,31 @@ def test_a_removed_punctuation_line_is_judged_by_the_code_around_it() -> None:
     assert _origin(_action(D, "w.js"), details)[0] == "unreviewed"
 
 
+def test_a_reviewed_line_restored_in_place_of_a_similar_one_keeps_its_fix() -> None:
+    # A reviewed the call; B replaced it with `pass`; C added the strict=True variant; D puts A's exact
+    # line back in place of C's, a light edit of it. E then fixes the line: it is the reviewed call
+    # restored, not D's or C's code.
+    e = "e" * 40
+    commits = [{"sha": s} for s in (A, B, C, D, e)]
+    details = {s: {"sha": s, "files": []} for s in (A, B, C, D, e)}
+    for sha, patch in (
+        (A, "@@ -0,0 +1,2 @@\n+def run(text):\n+    return parse(text, strict=False)"),
+        (B, "@@ -1,2 +1,2 @@\n def run(text):\n-    return parse(text, strict=False)\n+    pass"),
+        (C, "@@ -1,2 +1,3 @@\n def run(text):\n     pass\n+    return parse(text, strict=True)"),
+        (D, "@@ -2,2 +2,2 @@\n     pass\n-    return parse(text, strict=True)\n+    return parse(text, strict=False)"),
+        (
+            e,
+            "@@ -2,2 +2,2 @@\n     pass\n-    return parse(text, strict=False)\n+    return parse(text, strict=False, limit=9)",
+        ),
+    ):
+        details[sha]["files"].append({"filename": "r.py", "status": "modified", "patch": patch})
+
+    origin, reason, _ = fix_code_origin(_action(e, "r.py"), commits, details, [ReviewRecord(-1, 0, "record")], 0)
+
+    assert origin == "unknown"
+    assert reason.startswith(f"commit {'d' * 12} put back in r.py a line the fix reads that commit {'b' * 12}")
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

@@ -751,9 +751,10 @@ def fix_code_origin(
                     "code it removed, so where that line was first written is not followed",
                     (),
                 )
-            if kind == "added":
+            if moved:
                 # A line an earlier traced commit removed and this one put back (a revert, or a move whose
-                # removal and addition are in different commits) is restored code, not new code.
+                # removal and addition are in different commits) is restored code, not new code, also
+                # when it lands in place of a similar line.
                 restored = next(
                     (k for k in range(first_reviewed + 1, i) if _added_keys(hunks, at) & keys_removed(k)), None
                 )

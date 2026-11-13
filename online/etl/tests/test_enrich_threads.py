@@ -377,7 +377,10 @@ async def test_comments_that_keep_failing_store_the_threads_alone(monkeypatch) -
     assert [t["id"] for t in threads] == ["T1"]
 
 
-async def test_threads_that_cannot_be_read_leave_the_step_undone(monkeypatch) -> None:
+async def test_threads_that_cannot_be_read_are_stored_as_far_as_read(monkeypatch) -> None:
+    # Every read fails: the last threads-only read keeps what it got (nothing here), as the step did
+    # before the comments were read, so the PR is never held at this step; the comments and edits
+    # are not read, so no fix is left out.
     from pipeline import enrich
     from pipeline.enrich import enrich_single_pr
 
@@ -389,10 +392,9 @@ async def test_threads_that_cannot_be_read_leave_the_step_undone(monkeypatch) ->
     repo = FakeRepo()
     pr_row = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
 
-    with pytest.raises(IncompleteReadError):
-        await enrich_single_pr(gh, repo, pr_row)
+    await enrich_single_pr(gh, repo, pr_row)
     assert len(gh.calls) == 2 * enrich.THREADS_READ_ATTEMPTS
-    assert repo.writes == []
+    assert repo.writes[0] == ("threads", 5, [], None, None)
 
 
 async def test_a_pull_request_that_is_not_there_stores_the_step_with_the_comments_unread() -> None:

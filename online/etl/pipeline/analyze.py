@@ -20,6 +20,7 @@ from llm.schemas import BotSuggestionsResponse
 from llm.schemas import HumanActionsResponse
 from llm.schemas import MatchingResponse
 from pipeline.actors import same_github_actor
+from pipeline.review_coverage import _norm_path
 from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_review_records
@@ -559,7 +560,10 @@ def _renamed_since(
         detail = details_by_sha.get(c.get("sha", ""))
         if detail is None:
             return True
-        if any(f.get("filename") == path and f.get("status") == "renamed" for f in detail.get("files") or []):
+        if any(
+            _norm_path(f.get("filename") or "") == _norm_path(path) and f.get("status") == "renamed"
+            for f in detail.get("files") or []
+        ):
             return True
     return False
 

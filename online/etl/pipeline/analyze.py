@@ -525,8 +525,13 @@ def _exclude_unreviewed_actions(
     for a in unmatched:
         origin, reason, written_in = fix_code_origin(a, commits, details_by_sha, records, first - 1)
         if origin != "unreviewed":
-            # A file the repository's path filters keep out of the bot's reviews was never read.
-            if path_filtered(a.get("file_path") or "", events, chatbot_username):
+            # A file the repository's path filters keep out of the bot's reviews was never read. A
+            # file renamed after the first review may have been read under its old name, which the
+            # stored details do not keep, so a rename keeps the fix.
+            fix = sha_index(commits, (a.get("commit_sha") or "").strip())
+            if path_filtered(a.get("file_path") or "", events, chatbot_username) and not _renamed_since(
+                a.get("file_path") or "", commits, details_by_sha, first, fix
+            ):
                 excluded.add(a["action_id"])
                 a["excluded_from_recall"] = (
                     f"every review of the bot that lists {a.get('file_path')} lists it as ignored due to path filters"
@@ -542,6 +547,21 @@ def _exclude_unreviewed_actions(
         a["excluded_from_recall"] = why
         a["unreviewed_commits"] = list(written_in)
     return excluded
+
+
+def _renamed_since(
+    path: str, commits: list[dict], details_by_sha: dict[str, dict], first: int, fix: int | None
+) -> bool:
+    """Whether a commit from ``first`` up to the fix (every later commit when the fix is not in the
+    list) renamed a file to ``path``, or has no details to tell."""
+    end = len(commits) - 1 if fix is None else fix
+    for c in commits[max(first, 0) : end + 1]:
+        detail = details_by_sha.get(c.get("sha", ""))
+        if detail is None:
+            return True
+        if any(f.get("filename") == path and f.get("status") == "renamed" for f in detail.get("files") or []):
+            return True
+    return False
 
 
 async def analyze_single_pr(

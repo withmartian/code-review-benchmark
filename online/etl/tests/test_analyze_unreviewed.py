@@ -844,6 +844,16 @@ async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out(
     assert await analyze_single_pr(llm, repo, row, BOT, "model")
     assert repo.stored["recall"] == 0.5
 
+    # A file renamed to parser.py after the first review may have been read under its old name,
+    # which the stored details do not keep: the filter listing the new name does not leave it out.
+    renamed = _pr_row(patches={**patches, "c": ("parser.py", "renamed", "")})
+    renamed_events = json.loads(renamed["assembled"])
+    renamed_events["events"].append(_review("d" * 40, "2026-07-01T15:30:00Z", f"No findings.\n{filters}"))
+    renamed["assembled"] = json.dumps(renamed_events)
+    assert await analyze_single_pr(llm, repo, renamed, BOT, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
 
 async def test_a_qodo_re_review_shown_only_by_the_current_body_keeps_every_fix() -> None:
     # Qodo re-reviewed after c by editing its persistent comment. The latest revision is exactly the

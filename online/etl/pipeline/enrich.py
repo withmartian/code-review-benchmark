@@ -115,18 +115,14 @@ class AllTokensInvalidError(Exception):
 class IncompleteReadError(Exception):
     """Raised when a read that later analysis relies on as complete stopped partway.
 
-    threads holds the review threads read before it stopped, when the read was the threads step's.
-    The threads step reads again up to ``THREADS_READ_ATTEMPTS`` times, then stores those threads
-    with the conversation comments and edits as not read (``NULL``), which the analysis reads as an
-    incomplete history: no fix is left out on the PR, as before this rule. Raised from another step,
-    it leaves the step undone and the enrichment loop releases the PR for the next pass."""
-
-    def __init__(self, message: str, threads: list[dict] | None = None) -> None:
-        super().__init__(message)
-        self.threads = threads
+    The threads step reads again up to ``THREADS_READ_ATTEMPTS`` times, then reads the threads
+    alone and stores them with the conversation comments and edits as not read (``NULL``), which the
+    analysis reads as an incomplete history: no fix is left out on the PR, as before this rule. When
+    it escapes the step (the threads alone could not be read), the step is not recorded and the
+    enrichment loop releases the PR, so the next pass reads it again."""
 
 
-# Reads of the threads step, comments and edits included, before it is stored with them not read.
+# Reads of the threads step (with comments and edits, then threads alone) before giving up a pass.
 THREADS_READ_ATTEMPTS = 3
 
 
@@ -441,7 +437,7 @@ def _parse_review_thread(node: dict) -> dict:
 
 
 async def _fetch_review_threads(
-    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
+    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, comments: bool = True
 ) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
     """The PR's review threads, conversation comments and bot comment edit histories, from one paginated read.
 
@@ -453,11 +449,14 @@ async def _fetch_review_threads(
     so the step must not be stored as read. A first answer that the repository or the pull request
     is not there (deleted, or not visible to the token) is final, as a REST 404 is: it returns no
     threads and None for the comments and edits, which were not read.
+
+    With ``comments`` False only the threads are read, as before the comments were, and the
+    comments and edits are returned as not read (None).
     """
     all_threads: list[dict] = []
     comment_nodes: list[dict] = []
     thread_cursor = comment_cursor = None
-    with_threads = with_comments = True
+    with_threads, with_comments = True, comments
     first = True
     while with_threads or with_comments:
         variables = {
@@ -485,8 +484,7 @@ async def _fetch_review_threads(
             page = "the first page" if first else "a further page"
             raise IncompleteReadError(
                 f"{page} of {' and '.join(missing)} could not be read after "
-                f"{len(all_threads)} threads and {len(comment_nodes)} comments",
-                threads=all_threads,
+                f"{len(all_threads)} threads and {len(comment_nodes)} comments"
             )
         first = False
         if with_threads:
@@ -501,10 +499,9 @@ async def _fetch_review_threads(
             page_info = comments_data.get("pageInfo") or {}
             with_comments = bool(page_info.get("hasNextPage"))
             comment_cursor = page_info.get("endCursor")
-    try:
-        await _fetch_long_edit_histories(gh, comment_nodes)
-    except IncompleteReadError as e:
-        raise IncompleteReadError(str(e), threads=all_threads) from e
+    if not comments:
+        return all_threads, None, None
+    await _fetch_long_edit_histories(gh, comment_nodes)
     return all_threads, parse_issue_comments(comment_nodes), parse_comment_edits(comment_nodes)
 
 
@@ -512,21 +509,25 @@ async def _read_review_threads(
     gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
 ) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
     """``_fetch_review_threads``, read again up to ``THREADS_READ_ATTEMPTS`` times when it stops
-    partway. After the last attempt, the threads read are returned with the comments and edits as
-    not read (None), so the PR is never held at this step: a read that keeps failing (a query too
-    heavy for a long bot history, say) would otherwise leave it out of the benchmark."""
-    for attempt in range(THREADS_READ_ATTEMPTS):
-        try:
-            return await _fetch_review_threads(gh, owner, repo, pr_number)
-        except IncompleteReadError as e:
-            if attempt + 1 < THREADS_READ_ATTEMPTS:
-                await asyncio.sleep(2 ** (attempt + 1))
+    partway. When the read with comments and edits keeps failing (a query too heavy for a long bot
+    history, say), the threads are read alone, completely, and stored with the comments and edits as
+    not read (None): the PR is not held at this step, its inline comments still reach the analysis,
+    and its history reads as incomplete, so no fix is left out. Only when the threads alone cannot
+    be read either does ``IncompleteReadError`` leave the step undone for the next pass."""
+    errors: list[IncompleteReadError] = []
+    for comments in (True, False):
+        for attempt in range(THREADS_READ_ATTEMPTS):
+            try:
+                read = await _fetch_review_threads(gh, owner, repo, pr_number, comments=comments)
+            except IncompleteReadError as e:
+                errors.append(e)
+                if attempt + 1 < THREADS_READ_ATTEMPTS:
+                    await asyncio.sleep(2 ** (attempt + 1))
                 continue
-            logger.warning(
-                f"{owner}/{repo}#{pr_number}: {e}; storing {len(e.threads or [])} threads with the comments not read"
-            )
-            return list(e.threads or []), None, None
-    raise AssertionError("unreachable")
+            if not comments:
+                logger.warning(f"{owner}/{repo}#{pr_number}: comments not read ({errors[-1]}); threads stored alone")
+            return read
+    raise errors[-1]
 
 
 async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:

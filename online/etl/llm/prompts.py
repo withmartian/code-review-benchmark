@@ -55,10 +55,10 @@ functions". A check of the pull request's title or description themselves, such 
 missing section or missing screenshots, is not a finding either: it is fixed by editing the pull
 request, so no later commit can address it. A finding that the code does not do what the
 description says is about the code: it is a finding. So is any other check that states a specific
-problem with the pull request in the bot's own words, and a request that names a function, or a file
-and line, in the changed code. A concrete finding the bot states in its own
-words in a review-body section rather than as an inline comment, or inside a collapsed or nested
-section, is still a finding: extract it.
+problem with the changed code in the bot's own words, and a request that names a function, or a
+file and line, in the changed code. A concrete finding the bot states in its own words in a
+review-body section rather than as an inline comment, or inside a collapsed or nested section, is
+still a finding: extract it.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

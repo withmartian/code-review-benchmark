@@ -119,7 +119,7 @@ def test_a_check_stating_a_specific_problem_with_the_pr_and_a_located_request_ar
 
     # "in the bot's own words", so the sentence cannot override the skip of listed linter results
     assert (
-        "So is any other check that states a specific problem with the pull request in the bot's own words, and a "
+        "So is any other check that states a specific problem with the changed code in the bot's own words, and a "
         "request that names a function, or a file and line, in the changed code." in rules
     )
 
@@ -219,7 +219,7 @@ PINNED_INPUTS_BY_VERSION = {
     "extract-v3": {
         "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
         "inputs": {
-            "EXTRACT_BOT_SUGGESTIONS": "99e6d050dc795602021c0371f69a1e5c7b47681c16f083291cb661bfe1eb9460",
+            "EXTRACT_BOT_SUGGESTIONS": "4b3c9966a78a6c96010303e91165487550a990ac300a5032d169bb3bc568f2ca",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

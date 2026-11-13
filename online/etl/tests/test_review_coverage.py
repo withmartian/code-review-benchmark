@@ -758,6 +758,32 @@ def test_a_re_wrap_that_adds_a_trailing_comma_is_a_re_wrap() -> None:
     assert reason.startswith(f"commit {'c' * 12} moved or re-wrapped a line")
 
 
+def test_a_rename_onto_a_reused_path_is_not_traced_across() -> None:
+    # A, reviewed, wrote old.py; B, unreviewed, had a new.py of its own; C renames old.py to new.py
+    # and edits its first line. D fixes the second line, A's reviewed `return 1`. Traced by name past
+    # the rename, the line would be taken for B's new.py line at the same place.
+    details = _details(
+        (A, "old.py", "added", "@@ -0,0 +1,2 @@\n+def f():\n+    return 1"),
+        (B, "new.py", "added", "@@ -0,0 +1,2 @@\n+def g():\n+    return 1"),
+        (C, "new.py", "renamed", "@@ -1,2 +1,2 @@\n-def f():\n+def f(x):\n     return 1"),
+        (D, "new.py", "modified", "@@ -1,2 +1,2 @@\n def f(x):\n-    return 1\n+    return x"),
+    )
+    a_reviewed = [ReviewRecord(-1, 0, "record")]
+
+    origin, reason, _ = fix_code_origin(_action(D, "new.py"), COMMITS, details, a_reviewed, 0)
+
+    assert origin == "unknown"
+    assert reason.startswith(f"commit {'c' * 12} renamed new.py")
+
+    # A fixing commit that renames the file reads its old lines under the old name.
+    details[D]["files"][0]["status"] = "renamed"
+    assert fix_code_origin(_action(D, "new.py"), COMMITS, details, a_reviewed, 0) == (
+        "unknown",
+        "the fixing commit renames the file, and the history is read by file name",
+        (),
+    )
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

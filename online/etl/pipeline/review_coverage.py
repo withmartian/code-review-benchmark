@@ -729,6 +729,8 @@ def fix_code_origin(
         return "unknown", "the fixing commit does not change the fix's file", ()
     if entry.get("status") == "added":
         return "unknown", "the fix adds a new file", ()
+    if entry.get("status") == "renamed":
+        return "unknown", "the fixing commit renames the file, and the history is read by file name", ()
     fix_hunks = _hunks(entry.get("patch") or "") if entry.get("patch") else None
     if fix_hunks is None:
         return "unknown", "the fixing commit has no readable patch for the file", ()
@@ -746,6 +748,7 @@ def fix_code_origin(
     beside = list(dict.fromkeys(b for bs in beside_by_block for b in bs))
 
     history: list[tuple[int, list[_Hunk]]] = []
+    renamed: set[int] = set()
     for i in range(first_reviewed + 1, fix):
         c = commits[i]
         detail = details_by_sha.get(c.get("sha", ""))
@@ -761,6 +764,8 @@ def fix_code_origin(
         hunks = _hunks(f["patch"])
         if hunks is None:
             return "unknown", f"the patch of commit {c.get('sha', '')[:12]} for the file does not add up", ()
+        if f.get("status") == "renamed":
+            renamed.add(i)
         history.append((i, hunks))
 
     # The commits that wrote each changed line (the commit that first wrote it, then each light edit
@@ -788,6 +793,15 @@ def fix_code_origin(
             kind, line, text = _trace(hunks, line, text)
             if kind == "mismatch":
                 return "unknown", f"a changed line is not where commit {commits[i]['sha'][:12]} puts it", ()
+            # Before a rename the file had another name, which the stored details do not keep; the
+            # path it was renamed to may have held another file earlier.
+            if i in renamed and kind != "added":
+                return (
+                    "unknown",
+                    f"commit {commits[i]['sha'][:12]} renamed {path}, so where a line the fix reads was first "
+                    "written is not followed",
+                    (),
+                )
             # An exact move or re-wrap of code the commit removed elsewhere is checked before a light
             # edit is followed to its similar predecessor; an edit whose predecessor is the same text
             # (whitespace aside) is that line, not a move.

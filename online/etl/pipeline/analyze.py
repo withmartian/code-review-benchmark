@@ -537,8 +537,9 @@ def _exclude_unreviewed_actions(
                 fix is not None
                 and path_filtered(a.get("file_path") or "", events, chatbot_username)
                 and not renamed_since(a.get("file_path") or "", commits, details_by_sha, first, fix)
-                # A filter the PR itself set may not have applied to the earlier reviews.
-                and not scope_config_changed(commits, details_by_sha, first, fix, chatbot_username)
+                # A filter the PR itself set, before or after the fix, may not have applied when the
+                # code was reviewed: a later review's ignored list can show a filter added later.
+                and not scope_config_changed(commits, details_by_sha, first, len(commits) - 1, chatbot_username)
                 and other_source_changes_reviewed_code(
                     a, commits, details_by_sha, records, first - 1, events, chatbot_username
                 )

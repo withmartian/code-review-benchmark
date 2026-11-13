@@ -648,13 +648,13 @@ FILE_SCOPE_PATTERNS: tuple[FileScopePattern, ...] = (
 
 
 def scope_config_changed(
-    commits: list[dict], details_by_sha: dict[str, dict], first: int, fix: int, chatbot_username: str
+    commits: list[dict], details_by_sha: dict[str, dict], first: int, last: int, chatbot_username: str
 ) -> bool:
-    """Whether a commit from ``first`` up to the fix changed a file that sets the bot's path filters
-    (``FileScopePattern.config_files``), or has no details to tell: a filter a later review shows may
-    then not have applied to the earlier reviews."""
+    """Whether a commit from ``first`` up to ``last`` changed a file that sets the bot's path filters
+    (``FileScopePattern.config_files``), or has no details to tell: a filter a review shows may then
+    not have applied to the other reviews."""
     names = {n for p in FILE_SCOPE_PATTERNS if same_github_actor(p.bot, chatbot_username) for n in p.config_files}
-    for c in commits[max(first, 0) : fix + 1]:
+    for c in commits[max(first, 0) : last + 1]:
         detail = details_by_sha.get(c.get("sha", ""))
         if detail is None:
             return True

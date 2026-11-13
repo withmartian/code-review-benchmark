@@ -861,6 +861,17 @@ async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out(
     configured["assembled"] = json.dumps(configured_events)
     assert await analyze_single_pr(llm, repo, configured, BOT, "model")
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+    # The same when the filter is set after the fix: C fixes the parser, D edits .coderabbit.yaml, and
+    # D's review lists parser.py as ignored. That filter may not have applied when C was reviewed.
+    later = _pr_row(
+        patches={**patches, "c": patches["d"], "d": (".coderabbit.yaml", "modified", "@@ -1 +1 @@\n-a: 1\n+a: 2")}
+    )
+    later_events = json.loads(later["assembled"])
+    later_events["events"].append(_review("d" * 40, "2026-07-01T15:30:00Z", f"No findings.\n{filters}"))
+    later["assembled"] = json.dumps(later_events)
+    fixed_in_c = FakeLLM(actions=[ACTIONS[0], {**ACTIONS[1], "file_path": "parser.py", "commit_sha": "c" * 12}])
+    assert await analyze_single_pr(fixed_in_c, repo, later, BOT, "model")
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
     # A fix whose commit is not in the PR's list cannot be shown to change no reviewed source: kept.
     unplaced = FakeLLM(actions=[ACTIONS[0], {**ACTIONS[1], "file_path": "parser.py", "commit_sha": "9" * 12}])
     filtered = _pr_row(patches=patches)

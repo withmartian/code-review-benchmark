@@ -73,6 +73,14 @@ FEWER_STARS = _notice(
 )
 
 
+def _commits_read(start: str, head: str) -> str:
+    """The "📥 Commits" block of a CodeRabbit review body: the range the review read."""
+    return (
+        "<details>\n<summary>📥 Commits</summary>\n\nReviewing files that changed from the base of the PR and "
+        f"between {start} and {head}.\n\n</details>"
+    )
+
+
 def _recent_review(start: str, head: str) -> str:
     """The summary comment's record of a review that posted nothing."""
     return (
@@ -163,8 +171,10 @@ def _pr_row(notice: str = RATE_LIMITED, patches: dict | None = None) -> dict:
             "timestamp": "2026-07-01T10:01:00Z",
             "data": {"body": "Summary of the change."},
         },
-        _review("a" * 40, "2026-07-01T11:00:00Z", "Null check missing."),
-        _review("b" * 40, "2026-07-01T12:30:00Z", "**Actionable comments posted: 0**"),
+        _review("a" * 40, "2026-07-01T11:00:00Z", f"Null check missing.\n{_commits_read('f' * 40, 'a' * 40)}"),
+        _review(
+            "b" * 40, "2026-07-01T12:30:00Z", f"**Actionable comments posted: 0**\n{_commits_read('a' * 40, 'b' * 40)}"
+        ),
     ]
     issue_comments = [
         {
@@ -412,6 +422,28 @@ async def test_a_fix_reviewed_only_in_its_fixed_state_is_left_out_with_or_withou
     assert actions["A2"]["excluded_from_recall"].startswith(f"last review before the fix read {'b' * 12}; ")
     assert actions["A2"]["excluded_from_recall"].endswith("; the bot posted limit notices") == (edits == EDITS)
     assert actions["A2"]["unreviewed_commits"] == ["c" * 40]
+
+
+async def test_a_record_bot_whose_record_is_missing_keeps_every_fix() -> None:
+    # Greptile reviewed a and b, and writes its record in a summary comment. The comments were read but
+    # hold no summary (deleted, say): a review it ran without posting cannot be seen, so no fix is left
+    # out. With the summary present, the exporter fix of c is left out as before.
+    greptile = "greptile-apps[bot]"
+    row = json.loads(json.dumps(_pr_row()).replace(BOT, greptile))
+    row["issue_comments"] = json.dumps(
+        [{"id": 5, "author": "dev", "body": "thanks", "created_at": "2026-07-01T16:00:00Z"}]
+    )
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), greptile, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    summary = f"Last reviewed commit: [Parser](https://github.com/owner/repo/commit/{'b' * 40})"
+    comments = [{"id": 6, "author": greptile, "body": summary, "created_at": "2026-07-01T12:31:00Z"}]
+    row["issue_comments"] = json.dumps(comments)
+    assert await analyze_single_pr(FakeLLM(), repo, row, greptile, "model")
+    assert repo.stored["recall"] == 1.0
 
 
 async def test_a_reviewed_commit_amended_by_a_force_push_keeps_every_fix() -> None:

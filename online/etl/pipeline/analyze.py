@@ -399,6 +399,10 @@ def _exclude_unreviewed_actions(
     PR's commit list (``rewritten_review_commits``): after a force-push (an amend or a rebase) the
     rewritten commits cannot be matched to the reviews of the commits they replace, and would read
     as never reviewed.
+
+    Nor when the bot writes its record in conversation comments, completed reviews on the PR, and no
+    record of it is found: the comment that holds the record is gone (deleted, or never in the
+    comments read), so a review that posted nothing cannot be seen, as with comments never read.
     """
     if not comments_read and record_in_issue_comments(chatbot_username):
         return set()
@@ -412,6 +416,9 @@ def _exclude_unreviewed_actions(
     if first is None:
         return set()
     records = find_review_records(events, commits, chatbot_username)
+    sources = {r.source for r in records}
+    if record_in_issue_comments(chatbot_username) and "review" in sources and "record" not in sources:
+        return set()
     notices = sorted({n.reason for n in find_notices(events, chatbot_username)})
     excluded = set()
     for a in unmatched:
@@ -609,8 +616,12 @@ async def analyze_prs(
     """
     repo = PRRepository(db)
     prs = await repo.get_assembled_not_analyzed(
-        chatbot_id=chatbot_id, limit=limit, since=since, until=until,
-        sort_by=sort_by, max_per_day=max_per_day,
+        chatbot_id=chatbot_id,
+        limit=limit,
+        since=since,
+        until=until,
+        sort_by=sort_by,
+        max_per_day=max_per_day,
     )
 
     if not prs:

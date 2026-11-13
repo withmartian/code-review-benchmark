@@ -315,6 +315,22 @@ def _with_review_commits(events: list[dict], reviews: list[dict]) -> list[dict]:
     return out
 
 
+def _deleted_bot_comments(events: list[dict], comments_read: bool, issue_comments: list[dict], chatbot_username: str) -> bool:
+    """Whether the timeline holds a conversation comment of the bot that the comments read no longer
+    have (deleted since). It is kept as evidence of the reviews it records, but its later edits were
+    never read, so its history is incomplete."""
+    if not comments_read:
+        return False
+    fetched = {c.get("id") for c in issue_comments}
+    return any(
+        e.get("event_type") == "issue_comment"
+        and same_github_actor(e.get("actor"), chatbot_username)
+        and (e.get("data") or {}).get("comment_id") is not None
+        and e["data"]["comment_id"] not in fetched
+        for e in events
+    )
+
+
 def _with_current_issue_comments(events: list[dict], issue_comments: list[dict]) -> list[dict]:
     """Timeline events with issue comments taken from the API, when they were fetched.
 
@@ -426,8 +442,10 @@ def _exclude_unreviewed_actions(
     comments read), so a review that posted nothing cannot be seen, as with comments never read.
 
     edits_complete is False when an edit of one of the bot's comments has no text left on GitHub
-    (``unavailable_edits``): a review recorded only in that revision cannot be read, so for a bot
-    that writes its record in comments no action is left out.
+    (``unavailable_edits``), or when the timeline holds a comment of the bot that the comments read
+    no longer have (``_deleted_bot_comments``: its later edits were never read): a review recorded
+    only in a missing revision cannot be read, so for a bot that writes its record in comments no
+    action is left out.
     """
     if not (comments_read and edits_complete) and record_in_issue_comments(chatbot_username):
         return set()
@@ -572,7 +590,8 @@ async def analyze_single_pr(
         comments_read=pr_row.get("issue_comments") is not None,
         edits_complete=not any(
             c.get("unavailable_edits") and same_github_actor(c.get("author"), chatbot_username) for c in comment_edits
-        ),
+        )
+        and not _deleted_bot_comments(events, pr_row.get("issue_comments") is not None, issue_comments, chatbot_username),
     )
 
     # Compute metrics — only count IDs that actually exist in the extracted lists

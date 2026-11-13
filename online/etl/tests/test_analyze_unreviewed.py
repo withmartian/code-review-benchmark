@@ -563,6 +563,41 @@ async def test_a_gh_archive_review_event_takes_its_commit_from_the_api_review() 
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
 
+async def test_a_deleted_record_comment_the_timeline_still_holds_keeps_every_fix() -> None:
+    # Greptile's summary, as first posted, named a; the summary was deleted since, so the comments read
+    # hold only a person's. The timeline copy still shows the review of a, but the edits that would
+    # record later reviews (a silent one of c, say) were never read: no fix is left out.
+    greptile = "greptile-apps[bot]"
+    row = json.loads(json.dumps(_pr_row()).replace(BOT, greptile))
+    assembled = json.loads(row["assembled"])
+    first = f"Last reviewed commit: [Parser](https://github.com/owner/repo/commit/{'a' * 40})"
+    assembled["events"].append(
+        {
+            "actor": greptile,
+            "event_type": "issue_comment",
+            "timestamp": "2026-07-01T11:01:00Z",
+            "data": {"comment_id": 9, "body": first},
+        }
+    )
+    row["assembled"] = json.dumps(assembled)
+    row["issue_comments"] = json.dumps(
+        [{"id": 5, "author": "dev", "body": "thanks", "created_at": "2026-07-01T16:00:00Z"}]
+    )
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(), repo, dict(row), greptile, "model")
+    assert repo.stored["recall"] == 0.5
+    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+
+    # With the summary still there (and recording b), the exporter fix of c is left out.
+    later = f"Last reviewed commit: [Parser](https://github.com/owner/repo/commit/{'b' * 40})"
+    row["issue_comments"] = json.dumps(
+        [{"id": 9, "author": greptile, "body": later, "created_at": "2026-07-01T11:01:00Z"}]
+    )
+    assert await analyze_single_pr(FakeLLM(), repo, row, greptile, "model")
+    assert repo.stored["recall"] == 1.0
+
+
 async def test_a_reviewed_commit_amended_by_a_force_push_keeps_every_fix() -> None:
     # The bot reviewed b, which adds a guard to the parser; the author then amended b into b2 and
     # force-pushed, so b is no longer in the commit list and its review cannot be placed. d fixes the

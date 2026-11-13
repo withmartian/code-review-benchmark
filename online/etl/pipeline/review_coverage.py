@@ -591,14 +591,22 @@ def _runs(h: _Hunk, kind: str) -> list[list[str]]:
     return out
 
 
-def _removed_keys(detail: dict) -> set[str]:
-    """``_span_keys`` of every run of removed lines a commit's readable patches hold, in any file."""
+def _removed_keys(detail: dict) -> tuple[set[str], bool]:
+    """``_span_keys`` of every run of removed lines a commit's patches hold, in any file, and whether
+    they are all of them: False when a file the commit removed lines from has no patch, or one whose
+    hunks do not add up (GitHub leaves out the patch of a large diff)."""
     keys: set[str] = set()
+    complete = True
     for f in detail.get("files") or []:
-        for h in _hunks(f.get("patch") or "") or []:
+        hunks = _hunks(f.get("patch") or "") if f.get("patch") else None
+        if hunks is None:
+            if f.get("deletions") or (f.get("patch") and f.get("deletions") is None):
+                complete = False
+            continue
+        for h in hunks:
             for run in _runs(h, "-"):
                 keys |= _span_keys(run)
-    return keys
+    return keys, complete
 
 
 def _added_keys(hunks: list[_Hunk], line: int) -> set[str]:
@@ -726,12 +734,20 @@ def fix_code_origin(
     # The commits that wrote each changed line (the commit that first wrote it, then each light edit
     # of it), or None when it was first written before the commits traced.
     writers: list[list[int] | None] = []
-    removed_keys: dict[int, set[str]] = {}
+    removed_keys: dict[int, tuple[set[str], bool]] = {}
 
-    def keys_removed(k: int) -> set[str]:
+    def keys_removed(k: int) -> tuple[set[str], bool]:
         if k not in removed_keys:
             removed_keys[k] = _removed_keys(details_by_sha[commits[k]["sha"]])
         return removed_keys[k]
+
+    def unreadable(k: int) -> tuple[str, str, tuple[str, ...]]:
+        return (
+            "unknown",
+            f"commit {commits[k]['sha'][:12]} removed lines whose patch is not readable, so whether a line "
+            f"the fix reads in {path} was moved from them is not known",
+            (),
+        )
 
     for line, text in [*changed, *beside]:
         wrote: list[int] | None = []
@@ -744,7 +760,7 @@ def fix_code_origin(
             # edit is followed to its similar predecessor; an edit whose predecessor is the same text
             # (whitespace aside) is that line, not a move.
             moved = kind == "added" or (kind == "edited" and _ws(text) != _ws(added_text))
-            if moved and _added_keys(hunks, at) & keys_removed(i):
+            if moved and _added_keys(hunks, at) & keys_removed(i)[0]:
                 return (
                     "unknown",
                     f"commit {commits[i]['sha'][:12]} moved or re-wrapped a line the fix reads in {path} from "
@@ -756,8 +772,13 @@ def fix_code_origin(
                 # removal and addition are in different commits) is restored code, not new code, also
                 # when it lands in place of a similar line.
                 restored = next(
-                    (k for k in range(first_reviewed + 1, i) if _added_keys(hunks, at) & keys_removed(k)), None
+                    (k for k in range(first_reviewed + 1, i) if _added_keys(hunks, at) & keys_removed(k)[0]), None
                 )
+                # Where a commit's removed lines are not all readable, a move or a restoration cannot be
+                # ruled out.
+                partial = next((k for k in range(first_reviewed + 1, i + 1) if not keys_removed(k)[1]), None)
+                if restored is None and partial is not None:
+                    return unreadable(partial)
                 if restored is not None:
                     return (
                         "unknown",

@@ -648,6 +648,32 @@ def test_a_reviewed_line_restored_in_place_of_a_similar_one_keeps_its_fix() -> N
     assert reason.startswith(f"commit {'d' * 12} put back in r.py a line the fix reads that commit {'b' * 12}")
 
 
+def test_an_unreadable_removal_in_another_file_keeps_the_fix() -> None:
+    # C extracts a reviewed helper of app.py into helpers.py, but its patch for app.py is missing (a
+    # large diff) or does not add up: the removal cannot be read, so the move cannot be ruled out.
+    helper = "+def helper(x):\n+    y = x * 2\n+    return y"
+    fix_d = "@@ -1,3 +1,3 @@\n def helper(x):\n-    y = x * 2\n+    y = x * 3\n     return y"
+
+    def details_with(app_c: dict) -> dict[str, dict]:
+        details = _details(
+            (A, "app.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+            (C, "helpers.py", "added", "@@ -0,0 +1,3 @@\n" + helper),
+            (D, "helpers.py", "modified", fix_d),
+        )
+        details[C]["files"].append({"filename": "app.py", "status": "modified", **app_c})
+        return details
+
+    for app_c in ({"patch": "", "deletions": 3}, {"patch": "@@ -1,3 +0,0 @@\n-def helper(x):"}):
+        origin, reason = _origin(_action(D, "helpers.py"), details_with(app_c))
+        assert origin == "unknown", app_c
+        assert reason.startswith(f"commit {'c' * 12} removed lines whose patch is not readable")
+
+    # A file with no patch that removed nothing (an added binary, say) leaves the history complete.
+    assert _origin(_action(D, "helpers.py"), details_with({"patch": "", "additions": 1, "deletions": 0}))[0] == (
+        "unreviewed"
+    )
+
+
 def test_unknown_when_the_history_cannot_tell() -> None:
     new_file = _details((D, "test_exporter.py", "added", "@@ -0,0 +1 @@\n+def test_export(): ..."))
     assert _origin(_action(D, "test_exporter.py"), new_file)[0] == "unknown"

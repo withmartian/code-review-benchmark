@@ -371,21 +371,39 @@ RECORD_PATTERNS: tuple[RecordPattern, ...] = (
 REVIEWS_IN_ISSUE_COMMENTS: tuple[str, ...] = ("claude[bot]", "qodo-code-review[bot]")
 
 
+def _listed_comment_reviewer(chatbot_username: str) -> bool:
+    return any(same_github_actor(b, chatbot_username) for b in REVIEWS_IN_ISSUE_COMMENTS)
+
+
+def _unlisted_comment_reviewer(chatbot_username: str) -> bool:
+    """Whether the bot is in none of the tables: no conversation-review entry, no comment record, no
+    CodeRabbit review content. Its conversation comment with text that is not a notice is a review
+    (``_comment_review``), so it may post reviews that way (cubic, Gemini, ...)."""
+    return not (
+        _listed_comment_reviewer(chatbot_username)
+        or record_in_issue_comments(chatbot_username)
+        or any(same_github_actor(bot, chatbot_username) for bot, _ in COMMENT_REVIEW_CONTENT)
+    )
+
+
 def reviews_in_issue_comments(chatbot_username: str) -> bool:
     """Whether the bot posts its reviews as PR conversation comments (``REVIEWS_IN_ISSUE_COMMENTS``)."""
-    return any(same_github_actor(b, chatbot_username) for b in REVIEWS_IN_ISSUE_COMMENTS)
+    return _listed_comment_reviewer(chatbot_username)
 
 
 def later_comment_review(events: list[dict], chatbot_username: str) -> bool:
     """Whether a bot that posts reviews as conversation comments has a conversation comment, or a
     revision of one, after its first review: a review it cannot place, so the PR leaves no fix out.
+    For a bot in none of the tables, only a comment with text that is not a notice counts, as in
+    ``_comment_review``.
 
     A comment's current body was last written at its ``updated_at``, not its creation time: Qodo
     re-reviews by editing its comment, and the revision matching the current body is not among the
     revisions (``_with_comment_revisions`` leaves it out as the current body's duplicate), so the
     edit shows only there. The earliest event still counts from its creation time.
     """
-    if not reviews_in_issue_comments(chatbot_username):
+    listed = _listed_comment_reviewer(chatbot_username)
+    if not listed and not _unlisted_comment_reviewer(chatbot_username):
         return False
     mine = [e for e in events if same_github_actor(e.get("actor"), chatbot_username)]
     times = [
@@ -397,8 +415,13 @@ def later_comment_review(events: list[dict], chatbot_username: str) -> bool:
     return any(
         e.get("event_type") == "issue_comment"
         and max(e.get("timestamp") or "", (e.get("data") or {}).get("updated_at") or "") > first
+        and (listed or _is_comment_review_text((e.get("data") or {}).get("body") or "", chatbot_username))
         for e in mine
     )
+
+
+def _is_comment_review_text(body: str, chatbot_username: str) -> bool:
+    return bool(_clean(body)) and not _match_notices(body, chatbot_username)
 
 
 def record_in_issue_comments(chatbot_username: str) -> bool:

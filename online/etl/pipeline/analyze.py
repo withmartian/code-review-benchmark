@@ -458,8 +458,9 @@ def _exclude_unreviewed_actions(
     (``reviews_in_issue_comments``), whose reviews are those comments.
 
     No action is left out either for a bot that posts its reviews as conversation comments (Claude,
-    Qodo: ``later_comment_review``) when it has a conversation comment, or a revision of one, after
-    its first review: that review names no commit and cannot be placed.
+    Qodo, and any bot in none of the tables: ``later_comment_review``) when it has a conversation
+    comment, or a revision of one, after its first review: that review names no commit and cannot be
+    placed.
 
     No action is left out either when the bot reviewed or named a commit that is no longer in the
     PR's commit list (``rewritten_review_commits``): after a force-push (an amend or a rebase) the

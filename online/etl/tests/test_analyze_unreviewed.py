@@ -303,9 +303,14 @@ async def test_comments_never_read_keep_every_fix_only_for_a_bot_with_a_record_i
     assert await analyze_single_pr(FakeLLM(), repo, row, BOT, "model")
     assert repo.stored["recall"] == 0.5
 
-    # A bot without a record (its reviews are its posted reviews) is read the same either way.
+    # A bot without a record (its reviews are its posted reviews) is read the same either way. The
+    # fixture's conversation comments are CodeRabbit's, so they are dropped for this bot: a later
+    # conversation comment of a bot in no table would be an unplaceable review.
     cubic = "cubic-dev-ai[bot]"
     other = json.loads(json.dumps(row).replace(BOT, cubic))
+    assembled = json.loads(other["assembled"])
+    assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "issue_comment"]
+    other["assembled"] = json.dumps(assembled)
     assert await analyze_single_pr(FakeLLM(), repo, other, cubic, "model")
     assert repo.stored["recall"] == 1.0
 
@@ -546,6 +551,10 @@ async def test_a_gh_archive_review_event_takes_its_commit_from_the_api_review() 
     cubic = "cubic-dev-ai[bot]"
     row = json.loads(json.dumps(_pr_row(patches=patches)).replace(BOT, cubic))
     assembled = json.loads(row["assembled"])
+    # The fixture's conversation comments are CodeRabbit's; for cubic they would read as later
+    # unplaceable reviews, so they are dropped and only the review events place its reviews.
+    assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "issue_comment"]
+    row["issue_comments"] = json.dumps([])
     for n, e in enumerate(e for e in assembled["events"] if e["event_type"] == "review"):
         e["data"]["review_id"] = n + 1
         del e["data"]["commit_id"]
@@ -565,6 +574,7 @@ async def test_a_gh_archive_review_event_takes_its_commit_from_the_api_review() 
     plain = json.loads(json.dumps(_pr_row()).replace(BOT, cubic))
     plain["assembled"] = row["assembled"]
     plain["reviews"] = row["reviews"]
+    plain["issue_comments"] = row["issue_comments"]
     assert await analyze_single_pr(FakeLLM(), repo, plain, cubic, "model")
     assert repo.stored["recall"] == 1.0
 
@@ -613,11 +623,14 @@ async def test_a_deleted_record_comment_the_timeline_still_holds_keeps_every_fix
     assert repo.stored["recall"] == 1.0
 
 
-@pytest.mark.parametrize("bot", ["claude[bot]", "qodo-code-review[bot]"])
+@pytest.mark.parametrize(
+    "bot", ["claude[bot]", "qodo-code-review[bot]", "cubic-dev-ai[bot]", "gemini-code-assist[bot]"]
+)
 async def test_a_review_posted_as_a_conversation_comment_keeps_every_fix(bot: str) -> None:
     # Claude posts a re-review as a new conversation comment, Qodo by editing its persistent one; such
     # a review names no commit. After c, the bot reviewed again that way: the exporter fix of c may be
-    # of code it read, so nothing is left out.
+    # of code it read, so nothing is left out. A bot in none of the tables (cubic, Gemini) is treated
+    # the same, since its conversation comment with text is a review too.
     row = json.loads(json.dumps(_pr_row()).replace(BOT, bot))
     assembled = json.loads(row["assembled"])
     assembled["events"] = [e for e in assembled["events"] if e["event_type"] != "issue_comment"]

@@ -92,7 +92,8 @@ DEFAULT_CHATBOT_USERNAMES = [
     "bito-code-review[bot]",
     "macroscopeapp[bot]",
     "qodo-free-for-open-source-projects[bot]",
-    "tenki-reviewer[bot]",
+    "luxor-code-review[bot]",
+    "tenki-reviewer[bot]",  # luxor-code-review[bot] before its November 2026 rename
 ]
 
 

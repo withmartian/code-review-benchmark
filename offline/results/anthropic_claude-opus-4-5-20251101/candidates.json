@@ -1257,7 +1257,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "getGroupIdsWithViewPermission collects groupResource.getId() (the authorization store's internal resource UUID) instead of the group id (groupResource.getName()), causing fine-grained admins to get empty user search results and a count of 0 for groups they are explicitly granted access to",
         "path": null,
@@ -2572,7 +2572,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "readLength returns -1 for indefinite-length marker 0x80 instead of rejecting it, causing NegativeArraySizeException in readInteger when new byte[-1] is called, which escapes the throws IOException contract",
         "path": null,
@@ -3614,7 +3614,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "If any remove() call throws in the delete loop, deletedAll.set(true) never runs and the reader thread spins indefinitely; as a non-daemon thread it blocks JVM shutdown and hangs the test fork",
         "path": null,
@@ -4648,7 +4648,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Call to undefined zero-argument `isConditionalPasskeysEnabled` - UsernameForm.authenticate calls isConditionalPasskeysEnabled() with no arguments but the only method with that name is the UserModel overload, causing compilation failure",
         "path": null,
@@ -5742,7 +5742,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "isinstance guard using multiprocessing.Process never matches spawned flusher processes (SpawnProcess is a sibling, not subclass), so process.kill() and process.terminate() never run for real subprocesses, causing hung processes to keep running while replacements start on the same shards, duplicating segments to Kafka",
         "path": null,
@@ -7525,7 +7525,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Table widget flag renders empty table - when use-table-widget-visualization feature is enabled, tableResultComponent renders TableWidgetVisualization with hardcoded empty columns=[] and tableData={{data: [], meta: {fields: {}, units: {}}}}, ignoring the populated result.data/result.meta that the fallback StyledSimpleTableChart consumes",
         "path": null,
@@ -9053,7 +9053,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Negative-offset cursor crashes Django queryset slicing - the advanced branch slices the queryset with a negative start offset, but Django ORM raises AssertionError for negative slice bounds, contradicting the comment claiming the ORM handles negative slicing automatically",
         "path": null,
@@ -10034,7 +10034,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Narrowed cacheMu scope allows concurrent duplicate index builds - BuildIndex no longer holds cacheMu for its duration, allowing concurrent GetIndex to return nil mid-build and trigger duplicate builds on the same directory",
         "path": null,
@@ -10973,7 +10973,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "MetricAlertDetectorHandler cannot be instantiated because it subclasses StatefulDetectorHandler with only a pass body, leaving counter_names, get_dedupe_value, get_group_key_values, and build_occurrence_and_event_data abstract, causing TypeError when Detector.detector_handler tries to instantiate it",
         "path": null,
@@ -11658,7 +11658,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "In get_monitor_environment_context, the config copy has its schedule_type replaced with the display value, but the returned dict embeds the original monitor_environment.monitor.config, so the rewrite is dead code",
         "path": null,
@@ -12474,7 +12474,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "`queued: datetime = timezone.now()` in the AssignmentSource dataclass is evaluated once at module import, so every instance shares the same stale timestamp instead of recording the actual queue time",
         "path": null,
@@ -13527,7 +13527,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Strategy close() permanently kills the shared FixedQueuePool - SimpleQueueProcessingStrategy.close() calls self.queue_pool.shutdown() which stops all worker threads permanently, but the pool is shared by every strategy from ResultsStrategyFactory, so after any rebalance the new strategy submits work into a dead pool causing silent data loss",
         "path": null,
@@ -15248,7 +15248,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Negative cursor offsets trigger a 500 error because the enable_advanced_features branch passes negative cursor.offset into queryset slicing, and Django rejects negative slice start with AssertionError",
         "path": null,
@@ -16781,7 +16781,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "invalidate_upsampling_cache is dead code - nothing in the repository calls it, so allowlist changes take effect only after the 60-second TTL expires",
         "path": null,
@@ -17832,7 +17832,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Denial cache can keep denying access after permission grant - the permDenialCache is consulted first in Check and returns Allowed: false without evaluating any permissions, and nothing invalidates the denial entry when permissions/roles/team-memberships change, causing users to see Access denied on resources they were just granted access to until the 30s TTL expires",
         "path": null,
@@ -18984,7 +18984,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Guard the `sender.login` metadata lookup against missing keys - `integration.metadata[\"sender\"][\"login\"]` is indexed directly but `sender` is only conditionally present in GitHub integration metadata, causing KeyError and 500 error for integrations lacking sender metadata",
         "path": null,
@@ -19762,7 +19762,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Update invalidation skipped despite BROKER_PUBLIC change - registerIDPLoginInvalidationOnUpdate skips login-cache invalidation when getLoginPredicate() yields same result for original and updated models and organizationId is unchanged, but ignores BROKER_PUBLIC config value changes which affect the cached login query filter",
         "path": null,
@@ -20655,7 +20655,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "enableSqlExpressions always returns false regardless of the feature flag state - the flag check is inverted (enabled := !h.features.IsEnabledGlobally) and then discarded by an unconditional return false, making the QueryTypeSQL branch dead code",
         "path": null,
@@ -21225,7 +21225,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "GetWebAssets takes the write lock without re-checking entryPointAssetsCache (no double-checked locking), causing concurrent callers that miss the fast path to serialize and each rebuild the assets, overwriting the cache",
         "path": null,
@@ -22391,7 +22391,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Leftover debug logs at Error level in xorm_store.go lines 534, 537, 554, 557, 576, 579 - routine cleanup progress is logged with r.log.Error including full fetched ids slice and always-nil err, flooding error dashboards and alerting",
         "path": null,
@@ -24117,7 +24117,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Failed Storage.Create and Storage.Update calls are recorded with d.recordLegacyDuration instead of d.recordStorageDuration (dualwriter_mode3.go:45 and dualwriter_mode3.go:129)",
         "path": null,
@@ -25566,7 +25566,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Missing React key prop in FilterView - the refactor from GrafanaRuleLoader to GrafanaRuleListItem dropped the key={key} prop in the origin === 'grafana' branch, causing React reconciliation issues",
         "path": null,
@@ -26361,7 +26361,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Split queries interpolate templates and ad-hoc filters repeatedly - applyTemplateVariables is called per target in runSplitQuery and runShardSplitQuery, but the resulting sub-requests are executed through datasource.runQuery where DataSourceWithBackend.query applies applyTemplateVariables again, causing ad-hoc filters to be duplicated (appended without deduping) and values to be re-escaped/re-interpolated",
         "path": null,
@@ -27660,7 +27660,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "TOCTOU race condition between CountDevices and insert allows device limit to be exceeded under concurrent load - the count check and insert happen in separate sessions with no transaction or lock",
         "path": null,
@@ -28553,7 +28553,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Mixed string/symbol locales duplicate fallback chain - FallbackLocaleList#[] builds the chain from whatever type it receives, but callers assign String locales while the chain hard-codes the Symbol :en",
         "path": null,
@@ -29297,7 +29297,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "MetricsMiddleware closes over a single shared instance and assigns next field per request without synchronization, causing a data race on concurrent plugin requests - should allocate a fresh struct inside the closure like NewTracingMiddleware and NewContextualLoggerMiddleware do",
         "path": null,
@@ -31416,7 +31416,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Migration crashes when `embed_category` setting is absent - the migration indexes `[0]['id']` directly on the `embed_category` lookup without checking that any row was returned, causing NoMethodError when the setting was never saved",
         "path": null,
@@ -32765,7 +32765,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Light-theme username link lightness inverted from 30% to 70% in topic-post.scss:291 - the dark-light-choose arguments are swapped, causing washed-out 70%-lightness link in light mode instead of the original 30%",
         "path": null,
@@ -34538,7 +34538,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "totalPages computed as Math.floor(user_count / limit) + 1 reports one page too many when user_count is an exact multiple of limit, causing pagination to show an extra empty page",
         "path": null,
@@ -35742,7 +35742,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Blocked-email lookup is case-sensitive and bypassable - BlockedEmail.should_block? uses exact case-sensitive comparison, so blocking foo@spam.com is bypassed by FOO@spam.com",
         "path": null,
@@ -36784,7 +36784,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Flex conversion strands float children in .small-action - converting to flexbox makes float: right on button and float: left on .topic-avatar no-ops since floats are ignored for flex items, causing the delete/edit buttons to land immediately after description text rather than at the far right edge of the row",
         "path": null,
@@ -37776,7 +37776,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "website_name is declared as a plain attribute and bypasses restricted-user-field hiding that website itself is gated by through untrusted_attributes",
         "path": null,
@@ -40233,7 +40233,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "TopicEmbed.import stores feed/article content with cook_method raw_html, bypassing sanitization pipeline, allowing malicious feeds to inject script, iframe, event handlers or javascript: hrefs that execute on the forum's origin",
         "path": null,
@@ -41814,7 +41814,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Duplicate `downsize` definition in app/models/optimized_image.rb - the patch adds a second downsize method at line 149 while leaving the earlier one at line 145, Ruby keeps only the last definition, causing the emoji job that calls with five arguments to raise ArgumentError",
         "path": null,
@@ -43138,7 +43138,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "`unsubscribe` crashes when no `TopicUser` record exists - `TopicsController#unsubscribe` calls `TopicUser.find_by` and immediately reads `tu.notification_level` with no nil guard, causing NoMethodError and 500 error for users who never visited the topic",
         "path": null,
@@ -44572,7 +44572,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Empty-data `updateMany` cannot bump `updatedAt` - fetchAvailabilityAndSetCache calls updateManyByCredentialId with an empty data object, but Prisma's updateMany writes no fields for empty data so the @updatedAt column is never recomputed, and on some Prisma 5 versions the call throws a validation error",
         "path": null,
@@ -45898,7 +45898,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Working-hours boundary check computes `end` from `slotStartTime` instead of `slotEndTime`, so slots that begin inside working hours but extend past `workingHour.endTime` incorrectly pass validation",
         "path": null,
@@ -46755,7 +46755,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "The retryCount > 1 branch of the deleteMany OR has no method: WorkflowMethods.SMS or scheduled constraint, causing it to delete scheduled and non-SMS reminders",
         "path": null,
@@ -47615,7 +47615,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "OR-rooted auth fragments are returned unparenthesized - getBaseConditions returns org/team authorization condition as bare (A) OR (B) fragment without outer parentheses, causing AND predicates to bind only to the last OR arm and silently widening authorization scope",
         "path": null,
@@ -50038,7 +50038,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Broken relative import after file move - createOAuthAppCredential.ts import was rewritten to ../oauth/decodeOAuthState which resolves to a non-existent directory _utils/oauth/oauth/decodeOAuthState, breaking the build",
         "path": null,
@@ -51644,7 +51644,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "One failed cancel in cron aborts all remaining reminders - the cron cancel loop awaits each SendGrid request sequentially inside a single try, so one failure (SendGrid 4xx, null referenceId, or Prisma P2025) aborts the whole loop and blocks all subsequent cron runs",
         "path": null,
@@ -53360,7 +53360,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "isTeamAdminOrOwner ANDs isTeamAdmin with isTeamOwner, which reduces permission to owner-only and makes the ADMIN branch unreachable, causing team admins who are not owners to receive permission denied when adding guests",
         "path": null,
@@ -55036,7 +55036,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Backup code consumption is a non-atomic race - two concurrent sign-in requests with the same valid code can both pass the check before either update lands, allowing a single-use backup code to authenticate twice",
         "path": null,
@@ -57222,7 +57222,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Google Calendar fallback find compares against falsy id - the fallback event.destinationCalendar?.find((cal) => cal.externalId === externalCalendarId)?.externalId only executes when externalCalendarId is falsy, so the comparison never matches and calendar id resolves to undefined, breaking Google event rescheduling in updateEvent and causing orphaned events in deleteEvent",
         "path": null,
@@ -58664,7 +58664,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Unawaited async forEach fills apiDeletes too late - credentials.forEach(async (credential) => ...) awaits getCalendar before pushing into apiDeletes, but the enclosing function does not await these callbacks, so Promise.all(prismaPromises.concat(apiDeletes)) can run before any push has happened, leaving orphaned external calendar events while the DB marks bookings cancelled",
         "path": null,
@@ -60188,7 +60188,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Lithuanian account totpStep1 message replaced with Italian text instead of Lithuanian translation in messages_lt.properties:101",
         "path": null,
@@ -61459,7 +61459,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Inverted grant-shortcut check and wrong offset in isAccessTokenId - the matcher slices substring(3, 5) and returns false when it equals the expected shortcut, so the grant assertion never validates anything. The correct indices should be substring(4, 6) and the condition should be negated to fail when it does NOT match.",
         "path": null,
@@ -62627,7 +62627,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Recovery codes stored unhashed in user storage - the user-storage branch serializes raw generatedCodes list into UserCredentialModel while local-DB fallback persists already hashed codes, exposing cleartext codes in federated user store",
         "path": null,
@@ -63345,7 +63345,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "The new CAUTION block states the Keycloak Operator will fail if the preview feature 'rolling-updates' is not enabled, but no code enforces this claim",
         "path": null,
@@ -64509,7 +64509,7 @@
         "source": "extracted"
       }
     ],
-    "tenki": [
+    "luxor": [
       {
         "text": "Removal listener in AdminPermissions.java is gated on ADMIN_FINE_GRAINED_AUTHZ flag which V2 configuration does not enable, causing role/client/group deletion to silently skip disabling admin permission resources and leaving stale permission resources",
         "path": null,

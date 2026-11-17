@@ -2656,7 +2656,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR37429__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR37429__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -2722,9 +2722,9 @@
       "errors_count": 0,
       "precision": 0.25,
       "recall": 0.4,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR37429__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR37429__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR37429__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR37429__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/37634": {
@@ -5150,7 +5150,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR37634__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR37634__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -5205,9 +5205,9 @@
       "errors_count": 0,
       "precision": 0.5,
       "recall": 0.75,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR37634__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR37634__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR37634__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR37634__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/38446": {
@@ -7166,7 +7166,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR38446__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR38446__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -7211,9 +7211,9 @@
       "errors_count": 0,
       "precision": 0.16666666666666666,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR38446__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR38446__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR38446__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR38446__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/36882": {
@@ -8811,7 +8811,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR36882__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR36882__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [],
       "false_positives": [
@@ -8846,9 +8846,9 @@
       "errors_count": 0,
       "precision": 0.0,
       "recall": 0.0,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR36882__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR36882__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR36882__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR36882__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/36880": {
@@ -11247,7 +11247,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR36880__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR36880__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -11325,9 +11325,9 @@
       "errors_count": 0,
       "precision": 0.3076923076923077,
       "recall": 0.8,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR36880__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR36880__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR36880__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR36880__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/37038": {
@@ -13320,7 +13320,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR37038__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR37038__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -13370,9 +13370,9 @@
       "errors_count": 0,
       "precision": 0.25,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR37038__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR37038__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR37038__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR37038__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/33832": {
@@ -15588,7 +15588,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR33832__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR33832__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -15645,9 +15645,9 @@
       "errors_count": 0,
       "precision": 0.5714285714285714,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR33832__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR33832__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR33832__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR33832__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/40940": {
@@ -17437,7 +17437,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR40940__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR40940__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -17472,9 +17472,9 @@
       "errors_count": 0,
       "precision": 0.4,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR40940__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR40940__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR40940__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR40940__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1": {
@@ -19322,7 +19322,7 @@
       "repo_name": "keycloak__keycloak-greptile__sourcery__PR1__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak-greptile__sourcery__PR1__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -19363,9 +19363,9 @@
       "errors_count": 0,
       "precision": 0.4,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak-greptile__tenki__PR1__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak-greptile__tenki__PR1__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak-greptile__luxor__PR1__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak-greptile__luxor__PR1__20261101/pull/1"
     }
   },
   "https://github.com/getsentry/sentry/pull/93824": {
@@ -21977,7 +21977,7 @@
       "repo_name": "sentry__sentry__sourcery__PR93824__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry__sourcery__PR93824__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -22051,9 +22051,9 @@
       "errors_count": 0,
       "precision": 0.5,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry__tenki__PR93824__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__tenki__PR93824__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry__luxor__PR93824__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__luxor__PR93824__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5": {
@@ -24840,7 +24840,7 @@
       "repo_name": "sentry__sentry-greptile__sourcery__PR5__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry-greptile__sourcery__PR5__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -24923,9 +24923,9 @@
       "errors_count": 0,
       "precision": 0.25,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry-greptile__tenki__PR5__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__tenki__PR5__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry-greptile__luxor__PR5__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__luxor__PR5__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1": {
@@ -27419,7 +27419,7 @@
       "repo_name": "sentry__sentry-greptile__sourcery__PR1__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry-greptile__sourcery__PR1__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -27468,9 +27468,9 @@
       "errors_count": 0,
       "precision": 0.6,
       "recall": 0.75,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry-greptile__tenki__PR1__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__tenki__PR1__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry-greptile__luxor__PR1__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__luxor__PR1__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/97529": {
@@ -29311,7 +29311,7 @@
       "repo_name": "grafana__grafana__sourcery__PR97529__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR97529__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -29355,9 +29355,9 @@
       "errors_count": 0,
       "precision": 0.3333333333333333,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR97529__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR97529__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR97529__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR97529__20261101/pull/1"
     }
   },
   "https://github.com/getsentry/sentry/pull/80168": {
@@ -31276,7 +31276,7 @@
       "repo_name": "sentry__sentry__sourcery__PR80168__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry__sourcery__PR80168__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -31317,9 +31317,9 @@
       "errors_count": 0,
       "precision": 0.6666666666666666,
       "recall": 0.6666666666666666,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry__tenki__PR80168__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__tenki__PR80168__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry__luxor__PR80168__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__luxor__PR80168__20261101/pull/1"
     }
   },
   "https://github.com/getsentry/sentry/pull/80528": {
@@ -33029,7 +33029,7 @@
       "repo_name": "sentry__sentry__sourcery__PR80528__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry__sourcery__PR80528__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -33062,9 +33062,9 @@
       "errors_count": 0,
       "precision": 0.5,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry__tenki__PR80528__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__tenki__PR80528__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry__luxor__PR80528__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__luxor__PR80528__20261101/pull/1"
     }
   },
   "https://github.com/getsentry/sentry/pull/77754": {
@@ -35285,7 +35285,7 @@
       "repo_name": "sentry__sentry__sourcery__PR77754__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry__sourcery__PR77754__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -35331,9 +35331,9 @@
       "errors_count": 0,
       "precision": 0.6666666666666666,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry__tenki__PR77754__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__tenki__PR77754__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry__luxor__PR77754__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__luxor__PR77754__20261101/pull/1"
     }
   },
   "https://github.com/getsentry/sentry/pull/95633": {
@@ -37331,7 +37331,7 @@
       "repo_name": "sentry__sentry__sourcery__PR95633__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry__sourcery__PR95633__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -37388,9 +37388,9 @@
       "errors_count": 0,
       "precision": 0.1,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry__tenki__PR95633__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__tenki__PR95633__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry__luxor__PR95633__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__luxor__PR95633__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2": {
@@ -39992,7 +39992,7 @@
       "repo_name": "sentry__sentry-greptile__sourcery__PR2__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry-greptile__sourcery__PR2__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -40073,9 +40073,9 @@
       "errors_count": 0,
       "precision": 0.26666666666666666,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry-greptile__tenki__PR2__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__tenki__PR2__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry-greptile__luxor__PR2__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__luxor__PR2__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3": {
@@ -42388,7 +42388,7 @@
       "repo_name": "sentry__sentry-greptile__sourcery__PR3__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry-greptile__sourcery__PR3__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -42459,9 +42459,9 @@
       "errors_count": 0,
       "precision": 0.07692307692307693,
       "recall": 0.3333333333333333,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry-greptile__tenki__PR3__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__tenki__PR3__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry-greptile__luxor__PR3__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry-greptile__luxor__PR3__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/103633": {
@@ -44439,7 +44439,7 @@
       "repo_name": "grafana__grafana__sourcery__PR103633__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR103633__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -44489,9 +44489,9 @@
       "errors_count": 0,
       "precision": 0.3333333333333333,
       "recall": 0.6666666666666666,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR103633__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR103633__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR103633__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR103633__20261101/pull/1"
     }
   },
   "https://github.com/getsentry/sentry/pull/67876": {
@@ -46678,7 +46678,7 @@
       "repo_name": "sentry__sentry__sourcery__PR67876__20260307",
       "pr_url": "https://github.com/code-review-benchmark/sentry__sentry__sourcery__PR67876__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -46725,9 +46725,9 @@
       "errors_count": 0,
       "precision": 0.3333333333333333,
       "recall": 0.6666666666666666,
-      "tool": "tenki",
-      "repo_name": "sentry__sentry__tenki__PR67876__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__tenki__PR67876__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "sentry__sentry__luxor__PR67876__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/sentry__sentry__luxor__PR67876__20261101/pull/1"
     }
   },
   "https://github.com/keycloak/keycloak/pull/32918": {
@@ -48465,7 +48465,7 @@
       "repo_name": "keycloak__keycloak__sourcery__PR32918__20260307",
       "pr_url": "https://github.com/code-review-benchmark/keycloak__keycloak__sourcery__PR32918__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -48507,9 +48507,9 @@
       "errors_count": 0,
       "precision": 0.2,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "keycloak__keycloak__tenki__PR32918__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__tenki__PR32918__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "keycloak__keycloak__luxor__PR32918__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/keycloak__keycloak__luxor__PR32918__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/94942": {
@@ -50249,7 +50249,7 @@
       "repo_name": "grafana__grafana__sourcery__PR94942__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR94942__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -50280,9 +50280,9 @@
       "errors_count": 0,
       "precision": 0.6666666666666666,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR94942__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR94942__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR94942__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR94942__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/90939": {
@@ -51944,7 +51944,7 @@
       "repo_name": "grafana__grafana__sourcery__PR90939__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR90939__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -51980,9 +51980,9 @@
       "errors_count": 0,
       "precision": 0.25,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR90939__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR90939__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR90939__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR90939__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/80329": {
@@ -53783,7 +53783,7 @@
       "repo_name": "grafana__grafana__sourcery__PR80329__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR80329__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -53827,9 +53827,9 @@
       "errors_count": 0,
       "precision": 0.3333333333333333,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR80329__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR80329__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR80329__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR80329__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/90045": {
@@ -56223,7 +56223,7 @@
       "repo_name": "grafana__grafana__sourcery__PR90045__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR90045__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -56290,9 +56290,9 @@
       "errors_count": 0,
       "precision": 0.25,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR90045__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR90045__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR90045__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR90045__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/106778": {
@@ -58362,7 +58362,7 @@
       "repo_name": "grafana__grafana__sourcery__PR106778__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR106778__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -58409,9 +58409,9 @@
       "errors_count": 0,
       "precision": 0.2857142857142857,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR106778__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR106778__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR106778__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR106778__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/107534": {
@@ -59938,7 +59938,7 @@
       "repo_name": "grafana__grafana__sourcery__PR107534__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR107534__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [],
       "false_positives": [
@@ -59968,9 +59968,9 @@
       "errors_count": 0,
       "precision": 0.0,
       "recall": 0.0,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR107534__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR107534__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR107534__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR107534__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/79265": {
@@ -62670,7 +62670,7 @@
       "repo_name": "grafana__grafana__sourcery__PR79265__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR79265__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -62742,9 +62742,9 @@
       "errors_count": 0,
       "precision": 0.36363636363636365,
       "recall": 0.8,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR79265__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR79265__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR79265__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR79265__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9": {
@@ -64529,7 +64529,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR9__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR9__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -64567,9 +64567,9 @@
       "errors_count": 0,
       "precision": 0.5,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR9__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR9__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR9__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR9__20261101/pull/1"
     }
   },
   "https://github.com/grafana/grafana/pull/76186": {
@@ -66411,7 +66411,7 @@
       "repo_name": "grafana__grafana__sourcery__PR76186__20260308",
       "pr_url": "https://github.com/code-review-benchmark/grafana__grafana__sourcery__PR76186__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -66449,9 +66449,9 @@
       "errors_count": 0,
       "precision": 0.5,
       "recall": 0.3333333333333333,
-      "tool": "tenki",
-      "repo_name": "grafana__grafana__tenki__PR76186__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__tenki__PR76186__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "grafana__grafana__luxor__PR76186__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/grafana__grafana__luxor__PR76186__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/10": {
@@ -69671,7 +69671,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR10__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR10__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -69777,9 +69777,9 @@
       "errors_count": 0,
       "precision": 0.3333333333333333,
       "recall": 0.8571428571428571,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR10__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR10__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR10__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR10__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7": {
@@ -72347,7 +72347,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR7__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR7__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -72415,9 +72415,9 @@
       "errors_count": 0,
       "precision": 0.8333333333333334,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR7__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR7__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR7__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR7__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/8": {
@@ -75233,7 +75233,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR8__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR8__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -75319,9 +75319,9 @@
       "errors_count": 0,
       "precision": 0.3333333333333333,
       "recall": 0.6666666666666666,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR8__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR8__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR8__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR8__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
@@ -77338,7 +77338,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR3__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR3__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -77388,9 +77388,9 @@
       "errors_count": 0,
       "precision": 0.25,
       "recall": 0.6666666666666666,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR3__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR3__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR3__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR3__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5": {
@@ -79361,7 +79361,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR5__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR5__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -79402,9 +79402,9 @@
       "errors_count": 0,
       "precision": 0.3333333333333333,
       "recall": 0.3333333333333333,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR5__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR5__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR5__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR5__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6": {
@@ -81031,7 +81031,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR6__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR6__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -81070,9 +81070,9 @@
       "errors_count": 0,
       "precision": 0.14285714285714285,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR6__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR6__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR6__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR6__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/4": {
@@ -84755,7 +84755,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR4__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR4__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -84872,9 +84872,9 @@
       "errors_count": 0,
       "precision": 0.2857142857142857,
       "recall": 0.75,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR4__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR4__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR4__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR4__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1": {
@@ -87187,7 +87187,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR1__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR1__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -87233,9 +87233,9 @@
       "errors_count": 0,
       "precision": 0.5,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR1__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR1__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR1__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR1__20261101/pull/1"
     }
   },
   "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2": {
@@ -89267,7 +89267,7 @@
       "repo_name": "discourse__discourse-graphite__sourcery__PR2__20260308",
       "pr_url": "https://github.com/code-review-benchmark/discourse__discourse-graphite__sourcery__PR2__20260308/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -89317,9 +89317,9 @@
       "errors_count": 0,
       "precision": 0.25,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "discourse__discourse-graphite__tenki__PR2__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__tenki__PR2__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "discourse__discourse-graphite__luxor__PR2__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/discourse__discourse-graphite__luxor__PR2__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/22532": {
@@ -91621,7 +91621,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR22532__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR22532__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -91690,9 +91690,9 @@
       "errors_count": 0,
       "precision": 0.36363636363636365,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR22532__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR22532__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR22532__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR22532__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/8330": {
@@ -93703,7 +93703,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR8330__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR8330__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -93750,9 +93750,9 @@
       "errors_count": 0,
       "precision": 0.2857142857142857,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR8330__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR8330__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR8330__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR8330__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/14943": {
@@ -95525,7 +95525,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR14943__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR14943__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -95579,9 +95579,9 @@
       "errors_count": 0,
       "precision": 0.1,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR14943__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR14943__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR14943__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR14943__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/22345": {
@@ -97349,7 +97349,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR22345__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR22345__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [],
       "false_positives": [
@@ -97381,9 +97381,9 @@
       "errors_count": 0,
       "precision": 0.0,
       "recall": 0.0,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR22345__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR22345__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR22345__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR22345__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/11059": {
@@ -101119,7 +101119,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR11059__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR11059__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -101220,9 +101220,9 @@
       "errors_count": 0,
       "precision": 0.5833333333333334,
       "recall": 0.7777777777777778,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR11059__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR11059__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR11059__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR11059__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/7232": {
@@ -103410,7 +103410,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR7232__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR7232__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -103457,9 +103457,9 @@
       "errors_count": 0,
       "precision": 0.4,
       "recall": 0.6666666666666666,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR7232__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR7232__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR7232__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR7232__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/14740": {
@@ -106497,7 +106497,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR14740__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR14740__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -106589,9 +106589,9 @@
       "errors_count": 0,
       "precision": 0.2,
       "recall": 0.5,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR14740__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR14740__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR14740__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR14740__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/10600": {
@@ -109311,7 +109311,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR10600__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR10600__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -109386,9 +109386,9 @@
       "errors_count": 0,
       "precision": 0.2727272727272727,
       "recall": 0.6,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR10600__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR10600__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR10600__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR10600__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/10967": {
@@ -112563,7 +112563,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR10967__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR10967__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -112646,9 +112646,9 @@
       "errors_count": 0,
       "precision": 0.4166666666666667,
       "recall": 0.8333333333333334,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR10967__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR10967__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR10967__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR10967__20261101/pull/1"
     }
   },
   "https://github.com/calcom/cal.com/pull/8087": {
@@ -114625,7 +114625,7 @@
       "repo_name": "cal_dot_com__cal.com__sourcery__PR8087__20260307",
       "pr_url": "https://github.com/code-review-benchmark/cal_dot_com__cal.com__sourcery__PR8087__20260307/pull/1"
     },
-    "tenki": {
+    "luxor": {
       "skipped": false,
       "true_positives": [
         {
@@ -114663,9 +114663,9 @@
       "errors_count": 0,
       "precision": 0.4,
       "recall": 1.0,
-      "tool": "tenki",
-      "repo_name": "cal_dot_com__cal.com__tenki__PR8087__20261101",
-      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__tenki__PR8087__20261101/pull/1"
+      "tool": "luxor",
+      "repo_name": "cal_dot_com__cal.com__luxor__PR8087__20261101",
+      "pr_url": "https://github.com/codereview-benchmark/cal_dot_com__cal.com__luxor__PR8087__20261101/pull/1"
     }
   }
 }

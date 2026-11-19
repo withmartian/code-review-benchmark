@@ -58,11 +58,6 @@
    "pattern": "(?i)review effort|effort estimate"
   },
   {
-   "kind": "coverage_check",
-   "quote": "Docstring coverage is 75.00% which is insufficient",
-   "pattern": "(?i)docstring"
-  },
-  {
    "kind": "run_status",
    "quote": "**Actionable comments posted: 2**",
    "pattern": "(?i)actionable comments"

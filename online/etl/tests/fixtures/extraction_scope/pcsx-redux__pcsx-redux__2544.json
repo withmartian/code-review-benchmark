@@ -42,11 +42,6 @@
  ],
  "non_findings": [
   {
-   "kind": "coverage_check",
-   "quote": "Docstring coverage is 27.78% which is insufficient",
-   "pattern": "(?i)docstring"
-  },
-  {
    "kind": "change_overview",
    "quote": "The emulator now clears and restarts rewind history around shell handling.",
    "pattern": null,

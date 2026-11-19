@@ -90,40 +90,6 @@ def test_a_tool_result_the_bot_posts_at_a_location_or_writes_up_itself_is_a_find
     )
 
 
-def test_aggregate_check_results_are_not_findings_and_aggregate_is_defined() -> None:
-    rules = _rules()
-
-    assert (
-        "An aggregate check result is not a finding either: a check whose result is a count, a percentage, "
-        "or a pass/fail measured over many functions or files (for example docstring or test coverage against "
-        'a threshold), including a request to add docstrings or tests to "the touched functions".' in rules
-    )
-    # no undefined example that a PR-level check row (title, description) could fall under
-    assert "such as a status" not in rules
-
-
-def test_a_title_or_description_check_is_not_a_finding_because_no_commit_can_address_it() -> None:
-    rules = _rules()
-
-    assert (
-        "A check of the pull request's title or description themselves, such as their format, a missing section "
-        "or missing screenshots, is not a finding either: it is fixed by editing the pull request, so no later "
-        "commit can address it." in rules
-    )
-    # a claim that the code does not do what the description says is about the code, not the description
-    assert "A finding that the code does not do what the description says is about the code: it is a finding." in rules
-
-
-def test_a_check_stating_a_specific_problem_with_the_pr_and_a_located_request_are_findings() -> None:
-    rules = _rules()
-
-    # "in the bot's own words", so the sentence cannot override the skip of listed linter results
-    assert (
-        "So is any other check that states a specific problem with the changed code in the bot's own words, and a "
-        "request that names a function, or a file and line, in the changed code." in rules
-    )
-
-
 def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findings() -> None:
     rules = _rules()
 
@@ -137,12 +103,24 @@ def test_findings_in_review_body_sections_or_collapsed_sections_are_still_findin
 def test_the_draft_rules_for_other_kinds_are_not_in_this_prompt() -> None:
     """The unreleased extract-v2 draft also excluded overviews, ratings, controls and run metadata,
     named resolved findings and title remarks as findings, and listed the excluded kinds. On the
-    Search API input those kinds rarely reach step 1 or yield an extracted item, so extract-v3 states
-    no rule for them (check results keep one sentence). Re-adding one is a deliberate change: update
-    this test with it."""
+    Search API input those kinds rarely reach step 1 or yield an extracted item, so the prompt states
+    no rule for them. The unreleased extract-v3 also excluded aggregate check results such as
+    docstring coverage against a threshold; a commit can address those, so that rule changed what
+    counts as a finding, and extract-v4 drops it. The unreleased extract-v4 still excluded checks of
+    the pull request's title or description; on the coverage-check PRs that sentence also kept most
+    coverage rows out (they sit in the same check table), so extract-v5 drops it with its two
+    follow-on sentences. Re-adding one is a deliberate change: update this test with it."""
     rules = _rules()
 
     for dropped in (
+        "A check of the pull request's title or description themselves",
+        "no later commit can address it",
+        "A finding that the code does not do what the description says",
+        "So is any other check that states a specific problem",
+        "An aggregate check result",
+        "docstring or test coverage",
+        "the touched functions",
+        "a request that names a function",
         "Only the kinds listed below are excluded",
         "walkthroughs, change summaries, per-file tables",
         "Effort, risk, priority, impact, or confidence ratings themselves.",
@@ -215,11 +193,63 @@ PINNED_INPUTS_BY_VERSION = {
             "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
         },
     },
-    # the first released version
+    # proposed in #72 with an aggregate-check rule (coverage against a threshold is not a finding),
+    # never released; kept so an analysis stamped with it can still be told apart
     "extract-v3": {
         "previous": "8b2dea832961125c94157fdfad257c5c8d3ffe8eef55180277a66c16abc53e3f",
         "inputs": {
             "EXTRACT_BOT_SUGGESTIONS": "4b3c9966a78a6c96010303e91165487550a990ac300a5032d169bb3bc568f2ca",
+            "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
+            "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
+            "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
+            "pipeline.analyze._split_commits_at_hash": "a35eec4a52654a2808becab0b0d3c4cf3000eb7156fecf35dfb02f656b2c5915",
+            "pipeline.analyze._build_details_by_sha": "7ee4ea52b9b58f9aa97f4e4ba2344ff6528e4621d02b1c44612686cd317f1103",
+            "pipeline.analyze._format_commits_with_diffs": "4c24815cc71086530723fa6eb6a4346896622098e5c08d0f19358646ae635f9b",
+            "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
+            "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
+            "pipeline.analyze._format_post_review_activity": "aed6a6644974acb60a5b40e05d6075a6847c3e26ad331d5f2b7787727332ca38",
+            "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
+            "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
+            "pipeline.analyze.analyze_single_pr": "8f0cfd7d38d9e8318ccb8c89c9034a8ddf72e5fb54e15a4f09a326ea94095a8c",
+            "pipeline.analyze._HTML_COMMENT_RE": "39d3d18fd21298dd2ea96526389f29db50575fe2b20f99d3306ddf6b269e79fa",
+            "pipeline.actors": "d2cf21925cedd789b7ec2cdb6b93a32b7b3062dec265de1cd8f9af96b874b3cd",
+            "llm.client.LLMClient.structured_completion": "8e334213d7602d491ff14ac64efdc147555210d422edd38022d8a41bd8fecf2a",
+            "llm.schemas.BotSuggestionsResponse": "5969e73467cf574786325ea59d8470b0d6e817c82b7d02ce206d8e612e48b110",
+            "llm.schemas.HumanActionsResponse": "34ad210bbaa719035d8e38a22d73f22e316e3efcc59b53133e946f8a175d880c",
+            "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
+        },
+    },
+    # extract-v3 without the aggregate-check rule; never released (its title/description rule still
+    # kept most coverage rows out)
+    "extract-v4": {
+        "previous": "e377c727581dba8248ed3140a7f667a1097ac3af72132eb3531c176680b0a9c0",
+        "inputs": {
+            "EXTRACT_BOT_SUGGESTIONS": "2fbd1175c3a0dd3d0b3fef61ea42a009c335e14afc8c23c72aeb5faeab8a64a2",
+            "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
+            "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
+            "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
+            "pipeline.analyze._split_commits_at_hash": "a35eec4a52654a2808becab0b0d3c4cf3000eb7156fecf35dfb02f656b2c5915",
+            "pipeline.analyze._build_details_by_sha": "7ee4ea52b9b58f9aa97f4e4ba2344ff6528e4621d02b1c44612686cd317f1103",
+            "pipeline.analyze._format_commits_with_diffs": "4c24815cc71086530723fa6eb6a4346896622098e5c08d0f19358646ae635f9b",
+            "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
+            "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
+            "pipeline.analyze._format_post_review_activity": "aed6a6644974acb60a5b40e05d6075a6847c3e26ad331d5f2b7787727332ca38",
+            "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
+            "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
+            "pipeline.analyze.analyze_single_pr": "8f0cfd7d38d9e8318ccb8c89c9034a8ddf72e5fb54e15a4f09a326ea94095a8c",
+            "pipeline.analyze._HTML_COMMENT_RE": "39d3d18fd21298dd2ea96526389f29db50575fe2b20f99d3306ddf6b269e79fa",
+            "pipeline.actors": "d2cf21925cedd789b7ec2cdb6b93a32b7b3062dec265de1cd8f9af96b874b3cd",
+            "llm.client.LLMClient.structured_completion": "8e334213d7602d491ff14ac64efdc147555210d422edd38022d8a41bd8fecf2a",
+            "llm.schemas.BotSuggestionsResponse": "5969e73467cf574786325ea59d8470b0d6e817c82b7d02ce206d8e612e48b110",
+            "llm.schemas.HumanActionsResponse": "34ad210bbaa719035d8e38a22d73f22e316e3efcc59b53133e946f8a175d880c",
+            "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
+        },
+    },
+    # the first released version: extract-v4 without the title/description rule and its follow-ons
+    "extract-v5": {
+        "previous": "85440c212816dda5eb9ff14a38f7cc8f87cd7ed8961b7e892f5c237752945175",
+        "inputs": {
+            "EXTRACT_BOT_SUGGESTIONS": "c960118a8ffad90481a4ba19eb582548e7d3479375c1e799f8e8f9c09f5a4e64",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

@@ -5,7 +5,7 @@
 # pipeline/prompt_pins.py lists changes: a step prompt, the code that splits the commits and renders
 # step input, the actor matching, analyze_single_pr's metric arithmetic, a response schema or the LLM
 # call. tests/test_prompts.py pins their sha256 per version.
-EXTRACTION_PROMPT_VERSION = "extract-v3"
+EXTRACTION_PROMPT_VERSION = "extract-v5"
 
 EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.
 
@@ -48,17 +48,8 @@ Tool output quoted as supporting context inside a comment, such as a linter or s
 next to the bot's own text, is not its own finding either: only problems the bot states in its own
 words are findings. A tool result the bot posts as its own comment at a location in the changed code
 is a finding, and so is a linter or static-analysis result the bot writes up as a problem in its own
-comment text. An aggregate check result is not a finding either: a check whose result is a count, a
-percentage, or a pass/fail measured over many functions or files (for example docstring or test
-coverage against a threshold), including a request to add docstrings or tests to "the touched
-functions". A check of the pull request's title or description themselves, such as their format, a
-missing section or missing screenshots, is not a finding either: it is fixed by editing the pull
-request, so no later commit can address it. A finding that the code does not do what the
-description says is about the code: it is a finding. So is any other check that states a specific
-problem with the changed code in the bot's own words, and a request that names a function, or a
-file and line, in the changed code. A concrete finding the bot states in its own words in a
-review-body section rather than as an inline comment, or inside a collapsed or nested section, is
-still a finding: extract it.
+comment text. A concrete finding the bot states in its own words in a review-body section rather
+than as an inline comment, or inside a collapsed or nested section, is still a finding: extract it.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

@@ -37,18 +37,13 @@ FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob
 # None: the prompt states no rule for this non-finding kind (NO_RULE_KINDS), so nothing is checked here
 # and the live check does not assert it.
 _ANY_FINDING = "Your job is to identify every distinct substantive finding the bot flagged."
-_SPECIFIC_CHECK = "So is any other check that states a specific problem with the changed code in the bot's own words"
-_TITLE_OR_DESCRIPTION_CHECK = "A check of the pull request's title or description themselves"
 RULE_FOR_KIND = {
-    "coverage_check": "An aggregate check result is not a finding either: a check whose result is a count",
-    "pr_description_check": _TITLE_OR_DESCRIPTION_CHECK,
     "linked_issue_check": None,
     "change_overview": "pure summaries without a concrete finding",
     "rating": None,
     "run_status": "status/progress messages",
     "control": None,
     "generation_offer": None,
-    "pr_remark": _TITLE_OR_DESCRIPTION_CHECK,
     "resolved_finding": _ANY_FINDING,
     "dismissed_finding": _ANY_FINDING,
     "product_tip": None,
@@ -62,7 +57,7 @@ RULE_FOR_KIND = {
     "rating_explanation": _ANY_FINDING,
     "tool_finding": "a linter or static-analysis result the bot writes up as a problem in its own comment text",
     "praise": "Skip generic praise",
-    "check_finding": _SPECIFIC_CHECK,
+    "check_finding": _ANY_FINDING,
     "located_rule_violation": _ANY_FINDING,
 }
 
@@ -116,23 +111,18 @@ def test_prompt_states_a_rule_for_every_labelled_kind_before_the_inputs(path: Pa
             assert RULE_FOR_KIND[item["kind"]] in rules, item["kind"]
 
 
-def test_check_labels_sit_on_the_side_the_check_sentences_give() -> None:
-    """A check stating a specific problem with the changes is a finding; a check of the PR's title or
-    description, which no later commit can address, and an aggregate check result (coverage against a
-    threshold) are not. A code check and a description check can come from one bot on one PR."""
-    specific = {kind for kind, rule in RULE_FOR_KIND.items() if rule == _SPECIFIC_CHECK}
-    title_or_description = {kind for kind, rule in RULE_FOR_KIND.items() if rule == _TITLE_OR_DESCRIPTION_CHECK}
-    description_next_to_coverage = False
+def test_check_labels_sit_on_the_side_the_prompt_gives() -> None:
+    """A check that states a problem in the code is a finding under the general instruction. The prompt
+    states no rule for an aggregate check result (coverage against a threshold) or for a check of the
+    pull request's title or description, so no fixture labels either kind either way."""
+    unlabelled = {"coverage_check", "pr_description_check", "pr_remark"}
+    labelled = set()
     for path in FIXTURES:
         fx = _load(path)
-        finding_kinds = {label["kind"] for label in fx["findings"]}
-        non_finding_kinds = {label["kind"] for label in fx["non_findings"]}
-        assert not specific & non_finding_kinds, path.stem
-        assert not title_or_description & finding_kinds, path.stem
-        assert "coverage_check" not in finding_kinds, path.stem
-        description_next_to_coverage |= {"pr_description_check", "coverage_check"} <= non_finding_kinds
-    assert specific and title_or_description
-    assert description_next_to_coverage  # the scylladb check table: a description row next to a coverage row
+        assert "check_finding" not in {label["kind"] for label in fx["non_findings"]}, path.stem
+        labelled |= {label["kind"] for label in fx["findings"] + fx["non_findings"] + fx.get("neutral", [])}
+    assert "check_finding" in labelled
+    assert not unlabelled & labelled and not unlabelled & set(RULE_FOR_KIND)
 
 
 def test_kinds_without_a_rule_are_non_finding_kinds_the_live_check_skips() -> None:
@@ -143,7 +133,7 @@ def test_kinds_without_a_rule_are_non_finding_kinds_the_live_check_skips() -> No
     assert not finding_kinds & NO_RULE_KINDS
 
 
-def test_live_check_flags_status_and_coverage_items_and_a_missing_finding() -> None:
+def test_live_check_flags_a_status_item_and_a_missing_finding() -> None:
     from tests.test_extraction_scope_live import check_labels
 
     fx = _load(next(p for p in FIXTURES if "trezor" in p.stem))
@@ -153,10 +143,8 @@ def test_live_check_flags_status_and_coverage_items_and_a_missing_finding() -> N
     assert check_labels(fx, kept) == []
 
     status = {"description": "Actionable comments posted: 3", "file_path": None}
-    coverage = {"description": "Docstring coverage is 25% vs the required 80%", "file_path": None}
-    problems = check_labels(fx, [*kept[1:], status, coverage])
+    problems = check_labels(fx, [*kept[1:], status])
     assert any(p.startswith("non-finding extracted (run_status)") for p in problems)
-    assert any(p.startswith("non-finding extracted (coverage_check)") for p in problems)
     assert any(p.startswith("finding not extracted (inline)") for p in problems)
 
 

@@ -32,11 +32,6 @@
  ],
  "non_findings": [
   {
-   "kind": "coverage_check",
-   "quote": "Docstring coverage is 42.86% which is insufficient",
-   "pattern": "(?i)docstring"
-  },
-  {
    "kind": "change_overview",
    "quote": "End-to-end test runs can now use custom ScyllaDB, Manager, and Manager Agent image references",
    "pattern": null,
@@ -61,12 +56,6 @@
    "kind": "control",
    "quote": "Keep fixing CodeRabbit findings and required CI, and resolving merge conflicts",
    "pattern": "(?i)autofix|keep fixing"
-  },
-  {
-   "kind": "pr_description_check",
-   "path": null,
-   "quote": "Description is only 'Backport of `#3793`.'",
-   "pattern": "(?i)(PR|pull request) description|description is only|template section"
   }
  ],
  "findings": [

@@ -42,11 +42,6 @@
  ],
  "non_findings": [
   {
-   "kind": "coverage_check",
-   "quote": "Docstring coverage is 25.00% which is insufficient",
-   "pattern": "(?i)docstring"
-  },
-  {
    "kind": "change_overview",
    "quote": "Token-amount fields without a token reference are now emitted with an unknown-token adjustment",
    "pattern": null,

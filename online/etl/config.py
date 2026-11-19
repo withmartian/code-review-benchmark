@@ -88,10 +88,13 @@ DEFAULT_CHATBOT_USERNAMES = [
     "kody-ai[bot]",
     "codeant-ai[bot]",
     "linearb[bot]",
+    "luxor-code-review[bot]",
     "sentry[bot]",
     "bito-code-review[bot]",
     "macroscopeapp[bot]",
     "qodo-free-for-open-source-projects[bot]",
+    "tenki-reviewer[bot]",
+    "unblocked[bot]",
 ]
 
 

@@ -951,6 +951,24 @@ def _punctuation_removed(hunks: list[_Hunk]) -> list[tuple[int, str]]:
     return out
 
 
+class _LightEdit:
+    """Whether ``text`` is a light edit of a removed line: ``SequenceMatcher(None, removed,
+    text).ratio() >= _EDIT_RATIO``, the same answer, computed faster.
+
+    The matcher indexes ``text`` (its second sequence) once for all the removed lines it is compared
+    with, and ``real_quick_ratio()`` and ``quick_ratio()``, upper bounds of ``ratio()`` by the
+    lengths and by the shared characters, rule a line out before the full match is computed.
+    """
+
+    def __init__(self, text: str) -> None:
+        self._matcher = SequenceMatcher(None, "", text)
+
+    def of(self, removed: str) -> bool:
+        m = self._matcher
+        m.set_seq1(removed)
+        return m.real_quick_ratio() >= _EDIT_RATIO and m.quick_ratio() >= _EDIT_RATIO and m.ratio() >= _EDIT_RATIO
+
+
 def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
     """Where line ``line`` (of text ``text``) after a commit came from in that commit.
 
@@ -986,9 +1004,8 @@ def _trace(hunks: list[_Hunk], line: int, text: str) -> tuple[str, int, str]:
                         # Which brace a diff pairs with an older one is arbitrary: an added punctuation
                         # line is the commit's own, never a light edit.
                         return "added", 0, ""
-                    close = [
-                        r for r in removed_by_block[block] if SequenceMatcher(None, r[1], t).ratio() >= _EDIT_RATIO
-                    ]
+                    edited = _LightEdit(t)
+                    close = [r for r in removed_by_block[block] if edited.of(r[1])]
                     if len(close) > 1:
                         # Two removed lines could each be its predecessor: which one is not known.
                         return "ambiguous", 0, ""
@@ -1131,6 +1148,8 @@ def _removed_keys(
 
 # The removed runs of one file's patch, shared by every action, file and traced line of the
 # analyses in a process. Bounded: cleared when it grows past _REMOVED_RUNS_CACHE_SIZE patches.
+# The analyses run it in worker threads (asyncio.to_thread): an entry is a pure function of its key
+# and each dict operation is atomic, so two threads at worst build the same entry twice.
 _REMOVED_RUNS_CACHE: dict[tuple[str, frozenset[int]], _RemovedRuns] = {}
 _REMOVED_RUNS_CACHE_SIZE = 64
 

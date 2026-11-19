@@ -483,32 +483,13 @@ def _exclude_unreviewed_actions(
     An unmatched action is left out too when its file is one the bot's reviews list as left out by
     the repository's path filters (``path_filtered``), and none lists as read.
 
-    Every action is left out when the bot completed no review on the PR
-    (``completed_no_review``: it posted only notices, which GH Archive discovery admits): no code
-    of the PR was reviewed. With no action left the PR has no recall. This needs the whole
-    conversation history (comments read, no edit missing), for any bot: a review in a comment or
-    revision that was not read would otherwise read as none. It does not apply when a suggestion of
-    the bot matched an action: the bot raised it somewhere (a chat reply, say), and a matched fix
-    always counts.
+    A PR on which the bot completed no review never gets here: ``analyze_single_pr`` skips it
+    before the LLM calls (``_no_review_skip_reason``).
     """
-    history_complete = comments_read and edits_complete
-    if not history_complete and (
+    if not (comments_read and edits_complete) and (
         record_in_issue_comments(chatbot_username) or reviews_in_issue_comments(chatbot_username)
     ):
         return set()
-    # A review may be in a comment or revision that was not read: no bot is found to have completed
-    # no review without its whole conversation history.
-    matched_ids = {m.get("human_action_id") for m in matches if m.get("matched")}
-    matched_any = any(a["action_id"] in matched_ids for a in actions)
-    if actions and history_complete and not matched_any and completed_no_review(events, commits, chatbot_username):
-        notices = notice_reasons(events, chatbot_username)
-        why = "the bot completed no review on the PR"
-        if notices:
-            why += f"; it posted {', '.join(notices)} notices"
-        for a in actions:
-            a["excluded_from_recall"] = why
-            a["unreviewed_commits"] = []
-        return {a["action_id"] for a in actions}
     if rewritten_review_commits(events, commits, chatbot_username):
         return set()
     if later_comment_review(events, chatbot_username):
@@ -562,6 +543,38 @@ def _exclude_unreviewed_actions(
     return excluded
 
 
+NO_REVIEW_SKIP = "No completed review"
+
+
+def _no_review_skip_reason(
+    events: list[dict],
+    commits: list[dict],
+    chatbot_username: str,
+    comments_read: bool = True,
+    edits_complete: bool = True,
+) -> str | None:
+    """The reason to skip a PR on which the bot completed no review, else None.
+
+    The bot completed no review when it posted notices (a rate limit, a pause, a skip) and no
+    review, which GH Archive discovery admits (``completed_no_review``): no code of the PR was
+    reviewed, so the PR is scored for neither precision nor recall, and ``analyze_single_pr`` skips
+    it before the LLM calls, as it skips a PR with no commits. This holds even when a suggestion of
+    the bot would have matched a fix (raised in a chat reply, say): with no completed review the PR
+    is not scored. The reason starts with ``NO_REVIEW_SKIP`` and names the notices, so the skipped
+    PRs can be counted per bot and per notice.
+
+    This needs the whole conversation history (comments read, no edit missing), for any bot: a
+    review in a comment or revision that was not read would otherwise read as none, so without it
+    the PR is analysed as usual. Both are known before the LLM calls, from the stored comments and
+    edits.
+    """
+    if not (comments_read and edits_complete) or not completed_no_review(events, commits, chatbot_username):
+        return None
+    notices = notice_reasons(events, chatbot_username)
+    if notices:
+        return f"{NO_REVIEW_SKIP} by the bot; it posted {', '.join(notices)} notices"
+    return f"{NO_REVIEW_SKIP} by the bot"
+
 
 async def analyze_single_pr(
     llm: LLMClient,
@@ -601,6 +614,29 @@ async def analyze_single_pr(
 
     commit_details = _parse_json_col("commit_details")
     reviews = _parse_json_col("reviews")
+
+    # The bot's reviews and notices, current bodies and earlier revisions, read deterministically
+    # (no LLM call): what the bot reviewed, for the skip below and for leaving out of recall the fixes
+    # of code no review of the bot read.
+    comments_read = pr_row.get("issue_comments") is not None
+    issue_comments = _parse_json_col("issue_comments")
+    comment_edits = _parse_json_col("issue_comment_edits")
+    coverage_events = _with_comment_revisions(
+        _with_current_issue_comments(_with_review_commits(events, reviews), issue_comments if comments_read else None),
+        comment_edits,
+        issue_comments,
+    )
+    edits_complete = not any(
+        c.get("unavailable_edits") and same_github_actor(c.get("author"), chatbot_username) for c in comment_edits
+    ) and not _deleted_bot_comments(events, comments_read, issue_comments, chatbot_username)
+
+    # A PR on which the bot completed no review (only notices) is scored for neither metric: skipped
+    # before the LLM calls, as a PR with no commits is.
+    skip_reason = _no_review_skip_reason(coverage_events, commits, chatbot_username, comments_read, edits_complete)
+    if skip_reason:
+        logger.info(f"Skipping {pr_row['repo_name']}#{pr_row['pr_number']}: {skip_reason}")
+        await repo.mark_skipped(pr_row["id"], skip_reason)
+        return False
 
     # Find hash X (the commit the bot reviewed) and split
     hash_x = _find_bot_review_commit(reviews, events, commits, chatbot_username)
@@ -657,29 +693,19 @@ async def analyze_single_pr(
 
     # Fixes of code no review of the bot read are left out of recall. Deterministic: the bot's own
     # record of its reviews, its reviews and notices (current bodies and earlier revisions) and the
-    # stored commit patches, no LLM call.
-    issue_comments = _parse_json_col("issue_comments")
-    comment_edits = _parse_json_col("issue_comment_edits")
-    excluded_action_ids = _exclude_unreviewed_actions(
+    # stored commit patches, no LLM call. The line trace is CPU work that can take seconds on a large
+    # rewrite, so it runs in a worker thread and the other PRs' LLM calls go on meanwhile.
+    excluded_action_ids = await asyncio.to_thread(
+        _exclude_unreviewed_actions,
         actions,
         matches,
-        _with_comment_revisions(
-            _with_current_issue_comments(
-                _with_review_commits(events, reviews),
-                issue_comments if pr_row.get("issue_comments") is not None else None,
-            ),
-            comment_edits,
-            issue_comments,
-        ),
+        coverage_events,
         commits,
         post_commits,
         details_by_sha,
         chatbot_username,
-        comments_read=pr_row.get("issue_comments") is not None,
-        edits_complete=not any(
-            c.get("unavailable_edits") and same_github_actor(c.get("author"), chatbot_username) for c in comment_edits
-        )
-        and not _deleted_bot_comments(events, pr_row.get("issue_comments") is not None, issue_comments, chatbot_username),
+        comments_read=comments_read,
+        edits_complete=edits_complete,
     )
 
     # Compute metrics — only count IDs that actually exist in the extracted lists

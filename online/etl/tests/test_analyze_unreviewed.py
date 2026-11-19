@@ -152,9 +152,13 @@ class FakeLLM:
 class FakeRepo:
     def __init__(self) -> None:
         self.stored: dict = {}
+        self.skipped: list[tuple[int, str]] = []
 
     async def insert_analysis(self, **kwargs: object) -> None:
         self.stored = kwargs
+
+    async def mark_skipped(self, pr_id: int, reason: str) -> None:
+        self.skipped.append((pr_id, reason))
 
 
 def _review(sha: str, ts: str, body: str) -> dict:
@@ -752,25 +756,39 @@ def _notice_only_row(bot: str = BOT) -> dict:
     return json.loads(json.dumps(row).replace(BOT, bot))
 
 
-async def test_a_pr_the_bot_never_reviewed_leaves_every_fix_out() -> None:
+async def test_a_pr_the_bot_never_reviewed_is_skipped_before_the_llm_calls() -> None:
+    # No code of the PR was reviewed: the PR is scored for neither precision nor recall. It is skipped
+    # with the notice in the reason, as a PR with no commits is: no LLM call and no analysis row.
+    for llm in (FakeLLM(matched_action="none"), FakeLLM()):
+        repo = FakeRepo()
+
+        assert not await analyze_single_pr(llm, repo, _notice_only_row(), BOT, "model")
+
+        assert repo.skipped == [(1, "No completed review by the bot; it posted limit notices")]
+        assert repo.stored == {}
+        # A suggestion that would have matched a fix makes no difference: the LLM is never asked.
+        assert llm.prompts == []
+
+
+async def test_the_line_trace_runs_in_a_worker_thread(monkeypatch) -> None:
+    # The line trace is CPU work that can take seconds on a large rewrite: it runs in a worker thread
+    # (asyncio.to_thread), so the event loop keeps the other PRs' LLM calls going meanwhile.
+    from pipeline import analyze
+
+    ran: list[str] = []
+    real = analyze.asyncio.to_thread
+
+    async def to_thread(func, /, *args, **kwargs):
+        ran.append(func.__name__)
+        return await real(func, *args, **kwargs)
+
+    monkeypatch.setattr(analyze.asyncio, "to_thread", to_thread)
     repo = FakeRepo()
 
-    assert await analyze_single_pr(FakeLLM(matched_action="none"), repo, _notice_only_row(), BOT, "model")
+    assert await analyze_single_pr(FakeLLM(), repo, _pr_row(), BOT, "model")
 
-    # No fix matched and no code of the PR was reviewed: no fix counts, so the PR has no recall.
-    assert repo.stored["recall"] is None
-    assert [a["excluded_from_recall"] for a in repo.stored["human_actions"]] == [
-        "the bot completed no review on the PR; it posted limit notices"
-    ] * 2
-
-    # A suggestion of the bot matched a fix (raised in a chat reply, say): a matched fix always
-    # counts, so the PR is not left out whole.
-    assert await analyze_single_pr(FakeLLM(), repo, _notice_only_row(), BOT, "model")
-    assert repo.stored["recall"] is not None
-    assert not any(
-        (a.get("excluded_from_recall") or "").startswith("the bot completed no review")
-        for a in repo.stored["human_actions"]
-    )
+    assert ran == ["_exclude_unreviewed_actions"]
+    assert repo.stored["recall"] == 1.0
 
 
 async def test_a_pr_with_a_review_or_a_record_of_one_is_not_left_out_whole() -> None:
@@ -919,12 +937,15 @@ async def test_no_review_needs_the_whole_conversation_history() -> None:
         [{"id": 7, "author": qodo, "body": pause, "created_at": "2026-07-01T10:01:00Z", "updated_at": None}]
     )
     repo = FakeRepo()
-    assert await analyze_single_pr(FakeLLM(matched_action="none"), repo, dict(row), qodo, "model")
-    assert repo.stored["recall"] is None  # every revision read: no review, every fix left out
+    assert not await analyze_single_pr(FakeLLM(matched_action="none"), repo, dict(row), qodo, "model")
+    # Every revision read: no review, so the PR is skipped.
+    assert repo.skipped == [(1, "No completed review by the bot; it posted pause notices")]
 
     edits = [{"id": 7, "author": qodo, "revisions": [], "unavailable_edits": ["2026-07-01T13:00:00Z"]}]
     row["issue_comment_edits"] = json.dumps(edits)
+    repo = FakeRepo()
     assert await analyze_single_pr(FakeLLM(), repo, dict(row), qodo, "model")
+    assert repo.skipped == []
     assert repo.stored["recall"] == 0.5
     assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
 
@@ -938,10 +959,7 @@ async def test_no_review_needs_the_whole_conversation_history() -> None:
     other = json.loads(json.dumps(row).replace(qodo, cubic))
     assert await analyze_single_pr(FakeLLM(), repo, other, cubic, "model")
     assert repo.stored["recall"] is not None
-    assert not any(
-        a.get("excluded_from_recall", "").startswith("the bot completed no review")
-        for a in repo.stored["human_actions"]
-    )
+    assert repo.skipped == []
 
 
 @pytest.mark.parametrize("bot", ["greptile-apps[bot]", "chatgpt-codex-connector[bot]"])
@@ -989,17 +1007,15 @@ IN_PROGRESS = _notice(
 @pytest.mark.parametrize("notice", [IN_PROGRESS, RATE_LIMITED.replace("b" * 40, "f" * 40), FEWER_STARS])
 async def test_a_coderabbit_pr_whose_summary_is_only_a_placeholder_or_a_notice_was_never_reviewed(notice: str) -> None:
     # The in-progress placeholder (with the range under way), a limit or a skip block is not a review:
-    # every fix is left out and the PR has no recall.
+    # the PR is skipped.
     repo = FakeRepo()
 
-    assert await analyze_single_pr(
+    assert not await analyze_single_pr(
         FakeLLM(matched_action="none"), repo, _coderabbit_only_comment_row(f"{SUMMARY}\n{notice}"), BOT, "model"
     )
 
-    assert repo.stored["recall"] is None
-    assert all(
-        a["excluded_from_recall"].startswith("the bot completed no review") for a in repo.stored["human_actions"]
-    )
+    assert repo.stored == {}
+    assert [reason.split(";")[0] for _, reason in repo.skipped] == ["No completed review by the bot"]
 
 
 async def test_a_coderabbit_summary_with_a_walkthrough_but_no_range_keeps_every_fix() -> None:
@@ -1059,7 +1075,4 @@ async def test_a_bot_outside_the_tables_that_reviews_in_a_conversation_comment_k
     assert await analyze_single_pr(FakeLLM(), repo, row, bot, "model")
 
     assert repo.stored["recall"] is not None
-    assert not any(
-        a.get("excluded_from_recall", "").startswith("the bot completed no review")
-        for a in repo.stored["human_actions"]
-    )
+    assert repo.skipped == []

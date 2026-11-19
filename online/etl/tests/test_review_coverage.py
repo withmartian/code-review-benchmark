@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from difflib import SequenceMatcher
+import random
+
+from pipeline.review_coverage import _EDIT_RATIO
 from pipeline.review_coverage import NO_COMMIT
 from pipeline.review_coverage import ReviewRecord
 from pipeline.review_coverage import _is_source
+from pipeline.review_coverage import _LightEdit
 from pipeline.review_coverage import comment_record_missing
 from pipeline.review_coverage import completed_no_review
 from pipeline.review_coverage import find_notices
@@ -570,6 +575,41 @@ def test_a_light_edit_close_to_two_removed_lines_is_unknown() -> None:
 
     assert origin == "unknown", reason
     assert "more than one line" in reason
+
+
+def test_the_light_edit_check_answers_as_the_full_ratio() -> None:
+    # _LightEdit reuses one matcher for the added line and rules lines out by quick_ratio() and
+    # real_quick_ratio() first: its answer must be SequenceMatcher(None, removed, added).ratio() >=
+    # _EDIT_RATIO for every pair, near the threshold, long (autojunk) and empty lines included.
+    rng = random.Random(76)
+    alphabet = "abcdefgh (),.=_'0123456789"
+
+    def mutate(text: str, n: int) -> str:
+        chars = list(text)
+        for _ in range(n):
+            i = rng.randrange(len(chars) + 1)
+            op = rng.choice("ids")
+            if op == "i":
+                chars.insert(i, rng.choice(alphabet))
+            elif chars:
+                j = min(i, len(chars) - 1)
+                if op == "d":
+                    del chars[j]
+                else:
+                    chars[j] = rng.choice(alphabet)
+        return "".join(chars)
+
+    bases = ["".join(rng.choice(alphabet) for _ in range(rng.choice((0, 1, 5, 30, 80, 250)))) for _ in range(40)]
+    removed = [mutate(b, k) for b in bases for k in (0, 1, 3, 8, 20)]
+    agree = near = 0
+    for added in [mutate(b, k) for b in bases for k in (0, 2, 6)]:
+        check = _LightEdit(added)
+        for r in removed:
+            ratio = SequenceMatcher(None, r, added).ratio()
+            assert check.of(r) == (ratio >= _EDIT_RATIO), (r, added, ratio)
+            agree += 1
+            near += abs(ratio - _EDIT_RATIO) < 0.05
+    assert agree == 120 * 200 and near > 50
 
 
 def test_a_light_edit_is_matched_within_its_own_change_block() -> None:

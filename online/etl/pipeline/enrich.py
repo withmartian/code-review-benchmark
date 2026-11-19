@@ -13,6 +13,7 @@ import httpx
 from config import DBConfig
 from db.connection import DBAdapter
 from db.repository import PRRepository
+from pipeline.actors import same_github_actor
 
 logger = logging.getLogger(__name__)
 
@@ -349,19 +350,28 @@ def parse_issue_comments(nodes: list[dict]) -> list[dict]:
     return out
 
 
-def parse_comment_edits(nodes: list[dict]) -> list[dict]:
-    """The revisions of each edited comment by a bot, oldest first, from IssueComment nodes.
+def _scored_bot_comment(node: dict, bot: str) -> bool:
+    """Whether an IssueComment node is a comment of the bot the PR row is scored for."""
+    author = node.get("author") or {}
+    return author.get("__typename") == "Bot" and same_github_actor(author.get("login"), bot)
 
-    Only bot comments are kept (bots rewrite status comments in place; people's edits are not
-    read), and only comments that were edited. Bot logins get the ``[bot]`` suffix of the REST API.
-    An edit whose text GitHub no longer has (``diff`` null, a deleted revision) is not a revision;
-    its time is kept in ``unavailable_edits``, since a review recorded only in it cannot be read.
+
+def parse_comment_edits(nodes: list[dict], *, bot: str) -> list[dict]:
+    """The revisions of each edited comment by ``bot``, the bot the PR row is scored for, oldest
+    first, from IssueComment nodes.
+
+    Only that bot's comments are kept: the analysis reads only its record and notices, and other
+    bots (CI, coverage) rewrite their comments on every push too, so their histories would only add
+    weight. People's edits are not read. Only comments that were edited are kept. Bot logins get the
+    ``[bot]`` suffix of the REST API. An edit whose text GitHub no longer has (``diff`` null, a
+    deleted revision) is not a revision; its time is kept in ``unavailable_edits``, since a review
+    recorded only in it cannot be read.
     """
     out = []
     for node in nodes:
         author = node.get("author") or {}
         edits = (node.get("userContentEdits") or {}).get("nodes") or []
-        if author.get("__typename") != "Bot" or not edits:
+        if not _scored_bot_comment(node, bot) or not edits:
             continue
         revisions = [
             {"edited_at": e.get("editedAt"), "body": e.get("diff")} for e in edits if e.get("diff") is not None
@@ -376,17 +386,19 @@ def parse_comment_edits(nodes: list[dict]) -> list[dict]:
     return out
 
 
-async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict]) -> None:
-    """Complete in place the edit history of each bot comment with more than one page of edits.
+async def _fetch_long_edit_histories(gh: GitHubEnrichClient, nodes: list[dict], *, bot: str) -> None:
+    """Complete in place the edit history of each comment of ``bot`` (the bot the PR row is scored
+    for) with more than one page of edits. Other comments' histories are not stored
+    (``parse_comment_edits``), so they are neither paged nor checked.
 
     A page that cannot be read raises ``IncompleteReadError`` rather than keeping the pages read so
     far: the analysis reads the history as every review the bot recorded, so a review recorded
     only in a missing revision would read as a push the bot never reviewed. That includes the first
-    page: a bot comment whose ``userContentEdits`` is missing or null (a partial answer with errors)
-    would otherwise be stored as a complete history with no edits.
+    page: a comment of the bot whose ``userContentEdits`` is missing or null (a partial answer with
+    errors) would otherwise be stored as a complete history with no edits.
     """
     for node in nodes:
-        if (node.get("author") or {}).get("__typename") != "Bot":
+        if not _scored_bot_comment(node, bot):
             continue
         edits = node.get("userContentEdits")
         if not isinstance(edits, dict) or edits.get("nodes") is None:
@@ -442,14 +454,16 @@ async def _fetch_review_threads(
     repo: str,
     pr_number: int,
     *,
+    bot: str,
     comments: bool = True,
     partial: bool = False,
 ) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
-    """The PR's review threads, conversation comments and bot comment edit histories, from one paginated read.
+    """The PR's review threads, conversation comments and the edit histories of the comments of
+    ``bot`` (the bot the PR row is scored for), from one paginated read.
 
     The first request returns the first page of each. Later requests are made only while a
-    connection has more pages, and ask only for those connections; a bot comment with more than
-    100 edits gets one more request per further 100. A request that fails, the first one included,
+    connection has more pages, and ask only for those connections; a comment of the bot with more
+    than 100 edits gets one more request per further 100. A request that fails, the first one included,
     or an answer without a connection it asked for, raises ``IncompleteReadError`` instead of
     returning what was read: a missing comment or revision can hold the only record of a review,
     so the step must not be stored as read. A first answer that the repository or the pull request
@@ -511,12 +525,12 @@ async def _fetch_review_threads(
             comment_cursor = page_info.get("endCursor")
     if not comments:
         return all_threads, None, None
-    await _fetch_long_edit_histories(gh, comment_nodes)
-    return all_threads, parse_issue_comments(comment_nodes), parse_comment_edits(comment_nodes)
+    await _fetch_long_edit_histories(gh, comment_nodes, bot=bot)
+    return all_threads, parse_issue_comments(comment_nodes), parse_comment_edits(comment_nodes, bot=bot)
 
 
 async def _read_review_threads(
-    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int
+    gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, bot: str
 ) -> tuple[list[dict], list[dict] | None, list[dict] | None]:
     """``_fetch_review_threads``, read again up to ``THREADS_READ_ATTEMPTS`` times when it stops
     partway. When the read with comments and edits keeps failing (a query too heavy for a long bot
@@ -530,7 +544,7 @@ async def _read_review_threads(
         for attempt in range(THREADS_READ_ATTEMPTS):
             last = not comments and attempt + 1 == THREADS_READ_ATTEMPTS
             try:
-                read = await _fetch_review_threads(gh, owner, repo, pr_number, comments=comments, partial=last)
+                read = await _fetch_review_threads(gh, owner, repo, pr_number, bot=bot, comments=comments, partial=last)
             except IncompleteReadError as e:
                 errors.append(e)
                 if attempt + 1 < THREADS_READ_ATTEMPTS:
@@ -684,8 +698,13 @@ async def enrich_single_pr(
     repo_obj: PRRepository,
     pr_row: dict,
     cfg: DBConfig | None = None,
+    *,
+    chatbot_username: str,
 ) -> None:
-    """Enrich a single PR, resuming from wherever we left off."""
+    """Enrich a single PR, resuming from wherever we left off.
+
+    ``chatbot_username`` is the bot the PR row is scored for: only its comments' edit histories are
+    read in full and stored."""
     pr_id = pr_row["id"]
     repo_name = pr_row["repo_name"]
     pr_number = pr_row["pr_number"]
@@ -741,7 +760,9 @@ async def enrich_single_pr(
     # Step: threads (index 3)
     if step_idx < 3:
         # The same request returns the conversation comments and their edit history, stored with the threads.
-        threads, issue_comments, comment_edits = await _read_review_threads(gh, owner, repo, pr_number)
+        threads, issue_comments, comment_edits = await _read_review_threads(
+            gh, owner, repo, pr_number, bot=chatbot_username
+        )
         await repo_obj.update_threads(pr_id, threads, issue_comments, comment_edits)
         n_comments = "comments not read" if issue_comments is None else f"{len(issue_comments)} comments"
         logger.debug(f"  {repo_name}#{pr_number}: threads done ({len(threads)}, {n_comments})")
@@ -783,12 +804,19 @@ async def enrich_loop(
     If one_shot=True, processes available PRs once and returns.
     If one_shot=False, runs indefinitely (daemon mode), sleeping when idle or rate-limited.
     If chatbot_username is provided, assembles enriched PRs periodically.
+    The PRs are those of chatbot_id, the bot they are scored for, and only that bot's comment edit
+    histories are stored; when chatbot_username is not given, the bot's name is read by its id.
 
     Returns total number of PRs enriched.
     """
     from pipeline.assemble import assemble_enriched_prs
 
     repo_obj = PRRepository(db)
+    scored_bot = chatbot_username or next(
+        (b["github_username"] for b in await repo_obj.get_all_chatbots() if b["id"] == chatbot_id), None
+    )
+    if not scored_bot:
+        raise ValueError(f"no chatbot with id {chatbot_id}")
     tokens = cfg.github_tokens if cfg.github_tokens else [cfg.github_token]
     pool = TokenPool(tokens)
     n_tokens = pool.size
@@ -844,7 +872,7 @@ async def enrich_loop(
                             await asyncio.sleep(wait)
                             continue
                         try:
-                            await enrich_single_pr(gh, repo_obj, pr_row, cfg)
+                            await enrich_single_pr(gh, repo_obj, pr_row, cfg, chatbot_username=scored_bot)
                             enriched_count += 1
                             break
                         except TokenInvalidError:

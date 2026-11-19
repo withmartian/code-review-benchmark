@@ -15,6 +15,8 @@ from pipeline.enrich import _fetch_review_threads
 from pipeline.enrich import enrich_single_pr
 from pipeline.enrich import parse_comment_edits
 
+CR = "coderabbitai[bot]"
+
 
 def _edits(*revisions: tuple[str, str | None], next_cursor: str | None = None) -> dict:
     return {
@@ -67,17 +69,17 @@ def test_the_edit_history_comes_with_the_threads_step() -> None:
     assert "userContentEdits(first: 100)" in REVIEW_THREADS_QUERY
 
 
-def test_parse_keeps_edited_bot_comments_with_revisions_oldest_first() -> None:
+def test_parse_keeps_edited_comments_of_the_scored_bot_with_revisions_oldest_first() -> None:
     nodes = [
         _comment(
             "n1", 1, "coderabbitai", "Bot", _edits(("2026-07-01T12:00:00Z", "v2"), ("2026-07-01T10:00:00Z", "v1"))
         ),
         _comment("n2", 2, "dev", "User", _edits(("2026-07-01T11:00:00Z", "fixed typo"))),
-        _comment("n3", 3, "greptile-apps", "Bot", _edits()),
-        _comment("n4", 4, "codecov", "Bot", _edits(("2026-07-01T11:00:00Z", None))),
+        _comment("n3", 3, "coderabbitai", "Bot", _edits()),
+        _comment("n4", 4, "coderabbitai", "Bot", _edits(("2026-07-01T11:00:00Z", None))),
     ]
 
-    assert parse_comment_edits(nodes) == [
+    assert parse_comment_edits(nodes, bot=CR) == [
         {
             "id": 1,
             "author": "coderabbitai[bot]",
@@ -88,8 +90,27 @@ def test_parse_keeps_edited_bot_comments_with_revisions_oldest_first() -> None:
         },
         # An edit GitHub keeps no text for is not a revision, but it is recorded as missing: a review
         # recorded only in it cannot be read.
-        {"id": 4, "author": "codecov[bot]", "revisions": [], "unavailable_edits": ["2026-07-01T11:00:00Z"]},
+        {"id": 4, "author": "coderabbitai[bot]", "revisions": [], "unavailable_edits": ["2026-07-01T11:00:00Z"]},
     ]
+
+
+def test_parse_stores_the_edits_of_the_scored_bot_only() -> None:
+    # CI and coverage bots rewrite their comments on every push too; the analysis reads only the
+    # scored bot's record and notices, so the other bots' histories are not stored, missing edits
+    # included.
+    nodes = [
+        _comment("n1", 1, "coderabbitai", "Bot", _edits(("2026-07-01T12:00:00Z", "v1"))),
+        _comment("n2", 2, "codecov", "Bot", _edits(("2026-07-01T11:00:00Z", "coverage 80%"))),
+        _comment("n3", 3, "greptile-apps", "Bot", _edits(("2026-07-01T11:30:00Z", None))),
+        _comment("n4", 4, "github-actions", "Bot", _edits(("2026-07-01T11:40:00Z", "build ok"))),
+    ]
+
+    assert [c["id"] for c in parse_comment_edits(nodes, bot=CR)] == [1]
+    assert [c["id"] for c in parse_comment_edits(nodes, bot="greptile-apps[bot]")] == [3]
+    assert [c["id"] for c in parse_comment_edits(nodes, bot="codecov[bot]")] == [2]
+    # A person who shares a bot's name is not the bot.
+    person = _comment("n5", 5, "coderabbitai", "User", _edits(("2026-07-01T11:50:00Z", "edit")))
+    assert parse_comment_edits([person], bot=CR) == []
 
 
 async def test_one_request_returns_the_comments_with_their_edit_history() -> None:
@@ -98,7 +119,7 @@ async def test_one_request_returns_the_comments_with_their_edit_history() -> Non
     )
     gh = FakeGraphQL([{"nodes": [bot], "pageInfo": {"hasNextPage": False, "endCursor": None}}], {})
 
-    _, comments, edits = await _fetch_review_threads(gh, "owner", "repo", 7)
+    _, comments, edits = await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
     assert len(gh.calls) == 1
     assert [c["body"] for c in comments] == ["current"]
@@ -119,10 +140,11 @@ async def test_pages_through_comments_and_long_histories_of_bot_comments_only() 
     }
     gh = FakeGraphQL(pages, older)
 
-    _, comments, edits = await _fetch_review_threads(gh, "owner", "repo", 7)
+    _, comments, edits = await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
     assert [c["id"] for c in comments] == [1, 2, 3]
-    assert [c["id"] for c in edits] == [1, 3]
+    # The other bot's edited comment is a conversation comment, but its history is not stored.
+    assert [c["id"] for c in edits] == [1]
     assert [r["body"] for r in edits[0]["revisions"]] == ["v1", "v2", "v3"]
     # Two pages of the threads request, then two more for the long history; never for a person's comment.
     assert [q is REVIEW_THREADS_QUERY for q, _ in gh.calls] == [True, True, False, False]
@@ -146,7 +168,7 @@ def _failing_history_gh() -> FakeGraphQL:
 async def test_a_failed_long_history_read_raises_instead_of_keeping_the_first_page() -> None:
     # A review recorded only in the unread revisions would read as a push the bot never reviewed.
     with pytest.raises(IncompleteReadError, match="comment 1 stopped after 1 edits"):
-        await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7)
+        await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7, bot=CR)
 
 
 async def test_a_later_page_of_edits_with_null_nodes_raises() -> None:
@@ -157,7 +179,7 @@ async def test_a_later_page_of_edits_with_null_nodes_raises() -> None:
     gh = FakeGraphQL([page], {("n1", "e1"): {"nodes": None, "pageInfo": {"hasNextPage": False, "endCursor": None}}})
 
     with pytest.raises(IncompleteReadError, match="comment 1 stopped after 1 edits"):
-        await _fetch_review_threads(gh, "owner", "repo", 7)
+        await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
 
 @pytest.mark.parametrize("missing", ["null", "absent", "no nodes"])
@@ -175,7 +197,34 @@ async def test_a_bot_comment_whose_first_page_of_edits_is_missing_raises(missing
     page = {"nodes": [bot, person], "pageInfo": {"hasNextPage": False, "endCursor": None}}
 
     with pytest.raises(IncompleteReadError, match="edit history of comment 1 could not be read"):
-        await _fetch_review_threads(FakeGraphQL([page], {}), "owner", "repo", 7)
+        await _fetch_review_threads(FakeGraphQL([page], {}), "owner", "repo", 7, bot=CR)
+
+
+async def test_another_bot_s_history_is_neither_paged_nor_checked() -> None:
+    # Only the scored bot's history is stored, so only its pages are read and only its missing pages
+    # stop the step. Another bot's long history (a next page that would fail) and its missing first
+    # page are left alone.
+    long_other = _comment("n2", 2, "codecov", "Bot", _edits(("2026-07-01T12:00:00Z", "cov"), next_cursor="x1"))
+    missing_other = _comment("n3", 3, "github-actions", "Bot", None)
+    scored = _comment("n1", 1, "coderabbitai", "Bot", _edits(("2026-07-01T12:00:00Z", "v2"), next_cursor="e1"))
+    page = {"nodes": [long_other, missing_other, scored], "pageInfo": {"hasNextPage": False, "endCursor": None}}
+    unreadable = {"nodes": None, "pageInfo": {"hasNextPage": False, "endCursor": None}}
+    pages = {("n1", "e1"): _edits(("2026-07-01T10:00:00Z", "v1")), ("n2", "x1"): unreadable}
+    gh = FakeGraphQL([page], pages)
+
+    _, comments, edits = await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
+
+    assert [c["id"] for c in comments] == [2, 3, 1]
+    assert [(c["id"], [r["body"] for r in c["revisions"]]) for c in edits] == [(1, ["v1", "v2"])]
+    # One threads request and one page of the scored bot's history; none for codecov's.
+    assert [v.get("id") for q, v in gh.calls if q is COMMENT_EDITS_PAGE_QUERY] == ["n1"]
+
+    # Scored for codecov, the same answer pages codecov's history, and its unreadable page stops the step.
+    with pytest.raises(IncompleteReadError, match="comment 2 stopped after 1 edits"):
+        await _fetch_review_threads(FakeGraphQL([page], pages), "owner", "repo", 7, bot="codecov[bot]")
+    # Scored for github-actions, its missing first page stops the step.
+    with pytest.raises(IncompleteReadError, match="edit history of comment 3 could not be read"):
+        await _fetch_review_threads(FakeGraphQL([page], pages), "owner", "repo", 7, bot="github-actions[bot]")
 
 
 class FakeRepo:
@@ -214,13 +263,13 @@ async def test_an_incomplete_history_is_never_stored_so_it_excludes_nothing(monk
     monkeypatch.setattr(enrich.asyncio, "sleep", no_sleep)
     repo = FakeRepo()
 
-    await enrich_single_pr(_failing_history_gh(), repo, dict(PR_ROW))
+    await enrich_single_pr(_failing_history_gh(), repo, dict(PR_ROW), chatbot_username=CR)
 
     threads_writes = [w for w in repo.writes if w[0] == "threads"]
     assert len(threads_writes) == 1
     assert threads_writes[0][3] is None and threads_writes[0][4] is None
     with pytest.raises(IncompleteReadError):
-        await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7)
+        await _fetch_review_threads(_failing_history_gh(), "owner", "repo", 7, bot=CR)
 
 
 async def test_the_loop_releases_a_pr_with_an_incomplete_read_for_the_next_pass(monkeypatch) -> None:
@@ -231,8 +280,15 @@ async def test_the_loop_releases_a_pr_with_an_incomplete_read_for_the_next_pass(
         return passes.pop(0)
 
     repo.get_pending_prs = get_pending_prs  # type: ignore[attr-defined]
+    scored: list[object] = []
 
-    async def incomplete(*_args: object) -> None:
+    async def get_all_chatbots() -> list[dict]:
+        return [{"id": 1, "github_username": CR}, {"id": 2, "github_username": "greptile-apps[bot]"}]
+
+    repo.get_all_chatbots = get_all_chatbots  # type: ignore[attr-defined]
+
+    async def incomplete(*_args: object, **kwargs: object) -> None:
+        scored.append(kwargs.get("chatbot_username"))
         raise IncompleteReadError("edit history of comment 1 stopped after 100 edits")
 
     monkeypatch.setattr(enrich, "PRRepository", lambda _db: repo)
@@ -242,3 +298,5 @@ async def test_the_loop_releases_a_pr_with_an_incomplete_read_for_the_next_pass(
     assert await enrich.enrich_loop(cfg, None, chatbot_id=1, one_shot=True) == 0
     # Unlocked, not marked as error (an errored PR is never read again) and not marked done.
     assert repo.writes == [("lock", 5), ("unlock", 5)]
+    # The PR is enriched for the bot it is scored for, read by its id when no name is given.
+    assert scored == [CR]

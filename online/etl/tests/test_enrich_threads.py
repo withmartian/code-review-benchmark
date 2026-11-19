@@ -12,6 +12,8 @@ from pipeline.enrich import RateLimitExhaustedError
 from pipeline.enrich import _fetch_review_threads
 from pipeline.enrich import parse_issue_comments
 
+CR = "coderabbitai[bot]"
+
 
 def _page(nodes: list[dict], next_cursor: str | None = None) -> dict:
     return {"nodes": nodes, "pageInfo": {"hasNextPage": next_cursor is not None, "endCursor": next_cursor}}
@@ -113,7 +115,7 @@ def test_parse_gives_the_rest_shape_with_bot_logins_suffixed() -> None:
 async def test_one_request_returns_threads_and_comments() -> None:
     gh = FakeGraphQL({None: _page([_thread("T1")])}, {None: _page([_comment(1, "coderabbitai", "Bot", "summary")])})
 
-    threads, comments, _ = await _fetch_review_threads(gh, "owner", "repo", 7)
+    threads, comments, _ = await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
     assert [t["id"] for t in threads] == ["T1"]
     assert threads[0]["comments"][0]["reactions"] == {"THUMBS_UP": 2}
@@ -140,7 +142,7 @@ async def test_each_connection_pages_on_its_own_until_it_ends() -> None:
     }
     gh = FakeGraphQL(threads, comments)
 
-    got_threads, got_comments, _ = await _fetch_review_threads(gh, "owner", "repo", 7)
+    got_threads, got_comments, _ = await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
     assert [t["id"] for t in got_threads] == ["T1", "T2"]
     assert [c["id"] for c in got_comments] == [1, 2, 3]
@@ -156,7 +158,7 @@ async def test_a_failed_first_request_raises_instead_of_reading_as_empty() -> No
     gh = FakeGraphQL({}, {}, fail=True)
 
     with pytest.raises(IncompleteReadError, match="the first page of reviewThreads and comments could not be read"):
-        await _fetch_review_threads(gh, "owner", "repo", 7)
+        await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
     assert len(gh.calls) == 1
 
 
@@ -170,7 +172,7 @@ async def test_a_first_answer_without_its_comments_raises() -> None:
     gh.graphql = no_comments  # type: ignore[method-assign]
 
     with pytest.raises(IncompleteReadError, match="the first page of comments could not be read"):
-        await _fetch_review_threads(gh, "owner", "repo", 7)
+        await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
 
 @pytest.mark.parametrize("answer", [{"repository": None}, {"repository": {"pullRequest": None}}, {}])
@@ -185,7 +187,7 @@ async def test_a_pull_request_that_is_not_there_reads_as_no_threads_and_unread_c
 
     gh.graphql = not_there  # type: ignore[method-assign]
 
-    assert await _fetch_review_threads(gh, "owner", "repo", 7) == ([], None, None)
+    assert await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR) == ([], None, None)
     assert len(gh.calls) == 1
 
 
@@ -260,7 +262,7 @@ async def test_a_failed_later_page_of_threads_raises_instead_of_keeping_the_firs
     gh.graphql = fail_second_request  # type: ignore[method-assign]
 
     with pytest.raises(IncompleteReadError, match="reviewThreads could not be read after 1 threads"):
-        await _fetch_review_threads(gh, "owner", "repo", 7)
+        await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
 
 @pytest.mark.parametrize("connection", ["reviewThreads", "comments"])
@@ -288,7 +290,7 @@ async def test_a_page_whose_nodes_are_null_raises(connection: str, on_page: int)
     gh.graphql = null_nodes  # type: ignore[method-assign]
 
     with pytest.raises(IncompleteReadError, match=f"of {connection} could not be read"):
-        await _fetch_review_threads(gh, "owner", "repo", 7)
+        await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
 
 async def test_a_failed_later_page_of_comments_raises_instead_of_keeping_the_first_page() -> None:
@@ -307,7 +309,7 @@ async def test_a_failed_later_page_of_comments_raises_instead_of_keeping_the_fir
     gh.graphql = drop_comments_on_second_request  # type: ignore[method-assign]
 
     with pytest.raises(IncompleteReadError, match="comments could not be read after 1 threads and 1 comments"):
-        await _fetch_review_threads(gh, "owner", "repo", 7)
+        await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
     assert [(v["withThreads"], v["withComments"]) for v in gh.calls] == [(True, True), (False, True)]
 
 
@@ -334,7 +336,7 @@ async def test_the_threads_step_stores_the_comments_with_the_threads() -> None:
     repo = FakeRepo()
     pr_row = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
 
-    await enrich_single_pr(gh, repo, pr_row)
+    await enrich_single_pr(gh, repo, pr_row, chatbot_username=CR)
 
     assert len(gh.calls) == 1
     kind, pr_id, threads, comments, edits = repo.writes[0]
@@ -369,7 +371,7 @@ async def test_comments_that_keep_failing_store_the_threads_alone(monkeypatch) -
     repo = FakeRepo()
     pr_row = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
 
-    await enrich_single_pr(gh, repo, pr_row)
+    await enrich_single_pr(gh, repo, pr_row, chatbot_username=CR)
 
     assert len(gh.calls) == enrich.THREADS_READ_ATTEMPTS + 1
     step, pr_id, threads, comments, edits = repo.writes[0]
@@ -392,7 +394,7 @@ async def test_threads_that_cannot_be_read_are_stored_as_far_as_read(monkeypatch
     repo = FakeRepo()
     pr_row = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
 
-    await enrich_single_pr(gh, repo, pr_row)
+    await enrich_single_pr(gh, repo, pr_row, chatbot_username=CR)
     assert len(gh.calls) == 2 * enrich.THREADS_READ_ATTEMPTS
     assert repo.writes[0] == ("threads", 5, [], None, None)
 
@@ -409,7 +411,7 @@ async def test_a_pull_request_that_is_not_there_stores_the_step_with_the_comment
     repo = FakeRepo()
     pr_row = {"id": 5, "repo_name": "owner/repo", "pr_number": 7, "enrichment_step": "reviews", "commits": "[]"}
 
-    await enrich_single_pr(gh, repo, pr_row)
+    await enrich_single_pr(gh, repo, pr_row, chatbot_username=CR)
 
     assert repo.writes[0] == ("threads", 5, [], None, None)
     assert [w[0] for w in repo.writes] == ["threads", "details", "done"]
@@ -426,7 +428,7 @@ async def test_thread_comments_carry_their_commit_and_the_comment_they_reply_to(
     thread["comments"]["nodes"] = [{**first, "originalCommit": {"oid": "a" * 40}, "replyTo": None}, reply]
     gh = FakeGraphQL({None: _page([thread])}, {None: _page([])})
 
-    threads, _, _ = await _fetch_review_threads(gh, "owner", "repo", 7)
+    threads, _, _ = await _fetch_review_threads(gh, "owner", "repo", 7, bot=CR)
 
     got = [(c["id"], c["original_commit_id"], c["in_reply_to_id"]) for c in threads[0]["comments"]]
     # A commit gone after a force-push comes back null and stays null.

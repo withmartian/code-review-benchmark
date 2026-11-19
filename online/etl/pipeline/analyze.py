@@ -444,14 +444,16 @@ def _exclude_unreviewed_actions(
 ) -> set[str]:
     """IDs of the actions left out of recall because no review of the bot read their code.
 
-    An unmatched action is left out when every line its fix changed was written, and edited after,
-    only in commits that no review of the bot covered before the fix, whatever the reason the bot
-    did not review them.
+    An action is left out when every line its fix changed was written, and edited after, only in
+    commits that no review of the bot covered before the fix, whatever the reason the bot did not
+    review them. This holds for a matched action too: no review read that code before the fix, so
+    the match comes from a review of the already-fixed code (or from outside a review) and does not
+    show the bot caught the issue, just as a miss there does not show it missed one.
     The reviews come from the bot's own record of each review's range, else from its completed
-    reviews and the last reviewed commit its notices name (``find_review_records``). A matched
-    action always counts: a match shows the bot saw the issue. Excluded actions are marked in place
-    with excluded_from_recall (the reason) and unreviewed_commits (the commits that wrote or
-    edited the lines).
+    reviews and the last reviewed commit its notices name (``find_review_records``). Excluded
+    actions are marked in place with excluded_from_recall (the reason) and unreviewed_commits (the
+    commits that wrote or edited the lines). ``_exclude_suggestions_of_excluded_actions`` then
+    leaves out of precision the suggestions whose every match is one of these actions.
 
     comments_read is False when the PR's conversation comments were never read (a PR enriched
     before they were, or one whose pull request was gone when they were read). For a bot that
@@ -481,7 +483,9 @@ def _exclude_unreviewed_actions(
     posts its reviews as comments, no action is left out.
 
     An unmatched action is left out too when its file is one the bot's reviews list as left out by
-    the repository's path filters (``path_filtered``), and none lists as read.
+    the repository's path filters (``path_filtered``), and none lists as read. A matched action in
+    such a file counts: that test reads which files a review listed, not when it read them, and a
+    match on the file is direct evidence the bot read it.
 
     A PR on which the bot completed no review never gets here: ``analyze_single_pr`` skips it
     before the LLM calls (``_no_review_skip_reason``).
@@ -495,8 +499,7 @@ def _exclude_unreviewed_actions(
     if later_comment_review(events, chatbot_username):
         return set()
     matched = {m.get("human_action_id") for m in matches if m.get("matched")}
-    unmatched = [a for a in actions if a["action_id"] not in matched]
-    if not post_commits or not unmatched:
+    if not post_commits or not actions:
         return set()
     first = sha_index(commits, post_commits[0].get("sha"))
     if first is None:
@@ -506,9 +509,11 @@ def _exclude_unreviewed_actions(
         return set()
     notices = notice_reasons(events, chatbot_username)
     excluded = set()
-    for a in unmatched:
+    for a in actions:
         origin, reason, written_in = fix_code_origin(a, commits, details_by_sha, records, first - 1)
         if origin != "unreviewed":
+            if a["action_id"] in matched:
+                continue
             # A file the repository's path filters keep out of the bot's reviews was never read. A
             # file renamed after the first review may have been read under its old name, which the
             # stored details do not keep, so a rename keeps the fix.
@@ -538,8 +543,37 @@ def _exclude_unreviewed_actions(
         why = f"last review before the fix read {commits[max(last, first - 1)]['sha'][:12]}; {reason}"
         if notices:
             why += f"; the bot posted {', '.join(notices)} notices"
+        if a["action_id"] in matched:
+            why += "; a suggestion of the bot matched it"
         a["excluded_from_recall"] = why
         a["unreviewed_commits"] = list(written_in)
+    return excluded
+
+
+def _exclude_suggestions_of_excluded_actions(
+    suggestions: list[dict], matches: list[dict], excluded_action_ids: set[str]
+) -> set[str]:
+    """IDs of the suggestions left out of precision: every action they matched is left out of recall.
+
+    A suggestion matched only to fixes of code no review of the bot read before the fix
+    (``_exclude_unreviewed_actions``) is neither a hit nor a miss: its match does not show the bot
+    caught the issue before the fix, and it was acted on, so it is no false alarm either. It leaves
+    precision, numerator and denominator. A suggestion that also matched an action still counted
+    (or a match naming no action, as precision has always counted it) stays a hit; an unmatched
+    suggestion stays a miss. Excluded suggestions are marked in place with excluded_from_precision.
+    """
+    if not excluded_action_ids:
+        return set()
+    hits: dict[str, set] = {}
+    for m in matches:
+        if m.get("matched"):
+            hits.setdefault(m.get("bot_issue_id"), set()).add(m.get("human_action_id"))
+    excluded = set()
+    for s in suggestions:
+        matched = hits.get(s["issue_id"])
+        if matched and matched <= excluded_action_ids:
+            excluded.add(s["issue_id"])
+            s["excluded_from_precision"] = f"it matched only fixes left out of recall ({', '.join(sorted(matched))})"
     return excluded
 
 
@@ -708,11 +742,14 @@ async def analyze_single_pr(
         edits_complete=edits_complete,
     )
 
+    # Suggestions whose every match is an action left out above leave precision.
+    excluded_suggestion_ids = _exclude_suggestions_of_excluded_actions(suggestions, matches, excluded_action_ids)
+
     # Compute metrics — only count IDs that actually exist in the extracted lists
-    # Recall leaves out the actions excluded above; precision counts every match as before.
-    suggestion_id_set = {s["issue_id"] for s in suggestions}
+    # Recall leaves out the actions excluded above, precision the suggestions excluded above.
+    suggestion_id_set = {s["issue_id"] for s in suggestions} - excluded_suggestion_ids
     action_id_set = {a["action_id"] for a in actions} - excluded_action_ids
-    total_suggestions = len(suggestions)
+    total_suggestions = sum(1 for s in suggestions if s["issue_id"] not in excluded_suggestion_ids)
     matched_suggestion_ids = {
         m["bot_issue_id"] for m in matches if m["matched"] and m.get("bot_issue_id") in suggestion_id_set
     }

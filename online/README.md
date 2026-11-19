@@ -27,6 +27,8 @@ The GitHub Search API (`reviewed-by:<bot> is:merged`) finds merged PRs where tra
 
 The GitHub API fetches the full PR context in a resumable 6-step process: commits, reviews, review threads (via GraphQL), and per-commit file diffs. PRs exceeding size limits (>50 commits or >2000 changed lines) are automatically skipped. Multi-token rotation handles rate limits.
 
+The review threads request also reads the PR's conversation comments and the edit history of the scored bot's comments, in the same GraphQL request. Bots rewrite one status comment in place, so an earlier review or limit notice is often visible only in that history. The analysis uses these to tell which commits the bot reviewed. The stored columns and how to re-enrich existing rows are in [`etl/README.md`](etl/README.md#review-coverage).
+
 ### 3. Assemble
 
 Raw API data is assembled into a unified chronological timeline: commits, review comments, issue comments, thread resolutions, and merge events. This gives the LLM the full story of what happened in the PR.
@@ -43,6 +45,8 @@ This is the core of the benchmark — a three-step LLM analysis:
 - **Precision** = matched suggestions / total suggestions ("what % of the bot's advice was actually useful?")
 - **Recall** = matched actions / total actions ("what % of real issues did the bot catch?")
 - **F-beta** = adjustable harmonic mean (F1 when beta=1)
+
+Recall counts only the fixes the bot had a chance to catch. A fix is left out of recall, matched or not, when every line it changed was written in commits no review of the bot read before the fix (pushes after a rate limit, say). A suggestion whose only matches are such fixes is left out of precision. An unmatched fix in a file the bot's reviews list as excluded by path filters is left out of recall too. This step reads the bot's own reviews, comments and commit diffs, with no LLM call. A PR where the bot completed no review, only notices, is skipped before the LLM calls and is scored for neither metric. See [the methodology](../methodology/full.md#online-benchmark).
 
 ### 5. Label (optional)
 

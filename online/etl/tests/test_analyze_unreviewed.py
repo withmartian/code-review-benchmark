@@ -123,27 +123,38 @@ def test_current_issue_comments_replace_timeline_bodies() -> None:
 
 
 class FakeLLM:
-    def __init__(self, matched_action: str = "A1", actions: list[dict] | None = None) -> None:
-        self.matched_action = matched_action
+    def __init__(
+        self,
+        matched_action: str = "A1",
+        actions: list[dict] | None = None,
+        matches: list[tuple[str, str | None]] | None = None,
+    ) -> None:
+        # matches: (suggestion, action) pairs, an action of None for an unmatched suggestion. The
+        # default is one suggestion S1 matched to matched_action.
+        self.matches = matches if matches is not None else [("S1", matched_action)]
         self.actions = actions or ACTIONS
         self.prompts: list[str] = []
 
     async def structured_completion(self, prompt: str, schema: type) -> object:
         self.prompts.append(prompt)
         if schema is BotSuggestionsResponse:
-            return schema(suggestions=[{"issue_id": "S1", "description": "Null check missing", "category": "bug"}])
+            ids = list(dict.fromkeys(sid for sid, _ in self.matches))
+            return schema(
+                suggestions=[{"issue_id": i, "description": "Null check missing", "category": "bug"} for i in ids]
+            )
         if schema is HumanActionsResponse:
             return schema(actions=[{**a, "category": "bug", "action_type": "fix"} for a in self.actions])
         if schema is MatchingResponse:
             return schema(
                 matches=[
                     {
-                        "bot_issue_id": "S1",
-                        "human_action_id": self.matched_action,
-                        "matched": True,
+                        "bot_issue_id": sid,
+                        "human_action_id": aid,
+                        "matched": aid is not None,
                         "confidence": 0.9,
                         "reasoning": "r",
                     }
+                    for sid, aid in self.matches
                 ]
             )
         raise AssertionError(schema)
@@ -257,14 +268,61 @@ async def test_pushes_skipped_by_configuration_or_policy_are_covered(skip: str) 
     )
 
 
-async def test_an_action_the_bot_matched_always_counts() -> None:
-    # The bot matched the exporter fix; the unmatched parser fix is in a commit it reviewed.
+async def test_a_matched_fix_of_code_no_review_read_before_the_fix_is_left_out_of_both_metrics() -> None:
+    # S1 matched the exporter fix, of code written in c after the rate limit: no review read it
+    # before the fix, so the match does not show the bot caught it. The fix leaves recall and S1,
+    # whose only match it is, leaves precision. S2 matched nothing and stays a miss; the parser fix,
+    # in code the bot reviewed, stays a miss of recall.
     repo = FakeRepo()
 
-    assert await analyze_single_pr(FakeLLM(matched_action="A2"), repo, _pr_row(), BOT, "model")
+    assert await analyze_single_pr(FakeLLM(matches=[("S1", "A2"), ("S2", None)]), repo, _pr_row(), BOT, "model")
 
-    assert repo.stored["recall"] == 0.5
-    assert all("excluded_from_recall" not in a for a in repo.stored["human_actions"])
+    actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
+    assert "excluded_from_recall" not in actions["A1"]
+    assert actions["A2"]["excluded_from_recall"].startswith(f"last review before the fix read {'b' * 12}; all 1 lines")
+    assert actions["A2"]["excluded_from_recall"].endswith("; a suggestion of the bot matched it")
+    assert actions["A2"]["unreviewed_commits"] == ["c" * 40]
+    suggestions = {s["issue_id"]: s for s in repo.stored["bot_suggestions"]}
+    assert suggestions["S1"]["excluded_from_precision"] == "it matched only fixes left out of recall (A2)"
+    assert "excluded_from_precision" not in suggestions["S2"]
+    assert repo.stored["recall"] == 0.0
+    assert repo.stored["precision"] == 0.0
+    assert (repo.stored["total_bot_comments"], repo.stored["matched_bot_comments"]) == (1, 0)
+
+    # With S1 alone the PR has no precision left, so it leaves the leaderboard.
+    assert await analyze_single_pr(FakeLLM(matched_action="A2"), repo, _pr_row(), BOT, "model")
+    assert repo.stored["precision"] is None
+    assert repo.stored["recall"] == 0.0
+
+
+async def test_a_suggestion_that_also_matched_a_counted_fix_stays_a_hit() -> None:
+    # S1 matched both the parser fix (reviewed code, counted) and the exporter fix (left out): it
+    # still matched a counted fix, so it stays a hit. S2 matched only the exporter fix and leaves
+    # precision.
+    repo = FakeRepo()
+    llm = FakeLLM(matches=[("S1", "A1"), ("S1", "A2"), ("S2", "A2")])
+
+    assert await analyze_single_pr(llm, repo, _pr_row(), BOT, "model")
+
+    suggestions = {s["issue_id"]: s for s in repo.stored["bot_suggestions"]}
+    assert "excluded_from_precision" not in suggestions["S1"]
+    assert "excluded_from_precision" in suggestions["S2"]
+    assert (repo.stored["total_bot_comments"], repo.stored["matched_bot_comments"]) == (1, 1)
+    assert repo.stored["precision"] == 1.0
+    assert repo.stored["recall"] == 1.0
+    assert [a["action_id"] for a in repo.stored["human_actions"] if "excluded_from_recall" in a] == ["A2"]
+
+
+async def test_a_matched_fix_of_reviewed_code_counts() -> None:
+    # S1 matched the parser fix, whose line the bot's first review read: a hit, in both metrics.
+    repo = FakeRepo()
+
+    assert await analyze_single_pr(FakeLLM(matches=[("S1", "A1"), ("S2", None)]), repo, _pr_row(), BOT, "model")
+
+    assert "excluded_from_recall" not in {a["action_id"]: a for a in repo.stored["human_actions"]}["A1"]
+    assert all("excluded_from_precision" not in s for s in repo.stored["bot_suggestions"])
+    assert repo.stored["precision"] == 0.5
+    assert repo.stored["recall"] == 1.0
 
 
 async def test_a_review_that_posted_nothing_counts_through_the_summary_record() -> None:
@@ -861,6 +919,17 @@ async def test_a_fix_in_a_file_the_reviews_left_out_by_path_filters_is_left_out(
     row["assembled"] = json.dumps(assembled)
     assert await analyze_single_pr(llm, repo, row, BOT, "model")
     assert repo.stored["recall"] == 0.5
+
+    # A matched fix in a path-filtered file counts: the filter test reads which files a review
+    # listed, not when, and the match on the file shows the bot read it. The unmatched parser fix
+    # is left out now.
+    assembled["events"][2]["data"]["body"] = assembled["events"][2]["data"]["body"].replace(f"\n{read}", "")
+    row["assembled"] = json.dumps(assembled)
+    assert await analyze_single_pr(FakeLLM(matched_action="A2", actions=llm.actions), repo, row, BOT, "model")
+    actions = {a["action_id"]: a for a in repo.stored["human_actions"]}
+    assert "excluded_from_recall" not in actions["A2"]
+    assert actions["A1"]["excluded_from_recall"].endswith("lists it as ignored due to path filters")
+    assert (repo.stored["recall"], repo.stored["precision"]) == (1.0, 1.0)
 
     # A file renamed to parser.py after the first review may have been read under its old name,
     # which the stored details do not keep: the filter listing the new name does not leave it out.

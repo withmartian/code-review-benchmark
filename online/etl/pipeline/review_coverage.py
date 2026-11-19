@@ -5,7 +5,9 @@ against the bot's recall. A fix of code that no review of the bot read before th
 the bot was never given the chance to catch, whatever the reason it did not review those pushes:
 a usage limit, a pause, a failed review, a skip by the bot's own policy (CodeRabbit's free OSS
 plan skips repositories with too few stars after a manual review), automatic incremental reviews
-turned off, or a fix pushed before the next review ran.
+turned off, or a fix pushed before the next review ran. A match with such a fix shows no catch
+either, since no review read that code before it was fixed. Such fixes leave recall,
+matched or not, and a suggestion whose every match is one of them leaves precision.
 
 The commits a bot reviewed come from the bot's own record where it keeps one
 (``RECORD_PATTERNS``): CodeRabbit states each review's range ("Reviewing files that changed from

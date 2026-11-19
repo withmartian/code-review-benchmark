@@ -123,6 +123,12 @@ Each day, we discover merged PRs where tracked bots left reviews, using the GitH
 
 For each PR, we fetch the full context — commits, reviews, threaded discussions, and per-commit diffs — and assemble a unified chronological timeline. An LLM then performs a three-step analysis: extract what the bot suggested, extract what the developer actually changed after the review, and judge which suggestions correspond to real fixes.
 
+Precision and recall are computed per PR in `analyze_single_pr` (`online/etl/pipeline/analyze.py`). The fixes are the changes the LLM extracts from the commits after the bot's first review. Recall is the share of those fixes that a suggestion of the bot matched; precision is the share of the bot's suggestions that matched a fix. The leaderboard averages each over the PRs that have both.
+
+A fix counts toward recall only if the bot had a chance to review the code it changed. A fix is left out of recall, matched or not, when every line it changed was written in commits that no review of the bot read before the fix (for example, pushes after a rate limit, or a fix pushed before the next review ran). A review of the fixed code does not count, since it never saw the code the fix removed. So a match with such a fix does not show the bot caught the issue, just as a miss there does not show it missed one. For the same reason, a suggestion whose only matches are such fixes is left out of precision, from both the count and the total; a suggestion that also matched a fix that still counts stays a hit. An unmatched fix in a file the bot's reviews list as excluded by the repository's path filters is left out of recall too. Which commits the bot reviewed comes from its own record of each review's range where it keeps one, else from its completed reviews and the notices it posts. The test is deterministic, with no LLM call, and it leaves nothing out where the bot's reviews cannot all be placed (its comments were never read, or a force-push replaced the commits it reviewed, for example).
+
+A PR on which the bot completed no review at all (it posted only a rate-limit, pause or skip notice) is skipped before the LLM analysis, like a PR with no commits. It has no analysis row, so it counts toward neither precision nor recall, and its skip reason names the notices.
+
 We compute the following metrics for each tool:
 
 *Performance metrics:*

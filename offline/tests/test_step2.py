@@ -121,3 +121,62 @@ class SimpleNamespace:
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
+
+def test_get_comment_text_for_review_uses_parsed_file(tmp_path, monkeypatch):
+    """When a parsed file exists, use rendered_markdown from it."""
+    monkeypatch.setattr(step2, "RESULTS_DIR", tmp_path)
+
+    parsed = {
+        "config": {"tool": "coderabbit"},
+        "reviews": {
+            "https://example/pr": {
+                "tool": "coderabbit",
+                "review_comments": [],
+                "excluded_comments": [],
+                "rendered_markdown": "## Inline comment — a.py:1 [critical]\n\nClean issue text",
+            }
+        },
+    }
+    parsed_file = tmp_path / "parsed_coderabbit.json"
+    parsed_file.write_text(json.dumps(parsed))
+
+    result = step2.get_comment_text_for_review(
+        "https://example/pr",
+        "coderabbit",
+        [{"body": "Raw noisy comment", "path": None, "line": None}],
+    )
+    assert result == "## Inline comment — a.py:1 [critical]\n\nClean issue text"
+
+
+def test_get_comment_text_for_review_fallback(tmp_path, monkeypatch):
+    """When no parsed file exists, fall back to raw comments."""
+    monkeypatch.setattr(step2, "RESULTS_DIR", tmp_path)
+
+    result = step2.get_comment_text_for_review(
+        "https://example/pr",
+        "unknown-tool",
+        [{"body": "Raw comment A"}, {"body": "Raw comment B"}],
+    )
+    assert "Raw comment A" in result
+    assert "Raw comment B" in result
+    assert "---" in result
+
+
+def test_get_comment_text_for_review_missing_pr(tmp_path, monkeypatch):
+    """When parsed file exists but PR not in it, fall back to raw comments."""
+    monkeypatch.setattr(step2, "RESULTS_DIR", tmp_path)
+
+    parsed = {
+        "config": {"tool": "coderabbit"},
+        "reviews": {},
+    }
+    parsed_file = tmp_path / "parsed_coderabbit.json"
+    parsed_file.write_text(json.dumps(parsed))
+
+    result = step2.get_comment_text_for_review(
+        "https://example/missing-pr",
+        "coderabbit",
+        [{"body": "Fallback text"}],
+    )
+    assert "Fallback text" in result

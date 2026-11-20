@@ -66,6 +66,61 @@ def test_evaluate_review_matches_and_metrics(monkeypatch):
     assert result["true_positives"][0]["golden_comment"] == "Issue A"
 
 
+def _run_with_confidences(monkeypatch, confidences, candidates, dedup_groups=None):
+    """Judge every candidate listed in `confidences` as a match for the single golden comment."""
+
+    async def fake_process(tasks):
+        return [await task for task in tasks]
+
+    monkeypatch.setattr(step3, "process_batch", fake_process)
+
+    class DummyJudge:
+        async def match_comment(self, _golden_comment, candidate):
+            if candidate in confidences:
+                return {"match": True, "confidence": confidences[candidate], "reasoning": "same"}
+            return {"match": False, "confidence": 0.1}
+
+    return asyncio.run(step3.evaluate_review(DummyJudge(), [{"comment": "Issue A"}], candidates, dedup_groups))
+
+
+@pytest.mark.parametrize("candidates", [["vague", "precise"], ["precise", "vague"]])
+def test_evaluate_review_fp_count_independent_of_candidate_order(monkeypatch, candidates):
+    """Two candidates matching the same golden: neither is a false positive, in any order."""
+    result = _run_with_confidences(monkeypatch, {"precise": 0.9, "vague": 0.7}, [*candidates, "unrelated"])
+
+    assert result["tp"] == 1
+    assert result["true_positives"][0]["matched_candidate"] == "precise"
+    assert result["false_positives"] == [{"candidate": "unrelated"}]
+    assert result["fp"] == 1
+
+
+def test_evaluate_review_equal_confidence_matches_are_not_false_positives(monkeypatch):
+    result = _run_with_confidences(monkeypatch, {"first": 0.9, "second": 0.9}, ["first", "second"])
+
+    assert result["tp"] == 1
+    assert result["true_positives"][0]["matched_candidate"] == "first"
+    assert result["fp"] == 0
+
+
+def test_evaluate_review_zero_confidence_match_counts_as_true_positive(monkeypatch):
+    result = _run_with_confidences(monkeypatch, {"only": 0}, ["only"])
+
+    assert (result["tp"], result["fp"], result["fn"]) == (1, 0, 0)
+
+
+def test_evaluate_review_siblings_of_lower_confidence_match_are_not_false_positives(monkeypatch):
+    """The dedup sibling of a matched candidate is covered even when that match is not the best one."""
+    result = _run_with_confidences(
+        monkeypatch,
+        {"precise": 0.9, "vague": 0.7},
+        ["precise", "vague", "vague restated"],
+        dedup_groups=[[0], [1, 2]],
+    )
+
+    assert result["tp"] == 1
+    assert result["fp"] == 0
+
+
 def test_evaluate_review_no_candidates():
     class DummyJudge:
         async def match_comment(self, _golden_comment, _candidate):

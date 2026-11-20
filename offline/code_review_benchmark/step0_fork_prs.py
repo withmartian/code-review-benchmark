@@ -29,6 +29,7 @@ import sys
 import tempfile
 import time
 
+from dotenv import load_dotenv
 import requests
 
 
@@ -268,6 +269,8 @@ def _load_pr_urls_from_file(path: str) -> list[str]:
 
 def main():
     """CLI entrypoint: process a single PR or a batch file."""
+    load_dotenv(".env", verbose=True)
+
     parser = argparse.ArgumentParser(description="Clone PR(s) to your org for AI review")
     parser.add_argument("pr_url", nargs="?", help="GitHub PR URL (for single run)")
     parser.add_argument("--file", help="Path to golden comments JSON to batch process")

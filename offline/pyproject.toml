@@ -9,6 +9,9 @@ dependencies = [
     "matplotlib>=3.8.0",
     "requests>=2.32.5",
     "tqdm>=4.66.0",
+    "pytest>=9.0.3",
+    "ruff>=0.14.11",
+    "python-dotenv>=1.2.2",
 ]
 
 [dependency-groups]

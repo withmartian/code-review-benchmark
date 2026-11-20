@@ -71,13 +71,13 @@ def test_inputs_the_bot_lists_are_skipped() -> None:
     )
 
 
-def test_tool_output_quoted_inside_a_comment_is_not_a_finding() -> None:
+def test_material_the_bot_quotes_as_context_is_not_a_finding() -> None:
     rules = _rules()
 
     assert (
-        "Tool output quoted as supporting context inside a comment, such as a linter or static-analysis log "
-        "next to the bot's own text, is not its own finding either: only problems the bot states in its own "
-        "words are findings." in rules
+        "Only problems the bot states in its own words are findings: material the bot quotes or reproduces "
+        "as context, such as an excerpt from a log, documentation or another comment, is not a separate "
+        "finding, but a problem the bot states about it is." in rules
     )
 
 
@@ -109,7 +109,9 @@ def test_the_draft_rules_for_other_kinds_are_not_in_this_prompt() -> None:
     counts as a finding, and extract-v4 drops it. The unreleased extract-v4 still excluded checks of
     the pull request's title or description; on the coverage-check PRs that sentence also kept most
     coverage rows out (they sit in the same check table), so extract-v5 drops it with its two
-    follow-on sentences. Re-adding one is a deliberate change: update this test with it."""
+    follow-on sentences. The unreleased extract-v5 named linter and static-analysis logs as the quoted
+    material that is not a finding; only one bot quotes them, so extract-v6 states the rule for any
+    quoted material. Re-adding one is a deliberate change: update this test with it."""
     rules = _rules()
 
     for dropped in (
@@ -131,6 +133,7 @@ def test_the_draft_rules_for_other_kinds_are_not_in_this_prompt() -> None:
         "title, description, or linked issue",
         "These rules depend on what a piece of text is, not on where it sits.",
         "(this covers the confirmation, not the finding it refers to)",
+        "Tool output quoted as supporting context",
     ):
         assert dropped not in rules, dropped
 
@@ -245,11 +248,37 @@ PINNED_INPUTS_BY_VERSION = {
             "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
         },
     },
-    # the first released version: extract-v4 without the title/description rule and its follow-ons
+    # extract-v4 without the title/description rule and its follow-ons; never released (it named
+    # linter and static-analysis logs in the quoted-material sentence)
     "extract-v5": {
         "previous": "85440c212816dda5eb9ff14a38f7cc8f87cd7ed8961b7e892f5c237752945175",
         "inputs": {
             "EXTRACT_BOT_SUGGESTIONS": "c960118a8ffad90481a4ba19eb582548e7d3479375c1e799f8e8f9c09f5a4e64",
+            "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
+            "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
+            "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",
+            "pipeline.analyze._split_commits_at_hash": "a35eec4a52654a2808becab0b0d3c4cf3000eb7156fecf35dfb02f656b2c5915",
+            "pipeline.analyze._build_details_by_sha": "7ee4ea52b9b58f9aa97f4e4ba2344ff6528e4621d02b1c44612686cd317f1103",
+            "pipeline.analyze._format_commits_with_diffs": "4c24815cc71086530723fa6eb6a4346896622098e5c08d0f19358646ae635f9b",
+            "pipeline.analyze._clean_bot_comment_body": "4d586e1efbdb23031f39f2d91a06f4d211b427bd4701ecb49b9cade11a46df87",
+            "pipeline.analyze._format_bot_comments": "246149b41308c2626d38ea943fd6caed474dd4ce1981ab0a1cc7e64eabc770a2",
+            "pipeline.analyze._format_post_review_activity": "aed6a6644974acb60a5b40e05d6075a6847c3e26ad331d5f2b7787727332ca38",
+            "pipeline.analyze._format_suggestions": "ddeb73e2e299f01837ab9fa5a445cb0c0284f9c464be3c7cc7b9ce35fc4d795f",
+            "pipeline.analyze._format_actions": "29532725a032aed8001f305444060bad0bae12b4833fc144d8462443a2a6f798",
+            "pipeline.analyze.analyze_single_pr": "8f0cfd7d38d9e8318ccb8c89c9034a8ddf72e5fb54e15a4f09a326ea94095a8c",
+            "pipeline.analyze._HTML_COMMENT_RE": "39d3d18fd21298dd2ea96526389f29db50575fe2b20f99d3306ddf6b269e79fa",
+            "pipeline.actors": "d2cf21925cedd789b7ec2cdb6b93a32b7b3062dec265de1cd8f9af96b874b3cd",
+            "llm.client.LLMClient.structured_completion": "8e334213d7602d491ff14ac64efdc147555210d422edd38022d8a41bd8fecf2a",
+            "llm.schemas.BotSuggestionsResponse": "5969e73467cf574786325ea59d8470b0d6e817c82b7d02ce206d8e612e48b110",
+            "llm.schemas.HumanActionsResponse": "34ad210bbaa719035d8e38a22d73f22e316e3efcc59b53133e946f8a175d880c",
+            "llm.schemas.MatchingResponse": "05113b67df3ffd830cf4fbaa3daa429749eba8820e30be6928a9b575a2016eea",
+        },
+    },
+    # the first released version: extract-v5 with a generic quoted-material sentence (no tool named)
+    "extract-v6": {
+        "previous": "79a6cbfba3066dd28bbbf4068b3830553130d75a2ce6f65726db83ae87dd98b1",
+        "inputs": {
+            "EXTRACT_BOT_SUGGESTIONS": "98380463caf03cb2c2ee3681cbdcb59f2d2ef3e8506454a5bde45416a2c0c08e",
             "EXTRACT_HUMAN_ACTIONS": "a205a85d059f54091b2f16ba6ac768f2ec5dab85dac54ac84656ab54241f755f",
             "JUDGE_MATCHING": "b110fde45775b98940a77ddf699fcc312f32fa4eab0588b1f9da489879f376f8",
             "pipeline.analyze._find_bot_review_commit": "0624307b300584f18f066fd60a92b4fd8302fca5aeb7618b5d8e210612447767",

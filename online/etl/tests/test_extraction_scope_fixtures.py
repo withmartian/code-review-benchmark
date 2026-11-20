@@ -48,7 +48,7 @@ RULE_FOR_KIND = {
     "dismissed_finding": _ANY_FINDING,
     "product_tip": None,
     "tool_context": "Do not extract findings from these inputs",
-    "nested_tool_output": "Tool output quoted as supporting context inside a comment",
+    "nested_tool_output": "material the bot quotes or reproduces as context",
     "inline": "Top-level inline review comments generally contain substantive findings",
     "body_finding": "review bodies and issue comments may contain findings or summaries",
     "summary_finding": "pure summaries without a concrete finding",

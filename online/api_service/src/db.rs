@@ -134,6 +134,7 @@ fn build_known_bots(chatbot_usernames: &[String]) -> HashSet<String> {
 /// Data stays separate in the DB; merging is presentation-only.
 const MERGE_INTO: &[(&str, &str)] = &[
     ("qodo-free-for-open-source-projects[bot]", "qodo-code-review[bot]"),
+    ("tenki-reviewer[bot]", "luxor-code-review[bot]"),
 ];
 
 fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_usernames: &HashSet<String>) -> anyhow::Result<Snapshot> {

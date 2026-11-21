@@ -1,0 +1,36 @@
+{
+ "source": "https://github.com/thpoll83/PolyKybdHost/pull/367",
+ "bot_username": "greptile-apps[bot]",
+ "events": [
+  {
+   "actor": "greptile-apps[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-12T21:18:50Z",
+   "data": {
+    "path": "tests/gui/hid_fw_up_dialog_test.py",
+    "line": 15,
+    "body": "**Import breaks the test rule**\n\nThe new `from unittest import mock` sits beside `import unittest`. The repository's test guide explicitly requires `import unittest.mock as mock` for this pattern because it triggers CodeQL alerts. Replace the new import with the required form before merging.\n\n```suggestion\nimport unittest.mock as mock\n```\n\n**Context Used:** .claude/rules/tests.md ([source](https://github.com/thpoll83/polykybdhost/blob/main/.claude/rules/tests.md))\n\nNote: If this suggestion doesn't match your team's coding style, reply to this and let me know. I'll remember it for next time!\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "tool_context",
+   "quote": "**Context Used:** .claude/rules/tests.md",
+   "pattern": "(?i)context used"
+  },
+  {
+   "kind": "product_tip",
+   "quote": "If this suggestion doesn't match your team's coding style, reply to this and let me know.",
+   "pattern": "(?i)coding style|let me know|remember it for next time"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "located_rule_violation",
+   "path": "tests/gui/hid_fw_up_dialog_test.py",
+   "quote": "The repository's test guide explicitly requires `import unittest.mock as mock` for this pattern",
+   "pattern": "(?i)unittest\\.mock|from unittest import mock|CodeQL"
+  }
+ ]
+}

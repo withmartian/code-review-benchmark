@@ -1,0 +1,106 @@
+{
+ "source": "https://github.com/Arasz/ai-raccoon/pull/925",
+ "bot_username": "claude[bot]",
+ "events": [
+  {
+   "actor": "claude[bot]",
+   "event_type": "review",
+   "timestamp": "2026-11-06T17:09:32Z",
+   "data": {
+    "body": "Reviewed f472c138439faa1b288664850749039de831e0a0\n\nThe PR adds a plan doc and a test fixture, with no production code. I found no BLOCKING issues.\n\nI checked the plan's fixture claims against the committed JSON:\n- The SHA-256 matches the plan's digest: 290A36C0…5A11.\n- There are 9 entities and 13 relationships, and the statistics block agrees.\n- There are 4 decisions, 5 other entities, and 10 relationships that are not mapped to edges (CAUSED 1, reviewed_by 1, belongs_to 4, made_by 4).\n- The mapped relationship types depends_on, supports and contradicts give 3 edges.\n- That makes 22 import rows (4 decisions plus 18 retained), as the plan says.\n\nNITs, none blocking:\n- The `feat:` title is misleading for a docs-and-fixture PR. A `docs:` prefix would match what merges, and the version bump and changelog are correctly deferred to step S9.\n- The plan's H1–H5 hypotheses are still unverified. Tests T15 and S8 are meant to settle them, so record each outcome in implementation-evidence.md when it is known.",
+    "state": "DISMISSED"
+   }
+  },
+  {
+   "actor": "claude[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-11-06T17:25:03Z",
+   "data": {
+    "path": "docs/plans/decision-graph/api.md",
+    "line": 73,
+    "body": "NIT: the \"Deferred to #924\" note above (line 71) still says \"no real Semantica exporter fixture exists yet\", but this PR adds the 0.7.0 `export_graph` fixture. Reword it to say only the normalized shape lacks a fixture."
+   }
+  },
+  {
+   "actor": "claude[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-11-06T17:25:05Z",
+   "data": {
+    "path": "docs/plans/decision-graph/semantica-import.md",
+    "line": 52,
+    "body": "NIT: the numbered lists skip items. Corrections run 1, 2, 4, 6, 7, the source-parse list skips 2, 3 and 6, apply flow skips 5, and the steps table starts at S2 but refers to S1 and S9. The plan also says the amendments override earlier text, so it contradicts itself by design. Renumber, or fold the amendments into the body before this becomes the implementation reference."
+   }
+  },
+  {
+   "actor": "claude[bot]",
+   "event_type": "review",
+   "timestamp": "2026-11-06T17:27:07Z",
+   "data": {
+    "body": "Reviewed 9e08587f35d7a8a120fd7265021cfd9bdaa0c6a5. No BLOCKING findings.\n\nThe PR now carries a little production code besides the plan and the fixture. It adds two error kinds (ImportTooLarge, ImportBlocked), the import record types and limits in DecisionImports.cs, and DecisionState.Importable. Importable has a theory test over all four mappable statuses and the one that is not (Superseded). DecisionErrorKinds.All reads the constants by reflection, so the new kinds join it automatically. I read the fixture JSON: it holds only sample data, with no secrets, tokens or local paths.\n\nWhat I did not check: my grep searches were blocked by the memory-first hook. I did not confirm that the docs list the two new error kinds, or that the plan's claims match the source.\n\nNITs, not blocking:\n- DecisionImportCommand holds Source and Mapping as byte[] in a record. Record equality compares them by reference, so two commands with identical bytes are not equal. Avoid comparing commands by equality, or hold ReadOnlyMemory<byte> instead.\n- Importable only has its own unit test. Add a test of the importer's use of it when the importer lands.\n- Per the earlier reviews, the PR title says feat: but the merge so far is docs, types and a fixture. VERSION and the changelog are deferred to S9, which is fine, but make sure S9 is not dropped.",
+    "state": "DISMISSED"
+   }
+  },
+  {
+   "actor": "claude[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-11-06T17:31:48Z",
+   "data": {
+    "path": "tests/AiRaccoon.Tests/Unit/Decisions/SemanticaParsingTests.cs",
+    "line": 60,
+    "body": "NIT: the \"escaped\" row is byte-for-byte the same input as \"inner data\" (line 57), so it adds no coverage. Presumably it was meant to use unicode-escaped duplicate keys (e.g. `\"entities\"` twice), which is the case that would show whether the duplicate check compares decoded names. Make it escaped or drop it."
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "change_overview",
+   "quote": "The PR adds a plan doc and a test fixture, with no production code.",
+   "pattern": null,
+   "not_asserted": "overview sentence: no text pattern separates it from findings about the same code"
+  },
+  {
+   "kind": "run_status",
+   "quote": "my grep searches were blocked by the memory-first hook",
+   "pattern": "(?i)memory-first hook|searches were blocked"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "body_finding",
+   "path": null,
+   "quote": "DecisionImportCommand holds Source and Mapping as byte[] in a record.",
+   "pattern": "(?i)byte\\[\\]|record equality|ReadOnlyMemory|by reference"
+  },
+  {
+   "kind": "body_finding",
+   "path": null,
+   "quote": "Importable only has its own unit test.",
+   "pattern": "(?i)importer'?s use|Importable"
+  },
+  {
+   "kind": "inline",
+   "path": "docs/plans/decision-graph/api.md",
+   "quote": "still says \"no real Semantica exporter fixture exists yet\"",
+   "pattern": "(?i)Deferred to #924|exporter fixture|stale"
+  },
+  {
+   "kind": "inline",
+   "path": "docs/plans/decision-graph/semantica-import.md",
+   "quote": "the numbered lists skip items.",
+   "pattern": "(?i)skip(s|ped)? (items|numbers)|renumber|numbering"
+  },
+  {
+   "kind": "inline",
+   "path": "tests/AiRaccoon.Tests/Unit/Decisions/SemanticaParsingTests.cs",
+   "quote": "the \"escaped\" row is byte-for-byte the same input as \"inner data\"",
+   "pattern": "(?i)escaped|inner data|duplicate.key"
+  }
+ ],
+ "neutral": [
+  {
+   "kind": "body_finding",
+   "quote": "The plan's H1–H5 hypotheses are still unverified.",
+   "reason": "a request to record test outcomes in a plan document once later tests have run: a to-do for later work rather than a problem in this PR, so it is labelled neither a finding nor a non-finding"
+  }
+ ]
+}

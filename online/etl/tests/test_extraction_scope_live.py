@@ -1,0 +1,107 @@
+"""Opt-in model check: run EXTRACT_BOT_SUGGESTIONS on each labelled fixture and check the labels.
+
+Makes one paid LLM call per fixture, so it is skipped unless all of these are set:
+  RUN_EXTRACTION_SCOPE_EVAL=1, MARTIAN_API_KEY, MARTIAN_MODEL_NAME (MARTIAN_BASE_URL optional)
+
+    RUN_EXTRACTION_SCOPE_EVAL=1 uv run pytest tests/test_extraction_scope_live.py -v
+
+A labelled finding passes when some extracted suggestion matches its ``pattern`` (and its file, when
+the label names one). A labelled non-finding passes when no extracted suggestion matches its
+``pattern``. Labels with a ``not_asserted`` field are not checked here; the field says why. Nor are
+non-findings of a kind the prompt states no rule for (NO_RULE_KINDS).
+One draw at temperature 1.0 can flip a borderline item, so a single failure is a prompt to look,
+not proof of a regression.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import re
+
+import pytest
+
+from llm.client import LLMClient
+from llm.prompts import EXTRACT_BOT_SUGGESTIONS
+from llm.schemas import BotSuggestionsResponse
+from pipeline.analyze import _format_bot_comments
+
+FIXTURES = sorted((Path(__file__).parent / "fixtures" / "extraction_scope").glob("*.json"))
+
+pytestmark = pytest.mark.skipif(
+    not (
+        os.environ.get("RUN_EXTRACTION_SCOPE_EVAL") == "1"
+        and os.environ.get("MARTIAN_API_KEY")
+        and os.environ.get("MARTIAN_MODEL_NAME")
+    ),
+    reason="opt-in: set RUN_EXTRACTION_SCOPE_EVAL=1, MARTIAN_API_KEY and MARTIAN_MODEL_NAME",
+)
+
+
+def _same_file(a: str | None, b: str) -> bool:
+    a = (a or "").removeprefix("./")
+    return bool(a) and (a == b or a.endswith("/" + b) or b.endswith("/" + a))
+
+
+# Non-finding kinds EXTRACT_BOT_SUGGESTIONS states no rule for (extract-v3 dropped extract-v2's rules
+# for them): extracting one is not a prompt violation, so they are checked only with include_unasserted.
+NO_RULE_KINDS = frozenset({"rating", "control", "generation_offer", "product_tip", "linked_issue_check"})
+
+
+def _checked(label: dict, include_unasserted: bool) -> bool:
+    return bool(label.get("pattern")) and (
+        include_unasserted or not (label.get("not_asserted") or label["kind"] in NO_RULE_KINDS)
+    )
+
+
+def check_labels(fx: dict, suggestions: list[dict], include_unasserted: bool = False) -> list[str]:
+    """Return one message per label the suggestions violate.
+
+    Labels with a ``not_asserted`` reason are skipped unless include_unasserted is set.
+    """
+    problems = []
+    for label in fx["findings"]:
+        if not _checked(label, include_unasserted):
+            continue
+        hit = any(
+            re.search(label["pattern"], s.get("description") or "")
+            and (label.get("path") is None or _same_file(s.get("file_path"), label["path"]))
+            for s in suggestions
+        )
+        if not hit:
+            problems.append(f"finding not extracted ({label['kind']}): {label['quote']}")
+    for label in fx["non_findings"]:
+        if not _checked(label, include_unasserted):
+            continue
+        for s in suggestions:
+            if re.search(label["pattern"], s.get("description") or ""):
+                problems.append(f"non-finding extracted ({label['kind']}): {s.get('description')}")
+                break
+    return problems
+
+
+@pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.stem)
+async def test_model_keeps_labelled_findings_and_skips_labelled_non_findings(path: Path) -> None:
+    fx = json.loads(path.read_text())
+    llm = LLMClient(
+        base_url=os.environ.get("MARTIAN_BASE_URL") or None,
+        api_key=os.environ["MARTIAN_API_KEY"],
+        model_name=os.environ["MARTIAN_MODEL_NAME"],
+    )
+    prompt = EXTRACT_BOT_SUGGESTIONS.format(
+        bot_username=fx["bot_username"],
+        pr_title="",
+        pr_author="unknown",
+        repo_name="/".join(fx["source"].split("/")[3:5]),
+        bot_comments=_format_bot_comments(fx["events"], fx["bot_username"]),
+        commits_under_review="(commit diffs not included in this fixture)",
+    )
+    try:
+        resp = await llm.structured_completion(prompt, BotSuggestionsResponse)
+    finally:
+        await llm.close()
+    suggestions = [s.model_dump() for s in resp.suggestions]
+
+    problems = check_labels(fx, suggestions)
+    assert problems == [], json.dumps({"problems": problems, "suggestions": suggestions}, indent=1)

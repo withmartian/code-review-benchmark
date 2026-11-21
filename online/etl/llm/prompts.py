@@ -1,5 +1,12 @@
 """Prompt templates for the LLM analysis pipeline."""
 
+# Stamped into llm_analyses.model_name as "<model>+<version>", so analyses scored with different
+# prompts can be told apart (analyses made before the stamp carry none). Bump it whenever any input
+# pipeline/prompt_pins.py lists changes: a step prompt, the code that splits the commits and renders
+# step input, the actor matching, analyze_single_pr's metric arithmetic, a response schema or the LLM
+# call. tests/test_prompts.py pins their sha256 per version.
+EXTRACTION_PROMPT_VERSION = "extract-v6"
+
 EXTRACT_BOT_SUGGESTIONS = """You are analyzing a pull request to extract concrete code-review findings flagged by a code review bot.
 
 The bot's username is: {bot_username}
@@ -32,6 +39,17 @@ concrete finding, and "looks good" / "no issues found" comments. Also skip follo
 that merely confirm a fix, acknowledge a clarification, say a parent comment was wrong, too
 broad, pre-existing, already addressed, or out of scope, unless that same comment introduces a
 new distinct code issue.
+
+Also skip inputs the bot lists as having used for its review, such as linter or static-analysis
+output, code guidelines, or configured review instructions (for example a section where the bot
+lists the inputs or context it used). Do not extract findings from these inputs, even when a listed
+tool result names a file and line of the changed code: the bot did not raise it as its own comment.
+Only problems the bot states in its own words are findings: material the bot quotes or reproduces
+as context, such as an excerpt from a log, documentation or another comment, is not a separate
+finding, but a problem the bot states about it is. A tool result the bot posts as its own comment at a location in the changed code
+is a finding, and so is a linter or static-analysis result the bot writes up as a problem in its own
+comment text. A concrete finding the bot states in its own words in a review-body section rather
+than as an inline comment, or inside a collapsed or nested section, is still a finding: extract it.
 
 PR Title: {pr_title}
 PR Author: {pr_author}

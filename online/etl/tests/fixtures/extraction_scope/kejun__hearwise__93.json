@@ -1,0 +1,63 @@
+{
+ "source": "https://github.com/kejun/hearwise/pull/93",
+ "bot_username": "chatgpt-codex-connector[bot]",
+ "events": [
+  {
+   "actor": "chatgpt-codex-connector[bot]",
+   "event_type": "issue_comment",
+   "timestamp": "2026-10-14T21:39:17Z",
+   "data": {
+    "body": "## Codex Review Summary\n\nThis comment shows the latest Codex review activity on this pull request.\n\n| Review | Status | Commit | Review trigger |\n| --- | --- | --- | --- |\n| 📝 **Code Review** | ✅ **Completed** <relative-time datetime=\"2026-10-14T21:43:30.413188Z\">2026-10-14T21:43:30.413188Z</relative-time> | `a06436b` | Draft marked ready |\n\n\n<details> <summary>ℹ️ About Codex in GitHub</summary>\n<br/>\n\nYour team has set up Codex to review pull requests in this repo. Reviews are triggered when you\n- Open a pull request for review\n- Mark a draft as ready\n- Comment \"@codex review\" or \"@codex security review\".\n\nCodex reacts with 👀 while any review is running, comments if it has suggestions, and reacts with 👍 once all reviews finish with no findings.\n\n</details>\n"
+   }
+  },
+  {
+   "actor": "chatgpt-codex-connector[bot]",
+   "event_type": "review",
+   "timestamp": "2026-10-14T21:43:28Z",
+   "data": {
+    "state": "commented",
+    "body": "### 💡 Codex Review\n\nHere are some automated review suggestions for this pull request.\n\n**Reviewed commit:** `a06436b427`\n    \n\n<details> <summary>ℹ️ About Codex in GitHub</summary>\n<br/>\n\nYour team has set up Codex to review pull requests in this repo. Reviews are triggered when you\n- Open a pull request for review\n- Mark a draft as ready\n- Comment \"@codex review\".\n\nIf Codex has suggestions, it will comment; otherwise it will react with 👍.\n\n\nCodex can also answer questions or update the PR. Try commenting \"@codex address that feedback\".\n            \n</details>\n"
+   }
+  },
+  {
+   "actor": "chatgpt-codex-connector[bot]",
+   "event_type": "review_comment",
+   "timestamp": "2026-10-14T21:43:28Z",
+   "data": {
+    "path": "scripts/lib/user-journey-release-evidence.mjs",
+    "line": 90,
+    "body": "**<sub><sub>!P2 Badge</sub></sub>  Honor the configured aggregate evidence root**\n\nWhen `BROWSER_EVIDENCE_DIR` points outside the default `<repo>/browser-evidence` directory, `run-browser-tests.mjs` creates the journey artifacts under that configured root and the child report records the actual absolute path, but this reader reconstructs the expected path with a hard-coded `browser-evidence` component. Consequently, `validateUserJourneyReleaseContract` rejects otherwise valid aggregate evidence with `journey_untrusted_origin`; derive this path from the aggregate report's evidence directory instead.\n\nUseful? React with 👍 / 👎.\n"
+   }
+  }
+ ],
+ "non_findings": [
+  {
+   "kind": "run_status",
+   "quote": "| 📝 **Code Review** | ✅ **Completed**",
+   "pattern": "(?i)review (status|completed)|code review.{0,20}completed"
+  },
+  {
+   "kind": "product_tip",
+   "quote": "Your team has set up Codex to review pull requests in this repo.",
+   "pattern": "(?i)set up codex|@codex"
+  },
+  {
+   "kind": "run_status",
+   "quote": "**Reviewed commit:** `a06436b427`",
+   "pattern": "(?i)reviewed commit"
+  },
+  {
+   "kind": "control",
+   "quote": "Useful? React with 👍",
+   "pattern": "(?i)react with|useful\\?"
+  }
+ ],
+ "findings": [
+  {
+   "kind": "inline",
+   "path": "scripts/lib/user-journey-release-evidence.mjs",
+   "quote": "Honor the configured aggregate evidence root",
+   "pattern": "(?i)BROWSER_EVIDENCE_DIR|evidence (root|dir)|hard-?coded"
+  }
+ ]
+}

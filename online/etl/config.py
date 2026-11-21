@@ -78,6 +78,7 @@ DEFAULT_CHATBOT_USERNAMES = [
     "gemini-code-assist[bot]",
     "graphite-app[bot]",
     "greptile-apps[bot]",
+    "kilo-code-bot[bot]",
     "kiloconnect[bot]",
     "propel-code-bot[bot]",
     "qodo-code-review[bot]",

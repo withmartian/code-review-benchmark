@@ -365,6 +365,12 @@ def _enrich_timeline_with_threads(timeline: list[TimelineEvent], raw_threads: li
                 if api.get("body"):
                     event.data["body"] = api["body"]
                 event.data["reactions"] = api.get("reactions", {})
+                # Read for review coverage only. The reply id goes under its own key, so the bot
+                # comments step 1 reads (its reply filter keys on in_reply_to_id) stay as before.
+                if "original_commit_id" in api and event.data.get("original_commit_id") is None:
+                    event.data["original_commit_id"] = api["original_commit_id"]
+                if api.get("in_reply_to_id") is not None:
+                    event.data["thread_reply_to_id"] = api["in_reply_to_id"]
 
     # Add thread comments missing from the timeline
     for t in raw_threads:
@@ -391,6 +397,10 @@ def _enrich_timeline_with_threads(timeline: list[TimelineEvent], raw_threads: li
                         "is_resolved": is_resolved,
                         "resolved_by": resolved_by,
                         "source": "api",
+                        # Threads read since the threads query asks for them; older rows have neither.
+                        # The reply id is for review coverage only, under its own key (see above).
+                        **({"original_commit_id": c["original_commit_id"]} if "original_commit_id" in c else {}),
+                        **({"thread_reply_to_id": c["in_reply_to_id"]} if "in_reply_to_id" in c else {}),
                     },
                 )
             )
@@ -503,7 +513,9 @@ async def assemble_pr(
 
     # Compute and store engagement signals from the assembled timeline
     engagement_json = serialize_engagement_signals(
-        record, chatbot_username, pr_author=record.get("pr_author"),
+        record,
+        chatbot_username,
+        pr_author=record.get("pr_author"),
     )
     await repo.db.execute(
         *repo.db._translate_params(

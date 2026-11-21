@@ -181,10 +181,52 @@ uv run python main.py dashboard
 
 ```
 pending → enriching → enriched → assembled → analyzed → labeled
-                ↘ skipped (too large)
+                ↘ skipped (too large)          ↘ skipped (no completed review by the bot)
                 ↘ error
 ```
 
 ## Resumability
 
 Enrichment is resumable per-PR. Each PR tracks its `enrichment_step` — if interrupted, re-run the same command and it picks up where it left off.
+
+## Review coverage
+
+Recall counts only the fixes the bot had a chance to catch (see [the methodology](../../methodology/full.md#online-benchmark)). The analysis works out which commits each review of the bot read, with no LLM call, and leaves out:
+
+- of recall, every fix (matched or not) whose changed lines were all written in commits no review of the bot read before the fix, and every unmatched fix in a file the bot's reviews list as excluded by path filters;
+- of precision, every suggestion whose only matches are fixes left out of recall;
+- of both, a PR where the bot completed no review, only notices: it is marked `skipped` before the LLM calls, with the reason in `error_message` (`No completed review by the bot; it posted ... notices`), and gets no analysis row.
+
+### What the threads step fetches
+
+The `threads` enrichment step sends one GraphQL request per PR, as before, and now also reads:
+
+- the PR's conversation comments, with their current bodies;
+- the edit history of the scored bot's comments (the bot the PR row is for). Bots rewrite one status comment in place, so an earlier review or limit notice may survive only there. Other bots' edit histories are not read past the first page or stored;
+- each inline comment's commit and the comment it replies to.
+
+A further page is requested only past 100 threads, 100 conversation comments or 100 edits of one of the bot's comments. If a read keeps failing, the threads are stored alone and the comments and edits are left `NULL` (not read). The `commits` step also stores each commit's parents.
+
+### Stored data
+
+| Where | Field | Meaning |
+|---|---|---|
+| `prs` | `issue_comments` | The PR's conversation comments: `id`, `author`, `body`, `created_at`, `updated_at`. `NULL` means never read; `[]` means read, none found. |
+| `prs` | `issue_comment_edits` | The earlier revisions of each edited comment of the scored bot, oldest first. `NULL` means never read. |
+| `llm_analyses.human_actions` | `excluded_from_recall` | Set on a fix left out of recall: why (the last review before the fix and the commits that wrote its lines, or the path filter). |
+| `llm_analyses.human_actions` | `unreviewed_commits` | Set with it: the commits that wrote or edited the fixed lines, which no review read before the fix. |
+| `llm_analyses.bot_suggestions` | `excluded_from_precision` | Set on a suggestion left out of precision: the fixes it matched, all left out of recall. |
+
+`total_bot_comments`, `matched_bot_comments`, `precision` and `recall` are computed after these exclusions. The two `prs` columns are added by the existing migrations (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`).
+
+### Rows enriched before this change
+
+Their `issue_comments` is `NULL`, so nothing is left out on them, and their threads carry no commit for inline comments. Existing analyses are not re-scored. To re-read a window:
+
+```sql
+UPDATE prs SET status = 'pending', enrichment_step = 'bq_events', assembled = NULL, assembled_at = NULL
+WHERE chatbot_id = <id> AND bot_reviewed_at >= '<start>';
+DELETE FROM llm_analyses WHERE pr_id IN (SELECT id FROM prs WHERE chatbot_id = <id> AND bot_reviewed_at >= '<start>');
+```
+
+Then run `main.py enrich` (which also assembles) and `main.py analyze`. The steps after `bq_events` run again (commits with parents, reviews, threads with comments and edits, commit details), and the analysis repeats its three LLM calls per PR.

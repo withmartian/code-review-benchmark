@@ -177,6 +177,30 @@ uv run python main.py import --output-dir output
 uv run python main.py dashboard
 ```
 
+### Backfill commands
+
+Utility commands for backfilling computed columns on existing data:
+
+```bash
+# Backfill diff_lines from stored PR data
+uv run python main.py backfill
+
+# Backfill pr_author from BQ events and commits
+uv run python main.py backfill-pr-author --use-api
+
+# Backfill pr_merged and repo_id from pr_api_raw
+uv run python main.py backfill-metadata
+
+# Fetch pr_api_raw from GitHub API for PRs missing it
+uv run python main.py backfill-api-raw --limit 1000
+
+# Compute engagement_signals for assembled PRs missing them
+uv run python main.py backfill-engagement
+
+# Recompute after actor-alias fixes (Copilot reviews as copilot-pull-request-reviewer)
+uv run python main.py backfill-engagement --chatbot Copilot --force --since 60d
+```
+
 ## PR Status Flow
 
 ```

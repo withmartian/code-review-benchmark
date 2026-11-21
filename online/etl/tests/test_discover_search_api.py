@@ -157,7 +157,7 @@ def test_format_dt() -> None:
 
 @pytest.mark.asyncio
 async def test_fetch_window_simple(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Window with count <= 1000 fetches all results without bisecting."""
+    """Window with count <= max_items fetches all results from the whole window."""
     monkeypatch.setattr("pipeline.discover.SEARCH_API_SLEEP", 0)
 
     items = [
@@ -288,8 +288,8 @@ async def test_fetch_window_high_volume_has_bounded_requests(monkeypatch: pytest
 
 
 @pytest.mark.asyncio
-async def test_fetch_window_skips_bisection_when_count_fits(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Window with count <= max_items paginates directly without bisection."""
+async def test_fetch_window_skips_time_buckets_when_count_fits(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Window with count <= max_items paginates the whole window, without time buckets."""
     monkeypatch.setattr("pipeline.discover.SEARCH_API_SLEEP", 0)
 
     call_queries: list[str] = []
@@ -318,12 +318,12 @@ async def test_fetch_window_skips_bisection_when_count_fits(monkeypatch: pytest.
 
     start = datetime(2026, 8, 6, tzinfo=UTC)
     end = datetime(2026, 8, 7, tzinfo=UTC)
-    # count (150) <= max_items (200) — should NOT bisect
+    # count (150) <= max_items (200) — should NOT split into time buckets
     result = await _fetch_window(client, "testbot[bot]", start, end, max_items=200)
 
     # The final oversized mock page is trimmed to the reported total count.
     assert len(result) == 150
-    # No bisection: no T12:00:00 midpoint queries
+    # No time buckets: no query is bounded at the T12:00:00 bucket boundary
     assert not any("T12:00:00" in q for q in call_queries)
     # 1 count query + 2 page fetches (ceil(150/100) pages)
     assert len(call_queries) == 3

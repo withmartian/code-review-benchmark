@@ -789,8 +789,10 @@ async def discover_prs_search_api(
 ) -> int:
     """Discover merged PRs reviewed by a bot via GitHub Search API.
 
-    Queries by merge date, bisects time windows that exceed 1,000 results,
-    caps per-repo representation, and random-samples to max_prs_per_day.
+    Queries one merge day at a time. A day with more results than needed is
+    sampled from a bounded number of result pages spread across equal time
+    buckets (see ``_fetch_window``). Then caps per-repo representation and
+    random-samples to max_prs_per_day.
     Returns the number of new PRs inserted.
     """
     repo = PRRepository(db)
@@ -817,8 +819,8 @@ async def discover_prs_search_api(
             # midnight results are not sampled again on the following day.
             window_end = window_start + timedelta(days=1) - timedelta(seconds=1)
 
-            # Over-fetch by 2x to leave room for repo-cap filtering,
-            # but cap at 1,000 to avoid unnecessary bisection
+            # Over-fetch by 2x to leave room for repo-cap filtering, capped at
+            # 1,000 so one day costs at most 10 result pages (100 per page).
             fetch_limit = min(max_prs_per_day * 2, _SEARCH_MAX_RESULTS)
             raw_items = await _fetch_window(
                 pool, search_username, window_start, window_end,
@@ -830,7 +832,8 @@ async def discover_prs_search_api(
                 current += timedelta(days=1)
                 continue
 
-            # Deduplicate by (repo_name, pr_number) in case bisection windows overlap
+            # Deduplicate by (repo_name, pr_number): a PR can come back on more
+            # than one page when search results shift between requests.
             seen: set[tuple[str, int]] = set()
             parsed: list[dict] = []
             for item in raw_items:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from datetime import UTC
 from datetime import date
 from datetime import datetime
@@ -10,6 +11,7 @@ from datetime import timedelta
 import itertools
 import json
 import logging
+import math
 import random
 
 import httpx
@@ -35,6 +37,14 @@ _GITHUB_HEADERS = {
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
 }
+
+
+@dataclass(frozen=True)
+class _SearchWindow:
+    """A Search API query and its reported result count."""
+
+    query: str
+    count: int
 
 
 class _SearchTokenPool:
@@ -618,7 +628,8 @@ async def _search_api_fetch_all(
         if len(all_items) >= target or len(result) < _SEARCH_PER_PAGE:
             break
 
-    return all_items
+    # A page can contain more items than the remaining target.
+    return all_items[:target]
 
 
 def _format_dt(dt: datetime) -> str:
@@ -626,20 +637,13 @@ def _format_dt(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%S")
 
 
-async def _fetch_window(
+async def _count_search_window(
     pool: _SearchTokenPool | httpx.AsyncClient,
     search_username: str,
     window_start: datetime,
     window_end: datetime,
-    max_items: int = _SEARCH_MAX_RESULTS,
-    depth: int = 0,
-) -> list[dict]:
-    """Fetch merged PRs reviewed by a bot in a time window.
-
-    When total_count <= 1,000 or max_items <= 1,000: paginate directly.
-    When total_count > 1,000 and we need more than 1,000: bisect into
-    sub-windows so each fits under the API cap.
-    """
+) -> _SearchWindow | None:
+    """Count results in a time window and retain its query."""
     merged_range = f"merged:{_format_dt(window_start)}..{_format_dt(window_end)}"
     query = f"type:pr reviewed-by:{search_username} is:merged {merged_range}"
 
@@ -649,32 +653,108 @@ async def _fetch_window(
 
     if isinstance(count, SearchError):
         logger.warning(f"Search API error for {search_username} in {merged_range}: {count}")
-        return []
-
+        return None
     if count == 0:
+        return None
+    return _SearchWindow(query=query, count=count)
+
+
+def _split_time_window(
+    window_start: datetime,
+    window_end: datetime,
+    bucket_count: int,
+) -> list[tuple[datetime, datetime]]:
+    """Split an inclusive time range into non-overlapping, second-aligned buckets."""
+    total_seconds = int((window_end - window_start).total_seconds()) + 1
+    bucket_count = min(bucket_count, total_seconds)
+    base_size, remainder = divmod(total_seconds, bucket_count)
+
+    buckets: list[tuple[datetime, datetime]] = []
+    current = window_start
+    for index in range(bucket_count):
+        size = base_size + (1 if index < remainder else 0)
+        bucket_end = current + timedelta(seconds=size - 1)
+        buckets.append((current, bucket_end))
+        current = bucket_end + timedelta(seconds=1)
+    return buckets
+
+
+def _choose_search_pages(
+    windows: list[_SearchWindow],
+    page_budget: int,
+) -> list[tuple[_SearchWindow, int]]:
+    """Choose bounded pages while representing every non-empty time bucket."""
+    available = [
+        (
+            window,
+            list(range(1, min(math.ceil(window.count / _SEARCH_PER_PAGE), 10) + 1)),
+        )
+        for window in windows
+    ]
+    selected = [(window, random.choice(pages)) for window, pages in available if pages]
+    selected_set = {(window.query, page) for window, page in selected}
+    remaining = [
+        (window, page)
+        for window, pages in available
+        for page in pages
+        if (window.query, page) not in selected_set
+    ]
+    remaining_budget = max(0, page_budget - len(selected))
+    if remaining_budget:
+        selected.extend(random.sample(remaining, min(remaining_budget, len(remaining))))
+    return selected[:page_budget]
+
+
+async def _fetch_window(
+    pool: _SearchTokenPool | httpx.AsyncClient,
+    search_username: str,
+    window_start: datetime,
+    window_end: datetime,
+    max_items: int = _SEARCH_MAX_RESULTS,
+) -> list[dict]:
+    """Fetch a bounded, time-stratified sample from a Search API window.
+
+    Low-volume windows are fetched completely. High-volume windows use at most
+    one page per 100 requested candidates, spread across equal time buckets.
+    This bounds API work while avoiding a sample drawn only from one part of
+    the day.
+    """
+    if max_items <= 0:
         return []
 
-    # If the full result set fits in the API cap, just paginate
-    if count <= max_items:
-        logger.debug(f"  Window {merged_range}: {count} total, fetching all")
-        return await _search_api_fetch_all(pool, query, count, max_items=max_items)
-
-    # Result set is larger than what we need — bisect to spread the candidate
-    # pool across the full time window rather than taking the API's default
-    # prefix (biased toward recently-created PRs).
-    if depth > 8:
-        logger.warning(
-            f"  Window {merged_range}: {count} results at max depth {depth}, "
-            f"fetching first {min(max_items, _SEARCH_MAX_RESULTS)}"
+    full_window = await _count_search_window(pool, search_username, window_start, window_end)
+    if full_window is None:
+        return []
+    if full_window.count <= max_items:
+        return await _search_api_fetch_all(
+            pool,
+            full_window.query,
+            full_window.count,
+            max_items=max_items,
         )
-        return await _search_api_fetch_all(pool, query, count, max_items=max_items)
 
-    mid = window_start + (window_end - window_start) / 2
-    half_target = max_items // 2 + 1  # slight overlap is fine, deduped later
-    logger.debug(f"  Window {merged_range}: {count} results, bisecting at {_format_dt(mid)}")
-    left = await _fetch_window(pool, search_username, window_start, mid, max_items=half_target, depth=depth + 1)
-    right = await _fetch_window(pool, search_username, mid, window_end, max_items=half_target, depth=depth + 1)
-    return left + right
+    page_budget = math.ceil(max_items / _SEARCH_PER_PAGE)
+    buckets = _split_time_window(window_start, window_end, page_budget)
+    counted_windows = await asyncio.gather(
+        *(
+            _count_search_window(pool, search_username, bucket_start, bucket_end)
+            for bucket_start, bucket_end in buckets
+        )
+    )
+    pages = _choose_search_pages(
+        [window for window in counted_windows if window is not None],
+        page_budget,
+    )
+    results: list[dict] = []
+    for window, page in pages:
+        sleep = SEARCH_API_SLEEP / (pool.size if isinstance(pool, _SearchTokenPool) else 1)
+        await asyncio.sleep(sleep)
+        result = await _search_api_fetch_page(pool, window.query, page)
+        if isinstance(result, SearchError):
+            logger.warning(f"Skipping search page {page} due to {result}")
+            continue
+        results.extend(result)
+    return results if len(results) <= max_items else random.sample(results, max_items)
 
 
 def _sample_prs(
@@ -709,8 +789,10 @@ async def discover_prs_search_api(
 ) -> int:
     """Discover merged PRs reviewed by a bot via GitHub Search API.
 
-    Queries by merge date, bisects time windows that exceed 1,000 results,
-    caps per-repo representation, and random-samples to max_prs_per_day.
+    Queries one merge day at a time. A day with more results than needed is
+    sampled from a bounded number of result pages spread across equal time
+    buckets (see ``_fetch_window``). Then caps per-repo representation and
+    random-samples to max_prs_per_day.
     Returns the number of new PRs inserted.
     """
     repo = PRRepository(db)
@@ -733,10 +815,12 @@ async def discover_prs_search_api(
         current = start
         while current <= end:
             window_start = datetime(current.year, current.month, current.day, tzinfo=UTC)
-            window_end = window_start + timedelta(days=1)
+            # Search ranges are inclusive at both ends; stop at 23:59:59 so
+            # midnight results are not sampled again on the following day.
+            window_end = window_start + timedelta(days=1) - timedelta(seconds=1)
 
-            # Over-fetch by 2x to leave room for repo-cap filtering,
-            # but cap at 1,000 to avoid unnecessary bisection
+            # Over-fetch by 2x to leave room for repo-cap filtering, capped at
+            # 1,000 so one day costs at most 10 result pages (100 per page).
             fetch_limit = min(max_prs_per_day * 2, _SEARCH_MAX_RESULTS)
             raw_items = await _fetch_window(
                 pool, search_username, window_start, window_end,
@@ -748,7 +832,8 @@ async def discover_prs_search_api(
                 current += timedelta(days=1)
                 continue
 
-            # Deduplicate by (repo_name, pr_number) in case bisection windows overlap
+            # Deduplicate by (repo_name, pr_number): a PR can come back on more
+            # than one page when search results shift between requests.
             seen: set[tuple[str, int]] = set()
             parsed: list[dict] = []
             for item in raw_items:

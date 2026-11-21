@@ -21,7 +21,7 @@ GitHub Search API
 
 ### 1. Discover
 
-The GitHub Search API (`reviewed-by:<bot> is:merged`) finds merged PRs where tracked code review bots left reviews. For high-volume bots that exceed the 1,000-result API cap, adaptive time bisection splits the query window until each chunk fits. PRs are randomly sampled and capped per-repo to prevent any single project from dominating. Up to 500 PRs per bot per day. A BigQuery / [GitHub Archive](https://www.gharchive.org/) fallback is available via `--source bq`.
+The GitHub Search API (`reviewed-by:<bot> is:merged`) finds merged PRs where tracked code review bots left reviews. When a bot has more results in a day than we need, the day is split into equal time buckets and a fixed number of result pages is drawn across them, so the sample covers the whole day at a bounded API cost. PRs are randomly sampled and capped per-repo to prevent any single project from dominating. Up to 500 PRs per bot per day. A BigQuery / [GitHub Archive](https://www.gharchive.org/) fallback is available via `--source bq`.
 
 ### 2. Enrich
 
